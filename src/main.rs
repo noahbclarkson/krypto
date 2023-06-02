@@ -23,7 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (highest_ticker, highest_cash) = find_highest_ticker(&tickers, &algorithm, &config);
     let highest_ticker = highest_ticker.as_str();
     // Optimize the algorithm's weights
-    algorithm.optimize_weights(highest_ticker, &config, 1500);
+    algorithm.optimize_weights(highest_ticker, &config, 250);
     // Find the margin that gives the highest cash
     println!("Finding highest margin");
     let (highest_margin, _) = find_highest_margin(highest_ticker, &algorithm, &config, highest_cash);
