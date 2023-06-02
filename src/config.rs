@@ -76,7 +76,7 @@ impl Config {
             periods: 7000,
             interval: "15m".to_string(),
             margin: 2.0,
-            fee: 0.054,
+            fee: 0.00054,
         }
     }
 }
