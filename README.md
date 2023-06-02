@@ -8,7 +8,7 @@ Krypto is a quantitative crypto-futures trading algorithm based on the self-deve
 
 ## What is the mass-correlation-relation algorithm?
 
-The mass-correlation-relation algorithm is a self-developed predtive-model that uses the human-unobservable relations between technicals and other data in an array of tickers to make future predictions about the price change in another ticker. This is how it works:
+The mass-correlation-relation algorithm is a self-developed predictive-model that uses the human-unobservable relations between technicals and other data in an array of tickers to make future predictions about the price change in another ticker. This is how it works:
 
 Firt we get an array of tickers and get their historical data for a large time frame at a certain interval. Krypto's default is 7,000 data points at 15 minute intervals for the 18 possible tickers on binance-futures (BUSD). Then, for each interval, for each ticker, we compute a number of technical indicators. Most of these indicators are well-known technical indicators that have been used in finance for decades. These include; the Stochastic Oscillator, the Relative Strength Index, and the Commodity Channel Index. We also compute a number of custom indicators. These are explained below:
 
@@ -59,7 +59,7 @@ In krypto it is computed using the `math::cr_ratio` function:
 
 ```rust
 // Computes the CR ratio of a candlestick.
-// The CR ratio is the ratio of the difference of the top wick and bottom wick to the body of the candlestick.
+// The CR ratio is the ratio of the difference between the top and bottom wick to the body
 // The tanh function is used to normalize the output.
 // candle: A reference to the Candlestick struct
 pub fn cr_ratio(candle: &Candlestick) -> f64 {
