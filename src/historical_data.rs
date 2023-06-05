@@ -88,6 +88,7 @@ pub struct TickerData {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HistoricalData {
+    #[serde(skip)]
     pub data: Vec<TickerData>,
     pub index_map: HashMap<String, usize>,
     pub pc_max: f64,
@@ -129,14 +130,14 @@ impl HistoricalData {
         let mut i = 0;
         while i < self.data.len() {
             if self.data[i].candlesticks.len() != periods {
-                self.data.remove(i);
                 println!("Removed ticker {}", self.data[i].ticker);
+                self.data.remove(i);
             } else {
                 i += 1;
             }
         }
     }
-
+    
     pub fn calculate_technicals(&mut self) {
         self.calculate_candlestick_technicals();
         let (means, stds) = self.calculate_means_and_stds();

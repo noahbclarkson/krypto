@@ -1,90 +1,126 @@
 use krypto::{
     algorithm::Algorithm,
     config::{read_config, read_tickers, Config},
-    historical_data::HistoricalData, math::format_number,
+    historical_data::HistoricalData,
 };
+use std::error::Error;
+
+const DEFAULT_ITERATIONS: usize = 20;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Run read_tickers and read_config concurrently
-    let (tickers, config) = get_configuration().await;
-    // Get the latest data
-    let mut data = load_data(tickers, &config).await;
-    // Set the tickers to the valid tickers
-    let tickers = data.get_tickers();
-    // Calculate the technicals
-    data.calculate_technicals();
-    println!("Calculated the technicals successfully");
-    // Calculate the relationships
-    let mut algorithm = Algorithm::new(data);
-    algorithm.calculate_relationships();
-    println!("Calculated the relationships successfully");
-    // Find the best ticker to trade
-    let (highest_ticker, highest_cash) = find_highest_ticker(&tickers, &algorithm, &config);
-    let highest_ticker = highest_ticker.as_str();
-    // Optimize the algorithm's weights
-    algorithm.optimize_weights(highest_ticker, &config, 250);
-    // Find the margin that gives the highest cash
-    println!("Finding highest margin");
-    let (highest_margin, _) = find_highest_margin(highest_ticker, &algorithm, &config, highest_cash);
-    // Set the margin to the highest margin
-    let mut config = config.clone();
-    config.set_margin(highest_margin);
-    // Run the live test
-    algorithm.live_test(highest_ticker, &config).await;
+async fn main() -> Result<(), Box<dyn Error>> {
+    let (mut tickers, mut config) = get_configuration().await?;
+
+    let mut algorithm = create_new_algorithm(&mut tickers, &mut config).await?;
+
+    algorithm
+        .live_test(algorithm.ticker.clone().unwrap().as_str(), &config, &tickers)
+        .await?;
+
     Ok(())
 }
 
-pub async fn get_configuration() -> (Vec<String>, Config) {
-    let (tickers, config) = tokio::join!(read_tickers(), read_config());
-    let tickers = tickers.unwrap_or_else(|_| {
+async fn create_new_algorithm(mut tickers: &mut Vec<String>, config: &mut Config) -> Result<Algorithm, Box<dyn Error>> {
+    let mut data = load_data(tickers.clone(), &config).await;
+    let mut t = data.get_tickers().clone();
+    tickers = &mut t;
+
+    data.calculate_technicals();
+    println!("Calculated the technicals successfully");
+
+    let mut algorithm = Algorithm::new(data);
+    algorithm.calculate_relationships();
+    println!("Calculated the relationships successfully");
+
+    find_highest_ticker(&tickers, &mut algorithm, &config);
+
+    let iterations = get_user_input("How many iterations would you like to perform to optimize the algorithm's weights?", |input| {
+        input.parse::<usize>().map_err(|_| "Please enter a valid number.".into())
+    })?;
+
+    algorithm.optimize_weights(&config, iterations);
+
+    find_highest_margin(&mut algorithm, &config);
+
+    config.set_margin(algorithm.margin.unwrap());
+
+    Ok(algorithm)
+}
+
+pub async fn get_configuration() -> Result<(Vec<String>, Config), Box<dyn Error>> {
+    let (tickers_res, config_res) = tokio::join!(read_tickers(), read_config());
+    let tickers = tickers_res.unwrap_or_else(|_| {
         eprintln!("Failed to read tickers, using default values.");
         Config::get_default_tickers().iter().map(|s| s.to_string()).collect()
     });
-    let config = config.unwrap_or_else(|_| {
+    let config = config_res.unwrap_or_else(|_| {
         eprintln!("Failed to read config, using default values.");
         Config::get_default_config()
     });
     println!("Read the tickers and config successfully");
-    (tickers, config)
+    Ok((tickers, config))
 }
 
 async fn load_data(tickers: Vec<String>, config: &Config) -> HistoricalData {
-    let mut data = HistoricalData::new(&tickers.clone());
-    data.load_data(tickers.clone(), &config).await;
+    let mut data = HistoricalData::new(&tickers);
+    data.load_data(tickers, config).await;
     println!("Loaded the data successfully");
     data
 }
 
-fn find_highest_ticker(tickers: &Vec<String>, algorithm: &Algorithm, config: &Config) -> (String, f64) {
+fn find_highest_ticker(
+    tickers: &[String],
+    algorithm: &mut Algorithm,
+    config: &Config,
+){
     let mut highest_ticker = "";
     let mut highest_cash = 0.0;
+
     for ticker in tickers {
-        println!("Testing {}", ticker);
-        let test = algorithm.test(ticker, &config);
+        let test = algorithm.test(ticker, config, false);
         if *test.cash() > highest_cash {
             highest_ticker = ticker;
             highest_cash = *test.cash();
         }
     }
-    println!("Highest ticker: {}", highest_ticker);
-    println!("Highest cash: ${}", format_number(highest_cash));
-    (highest_ticker.to_string(), highest_cash)
+
+    algorithm.ticker = Some(highest_ticker.to_string());
 }
 
-fn find_highest_margin(ticker: &str, algorithm: &Algorithm, config: &Config, mut highest_cash: f64) -> (f64, f64) {
+fn find_highest_margin(
+    algorithm: &mut Algorithm,
+    config: &Config,
+) {
     let mut highest_margin = 0.0;
-    for i in 1..21 {
+
+    let mut test = algorithm.test(algorithm.ticker.clone().unwrap().as_str(), &config, false);
+
+    for i in 1..=DEFAULT_ITERATIONS {
         let margin = i as f64;
         let mut config = config.clone();
         config.set_margin(margin);
-        let test = algorithm.test(ticker, &config);
-        if *test.cash() > highest_cash {
+        let current_test = algorithm.test(algorithm.ticker.clone().unwrap().as_str(), &config, false);
+        if test.cash() < current_test.cash() {
             highest_margin = margin;
-            highest_cash = *test.cash();
+            test = current_test;
         }
     }
-    println!("Highest margin: {}", highest_margin);
-    println!("Highest cash: ${}", format_number(highest_cash));
-    (highest_margin, highest_cash)
+
+    println!("The highest margin is {}", highest_margin);
+    println!("{}", test);
+
+    algorithm.margin = Some(highest_margin);
+}
+
+fn get_user_input<T, F: FnOnce(&str) -> Result<T, Box<dyn Error>>>(
+    prompt: &str,
+    parse: F,
+) -> Result<T, Box<dyn Error>> {
+    println!("{}", prompt);
+
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    let input = input.trim();
+
+    parse(input)
 }

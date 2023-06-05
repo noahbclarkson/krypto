@@ -9,6 +9,7 @@ edition = "2021"
 binance-rs-async = { git = "https://github.com/Igosuki/binance-rs-async.git", features = ["futures_api"] }
 serde = { version = "1.0.163", features = ["derive"] }
 serde_yaml = "0.9.21"
+serde_json = "1.0.96"
 chrono = "0.4.26"
 futures = "0.3.28"
 tokio = { version = "1.28.2", features = ["full"] }
@@ -17,3 +18,4 @@ rand = "0.8.5"
 strum = "0.24.1"
 strum_macros = "0.24.1"
 getset = "0.1.2"
+csv = "1.2.2"
