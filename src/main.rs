@@ -15,7 +15,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     algorithm
         .live_test(algorithm.ticker.clone().unwrap().as_str(), &config, &tickers)
-        .await?;
+        .await.unwrap_or_else(|e| {
+            eprintln!("Failed to live test the algorithm.");
+            eprintln!("{}", e);
+            std::process::exit(1);
+        });
 
     Ok(())
 }

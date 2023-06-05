@@ -164,6 +164,8 @@ impl Algorithm {
         tickers: &Vec<String>,
     ) -> Result<(), Box<dyn Error>> {
         let mut last_trade_direction = None;
+        let mut last_trade_correct = None;
+        let mut last_direct_string = None;
         let mut test = TestData::new(1000.0);
         let index = self.data.index_map.get(ticker).ok_or_else(|| {
             format!(
@@ -173,7 +175,8 @@ impl Algorithm {
         })?;
         let margin = self.margin.unwrap_or(*config.margin()) / 100.0;
         let mut csv_file = csv::Writer::from_path("live_test.csv")?;
-        csv_file.write_record(&["Time", "Price", "Cash", "Accuracy"])?;
+        csv_file.write_record(&["Cash", "Accuracy", "Trade Direction", "Correct/Incorrect", "Latest Change", "Current Price", "Enter Price"])?;
+        csv_file.flush()?;
         let mut enter_price = None;
         let ticker_pairs = self.get_ticker_pairs(ticker);
         loop {
@@ -204,9 +207,11 @@ impl Algorithm {
                     if last_trade_direction.unwrap() * change >= 0.0 {
                         test.add_cash(test.cash() * change.abs() * margin);
                         test.add_correct();
+                        last_trade_correct = Some("Correct");
                     } else {
                         test.add_cash(-test.cash() * change.abs() * margin);
                         test.add_incorrect();
+                        last_trade_correct = Some("Incorrect");
                     }
                 }
 
@@ -215,21 +220,29 @@ impl Algorithm {
 
                 if prediction > 0.0 {
                     println!("Buy {}", ticker);
+                    last_direct_string = Some("Buy");
                 } else if prediction < 0.0 {
                     println!("Sell {}", ticker);
+                    last_direct_string = Some("Sell");
                 }
 
                 // Update the last trade direction
                 last_trade_direction = Some(prediction_sign);
             } else {
                 println!("Hold {}", ticker);
+                last_direct_string = Some("Hold");
             }
 
+            let latest_change = change(enter_price.unwrap_or(current_price), current_price);
+
             csv_file.write_record(&[
-                &Utc::now().to_string(),
-                &current_price.to_string(),
                 &test.cash().to_string(),
                 &test.get_accuracy().to_string(),
+                &last_direct_string.unwrap_or_default().to_string(),
+                &last_trade_correct.unwrap_or_default().to_string(),
+                &latest_change.to_string(),
+                &current_price.to_string(),
+                &enter_price.unwrap_or(current_price).to_string(),
             ])?;
 
             csv_file.flush()?;
