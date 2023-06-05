@@ -85,7 +85,7 @@ impl Config {
 // If the file doesn't exist, it creates one with default values.
 // If there's an error opening the file, it returns a Vec with default values.
 pub async fn read_tickers() -> io::Result<Vec<String>> {
-    let path = Path::new("ticker.txt");
+    let path = Path::new("tickers.txt");
     let default_tickers = Config::get_default_tickers();
 
     if !path.exists() {
