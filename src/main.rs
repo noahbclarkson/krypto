@@ -48,6 +48,8 @@ async fn create_new_algorithm(mut tickers: &mut Vec<String>, config: &mut Config
 
     config.set_margin(algorithm.margin.unwrap());
 
+    algorithm.live_test(algorithm.clone().ticker.unwrap().as_str(), &config, &tickers).await?;
+
     Ok(algorithm)
 }
 
@@ -82,6 +84,8 @@ fn find_highest_ticker(
 
     for ticker in tickers {
         let test = algorithm.test(ticker, config, false);
+        println!("Testing {}", ticker);
+        println!("{}", test);
         if *test.cash() > highest_cash {
             highest_ticker = ticker;
             highest_cash = *test.cash();

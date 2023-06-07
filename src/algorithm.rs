@@ -1,4 +1,4 @@
-use std::{error::Error, time::Duration, collections::HashMap};
+use std::{collections::HashMap, error::Error, time::Duration};
 
 use chrono::Utc;
 use getset::{Getters, Setters};
@@ -113,16 +113,20 @@ impl Algorithm {
 
     pub fn predict(&self, target_pos: usize, ticker_pairs: &[&TickerPair]) -> f64 {
         let predict_pos = target_pos - 1;
-        self.data.data.iter().flat_map(|ticker_data| {
-            let other_candlestick = &ticker_data.candlesticks[predict_pos];
-            ticker_pairs.iter().filter_map(|ticker_pair| {
-                self.relationships.get(ticker_pair).map(|relationship| {
-                    other_candlestick.get_technical(&ticker_pair.relationship_type) 
-                    * relationship.correlation 
-                    * relationship.weight
+        self.data
+            .data
+            .iter()
+            .flat_map(|ticker_data| {
+                let other_candlestick = &ticker_data.candlesticks[predict_pos];
+                ticker_pairs.iter().filter_map(|ticker_pair| {
+                    self.relationships.get(ticker_pair).map(|relationship| {
+                        other_candlestick.get_technical(&ticker_pair.relationship_type)
+                            * relationship.correlation
+                            * relationship.weight
+                    })
                 })
             })
-        }).sum()
+            .sum()
     }
 
     pub fn test(&self, ticker: &str, config: &Config, print_cash: bool) -> TestData {
@@ -140,7 +144,7 @@ impl Algorithm {
             let actual = &target.pc;
             let ps = prediction.signum();
             if last_trade_direction != ps {
-                test.add_cash(-test.cash() * fee * margin);
+                test.add_cash(-test.cash() * fee * margin * 100.0);
                 last_trade_direction = ps;
             }
             if ps * actual >= 0.0 {
@@ -175,7 +179,15 @@ impl Algorithm {
         })?;
         let margin = self.margin.unwrap_or(*config.margin()) / 100.0;
         let mut csv_file = csv::Writer::from_path("live_test.csv")?;
-        csv_file.write_record(&["Cash", "Accuracy", "Trade Direction", "Correct/Incorrect", "Latest Change", "Current Price", "Enter Price"])?;
+        csv_file.write_record(&[
+            "Cash",
+            "Accuracy",
+            "Trade Direction",
+            "Correct/Incorrect",
+            "Latest Change",
+            "Current Price",
+            "Enter Price",
+        ])?;
         csv_file.flush()?;
         let mut enter_price = None;
         let ticker_pairs = self.get_ticker_pairs(ticker);
@@ -188,22 +200,19 @@ impl Algorithm {
             data.calculate_technicals();
             let mut algorithm = self.clone();
             algorithm.data = data.clone();
-            let prediction = algorithm.predict(data.data[*index].candlesticks.len(), &ticker_pairs);
+            let prediction = algorithm.predict(*index, &ticker_pairs);
             let prediction_sign = prediction.signum();
-            let candle = data.data[*index]
-                .candlesticks
-                .last()
-                .ok_or("No last candle available")?;
-            let current_price = candle.close;
-
+            let candle = data.data[*index].candlesticks.last();
+            let current_price = match candle {
+                Some(candle) => candle.close,
+                None => continue,
+            };
             if last_trade_direction.is_none() || last_trade_direction.unwrap() != prediction_sign {
                 // Apply the fee
-                test.add_cash(-test.cash() * config.fee() * margin);
-
+                test.add_cash(-test.cash() * config.fee() * margin * 100.0);
                 // Calculate the price change since the last trade direction change, if there was one
                 if let Some(ep) = enter_price {
                     let change = change(ep, current_price);
-
                     if last_trade_direction.unwrap() * change >= 0.0 {
                         test.add_cash(test.cash() * change.abs() * margin);
                         test.add_correct();
@@ -214,10 +223,8 @@ impl Algorithm {
                         last_trade_correct = Some("Incorrect");
                     }
                 }
-
                 // Track the entry price
                 enter_price = Some(current_price);
-
                 if prediction > 0.0 {
                     println!("Buy {}", ticker);
                     last_direct_string = Some("Buy");
@@ -225,27 +232,25 @@ impl Algorithm {
                     println!("Sell {}", ticker);
                     last_direct_string = Some("Sell");
                 }
-
                 // Update the last trade direction
                 last_trade_direction = Some(prediction_sign);
             } else {
                 println!("Hold {}", ticker);
                 last_direct_string = Some("Hold");
             }
-
             let latest_change = change(enter_price.unwrap_or(current_price), current_price);
-
-            csv_file.write_record(&[
-                &test.cash().to_string(),
-                &test.get_accuracy().to_string(),
-                &last_direct_string.unwrap_or_default().to_string(),
-                &last_trade_correct.unwrap_or_default().to_string(),
-                &latest_change.to_string(),
-                &current_price.to_string(),
-                &enter_price.unwrap_or(current_price).to_string(),
-            ])?;
-
-            csv_file.flush()?;
+            csv_file
+                .write_record(&[
+                    &test.cash().to_string(),
+                    &test.get_accuracy().to_string(),
+                    &last_direct_string.unwrap_or_default().to_string(),
+                    &last_trade_correct.unwrap_or_default().to_string(),
+                    &latest_change.to_string(),
+                    &current_price.to_string(),
+                    &enter_price.unwrap_or(current_price).to_string(),
+                ])
+                .unwrap_or_else(|_| return);
+            csv_file.flush().unwrap_or_else(|_| return);
         }
     }
 
