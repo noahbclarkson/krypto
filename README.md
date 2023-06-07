@@ -157,6 +157,28 @@ pub struct Relationship {
 }
 ```
 
+### Normalization
+
+Once we have collected and computed the technicals for every ticker. We normalize the data around the percentage change. In summary, we want all our technicals to have the same standard deviation and a mean of 0 (the theoretical mean of the percentage change). This is performed in the `HistoricalData::normalize_technicals` function below:
+
+```rust
+pub fn normalize_technicals(&mut self, means: &[f64], stds: &[f64]) {
+        for (i, r_type) in RelationshipType::iter().enumerate() {
+            if r_type == RelationshipType::PercentageChange {
+                continue;
+            }
+            for ticker_data in &mut self.data {
+                for candle in &mut ticker_data.candlesticks {
+                    candle.set_techincal(
+                        &r_type,
+                        (candle.get_technical(&r_type) - means[i]) / stds[i] * stds[0],
+                    );
+                }
+            }
+        }
+    }
+```
+
 ### Predictions
 
 Once we have the array of relationship values we can make predictions about a future time period by getting the sum of the correlation and the actual technical value for each technical for each ticker. This can be represented mathematically as:
