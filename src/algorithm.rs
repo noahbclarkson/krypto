@@ -1,161 +1,178 @@
-use std::{collections::HashMap, error::Error, time::Duration};
+use std::{error::Error, time::Duration};
 
 use chrono::Utc;
 use getset::{Getters, Setters};
-use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
+use ta::Close;
 
 use crate::{
     config::Config,
-    historical_data::{Candlestick, HistoricalData, TickerData},
-    math::change,
+    historical_data::{Candlestick, HistoricalData, TechnicalType},
+    math::{change, format_number},
     testing::TestData,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+const DEFAULT_MARGIN: f64 = 10.0;
+const DEFAULT_DEPTH: usize = 15;
+const DEFAULT_MIN_SCORE: f64 = 0.007;
+const STARTING_CASH: f64 = 1000.0;
+
+const WAIT_WINDOW: i64 = 5000;
+const MINUTES_TO_MILLIS: usize = 60 * 1000;
+
+#[derive(Debug, Getters)]
+#[getset(get = "pub")]
 pub struct Algorithm {
-    // The historical data attached to the algorithm
-    pub data: HistoricalData,
-    // The ticker that has been chosen to trade
-    pub ticker: Option<String>,
-    // The margin that has been chosen to be traded with
-    pub margin: Option<f64>,
-    // The map of relationship pairs to relationships
-    #[serde(skip)]
-    pub relationships: HashMap<TickerPair, Relationship>,
+    data: HistoricalData,
+    pub settings: AlgorithmSettings,
+    relationships: Vec<Relationship>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, Setters)]
-#[getset(get = "pub")]
+#[derive(Debug, Getters, Setters)]
+#[getset(get = "pub", set = "pub")]
+pub struct AlgorithmSettings {
+    margin: f64,
+    depth: usize,
+    min_score: f64,
+}
+
+impl Default for AlgorithmSettings {
+    fn default() -> Self {
+        Self {
+            margin: DEFAULT_MARGIN,
+            depth: DEFAULT_DEPTH,
+            min_score: DEFAULT_MIN_SCORE,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct Relationship {
     correlation: f64,
-    weight: f64,
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub struct TickerPair {
-    target: String,
-    predictor: String,
-    relationship_type: RelationshipType,
-}
-
-#[derive(Debug, Clone, EnumIter, PartialEq, Serialize, Deserialize, Hash, Eq)]
-pub enum RelationshipType {
-    PercentageChange,
-    CandlestickRatio,
-    StochasticOscillator,
-    RelativeStrengthIndex,
-    CommodityChannelIndex,
-    VolumeChange,
-    StandardDeviation,
+    depth: usize,
+    r_type: TechnicalType,
+    target_index: usize,
+    predict_index: usize,
 }
 
 impl Algorithm {
-    pub fn new(data: HistoricalData) -> Algorithm {
-        Algorithm {
+    pub fn new(data: HistoricalData) -> Self {
+        Self {
             data,
-            relationships: HashMap::new(),
-            ticker: None,
-            margin: None,
+            settings: AlgorithmSettings::default(),
+            relationships: Vec::new(),
         }
     }
 
-    pub fn calculate_relationships(&mut self) {
-        let data = self.data.data.clone();
-        for ticker_data in &data {
-            // Target ticker
-            let ticker = &ticker_data.ticker;
-            let candlesticks = &ticker_data.candlesticks;
-            for other_ticker_data in &data {
-                // Calculate relationship between ticker (target) and other_ticker (predictor)
-                self.calculate_relationship(ticker, candlesticks, other_ticker_data);
+    pub fn compute_relationships(&mut self) {
+        self.relationships.clear();
+        for (target_index, target_candles) in self.data.data.iter().enumerate() {
+            for (predict_index, predict_candles) in self.data.data.iter().enumerate() {
+                self.relationships.extend(self.compute_relationship(
+                    target_index,
+                    predict_index,
+                    target_candles,
+                    predict_candles,
+                ));
             }
         }
     }
 
-    fn calculate_relationship(
-        &mut self,
-        ticker: &String,
-        candlesticks: &[Candlestick],
-        other_ticker_data: &TickerData,
-    ) {
-        let mut results = vec![Vec::new(); RelationshipType::iter().count()];
-        let other_ticker = &other_ticker_data.ticker;
-        let other_candlesticks = &other_ticker_data.candlesticks;
-        for i in 1..candlesticks.len() {
-            let candlestick = &candlesticks[i];
-            let other_candlestick = &other_candlesticks[i - 1];
-            let target = candlestick.pc;
-            for (i, r_type) in RelationshipType::iter().enumerate() {
-                let n = other_candlestick.get_technical(&r_type);
-                results[i].push((target * n).tanh());
+    fn compute_relationship(
+        &self,
+        target_index: usize,
+        predict_index: usize,
+        target_candles: &[Candlestick],
+        predict_candles: &[Candlestick],
+    ) -> Vec<Relationship> {
+        let depth = self.settings.depth;
+        let tech_count = TechnicalType::iter().count();
+        let mut results = vec![Vec::new(); tech_count * depth];
+        for i in self.settings.depth + 1..predict_candles.len() - 1 {
+            let target = &target_candles[i].get(TechnicalType::PercentageChange);
+            for d in 0..depth {
+                let predict = &predict_candles[i - d - 1];
+                let all = predict.get_all();
+                for (j, r) in all.iter().enumerate() {
+                    results[d * tech_count + j].push((target * r).tanh());
+                }
             }
         }
-        let correlations = results
+        let mut correlations = results
             .iter()
-            .map(|x| x.iter().sum::<f64>() / x.len() as f64)
-            .collect::<Vec<_>>();
-        for (i, r_type) in RelationshipType::iter().enumerate() {
-            let correlation = correlations[i];
-            let relationship = Relationship {
-                correlation,
-                weight: 1.0,
-            };
-            let pair = TickerPair {
-                predictor: other_ticker.clone(),
-                target: ticker.clone(),
-                relationship_type: r_type,
-            };
-            self.relationships.insert(pair, relationship);
+            .map(|v| v.iter().sum::<f64>() / v.len() as f64)
+            .collect::<Vec<f64>>();
+        let mut relationships = Vec::new();
+        for r_type in TechnicalType::iter() {
+            for d in 1..depth + 1 {
+                let correlation = correlations.remove(0);
+                relationships.push(Relationship {
+                    correlation,
+                    depth: d,
+                    r_type,
+                    target_index,
+                    predict_index,
+                });
+            }
         }
+        relationships
     }
 
-    pub fn predict(&self, target_pos: usize, ticker_pairs: &[&TickerPair]) -> f64 {
-        let predict_pos = target_pos - 1;
-        self.data
-            .data
-            .iter()
-            .flat_map(|ticker_data| {
-                let other_candlestick = &ticker_data.candlesticks[predict_pos];
-                ticker_pairs.iter().filter_map(|ticker_pair| {
-                    self.relationships.get(ticker_pair).map(|relationship| {
-                        other_candlestick.get_technical(&ticker_pair.relationship_type)
-                            * relationship.correlation
-                            * relationship.weight
-                    })
-                })
-            })
-            .sum()
+    #[inline]
+    pub fn predict(&self, current_position: usize) -> (usize, Vec<f64>) {
+        let mut scores = vec![vec![0.0; self.settings.depth]; self.data.indexes.len()];
+        for relationship in &self.relationships {
+            for d in 0..relationship.depth {
+                let predict = &self.data.data[relationship.predict_index][current_position - d];
+                let tech = predict.get(relationship.r_type);
+                scores[relationship.target_index][relationship.depth - d - 1] +=
+                    tech * relationship.correlation;
+            }
+        }
+        // Return the array and index that has the highest absolute average
+        let mut best = 0;
+        let mut best_score = 0.0;
+        for (i, score) in scores.iter().enumerate() {
+            let avg = score.iter().sum::<f64>() / score.len() as f64;
+            if avg.abs() > best_score {
+                best = i;
+                best_score = avg.abs();
+            }
+        }
+        (best, scores[best].clone())
     }
 
-    pub fn test(&self, ticker: &str, config: &Config, print_cash: bool) -> TestData {
-        let mut test = TestData::new(1000.0);
-        let target_data = self.data.data.iter().find(|x| x.ticker == ticker).unwrap();
-        let target_candles = &target_data.candlesticks;
-        let mut last_trade_direction = 0.0;
+    pub fn test(&self, config: &Config) -> TestData {
+        let mut test = TestData::new(STARTING_CASH);
+        let data_len = self.data.data[0].len();
+        let depth = self.settings.depth;
+        let threshold = data_len - depth - 2;
+        let margin = self.settings.margin;
         let fee = config.fee();
-        let margin = self.margin.unwrap_or(*config.margin()) / 100.0;
-        // We need to get a Vec of possible ticker pairs (ones with the target ticker as the target)
-        let algo = self.clone();
-        let ticker_pairs = algo.get_ticker_pairs(ticker).clone();
-        for (i, target) in target_candles.iter().skip(1).enumerate() {
-            let prediction = self.predict(i + 1, &ticker_pairs);
-            let actual = &target.pc;
-            let ps = prediction.signum();
-            if last_trade_direction != ps {
-                test.add_cash(-test.cash() * fee * margin * 100.0);
-                last_trade_direction = ps;
-            }
-            if ps * actual >= 0.0 {
-                test.add_cash(test.cash() * actual.abs() * margin);
-                test.add_correct();
+        let min_score = self.settings.min_score;
+
+        let mut i = depth;
+        while i < threshold {
+            let (prediction_index, scores) = self.predict(i);
+            let score = scores.iter().sum::<f64>() / scores.len() as f64;
+            if score.abs() >= min_score {
+                let current_price = self.data.data[prediction_index][i + 1].data.close();
+                let exit_price = self.data.data[prediction_index][i + depth + 1].data.close();
+                let change = change(current_price, exit_price);
+                let cash_change = test.cash() * margin * fee;
+
+                test.add_cash(-cash_change);
+                let correct = change * score;
+                if correct > 0.0 {
+                    test.add_cash(test.cash() * change.abs() * margin * 0.01);
+                    test.add_correct();
+                } else if correct < 0.0 {
+                    test.add_cash(-test.cash() * change.abs() * margin * 0.01);
+                    test.add_incorrect();
+                }
+                i += depth;
             } else {
-                test.add_cash(-test.cash() * actual.abs() * margin);
-                test.add_incorrect();
-            }
-            if print_cash {
-                println!("{}", test.cash());
+                i += 1;
             }
         }
         test
@@ -163,143 +180,151 @@ impl Algorithm {
 
     pub async fn live_test(
         &mut self,
-        ticker: &str,
         config: &Config,
         tickers: &Vec<String>,
     ) -> Result<(), Box<dyn Error>> {
-        let mut last_trade_direction = None;
-        let mut last_trade_correct = None;
-        let mut last_direct_string = None;
         let mut test = TestData::new(1000.0);
-        let index = self.data.index_map.get(ticker).ok_or_else(|| {
-            format!(
-                "Ticker {} not found in index map: {:?}",
-                ticker, self.data.index_map
-            )
-        })?;
-        let margin = self.margin.unwrap_or(*config.margin()) / 100.0;
         let mut csv_file = csv::Writer::from_path("live_test.csv")?;
         csv_file.write_record(&[
-            "Cash",
+            "Cash ($)",
             "Accuracy",
             "Trade Direction",
             "Correct/Incorrect",
-            "Latest Change",
             "Current Price",
             "Enter Price",
+            "Score",
         ])?;
-        csv_file.flush()?;
-        let mut enter_price = None;
-        let ticker_pairs = self.get_ticker_pairs(ticker);
+        let original_config = config.clone();
+        let depth = self.settings.depth;
+        let margin = self.settings.margin;
+        let fee = config.fee();
+        let min_score = self.settings.min_score;
+        let predict_pos = 15 + depth - 1;
+        let mut enter_price: Option<f64> = None;
+        let mut index: Option<usize> = None;
+        let mut direction = 0.0;
+        let mut last_score = 0.0;
+
         loop {
-            self.wait(&config).await;
             let mut data = HistoricalData::new(tickers);
             let mut config = config.clone();
-            config.set_periods(15);
-            data.load_data(tickers.clone(), &config).await;
+            config.set_periods(15 + self.settings.depth);
+            data.load(&config).await;
             data.calculate_technicals();
-            let mut algorithm = self.clone();
-            algorithm.data = data.clone();
-            let prediction = algorithm.predict(*index, &ticker_pairs);
-            let prediction_sign = prediction.signum();
-            let candle = data.data[*index].candlesticks.last();
-            let current_price = match candle {
-                Some(candle) => candle.close,
-                None => continue,
-            };
-            if last_trade_direction.is_none() || last_trade_direction.unwrap() != prediction_sign {
-                // Apply the fee
-                test.add_cash(-test.cash() * config.fee() * margin * 100.0);
-                // Calculate the price change since the last trade direction change, if there was one
-                if let Some(ep) = enter_price {
-                    let change = change(ep, current_price);
-                    if last_trade_direction.unwrap() * change >= 0.0 {
-                        test.add_cash(test.cash() * change.abs() * margin);
-                        test.add_correct();
-                        last_trade_correct = Some("Correct");
-                    } else {
-                        test.add_cash(-test.cash() * change.abs() * margin);
-                        test.add_incorrect();
-                        last_trade_correct = Some("Incorrect");
-                    }
-                }
-                // Track the entry price
-                enter_price = Some(current_price);
-                if prediction > 0.0 {
-                    println!("Buy {}", ticker);
-                    last_direct_string = Some("Buy");
-                } else if prediction < 0.0 {
-                    println!("Sell {}", ticker);
-                    last_direct_string = Some("Sell");
-                }
-                // Update the last trade direction
-                last_trade_direction = Some(prediction_sign);
+            self.data = data;
+            if enter_price.is_none() || index.is_none() || direction == 0.0 {
+                self.wait(&config, 1).await;
             } else {
-                println!("Hold {}", ticker);
-                last_direct_string = Some("Hold");
+                let ep = enter_price.unwrap();
+                let change = change(ep, self.data.data[index.unwrap()][predict_pos].data.close());
+                let correct = change * direction;
+                if correct > 0.0 {
+                    test.add_cash(test.cash() * change.abs() * margin * 0.01);
+                    test.add_correct();
+                } else if correct < 0.0 {
+                    test.add_cash(-test.cash() * change.abs() * margin * 0.01);
+                    test.add_incorrect();
+                }
+                csv_file.write_record(&[
+                    test.cash().to_string(),
+                    test.get_accuracy().to_string(),
+                    direction.to_string(),
+                    correct.signum().to_string(),
+                    self.data.data[index.unwrap()][predict_pos]
+                        .data
+                        .close()
+                        .to_string(),
+                    ep.to_string(),
+                    last_score.to_string(),
+                ])?;
+                csv_file.flush()?;
+                println!(
+                    "Cash: ${}, Accuracy: {:.2}%, Direction: {}, Correct/Incorrect: {}/{}, Score {:.5}",
+                    format_number(*test.cash()),
+                    test.get_accuracy() * 100.0,
+                    match direction as i32 {
+                        1 => "Long",
+                        -1 => "Short",
+                        _ => "None",
+                    },
+                    test.correct(),
+                    test.incorrect(),
+                    last_score
+                );
             }
-            let latest_change = change(enter_price.unwrap_or(current_price), current_price);
-            csv_file
-                .write_record(&[
-                    &test.cash().to_string(),
-                    &test.get_accuracy().to_string(),
-                    &last_direct_string.unwrap_or_default().to_string(),
-                    &last_trade_correct.unwrap_or_default().to_string(),
-                    &latest_change.to_string(),
-                    &current_price.to_string(),
-                    &enter_price.unwrap_or(current_price).to_string(),
-                ])
-                .unwrap_or_else(|_| return);
-            csv_file.flush().unwrap_or_else(|_| return);
-        }
-    }
-
-    fn get_ticker_pairs(&self, ticker: &str) -> Vec<&TickerPair> {
-        let mut ticker_pairs = Vec::new();
-        for (pair, _) in &self.relationships {
-            if pair.target == ticker {
-                ticker_pairs.push(pair);
-            }
-        }
-        ticker_pairs
-    }
-
-    async fn wait(&self, config: &Config) {
-        loop {
-            let now = Utc::now().timestamp_millis();
-            let millis = (config.get_interval_minutes().unwrap_or_else(|_| 15) * 60 * 1000) as i64;
-            let next_interval = (now / millis) * millis + millis;
-            let wait_time = next_interval - now - 5000;
-            if wait_time > 5000 {
-                tokio::time::sleep(Duration::from_millis(wait_time as u64)).await;
-                break;
+            let (prediction_index, scores) = self.predict(predict_pos);
+            let score = scores.iter().sum::<f64>() / scores.len() as f64;
+            if score.abs() >= min_score {
+                let cash_change = test.cash() * margin * fee;
+                test.add_cash(-cash_change);
+                index = Some(prediction_index);
+                enter_price = Some(self.data.data[prediction_index][predict_pos].data.close());
+                direction = score.signum();
+                if score > 0.0 {
+                    println!(
+                        "Enter Long: for {} at ${:.5}",
+                        self.data.find_ticker(prediction_index),
+                        enter_price.unwrap()
+                    );
+                } else {
+                    println!(
+                        "Enter Short: for {} at ${:.5}",
+                        self.data.find_ticker(prediction_index),
+                        enter_price.unwrap()
+                    );
+                }
+                last_score = score;
+                tokio::time::sleep(Duration::from_secs(45)).await;
+                let mut new_data = HistoricalData::new(tickers);
+                let config = original_config.clone();
+                new_data.load(&config).await;
+                new_data.calculate_technicals();
+                self.data = new_data;
+                self.compute_relationships();
+                self.wait(&config, depth).await;
             } else {
-                tokio::time::sleep(Duration::from_millis(5001)).await;
+                println!("No trade");
+                enter_price = None;
+                index = None;
+                direction = 0.0;
             }
         }
     }
 
-    pub fn optimize_weights(&mut self, config: &Config, iterations: usize) {
-        let ticker = &self.clone().ticker.unwrap();
-        let initial_test = self.test(ticker, config, false);
-        let mut highest_cash = *initial_test.cash();
-        println!("Initial test:");
-        println!("{}", initial_test);
-        let mut best_relationships = self.relationships.clone();
-        let algo = self.clone();
-        let ticker_pairs = algo.get_ticker_pairs(ticker);
-        for i in 0..iterations {
-            for ticker_pair in &ticker_pairs {
-                self.relationships.get_mut(*ticker_pair).unwrap().weight = rand::random::<f64>();
-            }
-            let test = self.test(ticker, config, false);
-            if *test.cash() > highest_cash {
-                highest_cash = *test.cash();
-                best_relationships = self.relationships.clone();
-                println!("New Highest cash! (Iteration: {}):", i);
-                println!("{}", test);
+    async fn wait(&self, config: &Config, periods: usize) {
+        for _ in 0..periods {
+            loop {
+                let now = Utc::now().timestamp_millis();
+                let millis = (config.get_interval_minutes().unwrap() * MINUTES_TO_MILLIS) as i64;
+                let next_interval = (now / millis) * millis + millis;
+                let wait_time = next_interval - now - WAIT_WINDOW;
+                if wait_time > WAIT_WINDOW {
+                    tokio::time::sleep(Duration::from_millis(wait_time as u64)).await;
+                    break;
+                } else {
+                    tokio::time::sleep(Duration::from_millis(WAIT_WINDOW as u64 + 1)).await;
+                }
             }
         }
-        self.relationships = best_relationships;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::historical_data::{CandleData, TechnicalData};
+
+    use super::*;
+    use ta::DataItem;
+    use test::Bencher;
+
+    #[bench]
+    fn bench_predict(b: &mut Bencher) {
+        let mut data = HistoricalData::new(&vec!["BTCUSDT".to_string()]);
+        let mut config = Config::default();
+        data.data.push(vec![Candlestick { data: DataItem::builder().close(1.0).high(1.1).open(0.9).low(0.8).build().unwrap(),
+            technicals: TechnicalData::default(),
+            close_time: 0,
+        }]);
     }
 }

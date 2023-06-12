@@ -3,8 +3,6 @@ name = "krypto"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 binance-rs-async = { git = "https://github.com/Igosuki/binance-rs-async.git", features = ["futures_api"] }
 serde = { version = "1.0.163", features = ["derive"] }

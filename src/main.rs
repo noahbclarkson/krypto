@@ -1,134 +1,117 @@
-use krypto::{
-    algorithm::Algorithm,
-    config::{read_config, read_tickers, Config},
-    historical_data::HistoricalData,
-};
 use std::error::Error;
 
-const DEFAULT_ITERATIONS: usize = 20;
+use krypto::{algorithm::Algorithm, config::*, historical_data::HistoricalData};
+
+const MAX_DEPTH_TEST_END: usize = 12;
+const MAX_DEPTH_TEST_START: usize = 8;
+const MAX_MARGIN_TEST: f64 = 20.0;
+const MAX_MINIMUM_SCORE_TEST: f64 = 0.04;
+const MINIMUM_SCORE_STEP: f64 = 0.0001;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let (mut tickers, mut config) = get_configuration().await?;
-
-    let mut algorithm = create_new_algorithm(&mut tickers, &mut config).await?;
-
-    algorithm
-        .live_test(algorithm.ticker.clone().unwrap().as_str(), &config, &tickers)
-        .await.unwrap_or_else(|e| {
-            eprintln!("Failed to live test the algorithm.");
-            eprintln!("{}", e);
-            std::process::exit(1);
-        });
-
-    Ok(())
-}
-
-async fn create_new_algorithm(mut tickers: &mut Vec<String>, config: &mut Config) -> Result<Algorithm, Box<dyn Error>> {
-    let mut data = load_data(tickers.clone(), &config).await;
-    let mut t = data.get_tickers().clone();
-    tickers = &mut t;
-
+    let (tickers, config) = get_configuration().await?;
+    let mut data = load_data(&tickers, &config).await;
     data.calculate_technicals();
-    println!("Calculated the technicals successfully");
-
     let mut algorithm = Algorithm::new(data);
-    algorithm.calculate_relationships();
-    println!("Calculated the relationships successfully");
-
-    find_highest_ticker(&tickers, &mut algorithm, &config);
-
-    let iterations = get_user_input("How many iterations would you like to perform to optimize the algorithm's weights?", |input| {
-        input.parse::<usize>().map_err(|_| "Please enter a valid number.".into())
-    })?;
-
-    algorithm.optimize_weights(&config, iterations);
-
-    find_highest_margin(&mut algorithm, &config);
-
-    config.set_margin(algorithm.margin.unwrap());
-
-    algorithm.live_test(algorithm.clone().ticker.unwrap().as_str(), &config, &tickers).await?;
-
-    Ok(algorithm)
+    algorithm.compute_relationships();
+    println!("Computed the relationships successfully");
+    let test = algorithm.test(&config);
+    println!("Initial Test Result: ");
+    println!("{}", test);
+    let mut best_result = *test.cash();
+    // best_result = find_best_depth(&mut algorithm, &config, &best_result);
+    // best_result = *algorithm.test(&config).cash();
+    best_result = find_best_minimum_score(&mut algorithm, &config, &best_result);
+    // find_best_margin(&mut algorithm, &config, &best_result);
+    // algorithm.live_test(&config, &tickers).await?;
+    Ok(())
 }
 
 pub async fn get_configuration() -> Result<(Vec<String>, Config), Box<dyn Error>> {
     let (tickers_res, config_res) = tokio::join!(read_tickers(), read_config());
     let tickers = tickers_res.unwrap_or_else(|_| {
         eprintln!("Failed to read tickers, using default values.");
-        Config::get_default_tickers().iter().map(|s| s.to_string()).collect()
+        Config::get_default_tickers()
+            .iter()
+            .map(|s| s.to_string())
+            .collect()
     });
     let config = config_res.unwrap_or_else(|_| {
         eprintln!("Failed to read config, using default values.");
-        Config::get_default_config()
+        Config::default()
     });
     println!("Read the tickers and config successfully");
     Ok((tickers, config))
 }
 
-async fn load_data(tickers: Vec<String>, config: &Config) -> HistoricalData {
-    let mut data = HistoricalData::new(&tickers);
-    data.load_data(tickers, config).await;
+async fn load_data(tickers: &Vec<String>, config: &Config) -> HistoricalData {
+    let mut data = HistoricalData::new(tickers);
+    data.load(config).await;
     println!("Loaded the data successfully");
     data
 }
 
-fn find_highest_ticker(
-    tickers: &[String],
-    algorithm: &mut Algorithm,
-    config: &Config,
-){
-    let mut highest_ticker = "";
-    let mut highest_cash = 0.0;
-
-    for ticker in tickers {
-        let test = algorithm.test(ticker, config, false);
-        println!("Testing {}", ticker);
-        println!("{}", test);
-        if *test.cash() > highest_cash {
-            highest_ticker = ticker;
-            highest_cash = *test.cash();
+#[allow(dead_code)]
+pub fn find_best_depth(algorithm: &mut Algorithm, config: &Config, best_result: &f64) -> f64 {
+    let mut best_depth = 0;
+    let mut best_result = *best_result;
+    for i in MAX_DEPTH_TEST_START..MAX_DEPTH_TEST_END + 1 {
+        algorithm.settings.set_depth(i);
+        algorithm.compute_relationships();
+        let result = algorithm.test(config);
+        if *result.cash() > best_result {
+            println!("New best depth: {}", i);
+            println!("New best result: {}", result);
+            best_result = *result.cash();
+            best_depth = i;
         }
     }
-
-    algorithm.ticker = Some(highest_ticker.to_string());
+    algorithm.settings.set_depth(best_depth);
+    algorithm.compute_relationships();
+    best_result
 }
 
-fn find_highest_margin(
-    algorithm: &mut Algorithm,
-    config: &Config,
-) {
-    let mut highest_margin = 0.0;
-
-    let mut test = algorithm.test(algorithm.ticker.clone().unwrap().as_str(), &config, false);
-
-    for i in 1..=DEFAULT_ITERATIONS {
-        let margin = i as f64;
-        let mut config = config.clone();
-        config.set_margin(margin);
-        let current_test = algorithm.test(algorithm.ticker.clone().unwrap().as_str(), &config, false);
-        if test.cash() < current_test.cash() {
-            highest_margin = margin;
-            test = current_test;
+#[allow(dead_code)]
+pub fn find_best_margin(algorithm: &mut Algorithm, config: &Config, best_result: &f64) -> f64 {
+    let mut best_margin = 0.0;
+    let mut best_result = *best_result;
+    for i in 1..MAX_MARGIN_TEST as usize {
+        algorithm.settings.set_margin(i as f64);
+        let result = algorithm.test(config);
+        if *result.cash() > best_result {
+            println!("New best margin: {}", i);
+            println!("New best result: {}", result);
+            best_result = *result.cash();
+            best_margin = i as f64;
         }
     }
-
-    println!("The highest margin is {}", highest_margin);
-    println!("{}", test);
-
-    algorithm.margin = Some(highest_margin);
+    algorithm.settings.set_margin(best_margin);
+    best_result
 }
 
-fn get_user_input<T, F: FnOnce(&str) -> Result<T, Box<dyn Error>>>(
-    prompt: &str,
-    parse: F,
-) -> Result<T, Box<dyn Error>> {
-    println!("{}", prompt);
-
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input)?;
-    let input = input.trim();
-
-    parse(input)
+#[allow(dead_code)]
+pub fn find_best_minimum_score(
+    algorithm: &mut Algorithm,
+    config: &Config,
+    best_result: &f64,
+) -> f64 {
+    let mut best_minimum_score = 0.0;
+    let mut best_result = *best_result;
+    for i in 1..(MAX_MINIMUM_SCORE_TEST / MINIMUM_SCORE_STEP) as usize {
+        algorithm
+            .settings
+            .set_min_score(i as f64 * MINIMUM_SCORE_STEP);
+        let result = algorithm.test(config);
+        println!("Testing minimum score: {:.5}", i as f64 * MINIMUM_SCORE_STEP);
+        println!("{}", result);
+        if *result.cash() > best_result {
+            println!("New best minimum score: {}", i as f64 * MINIMUM_SCORE_STEP);
+            println!("New best result: {}", result);
+            best_result = *result.cash();
+            best_minimum_score = i as f64 * MINIMUM_SCORE_STEP;
+        }
+    }
+    algorithm.settings.set_min_score(best_minimum_score);
+    best_result
 }

@@ -1,5 +1,4 @@
-// Importing necessary dependencies
-use crate::historical_data::Candlestick;
+use ta::{DataItem, Close, Open, High, Low};
 
 // Calculates and returns the percentage change between two values.
 // start: Initial value
@@ -15,12 +14,12 @@ pub fn change(start: f64, end: f64) -> f64 {
 // The CR ratio is the ratio of the difference of the top wick and bottom wick to the body of the candlestick.
 // The tanh function is used to normalize the output.
 // candle: A reference to the Candlestick struct
-pub fn cr_ratio(candle: &Candlestick) -> f64 {
-    let max_body = candle.close.max(candle.open);
-    let min_body = candle.close.min(candle.open);
+pub fn cr_ratio(candle: &DataItem) -> f64 {
+    let max_body = candle.close().max(candle.open());
+    let min_body = candle.close().min(candle.open());
     let body = max_body - min_body;
-    let top_wick = candle.high - max_body;
-    let bottom_wick = min_body - candle.low;
+    let top_wick = candle.high() - max_body;
+    let bottom_wick = min_body - candle.low();
     let wick_sum = top_wick - bottom_wick;
 
     if body.abs() < f64::EPSILON {

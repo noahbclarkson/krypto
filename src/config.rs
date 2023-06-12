@@ -16,9 +16,6 @@ pub struct Config {
     interval: String,
 
     #[getset(get = "pub", set = "pub")]
-    margin: f64,
-
-    #[getset(get = "pub", set = "pub")]
     fee: f64,
 }
 
@@ -71,11 +68,13 @@ impl Config {
         ]
     }
 
-    pub fn get_default_config() -> Config {
+}
+
+impl Default for Config {
+    fn default() -> Config {
         Config {
             periods: 7000,
             interval: "15m".to_string(),
-            margin: 2.0,
             fee: 0.00054,
         }
     }
@@ -110,13 +109,12 @@ pub async fn read_tickers() -> io::Result<Vec<String>> {
 // If there's an error opening the file, it returns a Config struct with default values.
 pub async fn read_config() -> Result<Config, Box<dyn std::error::Error>> {
     let path = Path::new("config.yml");
-    let default_config = Config::get_default_config();
+    let default_config = Config::default();
 
     if !path.exists() {
         let mut file = File::create(&path)?;
         writeln!(file, "periods: {}", default_config.periods)?;
         writeln!(file, "interval: {}", default_config.interval)?;
-        writeln!(file, "margin: {}", default_config.margin)?;
         writeln!(file, "fee: {}", default_config.fee)?;
     }
 

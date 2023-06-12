@@ -5,8 +5,8 @@ use getset::Getters;
 use crate::math::format_number;
 
 #[derive(Debug, Clone, Getters)]
+#[getset(get = "pub")]
 pub struct TestData {
-    #[getset(get = "pub")]
     cash: f64,
     correct: usize,
     incorrect: usize,
