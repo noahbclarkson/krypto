@@ -49,33 +49,40 @@ impl Config {
         vec![
             "BTCUSDT",
             "ETHUSDT",
+            "XRPUSDT",
             "BNBUSDT",
-            "ADABUSD",
-            "XRPBUSD",
-            "DOGEBUSD",
-            "SOLBUSD",
-            "FTMBUSD",
-            "DODOBUSD",
-            "GALABUSD",
-            "TRXBUSD",
-            "1000LUNCBUSD",
-            "LTCBUSD",
-            "MATICBUSD",
-            "1000SHIBBUSD",
-            "LDOBUSD",
-            "APTBUSD",
-            "AGIXBUSD",
+            "LTCUSDT",
+            "DOGEUSDT",
+            "SOLUSDT",
+            "MATICUSDT",
+            "ADAUSDT",
+            "1000SHIBUSDT",
+            "AVAXUSDT",
+            "EOSUSDT",
+            "LINKUSDT",
+            "LDOUSDT",
+            "APEUSDT",
+            "DOTUSDT",
+            "APTUSDT",
+            "MTLUSDT",
+            "BCHUSDT",
+            "ATOMUSDT",
+            "TRXUSDT",
+            "ETCUSDT",
+            "FILUSDT",
+            "LINAUSDT",
+            "FTMUSDT",
+            "SANDUSDT",
         ]
     }
-
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
-            periods: 7000,
+            periods: 10000,
             interval: "15m".to_string(),
-            fee: 0.00054,
+            fee: 0.00072,
         }
     }
 }
