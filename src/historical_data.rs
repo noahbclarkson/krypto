@@ -14,7 +14,7 @@ use crate::{
     math::{change, cr_ratio},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Candlestick {
     pub data: DataItem,
     pub technicals: TechnicalData,
@@ -59,7 +59,7 @@ pub struct CandleData {
     pub volume: f64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TechnicalData {
     data: [f64; 7],
 }
