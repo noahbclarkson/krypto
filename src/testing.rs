@@ -1,12 +1,13 @@
 use std::fmt::{Display, Formatter};
 
-use getset::Getters;
+use getset::{Getters, Setters};
 
 use crate::math::format_number;
 
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone, Getters, Setters)]
 #[getset(get = "pub")]
 pub struct TestData {
+    #[getset(set = "pub")]
     cash: f64,
     correct: usize,
     incorrect: usize,

@@ -7,16 +7,15 @@ use std::path::Path;
 
 // This struct is used to store configuration data from the config.yml file.
 #[derive(Debug, Deserialize, Clone, Getters, Setters)]
+#[getset(get = "pub", set = "pub")]
 pub struct Config {
-    // Getters and setters are auto-generated using the getset crate.
-    #[getset(get = "pub", set = "pub")]
     periods: usize,
-
-    #[getset(get = "pub", set = "pub")]
     interval: String,
-
-    #[getset(get = "pub", set = "pub")]
     fee: f64,
+    #[serde(rename = "api-key")]
+    api_key: Option<String>,
+    #[serde(rename = "secret-key")]
+    secret_key: Option<String>,
 }
 
 impl Config {
@@ -83,6 +82,8 @@ impl Default for Config {
             periods: 10000,
             interval: "15m".to_string(),
             fee: 0.00072,
+            api_key: None,
+            secret_key: None,
         }
     }
 }

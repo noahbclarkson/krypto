@@ -1,12 +1,13 @@
-use std::error::Error;
+use std::{error::Error, fs::File};
 
+use csv::WriterBuilder;
 use krypto::{algorithm::Algorithm, config::*, historical_data::HistoricalData};
 
-const MAX_DEPTH_TEST_END: usize = 12;
-const MAX_DEPTH_TEST_START: usize = 8;
-const MAX_MARGIN_TEST: f64 = 20.0;
-const MAX_MINIMUM_SCORE_TEST: f64 = 0.04;
-const MINIMUM_SCORE_STEP: f64 = 0.0001;
+const MAX_DEPTH_TEST_END: usize = 25;
+const MAX_DEPTH_TEST_START: usize = 2;
+const MAX_MARGIN_TEST: f64 = 3.0;
+const MAX_MINIMUM_SCORE_TEST: f64 = 0.1;
+const MINIMUM_SCORE_STEP: f64 = 0.0005;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -19,12 +20,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let test = algorithm.test(&config);
     println!("Initial Test Result: ");
     println!("{}", test);
-    let mut best_result = *test.cash();
-    // best_result = find_best_depth(&mut algorithm, &config, &best_result);
-    // best_result = *algorithm.test(&config).cash();
-    best_result = find_best_minimum_score(&mut algorithm, &config, &best_result);
-    // find_best_margin(&mut algorithm, &config, &best_result);
-    // algorithm.live_test(&config, &tickers).await?;
+    let result = find_best_parameters(&mut algorithm, &config, &0.0);
+    match result {
+        Ok(result) => println!("Best result: {}", result),
+        Err(e) => eprintln!("Failed to find best parameters: {}", e),
+    }
     Ok(())
 }
 
@@ -53,65 +53,57 @@ async fn load_data(tickers: &Vec<String>, config: &Config) -> HistoricalData {
 }
 
 #[allow(dead_code)]
-pub fn find_best_depth(algorithm: &mut Algorithm, config: &Config, best_result: &f64) -> f64 {
-    let mut best_depth = 0;
-    let mut best_result = *best_result;
-    for i in MAX_DEPTH_TEST_START..MAX_DEPTH_TEST_END + 1 {
-        algorithm.settings.set_depth(i);
-        algorithm.compute_relationships();
-        let result = algorithm.test(config);
-        if *result.cash() > best_result {
-            println!("New best depth: {}", i);
-            println!("New best result: {}", result);
-            best_result = *result.cash();
-            best_depth = i;
-        }
-    }
-    algorithm.settings.set_depth(best_depth);
-    algorithm.compute_relationships();
-    best_result
-}
-
 #[allow(dead_code)]
-pub fn find_best_margin(algorithm: &mut Algorithm, config: &Config, best_result: &f64) -> f64 {
-    let mut best_margin = 0.0;
-    let mut best_result = *best_result;
-    for i in 1..MAX_MARGIN_TEST as usize {
-        algorithm.settings.set_margin(i as f64);
-        let result = algorithm.test(config);
-        if *result.cash() > best_result {
-            println!("New best margin: {}", i);
-            println!("New best result: {}", result);
-            best_result = *result.cash();
-            best_margin = i as f64;
-        }
-    }
-    algorithm.settings.set_margin(best_margin);
-    best_result
-}
-
-#[allow(dead_code)]
-pub fn find_best_minimum_score(
+pub fn find_best_parameters(
     algorithm: &mut Algorithm,
     config: &Config,
     best_result: &f64,
-) -> f64 {
+) -> std::io::Result<f64> {
+    let mut best_depth = 0;
+    let mut best_margin = 0.0;
     let mut best_minimum_score = 0.0;
     let mut best_result = *best_result;
-    for i in 1..(MAX_MINIMUM_SCORE_TEST / MINIMUM_SCORE_STEP) as usize {
-        algorithm
-            .settings
-            .set_min_score(i as f64 * MINIMUM_SCORE_STEP);
-        let result = algorithm.test(config);
-        println!("Testing minimum score: {:.5}", i as f64 * MINIMUM_SCORE_STEP);
-        println!("{}", result);
-        if *result.cash() > best_result {
-            println!("New best minimum score: {}", i as f64 * MINIMUM_SCORE_STEP);
-            println!("New best result: {}", result);
-            best_result = *result.cash();
-            best_minimum_score = i as f64 * MINIMUM_SCORE_STEP;
+    let mut writer = WriterBuilder::new()
+        .has_headers(false)
+        .from_writer(File::create("results.csv")?);
+
+    for depth in MAX_DEPTH_TEST_START..=MAX_DEPTH_TEST_END {
+        let mut header = vec![format!("Depth: {}", depth)];
+        for score in 1..=(MAX_MINIMUM_SCORE_TEST / MINIMUM_SCORE_STEP) as usize {
+            header.push(format!("{}", score as f64 * MINIMUM_SCORE_STEP));
+        }
+        writer.write_record(&header)?;
+        algorithm.settings.set_depth(depth);
+        algorithm.compute_relationships();
+
+        for margin in 3..=MAX_MARGIN_TEST as usize {
+            let mut row = vec![format!("{}", margin)];
+            for score in 1..=(MAX_MINIMUM_SCORE_TEST / MINIMUM_SCORE_STEP) as usize {
+                algorithm.settings.set_margin(margin as f64);
+                algorithm
+                    .settings
+                    .set_min_score(score as f64 * MINIMUM_SCORE_STEP);
+
+                let result = algorithm.test(config);
+                if *result.cash() > best_result {
+                    best_result = *result.cash();
+                    best_depth = depth;
+                    best_margin = margin as f64;
+                    best_minimum_score = score as f64 * MINIMUM_SCORE_STEP;
+                    println!(
+                        "New best result: {}, depth: {}, margin: {}, minimum score: {}",
+                        best_result, best_depth, best_margin, best_minimum_score
+                    );
+                }
+                row.push(format!("{}", *result.cash()));
+            }
+            writer.write_record(&row)?;
+            writer.flush()?;
         }
     }
+    algorithm.settings.set_depth(best_depth);
+    algorithm.settings.set_margin(best_margin);
     algorithm.settings.set_min_score(best_minimum_score);
-    best_result
+    writer.flush()?;
+    Ok(best_result)
 }

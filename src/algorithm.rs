@@ -1,3 +1,4 @@
+use core::f64;
 use std::{error::Error, time::Duration};
 
 use chrono::Utc;
@@ -8,14 +9,16 @@ use ta::Close;
 use crate::{
     config::Config,
     historical_data::{Candlestick, HistoricalData, TechnicalType},
-    math::{change, format_number},
+    live_data::LiveData,
+    math::change,
     testing::TestData,
 };
 
-const DEFAULT_MARGIN: f64 = 10.0;
-const DEFAULT_DEPTH: usize = 15;
-const DEFAULT_MIN_SCORE: f64 = 0.007;
+const DEFAULT_MARGIN: f64 = 3.0;
+const DEFAULT_DEPTH: usize = 13;
+const DEFAULT_MIN_SCORE: f64 = 0.0275;
 const STARTING_CASH: f64 = 1000.0;
+const TRADE_SIZE: f64 = 0.1;
 
 const WAIT_WINDOW: i64 = 5000;
 const MINUTES_TO_MILLIS: usize = 60 * 1000;
@@ -103,8 +106,8 @@ impl Algorithm {
             .map(|v| v.iter().sum::<f64>() / v.len() as f64)
             .collect::<Vec<f64>>();
         let mut relationships = Vec::new();
-        for r_type in TechnicalType::iter() {
-            for d in 1..depth + 1 {
+        for d in 1..depth + 1 {
+            for r_type in TechnicalType::iter() {
                 let correlation = correlations.remove(0);
                 relationships.push(Relationship {
                     correlation,
@@ -119,27 +122,24 @@ impl Algorithm {
     }
 
     #[inline]
-    pub fn predict(&self, current_position: usize) -> (usize, Vec<f64>) {
-        let mut scores = vec![vec![0.0; self.settings.depth]; self.data.indexes.len()];
+    pub fn predict(&self, current_position: usize) -> (usize, f64) {
+        let mut scores = vec![0.0; self.data.indexes.len()];
         for relationship in &self.relationships {
             for d in 0..relationship.depth {
                 let predict = &self.data.data[relationship.predict_index][current_position - d];
                 let tech = predict.get(relationship.r_type);
-                scores[relationship.target_index][relationship.depth - d - 1] +=
-                    tech * relationship.correlation;
+                scores[relationship.target_index] += tech * relationship.correlation;
             }
         }
-        // Return the array and index that has the highest absolute average
-        let mut best = 0;
-        let mut best_score = 0.0;
+        let mut max = 0.0;
+        let mut max_index = 0;
         for (i, score) in scores.iter().enumerate() {
-            let avg = score.iter().sum::<f64>() / score.len() as f64;
-            if avg.abs() > best_score {
-                best = i;
-                best_score = avg.abs();
+            if *score > max {
+                max = *score;
+                max_index = i;
             }
         }
-        (best, scores[best].clone())
+        (max_index, max)
     }
 
     pub fn test(&self, config: &Config) -> TestData {
@@ -148,32 +148,32 @@ impl Algorithm {
         let depth = self.settings.depth;
         let threshold = data_len - depth - 2;
         let margin = self.settings.margin;
-        let fee = config.fee();
+        let fee = config.fee() * margin;
         let min_score = self.settings.min_score;
 
         let mut i = depth;
-        while i < threshold {
-            let (prediction_index, scores) = self.predict(i);
-            let score = scores.iter().sum::<f64>() / scores.len() as f64;
-            if score.abs() >= min_score {
-                let current_price = self.data.data[prediction_index][i + 1].data.close();
-                let exit_price = self.data.data[prediction_index][i + depth + 1].data.close();
+        while i < threshold && test.cash() > &0.0 {
+            let (index, score) = self.predict(i);
+            if score > min_score {
+                let current_price = self.data.get_close(index, i + 1);
+                let exit_price = self.data.get_close(index, i + depth + 1);
                 let change = change(current_price, exit_price);
-                let cash_change = test.cash() * margin * fee;
+                let fee_change = test.cash() * fee;
 
-                test.add_cash(-cash_change);
-                let correct = change * score;
-                if correct > 0.0 {
-                    test.add_cash(test.cash() * change.abs() * margin * 0.01);
-                    test.add_correct();
-                } else if correct < 0.0 {
-                    test.add_cash(-test.cash() * change.abs() * margin * 0.01);
-                    test.add_incorrect();
+                test.add_cash(-fee_change);
+                test.add_cash(test.cash() * change * margin * 0.01);
+                match change {
+                    x if x > 0.0 => test.add_correct(),
+                    x if x < 0.0 => test.add_incorrect(),
+                    _ => (),
                 }
                 i += depth;
             } else {
                 i += 1;
             }
+        }
+        if test.cash() < &0.0 {
+            test.set_cash(0.0);
         }
         test
     }
@@ -183,110 +183,55 @@ impl Algorithm {
         config: &Config,
         tickers: &Vec<String>,
     ) -> Result<(), Box<dyn Error>> {
-        let mut test = TestData::new(1000.0);
-        let mut csv_file = csv::Writer::from_path("live_test.csv")?;
-        csv_file.write_record(&[
-            "Cash ($)",
-            "Accuracy",
-            "Trade Direction",
-            "Correct/Incorrect",
-            "Current Price",
-            "Enter Price",
-            "Score",
-        ])?;
-        let original_config = config.clone();
+        let mut live_data = LiveData::new(STARTING_CASH, config, true);
         let depth = self.settings.depth;
         let margin = self.settings.margin;
         let fee = config.fee();
         let min_score = self.settings.min_score;
         let predict_pos = 15 + depth - 1;
-        let mut enter_price: Option<f64> = None;
-        let mut index: Option<usize> = None;
-        let mut direction = 0.0;
-        let mut last_score = 0.0;
 
         loop {
-            let mut data = HistoricalData::new(tickers);
-            let mut config = config.clone();
-            config.set_periods(15 + self.settings.depth);
-            data.load(&config).await;
-            data.calculate_technicals();
-            self.data = data;
-            if enter_price.is_none() || index.is_none() || direction == 0.0 {
+            self.data =
+                load_new_data(config.clone(), 15 + self.settings.depth, tickers.clone()).await;
+            if live_data.enter_price.is_none() || live_data.index.is_none() {
                 self.wait(&config, 1).await;
             } else {
-                let ep = enter_price.unwrap();
-                let change = change(ep, self.data.data[index.unwrap()][predict_pos].data.close());
-                let correct = change * direction;
-                if correct > 0.0 {
-                    test.add_cash(test.cash() * change.abs() * margin * 0.01);
-                    test.add_correct();
-                } else if correct < 0.0 {
-                    test.add_cash(-test.cash() * change.abs() * margin * 0.01);
-                    test.add_incorrect();
+                let ep = live_data.enter_price.unwrap();
+                let current_price = self.data.get_close(live_data.index.unwrap(), predict_pos);
+                let change = change(ep, current_price);
+                live_data
+                    .test
+                    .add_cash(live_data.test.cash() * change * margin * 0.01);
+                match change {
+                    x if x > 0.0 => live_data.test.add_correct(),
+                    x if x < 0.0 => live_data.test.add_incorrect(),
+                    _ => (),
                 }
-                csv_file.write_record(&[
-                    test.cash().to_string(),
-                    test.get_accuracy().to_string(),
-                    direction.to_string(),
-                    correct.signum().to_string(),
-                    self.data.data[index.unwrap()][predict_pos]
-                        .data
-                        .close()
-                        .to_string(),
-                    ep.to_string(),
-                    last_score.to_string(),
-                ])?;
-                csv_file.flush()?;
-                println!(
-                    "Cash: ${}, Accuracy: {:.2}%, Direction: {}, Correct/Incorrect: {}/{}, Score {:.5}",
-                    format_number(*test.cash()),
-                    test.get_accuracy() * 100.0,
-                    match direction as i32 {
-                        1 => "Long",
-                        -1 => "Short",
-                        _ => "None",
-                    },
-                    test.correct(),
-                    test.incorrect(),
-                    last_score
-                );
+                live_data.write(current_price, change > 0.0);
+                live_data.print();
             }
-            let (prediction_index, scores) = self.predict(predict_pos);
-            let score = scores.iter().sum::<f64>() / scores.len() as f64;
-            if score.abs() >= min_score {
-                let cash_change = test.cash() * margin * fee;
-                test.add_cash(-cash_change);
-                index = Some(prediction_index);
-                enter_price = Some(self.data.data[prediction_index][predict_pos].data.close());
-                direction = score.signum();
-                if score > 0.0 {
-                    println!(
-                        "Enter Long: for {} at ${:.5}",
-                        self.data.find_ticker(prediction_index),
-                        enter_price.unwrap()
-                    );
-                } else {
-                    println!(
-                        "Enter Short: for {} at ${:.5}",
-                        self.data.find_ticker(prediction_index),
-                        enter_price.unwrap()
-                    );
-                }
-                last_score = score;
+            let (prediction_index, score) = self.predict(predict_pos);
+            if score > min_score {
+                let cash_change = live_data.test.cash() * margin * fee;
+                live_data.test.add_cash(-cash_change);
+                live_data.index = Some(prediction_index);
+                live_data.enter_price =
+                    Some(self.data.data[prediction_index][predict_pos].data.close());
+                live_data.print_new_trade(score, self.data.find_ticker(prediction_index));
+                live_data.last_score = score;
                 tokio::time::sleep(Duration::from_secs(45)).await;
-                let mut new_data = HistoricalData::new(tickers);
-                let config = original_config.clone();
-                new_data.load(&config).await;
-                new_data.calculate_technicals();
-                self.data = new_data;
+                self.data = load_new_data(
+                    live_data.original_config.clone(),
+                    *config.periods(),
+                    tickers.clone(),
+                )
+                .await;
                 self.compute_relationships();
                 self.wait(&config, depth).await;
             } else {
                 println!("No trade");
-                enter_price = None;
-                index = None;
-                direction = 0.0;
+                live_data.enter_price = None;
+                live_data.index = None;
             }
         }
     }
@@ -309,22 +254,77 @@ impl Algorithm {
     }
 }
 
+fn round_to_tick_size(quantity: f64, tick_size: f64) -> f64 {
+    // Ensure that price % tick_size == 0
+    let mut quantity = quantity;
+    while quantity % tick_size != 0.0 {
+        let remainder = quantity % tick_size;
+        if remainder != 0.0 {
+            quantity -= remainder;
+            if remainder > tick_size / 2.0 {
+                quantity += tick_size;
+            }
+        }
+    }
+    quantity
+}
+
+async fn load_new_data(mut config: Config, periods: usize, tickers: Vec<String>) -> HistoricalData {
+    let mut data = HistoricalData::new(&tickers);
+    config.set_periods(periods);
+    data.load(&config).await;
+    data.calculate_technicals();
+    data
+}
+
 #[cfg(test)]
 mod tests {
 
-    use crate::historical_data::{CandleData, TechnicalData};
+    use crate::historical_data::TechnicalData;
 
     use super::*;
+    use rand::Rng;
     use ta::DataItem;
     use test::Bencher;
 
     #[bench]
     fn bench_predict(b: &mut Bencher) {
+        let algorithm = get_algorithm();
+        b.iter(|| {
+            algorithm.predict(algorithm.settings.depth + 1);
+        });
+    }
+
+    #[bench]
+    fn bench_test(b: &mut Bencher) {
+        let algorithm = get_algorithm();
+        let config = Config::default();
+        b.iter(|| {
+            algorithm.test(&config);
+        });
+    }
+
+    fn get_algorithm() -> Algorithm {
         let mut data = HistoricalData::new(&vec!["BTCUSDT".to_string()]);
-        let mut config = Config::default();
-        data.data.push(vec![Candlestick { data: DataItem::builder().close(1.0).high(1.1).open(0.9).low(0.8).build().unwrap(),
-            technicals: TechnicalData::default(),
+        let mut rand = rand::thread_rng();
+        let candle_data = DataItem::builder()
+            .open(rand.gen_range(1.0..2.0))
+            .high(rand.gen_range(2.0..3.0))
+            .low(rand.gen_range(0.0..1.0))
+            .close(rand.gen_range(1.0..2.0))
+            .volume(rand.gen_range(0.0..10000.0))
+            .build()
+            .unwrap();
+        let candle = Candlestick {
+            data: candle_data,
+            technicals: TechnicalData::new(),
             close_time: 0,
-        }]);
+        };
+        let candles = vec![candle; 1000];
+        data.data = vec![candles; 1];
+        data.calculate_technicals();
+        let mut algorithm = Algorithm::new(data);
+        algorithm.compute_relationships();
+        algorithm
     }
 }

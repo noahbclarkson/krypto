@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use binance::{
     api::Binance,
-    futures::market::FuturesMarket,
-    rest_model::{KlineSummaries, KlineSummary},
+    rest_model::{KlineSummaries, KlineSummary}, market::Market,
 };
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -216,6 +215,10 @@ impl HistoricalData {
             }
         }
     }
+
+    pub fn get_close(&self, ticker_index: usize, position_index: usize) -> f64 {
+        self.data[ticker_index][position_index].data.close()
+    }
 }
 
 async fn load_ticker(
@@ -224,7 +227,7 @@ async fn load_ticker(
     current_time: i64,
     config: &Config,
 ) -> (String, Vec<Candlestick>) {
-    let market: FuturesMarket = Binance::new(None, None);
+    let market: Market = Binance::new(None, None);
     let mut candlesticks = Vec::new();
     let mut start_time = start_time;
     while start_time < current_time {
