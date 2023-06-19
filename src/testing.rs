@@ -11,6 +11,7 @@ pub struct TestData {
     cash: f64,
     correct: usize,
     incorrect: usize,
+    cash_history: Vec<f64>,
 }
 
 impl TestData {
@@ -19,6 +20,7 @@ impl TestData {
             cash,
             correct: 0,
             incorrect: 0,
+            cash_history: vec![cash],
         }
     }
 
@@ -36,6 +38,7 @@ impl TestData {
 
     pub fn add_cash(&mut self, cash: f64) {
         self.cash += cash;
+        self.cash_history.push(self.cash);
     }
 }
 

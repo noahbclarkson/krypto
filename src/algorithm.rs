@@ -4,7 +4,6 @@ use std::{error::Error, time::Duration};
 use chrono::Utc;
 use getset::{Getters, Setters};
 use strum::IntoEnumIterator;
-use ta::Close;
 
 use crate::{
     config::Config,
@@ -15,8 +14,8 @@ use crate::{
 };
 
 const DEFAULT_MARGIN: f64 = 3.0;
-const DEFAULT_DEPTH: usize = 13;
-const DEFAULT_MIN_SCORE: f64 = 0.0275;
+const DEFAULT_DEPTH: usize = 2;
+const DEFAULT_MIN_SCORE: f64 = 0.0;
 const STARTING_CASH: f64 = 1000.0;
 const TRADE_SIZE: f64 = 0.1;
 
@@ -155,8 +154,8 @@ impl Algorithm {
         while i < threshold && test.cash() > &0.0 {
             let (index, score) = self.predict(i);
             if score > min_score {
-                let current_price = self.data.get_close(index, i + 1);
-                let exit_price = self.data.get_close(index, i + depth + 1);
+                let current_price = self.data.data[index][i+1].data.close;
+                let exit_price = self.data.data[index][i+depth+1].data.close;
                 let change = change(current_price, exit_price);
                 let fee_change = test.cash() * fee;
 
@@ -197,7 +196,7 @@ impl Algorithm {
                 self.wait(&config, 1).await;
             } else {
                 let ep = live_data.enter_price.unwrap();
-                let current_price = self.data.get_close(live_data.index.unwrap(), predict_pos);
+                let current_price = self.data.data[live_data.index.unwrap()][predict_pos].data.close;
                 let change = change(ep, current_price);
                 live_data
                     .test
@@ -216,17 +215,17 @@ impl Algorithm {
                 live_data.test.add_cash(-cash_change);
                 live_data.index = Some(prediction_index);
                 live_data.enter_price =
-                    Some(self.data.data[prediction_index][predict_pos].data.close());
-                live_data.print_new_trade(score, self.data.find_ticker(prediction_index));
+                    Some(*self.data.data[prediction_index][predict_pos].data.close());
+                live_data.print_new_trade(score, self.data.find_ticker(prediction_index).unwrap());
                 live_data.last_score = score;
-                tokio::time::sleep(Duration::from_secs(45)).await;
-                self.data = load_new_data(
-                    live_data.original_config.clone(),
-                    *config.periods(),
-                    tickers.clone(),
-                )
-                .await;
-                self.compute_relationships();
+                // tokio::time::sleep(Duration::from_secs(45)).await;
+                // self.data = load_new_data(
+                //     live_data.original_config.clone(),
+                //     *config.periods(),
+                //     tickers.clone(),
+                // )
+                // .await;
+                // self.compute_relationships();
                 self.wait(&config, depth).await;
             } else {
                 println!("No trade");
@@ -254,21 +253,6 @@ impl Algorithm {
     }
 }
 
-fn round_to_tick_size(quantity: f64, tick_size: f64) -> f64 {
-    // Ensure that price % tick_size == 0
-    let mut quantity = quantity;
-    while quantity % tick_size != 0.0 {
-        let remainder = quantity % tick_size;
-        if remainder != 0.0 {
-            quantity -= remainder;
-            if remainder > tick_size / 2.0 {
-                quantity += tick_size;
-            }
-        }
-    }
-    quantity
-}
-
 async fn load_new_data(mut config: Config, periods: usize, tickers: Vec<String>) -> HistoricalData {
     let mut data = HistoricalData::new(&tickers);
     config.set_periods(periods);
@@ -280,11 +264,10 @@ async fn load_new_data(mut config: Config, periods: usize, tickers: Vec<String>)
 #[cfg(test)]
 mod tests {
 
-    use crate::historical_data::TechnicalData;
+    use crate::historical_data::{TechnicalData, CandleData};
 
     use super::*;
     use rand::Rng;
-    use ta::DataItem;
     use test::Bencher;
 
     #[bench]
@@ -307,18 +290,17 @@ mod tests {
     fn get_algorithm() -> Algorithm {
         let mut data = HistoricalData::new(&vec!["BTCUSDT".to_string()]);
         let mut rand = rand::thread_rng();
-        let candle_data = DataItem::builder()
-            .open(rand.gen_range(1.0..2.0))
-            .high(rand.gen_range(2.0..3.0))
-            .low(rand.gen_range(0.0..1.0))
-            .close(rand.gen_range(1.0..2.0))
-            .volume(rand.gen_range(0.0..10000.0))
-            .build()
-            .unwrap();
+        let candle_data = CandleData {
+            open: rand.gen_range(1.0..2.0),
+            high: rand.gen_range(2.0..3.0),
+            low: rand.gen_range(0.0..1.0),
+            close: rand.gen_range(1.0..2.0),
+            volume: rand.gen_range(0.0..10000.0),
+            close_time: 0,
+        };
         let candle = Candlestick {
             data: candle_data,
             technicals: TechnicalData::new(),
-            close_time: 0,
         };
         let candles = vec![candle; 1000];
         data.data = vec![candles; 1];
