@@ -1,317 +1,251 @@
-use std::{collections::HashMap, fs::File, io::{Write, Read}};
-
 use binance::{
     api::Binance,
     market::Market,
     rest_model::{KlineSummaries, KlineSummary},
 };
 use getset::Getters;
-use serde::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
-use ta::{
-    indicators::{CommodityChannelIndex, RelativeStrengthIndex, SlowStochastic, StandardDeviation},
-    DataItem, Next,
+use std::{
+    collections::BTreeSet,
+    error::Error,
+    fs::{self, DirEntry},
+    path::Path,
 };
+use strum::IntoEnumIterator;
 
 use crate::{
+    candlestick::{Candlestick, TechnicalType},
     config::Config,
-    math::{change, cr_ratio},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Candlestick {
-    pub data: CandleData,
-    pub technicals: TechnicalData,
-}
+const MINUTES_TO_MILLIS: i64 = 60_000;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TechnicalData {
-    data: [f64; 7],
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
-#[getset(get = "pub")]
-pub struct CandleData {
-    pub open: f64,
-    pub close: f64,
-    pub high: f64,
-    pub low: f64,
-    pub volume: f64,
-    pub close_time: i64,
-}
-
-#[derive(Debug, Clone, Copy, EnumIter, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum TechnicalType {
-    PercentageChange,
-    CandlestickRatio,
-    StochasticOscillator,
-    RelativeStrengthIndex,
-    CommodityChannelIndex,
-    VolumeChange,
-    StandardDeviation,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Getters, PartialEq)]
 pub struct HistoricalData {
-    pub data: Vec<Vec<Candlestick>>,
-    pub indexes: HashMap<String, usize>,
-}
-
-impl Candlestick {
-    pub fn from_summary(summary: KlineSummary) -> Candlestick {
-        Candlestick {
-            data: CandleData {
-                open: summary.open,
-                close: summary.close,
-                high: summary.high,
-                low: summary.low,
-                volume: summary.volume,
-                close_time: summary.close_time,
-            },
-            technicals: TechnicalData::new(),
-        }
-    }
-
-    pub fn get(&self, technical_type: TechnicalType) -> f64 {
-        self.technicals.data[technical_type as usize]
-    }
-
-    pub fn set(&mut self, technical_type: TechnicalType, value: f64) {
-        self.technicals.data[technical_type as usize] = value;
-    }
-
-    pub fn get_all(&self) -> &[f64; 7] {
-        &self.technicals.data
-    }
-}
-
-impl TechnicalData {
-    pub fn new() -> Self {
-        Self { data: [0.0; 7] }
-    }
-}
-
-impl TechnicalType {
-    pub fn get_all() -> Vec<TechnicalType> {
-        TechnicalType::iter().collect()
-    }
+    #[getset(get = "pub")]
+    candles: Vec<Vec<Candlestick>>,
+    index_map: Vec<String>,
 }
 
 impl HistoricalData {
-    pub fn new(symbols: &Vec<String>) -> HistoricalData {
+    pub fn new(symbols: &Vec<String>) -> Self {
         let mut data = Vec::new();
-        let mut indexes = HashMap::new();
-        for (i, symbol) in symbols.iter().enumerate() {
-            indexes.insert(symbol.clone(), i);
+        let mut index_map = Vec::new();
+        for symbol in symbols {
             data.push(Vec::new());
+            index_map.push(symbol.clone());
         }
-        HistoricalData { data, indexes }
-    }
-
-    pub fn find_ticker(&self, index: usize) -> Option<&str> {
-        let result = self.indexes.iter().find(|(_, i)| **i == index);
-        match result {
-            Some((ticker, _)) => Some(ticker.as_str()),
-            None => None,
+        Self {
+            candles: data,
+            index_map,
         }
     }
 
-    pub fn find_index(&self, ticker: &str) -> Option<usize> {
-        self.indexes.get(ticker).copied()
+    pub fn find_ticker_index(&self, ticker: &str) -> Option<usize> {
+        for (index, symbol) in self.index_map.iter().enumerate() {
+            if symbol == ticker {
+                return Some(index);
+            }
+        }
+        None
     }
 
-    pub fn get(&self, ticker: &str) -> Option<&Vec<Candlestick>> {
-        let index = self.find_index(ticker);
-        match index {
-            Some(i) => Some(&self.data[i]),
-            None => None,
+    pub fn find_technical_index(&self, technical: &TechnicalType) -> Option<usize> {
+        for (index, technical_type) in TechnicalType::iter().enumerate() {
+            if &technical_type == technical {
+                return Some(index);
+            }
+        }
+        None
+    }
+
+    pub fn get_technical_unchecked(
+        &self,
+        ticker_index: usize,
+        position_index: usize,
+        technical_index: usize,
+    ) -> &f64 {
+        &self.candles[ticker_index][position_index].technicals()[technical_index]
+    }
+
+    pub fn get_technical(
+        &self,
+        ticker_index: usize,
+        position_index: usize,
+        technical_index: usize,
+    ) -> Option<&f64> {
+        if ticker_index >= self.candles.len() {
+            return None;
+        }
+        if position_index >= self.candles[ticker_index].len() {
+            return None;
+        }
+        if technical_index
+            >= self.candles[ticker_index][position_index]
+                .technicals()
+                .len()
+        {
+            return None;
+        }
+        Some(&self.candles[ticker_index][position_index].technicals()[technical_index])
+    }
+
+    pub fn get_candle_unchecked(&self, ticker_index: usize, position_index: usize) -> &Candlestick {
+        &self.candles[ticker_index][position_index]
+    }
+
+    pub fn get_candle(&self, ticker_index: usize, position_index: usize) -> Option<&Candlestick> {
+        if ticker_index >= self.candles.len() {
+            return None;
+        }
+        if position_index >= self.candles[ticker_index].len() {
+            return None;
+        }
+        Some(&self.candles[ticker_index][position_index])
+    }
+
+    pub fn combine(&mut self, other: &Self) {
+        let mut new_indexes = Vec::new();
+        for symbol in &other.index_map {
+            if !self.index_map.contains(symbol) {
+                new_indexes.push(symbol.clone());
+            }
+        }
+        for symbol in new_indexes {
+            self.index_map.push(symbol.clone());
+            self.candles
+                .push(other.candles[other.find_ticker_index(&symbol).unwrap()].clone());
         }
     }
 
-    pub fn index_get(&self, index: usize) -> Option<&Vec<Candlestick>> {
-        self.data.get(index)
-    }
-
-    pub fn get_mut(&mut self, ticker: &str) -> Option<&mut Vec<Candlestick>> {
-        let index = self.find_index(ticker);
-        match index {
-            Some(i) => Some(&mut self.data[i]),
-            None => None,
-        }
-    }
-
-    pub fn index_get_mut(&mut self, index: usize) -> Option<&mut Vec<Candlestick>> {
-        self.data.get_mut(index)
-    }
-
-    pub fn get_all(&self) -> &Vec<Vec<Candlestick>> {
-        &self.data
-    }
-
-    pub fn get_all_mut(&mut self) -> &mut Vec<Vec<Candlestick>> {
-        &mut self.data
-    }
-
-    pub fn get_all_tickers(&self) -> Vec<&str> {
-        self.indexes.keys().map(|s| s.as_str()).collect()
-    }
-
-    pub fn combine(&mut self, other: HistoricalData) {
-        let mut new_indexes = HashMap::new();
-        for (i, ticker) in other.get_all_tickers().iter().enumerate() {
-            new_indexes.insert(ticker.to_string(), i + self.indexes.len());
-        }
-        self.indexes.extend(new_indexes);
-        self.data.extend(other.data);
-    }
-
-    pub async fn load(&mut self, config: &Config) {
-        let current_time = chrono::Utc::now().timestamp_millis();
-        let minutes = config.get_interval_minutes().unwrap() * config.periods();
-        let start_time = current_time - minutes as i64 * 60_000;
+    pub async fn load(
+        &mut self,
+        config: &Config,
+        current_time: Option<i64>,
+    ) -> Result<(), Box<dyn Error>> {
+        let current_time = match current_time {
+            Some(time) => time,
+            None => chrono::Utc::now().timestamp_millis(),
+        };
+        let interval_minutes = config.get_interval_minutes()? * *config.periods() as i64;
+        let start_time = current_time - interval_minutes * MINUTES_TO_MILLIS;
         let tasks = self
-            .indexes
-            .keys()
-            .map(|ticker| load_ticker(ticker, start_time, current_time, &config))
-            .collect::<Vec<_>>();
+            .index_map
+            .iter()
+            .map(|symbol| load_ticker(symbol, start_time, current_time, config));
         let results = futures::future::join_all(tasks).await;
-        for (ticker, candlesticks) in results {
-            let index = self.indexes.get(&ticker).unwrap();
-            self.data[*index] = candlesticks;
+        for result in results {
+            let (symbol, candlesticks) = result?;
+            let index = self.find_ticker_index(&symbol).unwrap();
+            self.candles[index] = candlesticks;
         }
-        // Check that all tickers have been loaded with the correct number of periods
-        let clone = self.clone();
-        let keys = clone.indexes.keys().clone();
-        for ticker in keys {
-            let index = clone.indexes.get(ticker).unwrap();
-            if self.data[*index].len() != *config.periods() {
-                println!(
-                    "Ticker {} has {} periods, expected {}",
-                    ticker,
-                    self.data[*index].len(),
-                    *config.periods()
-                );
-                // Remove ticker from data (to do this we need to adjust all the indexes)
-                let mut new_indexes = HashMap::new();
-                for (i, ticker) in self.indexes.iter().enumerate() {
-                    if i < *index {
-                        new_indexes.insert(ticker.0.clone(), i);
-                    } else if i > *index {
-                        new_indexes.insert(ticker.0.clone(), i - 1);
-                    }
-                }
-                self.indexes = new_indexes;
-                self.data.remove(*index);
+        self.check_length(config)?;
+        Ok(())
+    }
+
+    fn check_length(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
+        for (index, ticker) in self.index_map.iter().enumerate() {
+            if self.candles[index].len() != *config.periods() {
+                return Err(Box::new(TickerLengthError::new(
+                    ticker.clone(),
+                    self.candles[index].len(),
+                    *config.periods(),
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn serialize_to_csvs(&self) {
+        // Check if data folder is present, if it isn't create it, if it is clear the folder
+        let data_folder = Path::new("data");
+        if !data_folder.exists() {
+            fs::create_dir(data_folder).unwrap();
+        } else {
+            for entry in fs::read_dir(data_folder).unwrap() {
+                let entry = entry.unwrap();
+                fs::remove_file(entry.path()).unwrap();
+            }
+        }
+        // Create a csv for each ticker
+        for (index, ticker) in self.index_map.iter().enumerate() {
+            let mut writer = csv::Writer::from_path(format!("data/{}.csv", ticker)).unwrap();
+            for candle in &self.candles[index] {
+                writer.serialize(candle).unwrap();
             }
         }
     }
 
-    pub fn calculate_technicals(&mut self) {
-        self.calculate_candlestick_technicals();
-        let (means, stds) = self.calculate_means_and_stds();
-        self.normalize_technicals(&means, &stds);
-    }
-
-    fn calculate_candlestick_technicals(&mut self) {
-        let mut stoch = SlowStochastic::default();
-        let mut rsi = RelativeStrengthIndex::default();
-        let mut cci = CommodityChannelIndex::default();
-        let mut sd = StandardDeviation::default();
-        for candlesticks in &mut self.data {
-            let mut previous_close = 0.0;
-            let mut previous_volume = 0.0;
-            for candle in candlesticks {
-                if previous_close != 0.0 && previous_volume != 0.0 {
-                    candle.set(
-                        TechnicalType::PercentageChange,
-                        change(previous_close, *candle.data.close()),
-                    );
-                    candle.set(
-                        TechnicalType::VolumeChange,
-                        change(previous_volume, *candle.data.volume()),
-                    );
-                }
-                previous_close = *candle.data.close();
-                previous_volume = *candle.data.volume();
-                let bar = &DataItem::builder()
-                    .high(*candle.data.high())
-                    .low(*candle.data.low())
-                    .close(*candle.data.close())
-                    .open(*candle.data.open())
-                    .volume(*candle.data.volume())
-                    .build()
-                    .unwrap();
-                candle.set(TechnicalType::CandlestickRatio, cr_ratio(bar));
-                candle.set(TechnicalType::StochasticOscillator, stoch.next(bar).round());
-                candle.set(TechnicalType::RelativeStrengthIndex, rsi.next(bar).round());
-                candle.set(TechnicalType::CommodityChannelIndex, cci.next(bar).round());
-                candle.set(TechnicalType::StandardDeviation, sd.next(bar).round());
+    pub async fn seriealize_to_csvs(&self) -> Result<(), Box<dyn Error>> {
+        let data_folder = Path::new("data");
+        if !data_folder.exists() {
+            fs::create_dir(data_folder)?;
+        } else {
+            let entries = fs::read_dir(data_folder)?;
+            let delete_tasks = entries.map(|entry| Self::delete_entry(entry.unwrap()));
+            let results = futures::future::join_all(delete_tasks).await;
+            for result in results {
+                result?;
             }
         }
+        let serialize_tasks = self
+            .index_map
+            .iter()
+            .enumerate()
+            .map(|(index, ticker)| self.seriealize_ticker_to_csv(index, ticker));
+        let results = futures::future::join_all(serialize_tasks).await;
+        for result in results {
+            result?;
+        }
+        Ok(())
     }
 
-    fn calculate_means_and_stds(&self) -> (Vec<f64>, Vec<f64>) {
-        let mut means = vec![0.0; 7];
-        let mut stds = vec![0.0; 7];
-        for candlesticks in &self.data {
-            for candle in candlesticks {
-                let technicals = candle.get_all();
-                for i in 0..7 {
-                    means[i] += technicals[i];
-                }
-            }
-        }
-        let count = self.data.len() * self.data[0].len();
-        for i in 0..7 {
-            means[i] /= count as f64;
-        }
-        for candlesticks in &self.data {
-            for candle in candlesticks {
-                let technicals = candle.get_all();
-                for i in 0..7 {
-                    stds[i] += (technicals[i] - means[i]).powi(2);
-                }
-            }
-        }
-        for i in 0..7 {
-            stds[i] = (stds[i] / count as f64).sqrt();
-        }
-        (means, stds)
+    async fn delete_entry(entry: fs::DirEntry) -> Result<(), Box<dyn Error>> {
+        fs::remove_file(entry.path())?;
+        Ok(())
     }
 
-    // Normalize all of the technicals so that they have the same mean and standard deviation as the percentage change
-    fn normalize_technicals(&mut self, means: &Vec<f64>, stds: &Vec<f64>) {
-        for candlesticks in &mut self.data {
-            for candle in candlesticks {
-                let percentage_change = candle.get(TechnicalType::PercentageChange);
-                for technical in TechnicalType::get_all() {
-                    if technical == TechnicalType::PercentageChange {
-                        continue;
-                    }
-                    let value = candle.get(technical);
-                    let mean = means[technical as usize];
-                    let std = stds[technical as usize];
-                    candle.set(technical, (value - mean) / std * percentage_change);
-                }
-            }
+    async fn seriealize_ticker_to_csv(
+        &self,
+        index: usize,
+        ticker: &String,
+    ) -> Result<(), Box<dyn Error>> {
+        let candles = self.candles[index].clone();
+        let file_path = format!("data/{}.csv", ticker);
+        let mut writer = csv::Writer::from_path(file_path)?;
+        for candle in candles {
+            writer.serialize(candle)?;
         }
+        writer.flush()?;
+        Ok(())
     }
 
-    pub fn serialize_to_json(&self, filename: &str) {
-        let mut file = File::create(filename).unwrap();
-        let json = serde_json::to_string(&self).unwrap();
-        file.write_all(json.as_bytes()).unwrap();
+    pub async fn deserialize_from_csvs() -> Result<Self, Box<dyn Error>> {
+        let deserialize_tasks = fs::read_dir("data")?.map(Self::deserialize_csv_to_ticker);
+        let results = futures::future::join_all(deserialize_tasks);
+        let mut candles = Vec::new();
+        let mut index_map = Vec::new();
+        for result in results.await {
+            let (ticker, candlesticks) = result?;
+            candles.push(candlesticks);
+            index_map.push(ticker);
+        }
+        Ok(Self { candles, index_map })
     }
 
-    pub fn deserialize_from_json(filename: &str) -> Self {
-        let mut file = File::open(filename).unwrap();
-        let mut json = String::new();
-        file.read_to_string(&mut json).unwrap();
-        serde_json::from_str(&json).unwrap()
+    async fn deserialize_csv_to_ticker(
+        entry: Result<DirEntry, std::io::Error>,
+    ) -> Result<(String, Vec<Candlestick>), Box<dyn Error>> {
+        let entry = entry?;
+        let path = &entry.path();
+        let file_name = path.file_stem().unwrap().to_str().unwrap();
+        let mut reader = csv::Reader::from_path(path)?;
+        let mut candlesticks = Vec::new();
+        for result in reader.deserialize() {
+            let candle: Candlestick = result?;
+            candlesticks.push(candle);
+        }
+        Ok((file_name.to_string(), candlesticks))
     }
-
-
 }
 
 async fn load_ticker(
@@ -319,33 +253,164 @@ async fn load_ticker(
     mut start_time: i64,
     current_time: i64,
     config: &Config,
-) -> (String, Vec<Candlestick>) {
-    let market: Market = Binance::new(config.api_key().clone(), config.secret_key().clone());
-    let mut candlesticks = Vec::new();
-    let addition = 60_000_000 * config.get_interval_minutes().unwrap() as i64;
+) -> Result<(String, Vec<Candlestick>), Box<dyn Error>> {
+    let mut candlesticks = BTreeSet::new();
+    let addition = MINUTES_TO_MILLIS * 1000 * config.get_interval_minutes()?;
+    let mut start_times = Vec::new();
     while start_time < current_time {
-        let result = market
-            .get_klines(ticker, config.interval(), 1000u16, start_time as u64, None)
-            .await;
-        match result {
-            Ok(klines) => match klines {
-                KlineSummaries::AllKlineSummaries(klines) => {
-                    candlesticks.extend(summaries_to_candlesticks(klines));
-                }
-            },
-            Err(e) => {
-                println!("Error loading data for {}: {}", ticker, e);
-                break;
-            }
-        }
+        start_times.push(start_time as u64);
         start_time += addition;
     }
-    (ticker.to_string(), candlesticks)
+    let tasks = start_times
+        .into_iter()
+        .map(|start_time| load_chunk(ticker, start_time, config));
+    let results = futures::future::join_all(tasks).await;
+    for result in results {
+        let chunk = result?;
+        candlesticks.extend(chunk.into_iter());
+    }
+    Ok((ticker.to_string(), candlesticks.into_iter().collect()))
+}
+
+async fn load_chunk(
+    ticker: &str,
+    start_time: u64,
+    config: &Config,
+) -> Result<Vec<Candlestick>, Box<dyn Error>> {
+    let market: Market = Binance::new(config.api_key().clone(), config.api_secret().clone());
+    let result = market
+        .get_klines(ticker, config.interval(), 1000u16, start_time, None)
+        .await?;
+    let candles = match result {
+        KlineSummaries::AllKlineSummaries(summaries) => summaries_to_candlesticks(summaries),
+    };
+    Ok(candles)
 }
 
 fn summaries_to_candlesticks(summaries: Vec<KlineSummary>) -> Vec<Candlestick> {
     summaries
         .into_iter()
-        .map(|summary| Candlestick::from_summary(summary))
+        .map(Candlestick::new_from_summary)
         .collect()
+}
+
+#[derive(Debug)]
+pub struct TickerLengthError {
+    pub ticker: String,
+    pub length: usize,
+    pub expected_length: usize,
+}
+
+impl TickerLengthError {
+    pub fn new(ticker: String, length: usize, expected_length: usize) -> Self {
+        Self {
+            ticker,
+            length,
+            expected_length,
+        }
+    }
+}
+
+impl std::fmt::Display for TickerLengthError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "{} has length {} but expected length {}",
+            self.ticker, self.length, self.expected_length
+        )
+    }
+}
+
+impl Error for TickerLengthError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_load_ticker() {
+        let config = Config::get_test_config();
+
+        // Add a ticker symbol for testing
+        let ticker = "BTCUSDT";
+
+        // Load the ticker data
+        let result = load_ticker(ticker, 1624137600000, 1624138200000, &config).await;
+
+        // Check if the data was loaded successfully
+        assert!(result.is_ok());
+
+        // Check if the ticker symbol is correct
+        let (loaded_ticker, _) = result.unwrap();
+        assert_eq!(loaded_ticker, ticker);
+    }
+
+    #[tokio::test]
+    async fn test_serialization() {
+        let config = Config::get_test_config();
+        let ticker = "BTCUSDT";
+        let mut data = HistoricalData::new(&vec![ticker.to_string()]);
+        data.load(&config, None).await.unwrap();
+        data.serialize_to_csvs().await;
+        let loaded_data = HistoricalData::deserialize_from_csvs().await.unwrap();
+        assert_eq!(data, loaded_data);
+        // Remove data folder
+        fs::remove_dir_all("data").unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_candlestick_positioning() {
+        let config = Config::get_test_config();
+        let tickers = vec![
+            "BTCUSDT".to_string(),
+            "ETHUSDT".to_string(),
+            "BNBUSDT".to_string(),
+        ];
+        let mut data = HistoricalData::new(&tickers);
+        data.load(&config, None).await.unwrap();
+        let btc_candles = &data.candles()[0];
+        let eth_candles = &data.candles()[1];
+        let bnb_candles = &data.candles()[2];
+        for i in 0..btc_candles.len() {
+            let btc_candle = &btc_candles[i];
+            let eth_candle = &eth_candles[i];
+            let bnb_candle = &bnb_candles[i];
+            assert_eq!(
+                btc_candle.candle().close_time(),
+                eth_candle.candle().close_time()
+            );
+            assert_eq!(
+                btc_candle.candle().close_time(),
+                bnb_candle.candle().close_time()
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_candlestick_positioning_with_start_time() {
+        let config = Config::get_test_config();
+        let tickers = vec![
+            "BTCUSDT".to_string(),
+            "ETHUSDT".to_string(),
+            "BNBUSDT".to_string(),
+        ];
+        let mut data = HistoricalData::new(&tickers);
+        data.load(&config, Some(1624137600000)).await.unwrap();
+        let btc_candles = &data.candles()[0];
+        let eth_candles = &data.candles()[1];
+        let bnb_candles = &data.candles()[2];
+        for i in 0..btc_candles.len() {
+            let btc_candle = &btc_candles[i];
+            let eth_candle = &eth_candles[i];
+            let bnb_candle = &bnb_candles[i];
+            assert_eq!(
+                btc_candle.candle().close_time(),
+                eth_candle.candle().close_time()
+            );
+            assert_eq!(
+                btc_candle.candle().close_time(),
+                bnb_candle.candle().close_time()
+            );
+        }
+    }
 }

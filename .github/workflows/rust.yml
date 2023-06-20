@@ -11,18 +11,55 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Cache Dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
     - name: Set up Rust
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
-    - name: Build
-      run: cargo +nightly build --verbose
+        toolchain: stable
+
+    - name: Install Clippy
+      run: rustup component add clippy
+
+    - name: Build and Run Clippy
+      run: |
+        cargo build --verbose
+        cargo clippy --all-targets --all-features -- -D warnings
+
     - name: Run tests
-      run: cargo +nightly test --verbose
+      run: cargo test --verbose --jobs 8
+
+    - name: Format code
+      run: cargo fmt -- --check --edition=2021
+
+    - name: Security Audit
+      run: cargo audit
+
+    - name: Build Artifact
+      run: cargo build --release --package krypto
+
+    - name: Create Artifact Directory
+      run: mkdir artifacts
+
+    - name: Move Artifact
+      run: mv target/release/krypto artifacts/
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: krypto
+        path: artifacts/krypto
+
 
