@@ -1,27 +1,34 @@
+use getset::{Getters, Setters};
+use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
     fs::File,
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, Write},
     path::Path,
 };
 
-use getset::{Getters, Setters};
-use serde::{Deserialize, Serialize};
+const DEFAULT_DATA: &str = r#"
+periods: 1000
+interval: "15m"
+depth: 3
+fee: 0.0015
+"#;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct Config {
     periods: usize,
     interval: String,
-    fee: f64,
+    depth: usize,
+    fee: f32,
+    #[serde(rename = "min-score")]
+    min_score: Option<f32>,
+    #[serde(rename = "test-ratio")]
+    test_ratio: Option<f32>,
     #[serde(rename = "api-key")]
     api_key: Option<String>,
     #[serde(rename = "api-secret")]
     api_secret: Option<String>,
-    #[serde(rename = "testnet-api-key")]
-    testnet_api_key: Option<String>,
-    #[serde(rename = "testnet-api-secret")]
-    testnet_api_secret: Option<String>,
 }
 
 impl Config {
@@ -66,7 +73,8 @@ impl Config {
         let path = Path::new("config.yml");
 
         if !path.exists() {
-            File::create(path)?;
+            let mut file = File::create(path)?;
+            file.write_all(DEFAULT_DATA.as_bytes())?;
             return Err(Box::new(TickerReadError));
         }
 
@@ -81,11 +89,12 @@ impl Config {
         Self {
             periods: 2000,
             interval: "15m".to_string(),
+            depth: 3,
             fee: 0.0,
+            min_score: None,
+            test_ratio: None,
             api_key: None,
             api_secret: None,
-            testnet_api_key: None,
-            testnet_api_secret: None,
         }
     }
 }
@@ -135,11 +144,12 @@ mod tests {
         let config = Config {
             periods: 2000,
             interval: "15m".to_string(),
+            depth: 3,
             fee: 0.0,
+            min_score: None,
+            test_ratio: None,
             api_key: None,
             api_secret: None,
-            testnet_api_key: None,
-            testnet_api_secret: None,
         };
         assert_eq!(config.get_interval_minutes().unwrap(), 15);
     }
@@ -172,11 +182,12 @@ mod tests {
         let config = Config::get_test_config();
         assert_eq!(config.periods, 2000);
         assert_eq!(config.interval, "15m");
+        assert_eq!(config.depth, 3);
         assert_eq!(config.fee, 0.0);
+        assert_eq!(config.min_score, None);
+        assert_eq!(config.test_ratio, None);
         assert_eq!(config.api_key, None);
         assert_eq!(config.api_secret, None);
-        assert_eq!(config.testnet_api_key, None);
-        assert_eq!(config.testnet_api_secret, None);
     }
 
     #[tokio::test]
@@ -185,34 +196,20 @@ mod tests {
         let path_exists = path.exists();
         if !path_exists {
             let mut file = File::create(path).unwrap();
-            let config_data = r#"
-                periods: 1000
-                interval: "1h"
-                fee: 0.1
-                api-key: "your-api-key"
-                api-secret: "your-api-secret"
-                testnet-api-key: "your-testnet-api-key"
-                testnet-api-secret: "your-testnet-api-secret"
-            "#;
-            file.write_all(config_data.as_bytes()).unwrap();
+            file.write_all(DEFAULT_DATA.as_bytes()).unwrap();
         }
         let config = Config::read_config().await;
         assert!(config.is_ok());
         if !path_exists {
             let config = config.unwrap();
             assert_eq!(config.periods, 1000);
-            assert_eq!(config.interval, "1h");
-            assert_eq!(config.fee, 0.1);
-            assert_eq!(config.api_key, Some("your-api-key".to_string()));
-            assert_eq!(config.api_secret, Some("your-api-secret".to_string()));
-            assert_eq!(
-                config.testnet_api_key,
-                Some("your-testnet-api-key".to_string())
-            );
-            assert_eq!(
-                config.testnet_api_secret,
-                Some("your-testnet-api-secret".to_string())
-            );
+            assert_eq!(config.interval, "15m");
+            assert_eq!(config.depth, 3);
+            assert_eq!(config.fee, 0.0015);
+            assert_eq!(config.min_score, None);
+            assert_eq!(config.test_ratio, None);
+            assert_eq!(config.api_key, None);
+            assert_eq!(config.api_secret, None);
             std::fs::remove_file(path).unwrap();
         }
     }

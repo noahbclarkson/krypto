@@ -1,28 +1,32 @@
-use std::cmp::Ordering;
-
 use binance::rest_model::KlineSummary;
-use getset::Getters;
+use getset::{CopyGetters, Getters, MutGetters};
 use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize};
+use std::cmp::Ordering;
+use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
+use ta::{errors::TaError, DataItem};
 
-#[derive(Debug, Getters, Clone)]
-#[getset(get = "pub")]
+#[derive(Debug, Getters, MutGetters, Clone)]
 pub struct Candlestick {
+    #[getset(get = "pub")]
     candle: Candle,
-    technicals: Vec<f64>,
+    #[getset(get = "pub", get_mut = "pub")]
+    technicals: Vec<f32>,
 }
 
 impl Candlestick {
+    #[inline]
     pub fn new_from_summary(summary: KlineSummary) -> Self {
+        let t_count = TechnicalType::iter().count();
         let candle = Candle {
-            open: summary.open,
-            high: summary.high,
-            low: summary.low,
-            close: summary.close,
-            volume: summary.volume,
+            open: summary.open as f32,
+            high: summary.high as f32,
+            low: summary.low as f32,
+            close: summary.close as f32,
+            volume: summary.volume as f32,
             close_time: summary.close_time,
         };
-        let technicals = vec![];
+        let technicals = vec![0.0; t_count];
         Self { candle, technicals }
     }
 }
@@ -46,7 +50,6 @@ impl Serialize for Candlestick {
             "Relative Strength Index",
             "Commodity Channel Index",
             "Volume Change",
-            "Standard Deviation",
         ];
         for (index, technical) in self.technicals.iter().enumerate() {
             state.serialize_field(headers[index], technical)?;
@@ -62,26 +65,24 @@ impl<'de> Deserialize<'de> for Candlestick {
     {
         #[derive(Deserialize)]
         struct CandlestickData {
-            open: f64,
-            high: f64,
-            low: f64,
-            close: f64,
-            volume: f64,
+            open: f32,
+            high: f32,
+            low: f32,
+            close: f32,
+            volume: f32,
             close_time: i64,
             #[serde(rename = "Percentage Change")]
-            percentage_change: Option<f64>,
+            percentage_change: Option<f32>,
             #[serde(rename = "Candlestick Ratio")]
-            candlestick_ratio: Option<f64>,
+            candlestick_ratio: Option<f32>,
             #[serde(rename = "Stochastic Oscillator")]
-            stochastic_oscillator: Option<f64>,
+            stochastic_oscillator: Option<f32>,
             #[serde(rename = "Relative Strength Index")]
-            relative_strength_index: Option<f64>,
+            relative_strength_index: Option<f32>,
             #[serde(rename = "Commodity Channel Index")]
-            commodity_channel_index: Option<f64>,
+            commodity_channel_index: Option<f32>,
             #[serde(rename = "Volume Change")]
-            volume_change: Option<f64>,
-            #[serde(rename = "Standard Deviation")]
-            standard_deviation: Option<f64>,
+            volume_change: Option<f32>,
         }
 
         let data = CandlestickData::deserialize(deserializer)?;
@@ -93,7 +94,6 @@ impl<'de> Deserialize<'de> for Candlestick {
             data.relative_strength_index.unwrap_or_default(),
             data.commodity_channel_index.unwrap_or_default(),
             data.volume_change.unwrap_or_default(),
-            data.standard_deviation.unwrap_or_default(),
         ];
 
         Ok(Candlestick {
@@ -130,15 +130,27 @@ impl Ord for Candlestick {
     }
 }
 
-#[derive(Debug, Getters, Clone)]
+#[derive(Debug, Getters, CopyGetters, Clone)]
 #[getset(get = "pub")]
 pub struct Candle {
-    open: f64,
-    high: f64,
-    low: f64,
-    close: f64,
-    volume: f64,
+    open: f32,
+    high: f32,
+    low: f32,
+    close: f32,
+    volume: f32,
     close_time: i64,
+}
+
+impl Candle {
+    pub fn to_data_item(&self) -> Result<DataItem, TaError> {
+        DataItem::builder()
+            .open(self.open as f64)
+            .high(self.high as f64)
+            .low(self.low as f64)
+            .close(self.close as f64)
+            .volume(self.volume as f64)
+            .build()
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, EnumIter)]
@@ -149,7 +161,6 @@ pub enum TechnicalType {
     RelativeStrengthIndex,
     CommodityChannelIndex,
     VolumeChange,
-    StandardDeviation,
 }
 
 #[cfg(test)]
@@ -159,7 +170,6 @@ pub mod tests {
 
     #[test]
     fn test_candlestick_ordering() {
-        // Create sample candlestick data
         let candlestick1 = Candlestick {
             candle: Candle {
                 open: 10.0,
