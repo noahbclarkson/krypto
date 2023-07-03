@@ -37,7 +37,6 @@ impl KryptoApp {
         let config = Arc::clone(&self.config);
         self.data = thread::spawn(move || {
             let mut data = HistoricalData::new(tickers.as_ref());
-            // Use tokio to run data.load(&config) but don't block the main thread
             tokio::runtime::Runtime::new()
                 .unwrap()
                 .block_on(data.load(&config, None))

@@ -156,15 +156,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_read_tickers() {
-        // Create tickers file if there isn't one
         let path = Path::new("tickers.txt");
         let path_exists = path.exists();
         if !path_exists {
-            // Insert tickers
             let mut file = File::create(path).unwrap();
-            // Create new BufferWriter instance
             let mut writer = BufWriter::new(&mut file);
-            // Write to file using `write` trait
             writer.write_all(b"BTCUSDT\nETHUSDT").unwrap();
         }
         let tickers = Config::read_tickers().await;

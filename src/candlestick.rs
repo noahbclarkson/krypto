@@ -194,7 +194,6 @@ pub mod tests {
             technicals: vec![],
         };
 
-        // Check the ordering of candlesticks
         assert!(candlestick1 < candlestick2);
         assert!(candlestick1 <= candlestick2);
         assert!(candlestick2 > candlestick1);

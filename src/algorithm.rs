@@ -14,21 +14,15 @@ use crate::{
     testing::TestData,
 };
 
-// The margin to use when buying in tests (3x for cross margin)
 const MARGIN: f32 = 0.03;
-// The default name of the algorithm file (must be a json file)
 const DEFAULT_FILE_NAME: &str = "algorithm.json";
-// The default starting cash for tests
 const STARTING_CASH: f32 = 1000.0;
 
 #[derive(Debug, Getters, Setters, Clone, Serialize, Deserialize)]
 #[getset(get = "pub", set = "pub")]
 pub struct AlgorithmSettings {
-    // The maximum depth of the algorithm (the number of candles to look back and generate relationships for)
     depth: usize,
-    // The fee to use when buying or selling in tests (decimal value, e.g. 0.01 = 1%)
     fee: f32,
-    // The minimum score to use when choosing whether to make a trade (this value is usually found through parameter optimization)
     min_score: Option<f32>,
 }
 
@@ -45,55 +39,27 @@ impl AlgorithmSettings {
 #[derive(Debug, Clone, PartialEq, Getters, Serialize, Deserialize)]
 #[getset(get = "pub")]
 pub struct Relationship {
-    // The correlation between the percentage change of the target at t and the technical at t-depth
     correlation: f32,
-    // The depth of the relationship (the number of candles between the target and the technical)
     depth: usize,
-    // The type of the technical
     r_type: usize,
-    // The index of the target ticker that the relationship is for
     target_index: usize,
-    // The index of the technical ticker that the relationship is for
     predict_index: usize,
 }
 
 #[derive(Debug, Clone, Getters, Setters, MutGetters, Serialize, Deserialize)]
 pub struct Algorithm {
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    // The settings of the algorithm
     settings: AlgorithmSettings,
     #[getset(get = "pub")]
-    // The relationships between the target and the technicals
     relationships: Vec<Relationship>,
     #[getset(get)]
-    // The indexes of the candles to use for testing
     test_indexes: Vec<usize>,
     #[getset(get = "pub", set = "pub")]
     #[serde(skip)]
-    // The test data for the algorithm (for access by the GUI)
     test_data: Option<TestData>,
 }
 
 impl Algorithm {
-    /// Creates a new Algorithm with the given config.
-    ///
-    /// # Arguments
-    ///
-    /// * `config` - The config to use for the algorithm
-    ///
-    /// # Returns
-    ///
-    /// * The new algorithm
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use krypto::algorithm::Algorithm;
-    /// use krypto::config::Config;
-    ///
-    /// let config = Config::get_test_config();
-    /// let algorithm = Algorithm::new(&config);
-    /// ```
     pub fn new(config: &Config) -> Self {
         let settings = AlgorithmSettings::default(config);
         let relationships = Vec::new();

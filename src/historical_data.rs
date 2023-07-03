@@ -7,7 +7,7 @@ use getset::{Getters, MutGetters};
 use std::{
     collections::BTreeSet,
     error::Error,
-    fs::{self},
+    fs,
     path::Path,
 };
 use strum::IntoEnumIterator;
@@ -36,7 +36,6 @@ pub struct HistoricalData {
 impl HistoricalData {
     pub fn new(symbols: &Vec<String>) -> Self {
         let mut data = Vec::new();
-        // Sort the symbols alphabetically
         let symbols = symbols.clone();
         for _ in &symbols {
             data.push(Vec::new());
@@ -248,7 +247,6 @@ impl HistoricalData {
     }
 
     fn check_time_positions(&self) -> Result<(), Box<dyn Error>> {
-        // Loop through all candles and check that at each position the close time is the same
         for i in 0..self.candles[0].len() {
             let close_time = self.candles[0][i].candle().close_time();
             for (j, candlesticks) in self.candles.iter().enumerate() {
@@ -496,7 +494,6 @@ pub mod tests {
         data.serialize_to_csvs().await.unwrap();
         let loaded_data = HistoricalData::deserialize_from_csvs().await.unwrap();
         assert_eq!(data, loaded_data);
-        // Remove data folder
         fs::remove_dir_all("data").unwrap();
     }
 
@@ -559,7 +556,6 @@ pub mod tests {
         data.serialize_to_csvs().await.unwrap();
         let loaded_data = HistoricalData::deserialize_from_csvs().await.unwrap();
         assert_eq!(data, loaded_data);
-        // Remove data folder
         fs::remove_dir_all("data").unwrap();
     }
 }
