@@ -83,7 +83,7 @@ async fn find_best_parameters(config: &Config, candles: &Vec<Vec<Candlestick>>) 
     let headers = vec!["min_score", "depth", "cash", "accuracy", "return"];
     results_file.write_record(&headers).unwrap();
     let mut algorithm = Algorithm::new(&config);
-    for depth in 3..15 {
+    for depth in 2..15 {
         algorithm.settings_mut().set_depth(depth);
         algorithm.compute_relationships(candles).await;
         for i in 0..50 {
