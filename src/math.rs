@@ -1,13 +1,8 @@
 use ta::{Close, DataItem, High, Low, Open};
 
-const ZERO: &f32 = &0.0;
-
 #[inline(always)]
-pub fn change(start: &f32, end: &f32) -> f32 {
-    if start == ZERO {
-        return 0.0; // Avoid division by zero
-    }
-    (end - start) / start * 100.0
+pub fn percentage_change(previous: f32, current: f32) -> f32 {
+    (current - previous) / previous * 100.0
 }
 
 #[inline(always)]
@@ -46,4 +41,3 @@ pub fn format_number(num: f32) -> String {
         _ => format!("{:.0}{}", num, suffixes[index]),
     }
 }
-

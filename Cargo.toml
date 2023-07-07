@@ -5,18 +5,15 @@ edition = "2021"
 
 [dependencies]
 binance-rs-async = { git = "https://github.com/Igosuki/binance-rs-async.git", features = ["margin_api"] }
-serde = { version = "1.0.164", features = ["derive"] }
-serde_yaml = "0.9.21"
-serde_json = "1.0.97"
+serde = { version = "1.0.166", features = ["derive", "rc"] }
+serde_yaml = "0.9.22"
 chrono = "0.4.26"
 futures = "0.3.28"
-tokio = { version = "1.28.2", features = ["full"] }
+tokio = { version = "1.29.1", features = ["full"] }
 ta = "0.5.0"
-rand = "0.8.5"
-strum = "0.25"
-strum_macros = "0.25"
 getset = "0.1.2"
 csv = "1.2.2"
-egui = "0.22.0"
-eframe = "0.22.0"
-clap = {version = "4.3.4", features = ["wrap_help", "derive"] }
+clap = {version = "4.3.10", features = ["wrap_help", "derive"] }
+thiserror = "1.0.40"
+log = "0.4.19"
+simple_logger = "4.2.0"

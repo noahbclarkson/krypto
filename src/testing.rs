@@ -1,8 +1,6 @@
+use std::{fmt::{Formatter, Display}, collections::BTreeMap};
+
 use getset::{Getters, Setters};
-use std::{
-    collections::BTreeMap,
-    fmt::{Display, Formatter},
-};
 
 use crate::math::format_number;
 
@@ -14,17 +12,15 @@ pub struct TestData {
     correct: usize,
     incorrect: usize,
     cash_history: Vec<f32>,
-    periods: usize,
 }
 
 impl TestData {
-    pub fn new(cash: f32, periods: usize) -> Self {
+    pub fn new(cash: f32) -> Self {
         Self {
             cash,
             correct: 0,
             incorrect: 0,
             cash_history: vec![cash],
-            periods,
         }
     }
 
@@ -50,23 +46,23 @@ impl TestData {
         period: PerPeriod,
         interval: usize,
         multiplier: usize,
-    ) -> f64 {
-        let data_points = self.periods;
+        data_points: usize,
+    ) -> f32 {
         let periods = match period {
-            PerPeriod::Hourly => (interval * data_points * multiplier) as f64 / 60.0,
-            PerPeriod::Daily => (interval * data_points * multiplier) as f64 / (60.0 * 24.0),
-            PerPeriod::Weekly => (interval * data_points * multiplier) as f64 / (60.0 * 24.0 * 7.0),
+            PerPeriod::Hourly => (interval * data_points * multiplier) as f32 / 60.0,
+            PerPeriod::Daily => (interval * data_points * multiplier) as f32 / (60.0 * 24.0),
+            PerPeriod::Weekly => (interval * data_points * multiplier) as f32 / (60.0 * 24.0 * 7.0),
             PerPeriod::Monthly => {
-                (interval * data_points * multiplier) as f64 / (60.0 * 24.0 * 30.0)
+                (interval * data_points * multiplier) as f32 / (60.0 * 24.0 * 30.0)
             }
             PerPeriod::Yearly => {
-                (interval * data_points * multiplier) as f64 / (60.0 * 24.0 * 365.0)
+                (interval * data_points * multiplier) as f32 / (60.0 * 24.0 * 365.0)
             }
         };
 
         if data_points > 1 {
-            let start_cash = self.cash_history[0] as f64;
-            let final_cash = self.cash_history[self.cash_history.len() - 1] as f64;
+            let start_cash = self.cash_history[0] as f32;
+            let final_cash = self.cash_history[self.cash_history.len() - 1] as f32;
             ((final_cash / start_cash).powf(1.0 / periods) - 1.0) * 100.0
         } else {
             0.0
@@ -77,8 +73,9 @@ impl TestData {
         &self,
         interval: usize,
         multiplier: usize,
-    ) -> BTreeMap<PerPeriod, f64> {
-        let mut average_returns: BTreeMap<PerPeriod, f64> = BTreeMap::new();
+        data_points: usize
+    ) -> BTreeMap<PerPeriod, f32> {
+        let mut average_returns: BTreeMap<PerPeriod, f32> = BTreeMap::new();
         let periods = [
             PerPeriod::Hourly,
             PerPeriod::Daily,
@@ -88,7 +85,7 @@ impl TestData {
         ];
 
         for period in periods.iter() {
-            let average_return = self.compute_average_return(*period, interval, multiplier);
+            let average_return = self.compute_average_return(*period, interval, multiplier, data_points);
             average_returns.insert(*period, average_return);
         }
 

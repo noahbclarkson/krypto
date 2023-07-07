@@ -1,101 +1,51 @@
-use clap::Parser;
-use krypto::{
-    algorithm::Algorithm,
-    args::Args,
-    candlestick::Candlestick,
-    config::Config,
-    historical_data::HistoricalData,
-    krypto_app::{get_configuration, KryptoApp},
-    testing::PerPeriod,
-};
 use std::error::Error;
 
+use krypto::{
+    algorithm::{backtest, compute_relationships, livetest},
+    config::{load_configuration, Config},
+    historical_data::{calculate_technicals, load, TickerData},
+    testing::PerPeriod,
+};
+
 #[tokio::main]
-async fn main() {
-    let result = match_gui().await;
-    match result {
-        Ok(_) => (),
-        Err(e) => println!("Error: {}", e),
-    }
-}
-
-async fn match_gui() -> Result<(), Box<dyn Error>> {
-    let args = Args::parse();
-    match args.gui() {
-        Some(true) => run_gui()?,
-        _ => run_cli(&args).await?,
-    }
-    Ok(())
-}
-
-fn run_gui() -> Result<(), Box<dyn Error>> {
-    let options = eframe::NativeOptions {
-        initial_window_size: Some(egui::vec2(640.0, 480.0)),
-        ..Default::default()
-    };
-    eframe::run_native(
-        "Krypto",
-        options,
-        Box::new(|_cc| Box::<KryptoApp>::default()),
-    )?;
-    Ok(())
-}
-
-async fn run_cli(args: &Args) -> Result<(), Box<dyn Error>> {
-    let (tickers, config) = get_configuration().await?;
-    let mut data = HistoricalData::new(&tickers);
-    data.load(&config, None).await?;
-    data.calculate_candlestick_technicals()?;
-    data.normalize_technicals();
-    let candles = data.candles();
-    let mut algorithm = match args.optimize() {
-        Some(true) => find_best_parameters(&config, candles).await,
-        _ => {
-            let mut algorithm = Algorithm::new(&config);
-            algorithm.compute_relationships(candles).await;
-            algorithm
-        }
-    };
-    match args.backtest() {
-        Some(true) => {
-            let test = algorithm.test(candles);
-            println!("{}", test);
-        }
-        _ => (),
-    }
-    match args.livetest() {
-        Some(true) => {
-            let test = algorithm.live_test(&config, &tickers).await?;
-            println!("{}", test);
-        }
-        _ => (),
-    }
+pub async fn main() -> Result<(), Box<dyn Error>> {
+    // let args = Args::parse();
+    let (mut config, tickers) = load_configuration().await?;
+    println!("Loaded configuration");
+    let candles = load(config.as_mut(), tickers.clone()).await?;
+    let candles = calculate_technicals(candles);
+    let relationships = compute_relationships(candles.as_ref(), config.as_ref()).await;
+    let test = backtest(candles.as_ref(), relationships.as_ref(), config.as_ref());
+    println!("{}", test);
+    // let _config = find_best_parameters(config.as_mut(), candles.as_ref()).await;
+    livetest(tickers, config.as_ref()).await?;
     Ok(())
 }
 
 #[allow(dead_code)]
-async fn find_best_parameters(config: &Config, candles: &Vec<Vec<Candlestick>>) -> Algorithm {
+async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Config {
     let mut best_return = 0.0;
-    let mut best_config = None;
-    let mut best_settings = None;
-    let interval_num = config.get_interval_minutes().unwrap();
+    let mut best_config = config.clone();
+    let interval_num = config.interval_minutes().unwrap() as usize;
     let mut results_file = csv::Writer::from_path("results.csv").unwrap();
     let headers = vec!["min_score", "depth", "cash", "accuracy", "return"];
     results_file.write_record(&headers).unwrap();
-    let mut algorithm = Algorithm::new(&config);
-    for depth in 2..15 {
-        algorithm.settings_mut().set_depth(depth);
-        algorithm.compute_relationships(candles).await;
+    for depth in 4..15 {
+        let config = config.set_depth(depth);
+        let relationships = compute_relationships(candles, config).await;
         for i in 0..50 {
-            let min_score = i as f32 / 5.0;
-            algorithm.settings_mut().set_min_score(Some(min_score));
-            let test = algorithm.test(candles);
-            let test_return =
-                test.compute_average_return(PerPeriod::Daily, interval_num as usize, depth);
+            let min_score = i as f32 / 50.0;
+            let config = config.set_min_score(Some(min_score));
+            let test = backtest(candles, relationships.as_ref(), config);
+            let test_return = test.compute_average_return(
+                PerPeriod::Daily,
+                interval_num,
+                depth,
+                config.periods() - depth * 2,
+            );
             if test_return > best_return {
                 best_return = test_return;
-                best_config = Some(config.clone());
-                best_settings = Some(algorithm.settings().clone());
+                best_config = config.clone();
                 println!(
                     "New best: ({:.2}, {}): {} with daily return: {:.2}%",
                     min_score, depth, test, test_return
@@ -115,8 +65,5 @@ async fn find_best_parameters(config: &Config, candles: &Vec<Vec<Candlestick>>) 
             results_file.flush().unwrap();
         }
     }
-    let mut algorithm = Algorithm::new(&best_config.unwrap());
-    algorithm.set_settings(best_settings.unwrap());
-    algorithm.compute_relationships(candles).await;
-    algorithm
+    best_config
 }
