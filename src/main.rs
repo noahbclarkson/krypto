@@ -3,9 +3,10 @@ use std::error::Error;
 use clap::Parser;
 use krypto::{
     algorithm::{backtest, compute_relationships, livetest},
+    args::Args,
     config::Config,
     historical_data::{calculate_technicals, load, TickerData},
-    testing::PerPeriod, args::Args,
+    testing::PerPeriod,
 };
 
 #[tokio::main]

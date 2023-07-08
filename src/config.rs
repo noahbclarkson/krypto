@@ -119,7 +119,10 @@ mod tests {
         assert_eq!(config.periods, 2000);
         assert_eq!(config.interval, "15m");
         assert_eq!(config.depth, 3);
-        assert_eq!(config.tickers, vec!["BTCBUSD".to_string(), "ETHBUSD".to_string()]);
+        assert_eq!(
+            config.tickers,
+            vec!["BTCBUSD".to_string(), "ETHBUSD".to_string()]
+        );
     }
 
     #[tokio::test]
@@ -135,7 +138,5 @@ mod tests {
         assert_eq!(config.interval, default_config.interval);
         assert_eq!(config.depth, default_config.depth);
         assert_eq!(config.tickers, default_config.tickers);
-
     }
-
 }

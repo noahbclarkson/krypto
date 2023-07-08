@@ -1,7 +1,7 @@
 use binance::rest_model::KlineSummary;
 use getset::{Getters, MutGetters, Setters};
 use serde::{Deserialize, Serialize};
-use ta::{DataItem, errors::TaError};
+use ta::{errors::TaError, DataItem};
 
 pub const TECHNICAL_COUNT: usize = 6;
 

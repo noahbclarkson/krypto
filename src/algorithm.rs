@@ -34,7 +34,7 @@ pub async fn compute_relationships(candles: &[TickerData], config: &Config) -> B
                 compute_relationship(
                     target_index,
                     predict_index,
-                    &target_candles,
+                    target_candles,
                     predict_candles,
                     *config.depth(),
                 )
@@ -102,14 +102,14 @@ pub fn predict(
         }
     }
     let mut max_index = 0;
-    let mut max = scores[0];
-    for i in 1..scores.len() {
-        if scores[i] > max {
+    let mut max = &scores[0];
+    for (i, score) in scores.iter().enumerate().skip(1) {
+        if score > max {
             max_index = i;
-            max = scores[i];
+            max = score;
         }
     }
-    (max_index, max)
+    (max_index, *max)
 }
 
 pub fn backtest(
@@ -118,8 +118,8 @@ pub fn backtest(
     config: &Config,
 ) -> TestData {
     let mut test = TestData::new(STARTING_CASH);
-    let depth = config.depth().clone();
-    let periods = config.periods().clone();
+    let depth = *config.depth();
+    let periods = *config.periods();
     let min_score = config.min_score().unwrap_or_default();
     let fee = config.fee().unwrap_or_default();
 
@@ -151,7 +151,7 @@ pub fn backtest(
 
 pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
     let mut test = TestData::new(STARTING_CASH);
-    let depth = config.depth().clone();
+    let depth = *config.depth();
     let min_score = config.min_score().unwrap_or_default();
     let fee = config.fee().unwrap_or_default();
     let data_size = depth + 15;
@@ -289,7 +289,7 @@ async fn wait(config: &Config, periods: usize) -> Result<(), Box<dyn Error>> {
     for _ in 0..periods {
         loop {
             let now = Utc::now().timestamp_millis();
-            let millis = (config.interval_minutes()? * MINUTES_TO_MILLIS) as i64;
+            let millis = config.interval_minutes()? * MINUTES_TO_MILLIS;
             let next_interval = (now / millis) * millis + millis;
             let wait_time = next_interval - now - WAIT_WINDOW;
             if wait_time > WAIT_WINDOW {

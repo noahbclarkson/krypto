@@ -15,9 +15,9 @@ pub fn cr_ratio(candle: &DataItem) -> f32 {
     let wick_sum = top_wick - bottom_wick;
 
     if body.abs() < f64::EPSILON {
-        return wick_sum.signum() as f32;
+        wick_sum.signum() as f32
     } else {
-        return (wick_sum / body).tanh() as f32;
+        (wick_sum / body).tanh() as f32
     }
 }
 

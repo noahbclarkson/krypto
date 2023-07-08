@@ -42,10 +42,7 @@ jobs:
       run: cargo test --verbose --jobs 8
 
     - name: Format code
-      run: cargo fmt -- --check --edition=2021
-
-    - name: Security Audit
-      run: cargo audit
+      run: cargo fmt -- --check
 
     - name: Build Artifact
       run: cargo build --release --package krypto

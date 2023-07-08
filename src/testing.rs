@@ -1,4 +1,7 @@
-use std::{fmt::{Formatter, Display}, collections::BTreeMap};
+use std::{
+    collections::BTreeMap,
+    fmt::{Display, Formatter},
+};
 
 use getset::{Getters, Setters};
 
@@ -61,8 +64,8 @@ impl TestData {
         };
 
         if data_points > 1 {
-            let start_cash = self.cash_history[0] as f32;
-            let final_cash = self.cash_history[self.cash_history.len() - 1] as f32;
+            let start_cash = self.cash_history[0];
+            let final_cash = self.cash_history[self.cash_history.len() - 1];
             ((final_cash / start_cash).powf(1.0 / periods) - 1.0) * 100.0
         } else {
             0.0
@@ -73,7 +76,7 @@ impl TestData {
         &self,
         interval: usize,
         multiplier: usize,
-        data_points: usize
+        data_points: usize,
     ) -> BTreeMap<PerPeriod, f32> {
         let mut average_returns: BTreeMap<PerPeriod, f32> = BTreeMap::new();
         let periods = [
@@ -85,7 +88,8 @@ impl TestData {
         ];
 
         for period in periods.iter() {
-            let average_return = self.compute_average_return(*period, interval, multiplier, data_points);
+            let average_return =
+                self.compute_average_return(*period, interval, multiplier, data_points);
             average_returns.insert(*period, average_return);
         }
 

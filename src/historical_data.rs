@@ -32,15 +32,14 @@ impl TickerData {
     }
 }
 
-pub async fn load(
-    config: &Config,
-) -> Result<Box<[TickerData]>, Box<dyn Error>> {
+pub async fn load(config: &Config) -> Result<Box<[TickerData]>, Box<dyn Error>> {
     let current_time = chrono::Utc::now().timestamp_millis();
     let interval_minutes = config.interval_minutes()? * *config.periods() as i64;
     let start_time = current_time - interval_minutes * MINUTES_TO_MILLIS;
 
-    let tasks = config.tickers()
-        .into_iter()
+    let tasks = config
+        .tickers()
+        .iter()
         .map(|ticker| load_ticker(ticker.clone(), start_time, current_time, config));
 
     let tickers = futures::future::join_all(tasks).await;
@@ -81,7 +80,7 @@ async fn load_ticker(
 
     for result in results {
         let chunk = result?;
-        candlesticks.extend(chunk.into_iter());
+        candlesticks.extend(chunk);
     }
 
     candlesticks.sort_by(|a, b| a.close_time().cmp(b.close_time()));
@@ -100,8 +99,8 @@ async fn load_chunk(
             ticker.clone(),
             config.interval(),
             1000,
-            Some(start_time as u64),
-            Some(end_time as u64),
+            Some(start_time),
+            Some(end_time),
         )
         .await
         .map_err(|error| {
@@ -119,14 +118,14 @@ pub fn calculate_technicals(mut candles: Box<[TickerData]>) -> Box<[TickerData]>
     let mut cci = CommodityChannelIndex::default();
 
     for ticker in candles.iter_mut() {
-        let mut previous_close = ticker.candles()[0].close().clone();
-        let mut previous_volume = ticker.candles()[0].volume().clone();
+        let mut previous_close = *ticker.candles()[0].close();
+        let mut previous_volume = *ticker.candles()[0].volume();
 
         for candle in ticker.candles_mut().iter_mut() {
-            let p_change = percentage_change(previous_close, candle.close().clone());
-            let v_change = percentage_change(previous_volume, candle.volume().clone());
-            previous_close = candle.close().clone();
-            previous_volume = candle.volume().clone();
+            let p_change = percentage_change(previous_close, *candle.close());
+            let v_change = percentage_change(previous_volume, *candle.volume());
+            previous_close = *candle.close();
+            previous_volume = *candle.volume();
             candle.technicals_mut()[PercentageChange as usize] = p_change;
             candle.set_p_change(p_change);
             candle.technicals_mut()[VolumeChange as usize] = v_change;
@@ -153,7 +152,7 @@ pub fn calculate_technicals(mut candles: Box<[TickerData]>) -> Box<[TickerData]>
 
 fn calculate_means(candles: &[TickerData]) -> [f32; TECHNICAL_COUNT] {
     let mut means = [0.0; TECHNICAL_COUNT];
-    for ticker in candles.into_iter() {
+    for ticker in candles.iter() {
         for candle in ticker.candles().iter() {
             for (index, technical) in candle.technicals().iter().enumerate() {
                 means[index] += technical;
@@ -170,7 +169,7 @@ fn calculate_stddevs(
     means: [f32; TECHNICAL_COUNT],
 ) -> [f32; TECHNICAL_COUNT] {
     let mut stdev = [0.0; TECHNICAL_COUNT];
-    for ticker in candles.into_iter() {
+    for ticker in candles.iter() {
         for candle in ticker.candles().iter() {
             for (index, technical) in candle.technicals().iter().enumerate() {
                 stdev[index] += (*technical - means[index]).powi(2);
@@ -242,7 +241,7 @@ fn expand_summaries(summaries: KlineSummaries) -> Vec<Candlestick> {
     match summaries {
         KlineSummaries::AllKlineSummaries(summaries) => summaries
             .into_iter()
-            .map(|summary| Candlestick::new_from_summary(summary))
+            .map(Candlestick::new_from_summary)
             .collect(),
     }
 }
