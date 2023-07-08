@@ -11,7 +11,7 @@ use crate::{
     testing::TestData,
 };
 
-const MARGIN: f32 = 0.1;
+const MARGIN: f32 = 0.05;
 const STARTING_CASH: f32 = 1000.0;
 
 #[derive(Debug, Clone, PartialEq, Getters)]
@@ -176,13 +176,37 @@ pub async fn livetest(tickers: Vec<String>, config: &Config) -> Result<(), Box<d
     file.flush()?;
 
     loop {
-        let candles = load(config, tickers.clone()).await?;
+        let candles = load(config, tickers.clone()).await;
+        let candles = match candles {
+            Ok(candles) => candles,
+            Err(err) => {
+                println!("Error: {}", err);
+                wait(config, 1).await?;
+                continue;
+            }
+        };
         let candles = calculate_technicals(candles);
-        let relationships = compute_relationships(candles.as_ref(), config).await;
+        let relationships = compute_relationships(&candles, config).await;
         wait(config, 1).await?;
         let mut c_clone = config.clone();
         c_clone.set_periods(data_size);
-        let lc = load(&c_clone, tickers.clone()).await?;
+        let lc = load(&c_clone, tickers.clone()).await;
+        let lc = match lc {
+            Ok(candles) => candles,
+            Err(err) => {
+                println!("Error: {}", err);
+                println!("Trying again...");
+                let lc_2 = load(&c_clone, tickers.clone()).await;
+                match lc_2 {
+                    Ok(candles) => candles,
+                    Err(err) => {
+                        println!("Error: {}", err);
+                        wait(config, 1).await?;
+                        continue;
+                    }
+                }
+            }
+        };
         let lc = calculate_technicals(lc);
         if enter_price.is_some() && last_index.is_some() {
             let ep = enter_price.unwrap();
@@ -234,7 +258,7 @@ pub async fn livetest(tickers: Vec<String>, config: &Config) -> Result<(), Box<d
             file.flush()?;
         }
 
-        let (index, score) = predict(relationships.as_ref(), data_size - 1, lc.as_ref());
+        let (index, score) = predict(&relationships, data_size - 1, &lc);
         if score > min_score {
             let current_price = lc[index].candles()[data_size - 1].close();
             enter_price = Some(*current_price);
@@ -294,7 +318,7 @@ pub mod tests {
             .collect::<Vec<_>>();
         let candles = load(&config, tickers.clone()).await.unwrap();
         let candles = calculate_technicals(candles);
-        let relationships = compute_relationships(candles.as_ref(), &config).await;
+        let relationships = compute_relationships(&candles, &config).await;
         assert_eq!(
             relationships.len(),
             tickers.len().pow(2) * TECHNICAL_COUNT * config.depth()

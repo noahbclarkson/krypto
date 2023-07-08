@@ -14,11 +14,11 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     println!("Loaded configuration");
     let candles = load(config.as_mut(), tickers.clone()).await?;
     let candles = calculate_technicals(candles);
-    let relationships = compute_relationships(candles.as_ref(), config.as_ref()).await;
-    let test = backtest(candles.as_ref(), relationships.as_ref(), config.as_ref());
+    let relationships = compute_relationships(&candles, &config).await;
+    let test = backtest(&candles, &relationships, &config);
     println!("{}", test);
-    // let _config = find_best_parameters(config.as_mut(), candles.as_ref()).await;
-    livetest(tickers, config.as_ref()).await?;
+    // let config = find_best_parameters(config.as_mut(), &candles).await;
+    livetest(tickers, &config).await?;
     Ok(())
 }
 
@@ -30,13 +30,13 @@ async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Co
     let mut results_file = csv::Writer::from_path("results.csv").unwrap();
     let headers = vec!["min_score", "depth", "cash", "accuracy", "return"];
     results_file.write_record(&headers).unwrap();
-    for depth in 4..15 {
+    for depth in 3..=10 {
         let config = config.set_depth(depth);
         let relationships = compute_relationships(candles, config).await;
-        for i in 0..50 {
+        for i in 0..100 {
             let min_score = i as f32 / 50.0;
             let config = config.set_min_score(Some(min_score));
-            let test = backtest(candles, relationships.as_ref(), config);
+            let test = backtest(candles, &relationships, config);
             let test_return = test.compute_average_return(
                 PerPeriod::Daily,
                 interval_num,

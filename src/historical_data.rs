@@ -47,7 +47,7 @@ pub async fn load(
     let tickers = futures::future::join_all(tasks).await;
     let tickers = tickers.into_iter().collect::<Result<Vec<_>, _>>()?;
     let candles: Box<[TickerData]> = Box::from(tickers);
-    futures::executor::block_on(check_data(candles.as_ref(), config))?;
+    futures::executor::block_on(check_data(&candles, config))?;
     Ok(candles)
 }
 
@@ -147,8 +147,8 @@ pub fn calculate_technicals(mut candles: Box<[TickerData]>) -> Box<[TickerData]>
         }
     }
 
-    let means = calculate_means(candles.as_ref());
-    let stddevs = calculate_stddevs(candles.as_ref(), means);
+    let means = calculate_means(&candles);
+    let stddevs = calculate_stddevs(&candles, means);
     normalize(candles, means, stddevs)
 }
 
