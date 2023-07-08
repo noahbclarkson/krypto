@@ -1,28 +1,75 @@
-use getset::{Getters, Setters};
-use serde::Deserialize;
-use serde_yaml;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader, Write};
-use std::path::Path;
+use std::{
+    error::Error,
+    fs::File,
+    io::{BufReader, Write},
+    path::Path,
+};
 
-// This struct is used to store configuration data from the config.yml file.
-#[derive(Debug, Deserialize, Clone, Getters, Setters)]
+use getset::{Getters, Setters};
+use serde::{Deserialize, Serialize};
+use serde_yaml::from_reader;
+
+const DEFAULT_DATA: &str = r#"
+periods: 2000
+interval: "15m"
+depth: 3
+tickers: 
+    - "BTCBUSD"
+    - "ETHBUSD"
+"#;
+
+#[derive(Debug, Serialize, Deserialize, Clone, Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct Config {
     periods: usize,
     interval: String,
-    fee: f64,
+    depth: usize,
+    fee: Option<f32>,
+    #[serde(rename = "min-score")]
+    min_score: Option<f32>,
+    tickers: Vec<String>,
     #[serde(rename = "api-key")]
     api_key: Option<String>,
-    #[serde(rename = "secret-key")]
-    secret_key: Option<String>,
+    #[serde(rename = "api-secret")]
+    api_secret: Option<String>,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            periods: 2000,
+            interval: "15m".to_string(),
+            depth: 3,
+            tickers: vec!["BTCBUSD".to_string(), "ETHBUSD".to_string()],
+            fee: None,
+            min_score: None,
+            api_key: None,
+            api_secret: None,
+        }
+    }
 }
 
 impl Config {
-    // This function converts the interval string into its equivalent in minutes.
-    // Instead of panicking on an invalid interval, it returns a Result and
-    // propagates the error up to the caller.
-    pub fn get_interval_minutes(&self) -> Result<usize, &'static str> {
+    pub async fn read_config(filename: Option<&str>) -> Result<Box<Self>, Box<dyn Error>> {
+        let path = match filename {
+            Some(filename) => Path::new(filename),
+            None => Path::new("config.yml"),
+        };
+        let path = path.canonicalize()?;
+
+        if !path.exists() {
+            let mut file = File::create(path)?;
+            file.write_all(DEFAULT_DATA.as_bytes())?;
+            return Err(Box::new(ConfigurationError::FileNotFound));
+        }
+
+        let file = File::open(path)?;
+        let reader = BufReader::new(file);
+        let config: Config = from_reader(reader).map_err(|err| Box::new(err) as Box<dyn Error>)?;
+        Ok(Box::new(config))
+    }
+
+    pub fn interval_minutes(&self) -> Result<i64, Box<dyn std::error::Error>> {
         match self.interval.as_str() {
             "1m" => Ok(1),
             "3m" => Ok(3),
@@ -39,97 +86,57 @@ impl Config {
             "3d" => Ok(4320),
             "1w" => Ok(10080),
             "1M" => Ok(43200),
-            _ => Err("Invalid interval"),
-        }
-    }
-
-    // This function returns a Vec of default ticker symbols.
-    pub fn get_default_tickers() -> Vec<&'static str> {
-        vec![
-            "BTCUSDT",
-            "ETHUSDT",
-            "XRPUSDT",
-            "BNBUSDT",
-            "LTCUSDT",
-            "DOGEUSDT",
-            "SOLUSDT",
-            "MATICUSDT",
-            "ADAUSDT",
-            "1000SHIBUSDT",
-            "AVAXUSDT",
-            "EOSUSDT",
-            "LINKUSDT",
-            "LDOUSDT",
-            "APEUSDT",
-            "DOTUSDT",
-            "APTUSDT",
-            "MTLUSDT",
-            "BCHUSDT",
-            "ATOMUSDT",
-            "TRXUSDT",
-            "ETCUSDT",
-            "FILUSDT",
-            "LINAUSDT",
-            "FTMUSDT",
-            "SANDUSDT",
-        ]
-    }
-}
-
-impl Default for Config {
-    fn default() -> Config {
-        Config {
-            periods: 10000,
-            interval: "15m".to_string(),
-            fee: 0.00072,
-            api_key: None,
-            secret_key: None,
+            _ => Err(Box::new(ConfigurationError::IntervalError(
+                self.interval.clone(),
+            ))),
         }
     }
 }
 
-// This function reads ticker symbols from a file.
-// If the file doesn't exist, it creates one with default values.
-// If there's an error opening the file, it returns a Vec with default values.
-pub async fn read_tickers() -> io::Result<Vec<String>> {
-    let path = Path::new("tickers.txt");
-    let default_tickers = Config::get_default_tickers();
-
-    if !path.exists() {
-        let mut file = File::create(&path)?;
-        for ticker in &default_tickers {
-            writeln!(file, "{}", ticker)?;
-        }
-    }
-
-    let mut tickers = Vec::new();
-    let file = File::open(&path)?;
-    for line in io::BufReader::new(file).lines() {
-        let ticker = line?;
-        tickers.push(ticker);
-    }
-
-    Ok(tickers)
+#[derive(thiserror::Error, Debug)]
+pub enum ConfigurationError {
+    #[error("Configuration file not found")]
+    FileNotFound,
+    #[error("Interval (`{0}`) not supported")]
+    IntervalError(String),
 }
 
-// This function reads configuration data from a YAML file.
-// If the file doesn't exist, it creates one with default values.
-// If there's an error opening the file, it returns a Config struct with default values.
-pub async fn read_config() -> Result<Config, Box<dyn std::error::Error>> {
-    let path = Path::new("config.yml");
-    let default_config = Config::default();
+#[cfg(test)]
+mod tests {
+    use std::fs;
 
-    if !path.exists() {
-        let mut file = File::create(&path)?;
-        writeln!(file, "periods: {}", default_config.periods)?;
-        writeln!(file, "interval: {}", default_config.interval)?;
-        writeln!(file, "fee: {}", default_config.fee)?;
+    use super::*;
+
+    #[test]
+    fn test_interval_minutes() {
+        let config = Config::default();
+        assert_eq!(config.interval_minutes().unwrap(), 15);
     }
 
-    let file = File::open(&path)?;
-    let reader = BufReader::new(file);
-    let config: Config = serde_yaml::from_reader(reader)
-        .map_err(|err| Box::new(err) as Box<dyn std::error::Error>)?;
+    #[test]
+    fn check_default() {
+        let config = Config::default();
+        assert_eq!(config.periods, 2000);
+        assert_eq!(config.interval, "15m");
+        assert_eq!(config.depth, 3);
+        assert_eq!(
+            config.tickers,
+            vec!["BTCBUSD".to_string(), "ETHBUSD".to_string()]
+        );
+    }
 
-    Ok(config)
+    #[tokio::test]
+    async fn check_default_match() {
+        let default_config = Config::default();
+        let path = Path::new("test_config.yml");
+        let mut file = File::create(path).unwrap();
+        file.write_all(DEFAULT_DATA.as_bytes()).unwrap();
+        let config = Config::read_config(Some("test_config.yml")).await.unwrap();
+        fs::remove_file(path).unwrap();
+
+        assert_eq!(config.periods, default_config.periods);
+        assert_eq!(config.interval, default_config.interval);
+        assert_eq!(config.depth, default_config.depth);
+        assert_eq!(config.tickers, default_config.tickers);
+    }
 }

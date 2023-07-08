@@ -1,351 +1,260 @@
-use std::{collections::HashMap, fs::File, io::{Write, Read}};
+use std::error::Error;
 
-use binance::{
-    api::Binance,
-    market::Market,
-    rest_model::{KlineSummaries, KlineSummary},
-};
-use getset::Getters;
-use serde::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
+use binance::{api::Binance, market::Market, rest_model::KlineSummaries};
+use getset::{Getters, MutGetters};
 use ta::{
-    indicators::{CommodityChannelIndex, RelativeStrengthIndex, SlowStochastic, StandardDeviation},
-    DataItem, Next,
+    indicators::{CommodityChannelIndex, RelativeStrengthIndex, SlowStochastic},
+    Next,
 };
 
 use crate::{
+    candlestick::{Candlestick, TechnicalType::*, TECHNICAL_COUNT},
     config::Config,
-    math::{change, cr_ratio},
+    math::{cr_ratio, percentage_change},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Candlestick {
-    pub data: CandleData,
-    pub technicals: TechnicalData,
+pub const MINUTES_TO_MILLIS: i64 = 60_000;
+
+#[derive(Debug, Getters, MutGetters)]
+pub struct TickerData {
+    #[getset(get = "pub")]
+    ticker: Box<str>,
+    #[getset(get = "pub", get_mut = "pub")]
+    candles: Box<[Candlestick]>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TechnicalData {
-    data: [f64; 7],
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
-#[getset(get = "pub")]
-pub struct CandleData {
-    pub open: f64,
-    pub close: f64,
-    pub high: f64,
-    pub low: f64,
-    pub volume: f64,
-    pub close_time: i64,
-}
-
-#[derive(Debug, Clone, Copy, EnumIter, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum TechnicalType {
-    PercentageChange,
-    CandlestickRatio,
-    StochasticOscillator,
-    RelativeStrengthIndex,
-    CommodityChannelIndex,
-    VolumeChange,
-    StandardDeviation,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HistoricalData {
-    pub data: Vec<Vec<Candlestick>>,
-    pub indexes: HashMap<String, usize>,
-}
-
-impl Candlestick {
-    pub fn from_summary(summary: KlineSummary) -> Candlestick {
-        Candlestick {
-            data: CandleData {
-                open: summary.open,
-                close: summary.close,
-                high: summary.high,
-                low: summary.low,
-                volume: summary.volume,
-                close_time: summary.close_time,
-            },
-            technicals: TechnicalData::new(),
+impl TickerData {
+    pub fn new(ticker: String, candles: Vec<Candlestick>) -> Self {
+        Self {
+            ticker: Box::from(ticker),
+            candles: Box::from(candles),
         }
-    }
-
-    pub fn get(&self, technical_type: TechnicalType) -> f64 {
-        self.technicals.data[technical_type as usize]
-    }
-
-    pub fn set(&mut self, technical_type: TechnicalType, value: f64) {
-        self.technicals.data[technical_type as usize] = value;
-    }
-
-    pub fn get_all(&self) -> &[f64; 7] {
-        &self.technicals.data
     }
 }
 
-impl TechnicalData {
-    pub fn new() -> Self {
-        Self { data: [0.0; 7] }
-    }
-}
+pub async fn load(config: &Config) -> Result<Box<[TickerData]>, Box<dyn Error>> {
+    let current_time = chrono::Utc::now().timestamp_millis();
+    let interval_minutes = config.interval_minutes()? * *config.periods() as i64;
+    let start_time = current_time - interval_minutes * MINUTES_TO_MILLIS;
 
-impl TechnicalType {
-    pub fn get_all() -> Vec<TechnicalType> {
-        TechnicalType::iter().collect()
-    }
-}
+    let tasks = config
+        .tickers()
+        .iter()
+        .map(|ticker| load_ticker(ticker.clone(), start_time, current_time, config));
 
-impl HistoricalData {
-    pub fn new(symbols: &Vec<String>) -> HistoricalData {
-        let mut data = Vec::new();
-        let mut indexes = HashMap::new();
-        for (i, symbol) in symbols.iter().enumerate() {
-            indexes.insert(symbol.clone(), i);
-            data.push(Vec::new());
-        }
-        HistoricalData { data, indexes }
-    }
-
-    pub fn find_ticker(&self, index: usize) -> Option<&str> {
-        let result = self.indexes.iter().find(|(_, i)| **i == index);
-        match result {
-            Some((ticker, _)) => Some(ticker.as_str()),
-            None => None,
-        }
-    }
-
-    pub fn find_index(&self, ticker: &str) -> Option<usize> {
-        self.indexes.get(ticker).copied()
-    }
-
-    pub fn get(&self, ticker: &str) -> Option<&Vec<Candlestick>> {
-        let index = self.find_index(ticker);
-        match index {
-            Some(i) => Some(&self.data[i]),
-            None => None,
-        }
-    }
-
-    pub fn index_get(&self, index: usize) -> Option<&Vec<Candlestick>> {
-        self.data.get(index)
-    }
-
-    pub fn get_mut(&mut self, ticker: &str) -> Option<&mut Vec<Candlestick>> {
-        let index = self.find_index(ticker);
-        match index {
-            Some(i) => Some(&mut self.data[i]),
-            None => None,
-        }
-    }
-
-    pub fn index_get_mut(&mut self, index: usize) -> Option<&mut Vec<Candlestick>> {
-        self.data.get_mut(index)
-    }
-
-    pub fn get_all(&self) -> &Vec<Vec<Candlestick>> {
-        &self.data
-    }
-
-    pub fn get_all_mut(&mut self) -> &mut Vec<Vec<Candlestick>> {
-        &mut self.data
-    }
-
-    pub fn get_all_tickers(&self) -> Vec<&str> {
-        self.indexes.keys().map(|s| s.as_str()).collect()
-    }
-
-    pub fn combine(&mut self, other: HistoricalData) {
-        let mut new_indexes = HashMap::new();
-        for (i, ticker) in other.get_all_tickers().iter().enumerate() {
-            new_indexes.insert(ticker.to_string(), i + self.indexes.len());
-        }
-        self.indexes.extend(new_indexes);
-        self.data.extend(other.data);
-    }
-
-    pub async fn load(&mut self, config: &Config) {
-        let current_time = chrono::Utc::now().timestamp_millis();
-        let minutes = config.get_interval_minutes().unwrap() * config.periods();
-        let start_time = current_time - minutes as i64 * 60_000;
-        let tasks = self
-            .indexes
-            .keys()
-            .map(|ticker| load_ticker(ticker, start_time, current_time, &config))
-            .collect::<Vec<_>>();
-        let results = futures::future::join_all(tasks).await;
-        for (ticker, candlesticks) in results {
-            let index = self.indexes.get(&ticker).unwrap();
-            self.data[*index] = candlesticks;
-        }
-        // Check that all tickers have been loaded with the correct number of periods
-        let clone = self.clone();
-        let keys = clone.indexes.keys().clone();
-        for ticker in keys {
-            let index = clone.indexes.get(ticker).unwrap();
-            if self.data[*index].len() != *config.periods() {
-                println!(
-                    "Ticker {} has {} periods, expected {}",
-                    ticker,
-                    self.data[*index].len(),
-                    *config.periods()
-                );
-                // Remove ticker from data (to do this we need to adjust all the indexes)
-                let mut new_indexes = HashMap::new();
-                for (i, ticker) in self.indexes.iter().enumerate() {
-                    if i < *index {
-                        new_indexes.insert(ticker.0.clone(), i);
-                    } else if i > *index {
-                        new_indexes.insert(ticker.0.clone(), i - 1);
-                    }
-                }
-                self.indexes = new_indexes;
-                self.data.remove(*index);
-            }
-        }
-    }
-
-    pub fn calculate_technicals(&mut self) {
-        self.calculate_candlestick_technicals();
-        let (means, stds) = self.calculate_means_and_stds();
-        self.normalize_technicals(&means, &stds);
-    }
-
-    fn calculate_candlestick_technicals(&mut self) {
-        let mut stoch = SlowStochastic::default();
-        let mut rsi = RelativeStrengthIndex::default();
-        let mut cci = CommodityChannelIndex::default();
-        let mut sd = StandardDeviation::default();
-        for candlesticks in &mut self.data {
-            let mut previous_close = 0.0;
-            let mut previous_volume = 0.0;
-            for candle in candlesticks {
-                if previous_close != 0.0 && previous_volume != 0.0 {
-                    candle.set(
-                        TechnicalType::PercentageChange,
-                        change(previous_close, *candle.data.close()),
-                    );
-                    candle.set(
-                        TechnicalType::VolumeChange,
-                        change(previous_volume, *candle.data.volume()),
-                    );
-                }
-                previous_close = *candle.data.close();
-                previous_volume = *candle.data.volume();
-                let bar = &DataItem::builder()
-                    .high(*candle.data.high())
-                    .low(*candle.data.low())
-                    .close(*candle.data.close())
-                    .open(*candle.data.open())
-                    .volume(*candle.data.volume())
-                    .build()
-                    .unwrap();
-                candle.set(TechnicalType::CandlestickRatio, cr_ratio(bar));
-                candle.set(TechnicalType::StochasticOscillator, stoch.next(bar).round());
-                candle.set(TechnicalType::RelativeStrengthIndex, rsi.next(bar).round());
-                candle.set(TechnicalType::CommodityChannelIndex, cci.next(bar).round());
-                candle.set(TechnicalType::StandardDeviation, sd.next(bar).round());
-            }
-        }
-    }
-
-    fn calculate_means_and_stds(&self) -> (Vec<f64>, Vec<f64>) {
-        let mut means = vec![0.0; 7];
-        let mut stds = vec![0.0; 7];
-        for candlesticks in &self.data {
-            for candle in candlesticks {
-                let technicals = candle.get_all();
-                for i in 0..7 {
-                    means[i] += technicals[i];
-                }
-            }
-        }
-        let count = self.data.len() * self.data[0].len();
-        for i in 0..7 {
-            means[i] /= count as f64;
-        }
-        for candlesticks in &self.data {
-            for candle in candlesticks {
-                let technicals = candle.get_all();
-                for i in 0..7 {
-                    stds[i] += (technicals[i] - means[i]).powi(2);
-                }
-            }
-        }
-        for i in 0..7 {
-            stds[i] = (stds[i] / count as f64).sqrt();
-        }
-        (means, stds)
-    }
-
-    // Normalize all of the technicals so that they have the same mean and standard deviation as the percentage change
-    fn normalize_technicals(&mut self, means: &Vec<f64>, stds: &Vec<f64>) {
-        for candlesticks in &mut self.data {
-            for candle in candlesticks {
-                let percentage_change = candle.get(TechnicalType::PercentageChange);
-                for technical in TechnicalType::get_all() {
-                    if technical == TechnicalType::PercentageChange {
-                        continue;
-                    }
-                    let value = candle.get(technical);
-                    let mean = means[technical as usize];
-                    let std = stds[technical as usize];
-                    candle.set(technical, (value - mean) / std * percentage_change);
-                }
-            }
-        }
-    }
-
-    pub fn serialize_to_json(&self, filename: &str) {
-        let mut file = File::create(filename).unwrap();
-        let json = serde_json::to_string(&self).unwrap();
-        file.write_all(json.as_bytes()).unwrap();
-    }
-
-    pub fn deserialize_from_json(filename: &str) -> Self {
-        let mut file = File::open(filename).unwrap();
-        let mut json = String::new();
-        file.read_to_string(&mut json).unwrap();
-        serde_json::from_str(&json).unwrap()
-    }
-
-
+    let tickers = futures::future::join_all(tasks).await;
+    let tickers = tickers.into_iter().collect::<Result<Vec<_>, _>>()?;
+    let candles: Box<[TickerData]> = Box::from(tickers);
+    futures::executor::block_on(check_data(&candles, config))?;
+    Ok(candles)
 }
 
 async fn load_ticker(
-    ticker: &str,
-    mut start_time: i64,
+    ticker: String,
+    start_time: i64,
     current_time: i64,
     config: &Config,
-) -> (String, Vec<Candlestick>) {
-    let market: Market = Binance::new(config.api_key().clone(), config.secret_key().clone());
+) -> Result<TickerData, Box<dyn Error>> {
     let mut candlesticks = Vec::new();
-    let addition = 60_000_000 * config.get_interval_minutes().unwrap() as i64;
+    let market: Market = Binance::new(config.api_key().clone(), config.api_secret().clone());
+    let addition = MINUTES_TO_MILLIS * 1000 * config.interval_minutes()?;
+    let mut start_time = start_time;
+    let mut start_times = Vec::new();
+
     while start_time < current_time {
-        let result = market
-            .get_klines(ticker, config.interval(), 1000u16, start_time as u64, None)
-            .await;
-        match result {
-            Ok(klines) => match klines {
-                KlineSummaries::AllKlineSummaries(klines) => {
-                    candlesticks.extend(summaries_to_candlesticks(klines));
-                }
-            },
-            Err(e) => {
-                println!("Error loading data for {}: {}", ticker, e);
-                break;
-            }
-        }
-        start_time += addition;
+        let end_time = start_time + addition;
+        start_times.push(start_time as u64);
+        start_time = end_time;
     }
-    (ticker.to_string(), candlesticks)
+
+    let tasks = start_times.into_iter().map(|start_time| {
+        load_chunk(
+            ticker.clone(),
+            start_time,
+            start_time + addition as u64,
+            config,
+            &market,
+        )
+    });
+    let results = futures::future::join_all(tasks).await;
+
+    for result in results {
+        let chunk = result?;
+        candlesticks.extend(chunk);
+    }
+
+    candlesticks.sort_by(|a, b| a.close_time().cmp(b.close_time()));
+    Ok(TickerData::new(ticker, candlesticks))
 }
 
-fn summaries_to_candlesticks(summaries: Vec<KlineSummary>) -> Vec<Candlestick> {
-    summaries
-        .into_iter()
-        .map(|summary| Candlestick::from_summary(summary))
-        .collect()
+async fn load_chunk(
+    ticker: String,
+    start_time: u64,
+    end_time: u64,
+    config: &Config,
+    market: &Market,
+) -> Result<Vec<Candlestick>, Box<dyn Error>> {
+    let summaries = market
+        .get_klines(
+            ticker.clone(),
+            config.interval(),
+            1000,
+            Some(start_time),
+            Some(end_time),
+        )
+        .await
+        .map_err(|error| {
+            Box::new(DataError::BinanceError {
+                symbol: ticker,
+                error,
+            })
+        })?;
+    Ok(expand_summaries(summaries))
+}
+
+pub fn calculate_technicals(mut candles: Box<[TickerData]>) -> Box<[TickerData]> {
+    let mut stoch = SlowStochastic::default();
+    let mut rsi = RelativeStrengthIndex::default();
+    let mut cci = CommodityChannelIndex::default();
+
+    for ticker in candles.iter_mut() {
+        let mut previous_close = *ticker.candles()[0].close();
+        let mut previous_volume = *ticker.candles()[0].volume();
+
+        for candle in ticker.candles_mut().iter_mut() {
+            let p_change = percentage_change(previous_close, *candle.close());
+            let v_change = percentage_change(previous_volume, *candle.volume());
+            previous_close = *candle.close();
+            previous_volume = *candle.volume();
+            candle.technicals_mut()[PercentageChange as usize] = p_change;
+            candle.set_p_change(p_change);
+            candle.technicals_mut()[VolumeChange as usize] = v_change;
+
+            let item = match candle.to_data_item() {
+                Ok(data_item) => data_item,
+                Err(_) => continue,
+            };
+
+            candle.technicals_mut()[CandlestickRatio as usize] = cr_ratio(&item);
+            candle.technicals_mut()[StochasticOscillator as usize] =
+                stoch.next(&item).round() as f32;
+            candle.technicals_mut()[RelativeStrengthIndex as usize] =
+                rsi.next(&item).round() as f32;
+            candle.technicals_mut()[CommodityChannelIndex as usize] =
+                cci.next(&item).round() as f32;
+        }
+    }
+
+    let means = calculate_means(&candles);
+    let stddevs = calculate_stddevs(&candles, means);
+    normalize(candles, means, stddevs)
+}
+
+fn calculate_means(candles: &[TickerData]) -> [f32; TECHNICAL_COUNT] {
+    let mut means = [0.0; TECHNICAL_COUNT];
+    for ticker in candles.iter() {
+        for candle in ticker.candles().iter() {
+            for (index, technical) in candle.technicals().iter().enumerate() {
+                means[index] += technical;
+            }
+        }
+    }
+    let count = candles.len() * candles[0].candles().len();
+    means.iter_mut().for_each(|mean| *mean /= count as f32);
+    means
+}
+
+fn calculate_stddevs(
+    candles: &[TickerData],
+    means: [f32; TECHNICAL_COUNT],
+) -> [f32; TECHNICAL_COUNT] {
+    let mut stdev = [0.0; TECHNICAL_COUNT];
+    for ticker in candles.iter() {
+        for candle in ticker.candles().iter() {
+            for (index, technical) in candle.technicals().iter().enumerate() {
+                stdev[index] += (*technical - means[index]).powi(2);
+            }
+        }
+    }
+    let count = candles.len() * candles[0].candles().len();
+    stdev
+        .iter_mut()
+        .for_each(|stdev| *stdev = (*stdev / count as f32).sqrt());
+    stdev
+}
+
+fn normalize(
+    mut candles: Box<[TickerData]>,
+    means: [f32; TECHNICAL_COUNT],
+    stddevs: [f32; TECHNICAL_COUNT],
+) -> Box<[TickerData]> {
+    for ticker in candles.iter_mut() {
+        for candle in ticker.candles_mut().iter_mut() {
+            for (index, technical) in candle.technicals_mut().iter_mut().enumerate() {
+                *technical = (*technical - means[index]) / stddevs[index];
+                if technical.is_nan() || technical.is_infinite() {
+                    *technical = 0.0;
+                }
+            }
+        }
+    }
+    candles
+}
+
+async fn check_data(candles: &[TickerData], config: &Config) -> Result<(), Box<dyn Error>> {
+    check_length(candles, config).await?;
+    check_times(candles).await?;
+    Ok(())
+}
+
+async fn check_length(candles: &[TickerData], config: &Config) -> Result<(), Box<dyn Error>> {
+    for ticker in candles.iter() {
+        if ticker.candles.len() < *config.periods() {
+            return Err(Box::new(DataError::NotEnoughData(
+                ticker.ticker.to_string(),
+            )));
+        }
+    }
+    Ok(())
+}
+
+async fn check_times(candles: &[TickerData]) -> Result<(), Box<dyn Error>> {
+    let first_ticker = &candles[0];
+    let first_ticker_times: Vec<i64> = first_ticker
+        .candles()
+        .iter()
+        .map(|c| *c.close_time())
+        .collect();
+
+    for ticker in candles.iter().skip(1) {
+        let ticker_times: Vec<_> = ticker.candles.iter().map(|c| *c.close_time()).collect();
+        if ticker_times != first_ticker_times {
+            return Err(Box::new(DataError::DataTimeMismatch(
+                ticker.ticker.to_string(),
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn expand_summaries(summaries: KlineSummaries) -> Vec<Candlestick> {
+    match summaries {
+        KlineSummaries::AllKlineSummaries(summaries) => summaries
+            .into_iter()
+            .map(Candlestick::new_from_summary)
+            .collect(),
+    }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum DataError {
+    #[error("Not enough data for ticker {0}")]
+    NotEnoughData(String),
+    #[error("Data time mismatch for ticker {0}")]
+    DataTimeMismatch(String),
+    #[error("Binance error for symbol {symbol}: {error}")]
+    BinanceError {
+        symbol: String,
+        error: binance::errors::Error,
+    },
 }
