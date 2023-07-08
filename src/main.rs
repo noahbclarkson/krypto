@@ -42,8 +42,8 @@ async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Bo
     for depth in 3..=10 {
         let config = config.set_depth(depth);
         let relationships = compute_relationships(candles, config).await;
-        for i in 0..100 {
-            let min_score = i as f32 / 50.0;
+        for i in 0..=50 {
+            let min_score = i as f32 / 20.0;
             let config = config.set_min_score(Some(min_score));
             let test = backtest(candles, &relationships, config);
             let test_return = test.compute_average_return(
