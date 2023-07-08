@@ -56,23 +56,3 @@ impl Candlestick {
             .build()
     }
 }
-
-impl PartialOrd for Candlestick {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.close_time.partial_cmp(&other.close_time)
-    }
-}
-
-impl Ord for Candlestick {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.close_time.cmp(&other.close_time)
-    }
-}
-
-impl PartialEq for Candlestick {
-    fn eq(&self, other: &Self) -> bool {
-        self.close_time == other.close_time
-    }
-}
-
-impl Eq for Candlestick {}
