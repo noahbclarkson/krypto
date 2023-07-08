@@ -311,6 +311,7 @@ pub mod tests {
     use super::*;
 
     #[tokio::test]
+    #[ignore = "Invalid for CI"]
     async fn test_compute_relationships() {
         let config = Config::default();
         let candles = load(&config).await.unwrap();
@@ -323,6 +324,7 @@ pub mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "Invalid for CI"]
     async fn test_predict() {
         let config = Config::default();
         let candles = load(&config).await.unwrap();
