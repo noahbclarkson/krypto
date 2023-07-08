@@ -34,15 +34,14 @@ impl TickerData {
 
 pub async fn load(
     config: &Config,
-    tickers: Vec<String>,
 ) -> Result<Box<[TickerData]>, Box<dyn Error>> {
     let current_time = chrono::Utc::now().timestamp_millis();
     let interval_minutes = config.interval_minutes()? * *config.periods() as i64;
     let start_time = current_time - interval_minutes * MINUTES_TO_MILLIS;
 
-    let tasks = tickers
+    let tasks = config.tickers()
         .into_iter()
-        .map(|ticker| load_ticker(ticker, start_time, current_time, config));
+        .map(|ticker| load_ticker(ticker.clone(), start_time, current_time, config));
 
     let tickers = futures::future::join_all(tasks).await;
     let tickers = tickers.into_iter().collect::<Result<Vec<_>, _>>()?;

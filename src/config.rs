@@ -1,7 +1,7 @@
 use std::{
     error::Error,
     fs::File,
-    io::{BufRead, BufReader, Write},
+    io::{BufReader, Write},
     path::Path,
 };
 
@@ -13,6 +13,9 @@ const DEFAULT_DATA: &str = r#"
 periods: 2000
 interval: "15m"
 depth: 3
+tickers: 
+    - "BTCBUSD"
+    - "ETHBUSD"
 "#;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Getters, Setters)]
@@ -24,6 +27,7 @@ pub struct Config {
     fee: Option<f32>,
     #[serde(rename = "min-score")]
     min_score: Option<f32>,
+    tickers: Vec<String>,
     #[serde(rename = "api-key")]
     api_key: Option<String>,
     #[serde(rename = "api-secret")]
@@ -36,6 +40,7 @@ impl Default for Config {
             periods: 2000,
             interval: "15m".to_string(),
             depth: 3,
+            tickers: vec!["BTCBUSD".to_string(), "ETHBUSD".to_string()],
             fee: None,
             min_score: None,
             api_key: None,
@@ -45,8 +50,12 @@ impl Default for Config {
 }
 
 impl Config {
-    pub async fn read_config() -> Result<Self, Box<dyn Error>> {
-        let path = Path::new("config.yml");
+    pub async fn read_config(filename: Option<&str>) -> Result<Box<Self>, Box<dyn Error>> {
+        let path = match filename {
+            Some(filename) => Path::new(filename),
+            None => Path::new("config.yml"),
+        };
+        let path = path.canonicalize()?;
 
         if !path.exists() {
             let mut file = File::create(path)?;
@@ -57,23 +66,7 @@ impl Config {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         let config: Config = from_reader(reader).map_err(|err| Box::new(err) as Box<dyn Error>)?;
-        Ok(config)
-    }
-
-    pub async fn read_tickers() -> Result<Vec<String>, Box<dyn Error>> {
-        let path = Path::new("tickers.txt");
-
-        if !path.exists() {
-            return Err(Box::new(ConfigurationError::TickerFileNotFound));
-        }
-
-        let file = File::open(path)?;
-        let reader = BufReader::new(file);
-        let tickers: Vec<String> = reader
-            .lines()
-            .map(|line| line.unwrap().to_uppercase().trim().to_string())
-            .collect::<Vec<String>>();
-        Ok(tickers)
+        Ok(Box::new(config))
     }
 
     pub fn interval_minutes(&self) -> Result<i64, Box<dyn std::error::Error>> {
@@ -100,22 +93,49 @@ impl Config {
     }
 }
 
-pub async fn load_configuration() -> Result<(Box<Config>, Vec<String>), Box<dyn Error>> {
-    let tasks = futures::future::join(Config::read_config(), Config::read_tickers());
-    let (config, tickers) = tasks.await;
-    Ok((Box::new(config?), tickers?))
-}
-
-pub const DEFAULT_TICKERS: [&str; 4] = [
-    "BTCBUSD", "ETHBUSD", "BNBBUSD", "ADAUSDT",
-];
-
 #[derive(thiserror::Error, Debug)]
 pub enum ConfigurationError {
     #[error("Configuration file not found")]
     FileNotFound,
-    #[error("Ticker file not found")]
-    TickerFileNotFound,
     #[error("Interval (`{0}`) not supported")]
     IntervalError(String),
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use super::*;
+
+    #[test]
+    fn test_interval_minutes() {
+        let config = Config::default();
+        assert_eq!(config.interval_minutes().unwrap(), 15);
+    }
+
+    #[test]
+    fn check_default() {
+        let config = Config::default();
+        assert_eq!(config.periods, 2000);
+        assert_eq!(config.interval, "15m");
+        assert_eq!(config.depth, 3);
+        assert_eq!(config.tickers, vec!["BTCBUSD".to_string(), "ETHBUSD".to_string()]);
+    }
+
+    #[tokio::test]
+    async fn check_default_match() {
+        let default_config = Config::default();
+        let path = Path::new("test_config.yml");
+        let mut file = File::create(path).unwrap();
+        file.write_all(DEFAULT_DATA.as_bytes()).unwrap();
+        let config = Config::read_config(Some("test_config.yml")).await.unwrap();
+        fs::remove_file(path).unwrap();
+
+        assert_eq!(config.periods, default_config.periods);
+        assert_eq!(config.interval, default_config.interval);
+        assert_eq!(config.depth, default_config.depth);
+        assert_eq!(config.tickers, default_config.tickers);
+
+    }
+
 }

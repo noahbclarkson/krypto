@@ -1,29 +1,38 @@
 use std::error::Error;
 
+use clap::Parser;
 use krypto::{
     algorithm::{backtest, compute_relationships, livetest},
-    config::{load_configuration, Config},
+    config::Config,
     historical_data::{calculate_technicals, load, TickerData},
-    testing::PerPeriod,
+    testing::PerPeriod, args::Args,
 };
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn Error>> {
-    // let args = Args::parse();
-    let (mut config, tickers) = load_configuration().await?;
+    let args = Args::parse();
+    let mut config = Config::read_config(None).await?;
     println!("Loaded configuration");
-    let candles = load(config.as_mut(), tickers.clone()).await?;
+    let candles = load(&config).await?;
+    println!("Loaded historical data");
     let candles = calculate_technicals(candles);
+    println!("Calculated technicals");
     let relationships = compute_relationships(&candles, &config).await;
-    let test = backtest(&candles, &relationships, &config);
-    println!("{}", test);
-    // let config = find_best_parameters(config.as_mut(), &candles).await;
-    livetest(tickers, &config).await?;
+    println!("Computed relationships");
+    if args.backtest().is_some() && args.backtest().unwrap() {
+        let test = backtest(&candles, &relationships, &config);
+        println!("{}", test);
+    }
+    if args.optimize().is_some() && args.optimize().unwrap() {
+        config = find_best_parameters(&mut config, &candles).await;
+    }
+    if args.livetest().is_some() && args.livetest().unwrap() {
+        livetest(&config).await?;
+    }
     Ok(())
 }
 
-#[allow(dead_code)]
-async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Config {
+async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Box<Config> {
     let mut best_return = 0.0;
     let mut best_config = config.clone();
     let interval_num = config.interval_minutes().unwrap() as usize;
@@ -65,5 +74,5 @@ async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Co
             results_file.flush().unwrap();
         }
     }
-    best_config
+    Box::new(best_config)
 }

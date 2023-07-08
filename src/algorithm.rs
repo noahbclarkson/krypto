@@ -149,7 +149,7 @@ pub fn backtest(
     test
 }
 
-pub async fn livetest(tickers: Vec<String>, config: &Config) -> Result<(), Box<dyn Error>> {
+pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
     let mut test = TestData::new(STARTING_CASH);
     let depth = config.depth().clone();
     let min_score = config.min_score().unwrap_or_default();
@@ -176,7 +176,7 @@ pub async fn livetest(tickers: Vec<String>, config: &Config) -> Result<(), Box<d
     file.flush()?;
 
     loop {
-        let candles = load(config, tickers.clone()).await;
+        let candles = load(config).await;
         let candles = match candles {
             Ok(candles) => candles,
             Err(err) => {
@@ -190,13 +190,13 @@ pub async fn livetest(tickers: Vec<String>, config: &Config) -> Result<(), Box<d
         wait(config, 1).await?;
         let mut c_clone = config.clone();
         c_clone.set_periods(data_size);
-        let lc = load(&c_clone, tickers.clone()).await;
+        let lc = load(&c_clone).await;
         let lc = match lc {
             Ok(candles) => candles,
             Err(err) => {
                 println!("Error: {}", err);
                 println!("Trying again...");
-                let lc_2 = load(&c_clone, tickers.clone()).await;
+                let lc_2 = load(&c_clone).await;
                 match lc_2 {
                     Ok(candles) => candles,
                     Err(err) => {
@@ -254,8 +254,12 @@ pub async fn livetest(tickers: Vec<String>, config: &Config) -> Result<(), Box<d
                 chrono::Utc::now().to_rfc3339(),
             ];
 
-            file.write_record(&record)?;
-            file.flush()?;
+            file.write_record(&record).unwrap_or_else(|err| {
+                println!("Error writing record: {}", err);
+            });
+            file.flush().unwrap_or_else(|err| {
+                println!("Error flushing file: {}", err);
+            });
         }
 
         let (index, score) = predict(&relationships, data_size - 1, &lc);
@@ -302,26 +306,30 @@ async fn wait(config: &Config, periods: usize) -> Result<(), Box<dyn Error>> {
 #[cfg(test)]
 pub mod tests {
 
-    use crate::{
-        config::DEFAULT_TICKERS,
-        historical_data::{calculate_technicals, load},
-    };
+    use crate::historical_data::{calculate_technicals, load};
 
     use super::*;
 
     #[tokio::test]
     async fn test_compute_relationships() {
         let config = Config::default();
-        let tickers = DEFAULT_TICKERS
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>();
-        let candles = load(&config, tickers.clone()).await.unwrap();
+        let candles = load(&config).await.unwrap();
         let candles = calculate_technicals(candles);
         let relationships = compute_relationships(&candles, &config).await;
         assert_eq!(
             relationships.len(),
-            tickers.len().pow(2) * TECHNICAL_COUNT * config.depth()
+            config.tickers().len().pow(2) * TECHNICAL_COUNT * config.depth()
         );
+    }
+
+    #[tokio::test]
+    async fn test_predict() {
+        let config = Config::default();
+        let candles = load(&config).await.unwrap();
+        let candles = calculate_technicals(candles);
+        let relationships = compute_relationships(&candles, &config).await;
+        let (index, score) = predict(&relationships, *config.depth(), &candles);
+        assert!(score != 0.0);
+        assert!(index < config.tickers().len());
     }
 }
