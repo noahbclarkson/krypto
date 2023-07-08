@@ -3,7 +3,7 @@ use getset::{Getters, MutGetters, Setters};
 use serde::{Deserialize, Serialize};
 use ta::{errors::TaError, DataItem};
 
-pub const TECHNICAL_COUNT: usize = 6;
+pub const TECHNICAL_COUNT: usize = 10;
 
 #[derive(Debug, Getters, MutGetters, Setters)]
 #[getset(get = "pub")]
@@ -27,7 +27,11 @@ pub enum TechnicalType {
     StochasticOscillator,
     RelativeStrengthIndex,
     CommodityChannelIndex,
+    MoneyFlowIndex,
+    PercentagePriceOscillator,
+    EfficiencyRatio,
     VolumeChange,
+    StandardDeviation,
 }
 
 impl Candlestick {

@@ -27,23 +27,28 @@ impl TestData {
         }
     }
 
+    #[inline(always)]
     pub fn get_accuracy(&self) -> f32 {
         self.correct as f32 / (self.correct + self.incorrect) as f32
     }
 
+    #[inline(always)]
     pub fn add_correct(&mut self) {
         self.correct += 1;
     }
 
+    #[inline(always)]
     pub fn add_incorrect(&mut self) {
         self.incorrect += 1;
     }
 
+    #[inline(always)]
     pub fn add_cash(&mut self, cash: f32) {
         self.cash += cash;
         self.cash_history.push(self.cash);
     }
 
+    #[inline]
     pub fn compute_average_return(
         &self,
         period: PerPeriod,
@@ -72,6 +77,7 @@ impl TestData {
         }
     }
 
+    #[inline]
     pub fn calculate_average_returns(
         &self,
         interval: usize,

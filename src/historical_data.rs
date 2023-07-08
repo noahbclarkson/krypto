@@ -3,7 +3,11 @@ use std::error::Error;
 use binance::{api::Binance, market::Market, rest_model::KlineSummaries};
 use getset::{Getters, MutGetters};
 use ta::{
-    indicators::{CommodityChannelIndex, RelativeStrengthIndex, SlowStochastic},
+    indicators::{
+        CommodityChannelIndex, RelativeStrengthIndex,
+        SlowStochastic, MoneyFlowIndex, PercentagePriceOscillator,
+        EfficiencyRatio, StandardDeviation,
+    },
     Next,
 };
 
@@ -116,6 +120,10 @@ pub fn calculate_technicals(mut candles: Box<[TickerData]>) -> Box<[TickerData]>
     let mut stoch = SlowStochastic::default();
     let mut rsi = RelativeStrengthIndex::default();
     let mut cci = CommodityChannelIndex::default();
+    let mut mfi = MoneyFlowIndex::default();
+    let mut ppo = PercentagePriceOscillator::default();
+    let mut ef = EfficiencyRatio::default();
+    let mut sd = StandardDeviation::default();
 
     for ticker in candles.iter_mut() {
         let mut previous_close = *ticker.candles()[0].close();
@@ -127,8 +135,8 @@ pub fn calculate_technicals(mut candles: Box<[TickerData]>) -> Box<[TickerData]>
             previous_close = *candle.close();
             previous_volume = *candle.volume();
             candle.technicals_mut()[PercentageChange as usize] = p_change;
-            candle.set_p_change(p_change);
             candle.technicals_mut()[VolumeChange as usize] = v_change;
+            candle.set_p_change(p_change);
 
             let item = match candle.to_data_item() {
                 Ok(data_item) => data_item,
@@ -136,12 +144,13 @@ pub fn calculate_technicals(mut candles: Box<[TickerData]>) -> Box<[TickerData]>
             };
 
             candle.technicals_mut()[CandlestickRatio as usize] = cr_ratio(&item);
-            candle.technicals_mut()[StochasticOscillator as usize] =
-                stoch.next(&item).round() as f32;
-            candle.technicals_mut()[RelativeStrengthIndex as usize] =
-                rsi.next(&item).round() as f32;
-            candle.technicals_mut()[CommodityChannelIndex as usize] =
-                cci.next(&item).round() as f32;
+            candle.technicals_mut()[StochasticOscillator as usize] = stoch.next(&item) as f32;
+            candle.technicals_mut()[RelativeStrengthIndex as usize] = rsi.next(&item) as f32;
+            candle.technicals_mut()[CommodityChannelIndex as usize] = cci.next(&item) as f32;
+            candle.technicals_mut()[MoneyFlowIndex as usize] = mfi.next(&item) as f32;
+            candle.technicals_mut()[PercentagePriceOscillator as usize] = ppo.next(&item).ppo as f32;
+            candle.technicals_mut()[EfficiencyRatio as usize] = ef.next(&item) as f32;
+            candle.technicals_mut()[StandardDeviation as usize] = sd.next(&item) as f32;
         }
     }
 

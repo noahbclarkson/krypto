@@ -154,7 +154,6 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
     let depth = *config.depth();
     let min_score = config.min_score().unwrap_or_default();
     let fee = config.fee().unwrap_or_default();
-    let data_size = depth + 15;
 
     let mut enter_price: Option<f32> = None;
     let mut last_index: Option<usize> = None;
@@ -189,7 +188,7 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
         let relationships = compute_relationships(&candles, config).await;
         wait(config, 1).await?;
         let mut c_clone = config.clone();
-        c_clone.set_periods(data_size);
+        c_clone.set_periods(1000);
         let lc = load(&c_clone).await;
         let lc = match lc {
             Ok(candles) => candles,
@@ -211,7 +210,7 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
         if enter_price.is_some() && last_index.is_some() {
             let ep = enter_price.unwrap();
             let li = last_index.unwrap();
-            let current_price = lc[li].candles()[data_size - 1].close();
+            let current_price = lc[li].candles()[999].close();
             let change = percentage_change(ep, *current_price);
             let fee_change = test.cash() * fee * MARGIN;
 
@@ -262,9 +261,9 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
             });
         }
 
-        let (index, score) = predict(&relationships, data_size - 1, &lc);
+        let (index, score) = predict(&relationships, 999, &lc);
         if score > min_score {
-            let current_price = lc[index].candles()[data_size - 1].close();
+            let current_price = lc[index].candles()[999].close();
             enter_price = Some(*current_price);
             last_index = Some(index);
             last_score = Some(score);
@@ -285,6 +284,7 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
 
 const WAIT_WINDOW: i64 = 5000;
 
+#[inline]
 async fn wait(config: &Config, periods: usize) -> Result<(), Box<dyn Error>> {
     for _ in 0..periods {
         loop {

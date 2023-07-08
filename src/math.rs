@@ -21,6 +21,7 @@ pub fn cr_ratio(candle: &DataItem) -> f32 {
     }
 }
 
+#[inline]
 pub fn format_number(num: f32) -> String {
     let original_num = num;
     let suffixes = [

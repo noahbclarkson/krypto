@@ -50,6 +50,8 @@ impl Default for Config {
 }
 
 impl Config {
+
+    #[inline]
     pub async fn read_config(filename: Option<&str>) -> Result<Box<Self>, Box<dyn Error>> {
         let path = match filename {
             Some(filename) => Path::new(filename),
@@ -69,6 +71,7 @@ impl Config {
         Ok(Box::new(config))
     }
 
+    #[inline]
     pub fn interval_minutes(&self) -> Result<i64, Box<dyn std::error::Error>> {
         match self.interval.as_str() {
             "1m" => Ok(1),
