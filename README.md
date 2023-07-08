@@ -38,7 +38,7 @@ pub struct Candlestick {
 We store the technicals in an array of floats that can be indexed using the `TechnicalType` enum:
 
 ```rust
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum TechnicalType {
     PercentageChange,
     CandlestickRatio,

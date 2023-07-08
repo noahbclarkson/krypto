@@ -1,6 +1,5 @@
 use binance::rest_model::KlineSummary;
 use getset::{Getters, MutGetters, Setters};
-use serde::{Deserialize, Serialize};
 use ta::{errors::TaError, DataItem};
 
 pub const TECHNICAL_COUNT: usize = 10;
@@ -20,7 +19,7 @@ pub struct Candlestick {
     technicals: Box<[f32; TECHNICAL_COUNT]>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum TechnicalType {
     PercentageChange,
     CandlestickRatio,
