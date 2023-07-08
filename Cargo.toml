@@ -15,5 +15,3 @@ getset = "0.1.2"
 csv = "1.2.2"
 clap = {version = "4.3.10", features = ["wrap_help", "derive"] }
 thiserror = "1.0.40"
-log = "0.4.19"
-simple_logger = "4.2.0"
