@@ -2,14 +2,7 @@ use std::error::Error;
 
 use binance::{api::Binance, market::Market, rest_model::KlineSummaries};
 use getset::{Getters, MutGetters};
-use ta::{
-    indicators::{
-        CommodityChannelIndex, RelativeStrengthIndex,
-        SlowStochastic, MoneyFlowIndex, PercentagePriceOscillator,
-        EfficiencyRatio, StandardDeviation,
-    },
-    Next,
-};
+use ta::{indicators, Next};
 
 use crate::{
     candlestick::{Candlestick, TechnicalType::*, TECHNICAL_COUNT},
@@ -117,13 +110,13 @@ async fn load_chunk(
 }
 
 pub fn calculate_technicals(mut candles: Box<[TickerData]>) -> Box<[TickerData]> {
-    let mut stoch = SlowStochastic::default();
-    let mut rsi = RelativeStrengthIndex::default();
-    let mut cci = CommodityChannelIndex::default();
-    let mut mfi = MoneyFlowIndex::default();
-    let mut ppo = PercentagePriceOscillator::default();
-    let mut ef = EfficiencyRatio::default();
-    let mut sd = StandardDeviation::default();
+    let mut stoch = indicators::SlowStochastic::default();
+    let mut rsi = indicators::RelativeStrengthIndex::default();
+    let mut cci = indicators::CommodityChannelIndex::default();
+    let mut mfi = indicators::MoneyFlowIndex::default();
+    let mut ppo = indicators::PercentagePriceOscillator::default();
+    let mut ef = indicators::EfficiencyRatio::default();
+    let mut ema = indicators::ExponentialMovingAverage::default();
 
     for ticker in candles.iter_mut() {
         let mut previous_close = *ticker.candles()[0].close();
@@ -148,9 +141,9 @@ pub fn calculate_technicals(mut candles: Box<[TickerData]>) -> Box<[TickerData]>
             candle.technicals_mut()[RelativeStrengthIndex as usize] = rsi.next(&item) as f32;
             candle.technicals_mut()[CommodityChannelIndex as usize] = cci.next(&item) as f32;
             candle.technicals_mut()[MoneyFlowIndex as usize] = mfi.next(&item) as f32;
-            candle.technicals_mut()[PercentagePriceOscillator as usize] = ppo.next(&item).ppo as f32;
+            candle.technicals_mut()[PPOscillator as usize] = ppo.next(&item).ppo as f32;
             candle.technicals_mut()[EfficiencyRatio as usize] = ef.next(&item) as f32;
-            candle.technicals_mut()[StandardDeviation as usize] = sd.next(&item) as f32;
+            candle.technicals_mut()[PCEMA as usize] = ema.next(p_change as f64) as f32;
         }
     }
 

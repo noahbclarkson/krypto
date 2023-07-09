@@ -27,10 +27,10 @@ pub enum TechnicalType {
     RelativeStrengthIndex,
     CommodityChannelIndex,
     MoneyFlowIndex,
-    PercentagePriceOscillator,
+    PPOscillator,
     EfficiencyRatio,
     VolumeChange,
-    StandardDeviation,
+    PCEMA,
 }
 
 impl Candlestick {

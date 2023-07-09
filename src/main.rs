@@ -43,7 +43,8 @@ async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Bo
     for depth in 3..=10 {
         let config = config.set_depth(depth);
         let relationships = compute_relationships(candles, config).await;
-        for i in 0..=50 {
+        for i in 0..=60 {
+
             let min_score = i as f32 / 20.0;
             let config = config.set_min_score(Some(min_score));
             let test = backtest(candles, &relationships, config);
@@ -53,6 +54,7 @@ async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Bo
                 depth,
                 config.periods() - depth * 2,
             );
+
             if test_return > best_return {
                 best_return = test_return;
                 best_config = config.clone();
@@ -61,9 +63,11 @@ async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Bo
                     min_score, depth, test, test_return
                 );
             }
+
             if test.get_accuracy().is_nan() {
                 break;
             }
+
             let record = vec![
                 min_score.to_string(),
                 depth.to_string(),
@@ -71,6 +75,7 @@ async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Bo
                 test.get_accuracy().to_string(),
                 test_return.to_string(),
             ];
+
             results_file.write_record(&record).unwrap();
             results_file.flush().unwrap();
         }

@@ -136,3 +136,17 @@ impl Display for PerPeriod {
         write!(f, "{}", period_str)
     }
 }
+
+pub const fn test_headers() -> [&'static str; 9] {
+    [
+        "Cash ($)",
+        "Accuracy (%)",
+        "Ticker",
+        "Score",
+        "Correct/Incorrect",
+        "Enter Price",
+        "Exit Price",
+        "Change (%)",
+        "Time",
+    ]
+}

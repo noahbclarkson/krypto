@@ -8,11 +8,12 @@ use crate::{
     config::Config,
     historical_data::{calculate_technicals, load, TickerData, MINUTES_TO_MILLIS},
     math::percentage_change,
-    testing::TestData,
+    testing::{TestData, test_headers},
 };
 
 const MARGIN: f32 = 0.05;
 const STARTING_CASH: f32 = 1000.0;
+const WAIT_WINDOW: i64 = 5100;
 
 #[derive(Debug, Clone, PartialEq, Getters)]
 #[getset(get = "pub")]
@@ -98,7 +99,7 @@ pub fn predict(
         for d in 0..relationship.depth {
             let predict = candles[relationship.predict_index].candles()[current_position - d]
                 .technicals()[relationship.r_type];
-            scores[relationship.target_index] += predict * relationship.correlation;
+            scores[relationship.target_index] += (predict * relationship.correlation).tanh();
         }
     }
     let mut max_index = 0;
@@ -118,18 +119,15 @@ pub fn backtest(
     config: &Config,
 ) -> TestData {
     let mut test = TestData::new(STARTING_CASH);
-    let depth = *config.depth();
-    let periods = *config.periods();
-    let min_score = config.min_score().unwrap_or_default();
-    let fee = config.fee().unwrap_or_default();
 
-    for i in depth..periods - depth {
+    for i in *config.depth()..*config.periods() - *config.depth() {
         let (index, score) = predict(relationships, i, candles);
-        if score > min_score {
+        if score > config.min_score().unwrap_or_default() {
             let current_price = candles[index].candles()[i].close();
-            let exit_price = candles[index].candles()[i + depth].close();
+            let exit_price = candles[index].candles()[i + *config.depth()].close();
+
             let change = percentage_change(*current_price, *exit_price);
-            let fee_change = test.cash() * fee * MARGIN;
+            let fee_change = test.cash() * config.fee().unwrap_or_default() * MARGIN;
 
             test.add_cash(-fee_change);
             test.add_cash(test.cash() * MARGIN * change);
@@ -160,17 +158,7 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
     let mut last_score: Option<f32> = None;
 
     let mut file = csv::Writer::from_path("livetest.csv")?;
-    let headers = vec![
-        "Cash ($)",
-        "Accuracy (%)",
-        "Ticker",
-        "Score",
-        "Correct/Incorrect",
-        "Enter Price",
-        "Exit Price",
-        "Change (%)",
-        "Time",
-    ];
+    let headers = test_headers();
     file.write_record(&headers)?;
     file.flush()?;
 
@@ -281,8 +269,6 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-
-const WAIT_WINDOW: i64 = 5000;
 
 #[inline]
 async fn wait(config: &Config, periods: usize) -> Result<(), Box<dyn Error>> {
