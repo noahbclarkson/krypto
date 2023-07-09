@@ -159,7 +159,7 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
 
     let mut file = csv::Writer::from_path("livetest.csv")?;
     let headers = test_headers();
-    file.write_record(&headers)?;
+    file.write_record(headers)?;
     file.flush()?;
 
     loop {
