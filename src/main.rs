@@ -2,10 +2,11 @@ use std::error::Error;
 
 use clap::Parser;
 use krypto::{
-    algorithm::{backtest, compute_relationships, livetest},
+    algorithm::{backtest, compute_relationships, livetest, run},
     args::Args,
     config::Config,
     historical_data::{calculate_technicals, load, TickerData},
+    krypto_account::KryptoAccount,
     testing::PerPeriod,
 };
 
@@ -22,13 +23,21 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     println!("Computed relationships");
     if args.backtest().is_some() && args.backtest().unwrap() {
         let test = backtest(&candles, &relationships, &config);
-        println!("{}", test);
+        println!("Initial Backtest:\n{}", test);
     }
     if args.optimize().is_some() && args.optimize().unwrap() {
         config = find_best_parameters(&mut config, &candles).await;
     }
     if args.livetest().is_some() && args.livetest().unwrap() {
         livetest(&config).await?;
+    }
+    if args.run().is_some() && args.run().unwrap() {
+        let result = run(&config).await;
+        if result.is_err() {
+            println!("Error: {}", result.err().unwrap());
+            let account = KryptoAccount::new(&config);
+            account.close_all_orders(&config).await?;
+        }
     }
     Ok(())
 }
@@ -43,9 +52,8 @@ async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Bo
     for depth in 3..=10 {
         let config = config.set_depth(depth);
         let relationships = compute_relationships(candles, config).await;
-        for i in 0..=60 {
-
-            let min_score = i as f32 / 20.0;
+        for i in 0..=75 {
+            let min_score = i as f32 / 25.0;
             let config = config.set_min_score(Some(min_score));
             let test = backtest(candles, &relationships, config);
             let test_return = test.compute_average_return(

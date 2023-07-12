@@ -12,4 +12,7 @@ pub struct Args {
     #[clap(short, long, default_value = "false")]
     #[getset(get = "pub")]
     optimize: Option<bool>,
+    #[clap(short, long, default_value = "false")]
+    #[getset(get = "pub")]
+    run: Option<bool>,
 }

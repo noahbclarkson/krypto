@@ -10,7 +10,7 @@ use crate::{
     math::{cr_ratio, percentage_change},
 };
 
-pub const MINUTES_TO_MILLIS: i64 = 60_000;
+pub const MINS_TO_MILLIS: i64 = 60_000;
 
 #[derive(Debug, Getters, MutGetters)]
 pub struct TickerData {
@@ -32,7 +32,7 @@ impl TickerData {
 pub async fn load(config: &Config) -> Result<Box<[TickerData]>, Box<dyn Error>> {
     let current_time = chrono::Utc::now().timestamp_millis();
     let interval_minutes = config.interval_minutes()? * *config.periods() as i64;
-    let start_time = current_time - interval_minutes * MINUTES_TO_MILLIS;
+    let start_time = current_time - interval_minutes * MINS_TO_MILLIS;
 
     let tasks = config
         .tickers()
@@ -54,7 +54,7 @@ async fn load_ticker(
 ) -> Result<TickerData, Box<dyn Error>> {
     let mut candlesticks = Vec::new();
     let market: Market = Binance::new(config.api_key().clone(), config.api_secret().clone());
-    let addition = MINUTES_TO_MILLIS * 1000 * config.interval_minutes()?;
+    let addition = MINS_TO_MILLIS * 1000 * config.interval_minutes()?;
     let mut start_time = start_time;
     let mut start_times = Vec::new();
 

@@ -32,6 +32,7 @@ pub struct Config {
     api_key: Option<String>,
     #[serde(rename = "api-secret")]
     api_secret: Option<String>,
+    blacklist: Option<Vec<String>>,
 }
 
 impl Default for Config {
@@ -45,6 +46,7 @@ impl Default for Config {
             min_score: None,
             api_key: None,
             api_secret: None,
+            blacklist: None,
         }
     }
 }
