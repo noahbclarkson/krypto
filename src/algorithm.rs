@@ -170,7 +170,7 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
 pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
     let depth = *config.depth();
     let min_score = config.min_score().unwrap_or_default();
-    let mut account = KryptoAccount::new(&config);
+    let mut account = KryptoAccount::new(config);
     let balance = account.get_balance("BUSD").await?;
     let mut test = TestData::new(balance);
     println!("Starting balance: ${}", format_number(balance));

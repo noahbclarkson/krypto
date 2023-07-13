@@ -147,10 +147,10 @@ impl KryptoAccount {
 
     pub async fn set_leverage(
         &mut self,
-        ticker: &String,
+        ticker: &str,
         leverage: u8,
     ) -> Result<(), Box<dyn Error>> {
-        let symbol = self.get_symbol(ticker.clone()).await?;
+        let symbol = self.get_symbol(ticker.to_owned()).await?;
         self.account
             .change_initial_leverage(symbol.symbol, leverage)
             .await
@@ -164,7 +164,7 @@ impl KryptoAccount {
             .account_balance()
             .await
             .map_err(|e| Box::new(KryptoError::BalanceError(e.to_string())))?;
-        let mut total = 0.0 as f32;
+        let mut total = 0.0_f32;
         for balance in balances {
             if balance.available_balance == 0.0 {
                 continue;
