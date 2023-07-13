@@ -3,7 +3,8 @@ use std::{error::Error, sync::Arc, time::Duration};
 use binance::rest_model::OrderSide;
 use chrono::Utc;
 use getset::Getters;
-use tokio::sync::Mutex;
+use once_cell::sync::Lazy;
+use tokio::{sync::Mutex, task};
 
 use crate::{
     candlestick::TECHNICAL_COUNT,
@@ -20,6 +21,8 @@ const STARTING_CASH: f32 = 1000.0;
 const WAIT_WINDOW: i64 = 10000;
 const ENTRY_TIME_PERCENT: f64 = 0.075;
 const EXIT_TIME_PERCENT: f64 = 0.05;
+
+static BLACKLIST_INDEXES: Lazy<Mutex<Option<Vec<usize>>>> = Lazy::new(|| Mutex::new(None));
 
 #[derive(Debug, Clone, PartialEq, Getters)]
 #[getset(get = "pub")]
@@ -95,12 +98,16 @@ async fn compute_relationship(
 }
 
 #[inline(always)]
-pub fn predict(
+pub async fn predict(
     relationships: &[Relationship],
     current_position: usize,
     candles: &[TickerData],
     config: &Config,
 ) -> (usize, f32) {
+    let blacklist = config.blacklist().clone().unwrap_or_default();
+    let tickers = config.tickers().clone();
+    let blacklist_indexes_task = task::spawn(get_blacklist_indexes(tickers, blacklist));
+
     let mut scores = vec![0.0; candles.len()];
     for relationship in relationships {
         for d in 0..relationship.depth {
@@ -109,15 +116,14 @@ pub fn predict(
             scores[relationship.target_index] += (predict * relationship.correlation).tanh();
         }
     }
+
+    let blacklist_indexes = blacklist_indexes_task.await.unwrap();
+
     let mut max_index = None;
     let mut max = None;
     for (i, score) in scores.iter().enumerate().skip(1) {
         if (max_index.is_none() || max_index.is_none() || score > max.unwrap())
-            && !config
-                .blacklist()
-                .clone()
-                .unwrap_or_default()
-                .contains(&candles[i].ticker().to_string())
+            && !blacklist_indexes.contains(&i)
         {
             max_index = Some(i);
             max = Some(score);
@@ -126,7 +132,30 @@ pub fn predict(
     (max_index.unwrap(), *max.unwrap())
 }
 
-pub fn backtest(
+async fn get_blacklist_indexes(tickers: Vec<String>, blacklist: Vec<String>) -> Vec<usize> {
+    let mut data = BLACKLIST_INDEXES.lock().await;
+    match &*data {
+        Some(indexes) => indexes.clone(),
+        None => {
+            let indexes: Vec<usize> = tickers
+                .iter()
+                .enumerate()
+                .filter_map(|(index, ticker)| {
+                    if blacklist.contains(ticker) {
+                        Some(index)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            *data = Some(indexes.clone());
+            indexes
+        }
+    }
+}
+
+pub async fn backtest(
     candles: &[TickerData],
     relationships: &[Relationship],
     config: &Config,
@@ -134,7 +163,7 @@ pub fn backtest(
     let mut test = TestData::new(STARTING_CASH);
 
     for i in *config.depth()..*config.periods() - *config.depth() {
-        let (index, score) = predict(relationships, i, candles, config);
+        let (index, score) = predict(relationships, i, candles, config).await;
         if score > config.min_score().unwrap_or_default() {
             let current_price = candles[index].candles()[i].close();
             let exit_price = candles[index].candles()[i + *config.depth()].close();
@@ -254,7 +283,7 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
             });
         }
 
-        let (index, score) = predict(&relationships, 999, &lc, config);
+        let (index, score) = predict(&relationships, 999, &lc, config).await;
         if score > min_score {
             let current_price = lc[index].candles()[999].close();
             enter_price = Some(*current_price);
@@ -322,7 +351,7 @@ pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
         };
         let lc = calculate_technicals(lc);
 
-        let (index, score) = predict(&relationships, 999, &lc, config);
+        let (index, score) = predict(&relationships, 999, &lc, config).await;
         if score > min_score {
             let ticker = lc[index].ticker();
             let (max_entry_time, min_exit_time) = get_entry_and_exit_times(order_len);
@@ -367,7 +396,7 @@ pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
                 } else {
                     let c = lc.unwrap();
                     let c = calculate_technicals(c);
-                    let (index_2, score_2) = predict(&relationships, 999, &c, config);
+                    let (index_2, score_2) = predict(&relationships, 999, &c, config).await;
                     if score_2 > 0.0 && index_2 == index {
                         let (_, min_exit_time_2) = get_entry_and_exit_times(order_len);
                         println!("Continuing to hold {} ({:.5})", ticker, score_2);
@@ -511,7 +540,7 @@ pub mod tests {
         let candles = load(&config).await.unwrap();
         let candles = calculate_technicals(candles);
         let relationships = compute_relationships(&candles, &config).await;
-        let (index, score) = predict(&relationships, *config.depth(), &candles, &config);
+        let (index, score) = predict(&relationships, *config.depth(), &candles, &config).await;
         assert!(score != 0.0);
         assert!(index < config.tickers().len());
     }

@@ -23,7 +23,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     println!("Computed relationships");
     if args.backtest().is_some() && args.backtest().unwrap() {
         let test = backtest(&candles, &relationships, &config);
-        println!("Initial Backtest:\n{}", test);
+        println!("Initial Backtest:\n{}", test.await);
     }
     if args.optimize().is_some() && args.optimize().unwrap() {
         config = find_best_parameters(&mut config, &candles).await;
@@ -55,7 +55,7 @@ async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Bo
         for i in 0..=75 {
             let min_score = i as f32 / 25.0;
             let config = config.set_min_score(Some(min_score));
-            let test = backtest(candles, &relationships, config);
+            let test = backtest(candles, &relationships, config).await;
             let test_return = test.compute_average_return(
                 PerPeriod::Daily,
                 interval_num,
