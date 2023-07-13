@@ -13,6 +13,8 @@ const DEFAULT_DATA: &str = r#"
 periods: 2000
 interval: "15m"
 depth: 3
+leverage: 5
+trade-size: 0.75
 tickers: 
     - "BTCBUSD"
     - "ETHBUSD"
@@ -24,6 +26,9 @@ pub struct Config {
     periods: usize,
     interval: String,
     depth: usize,
+    leverage: u8,
+    #[serde(rename = "trade-size")]
+    trade_size: f32,
     fee: Option<f32>,
     #[serde(rename = "min-score")]
     min_score: Option<f32>,
@@ -41,6 +46,8 @@ impl Default for Config {
             periods: 2000,
             interval: "15m".to_string(),
             depth: 3,
+            leverage: 5,
+            trade_size: 0.75,
             tickers: vec!["BTCBUSD".to_string(), "ETHBUSD".to_string()],
             fee: None,
             min_score: None,
@@ -52,7 +59,6 @@ impl Default for Config {
 }
 
 impl Config {
-
     #[inline]
     pub async fn read_config(filename: Option<&str>) -> Result<Box<Self>, Box<dyn Error>> {
         let path = match filename {

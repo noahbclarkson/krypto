@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use binance::{api::Binance, market::Market, rest_model::KlineSummaries};
+use binance::{api::Binance, futures::market::FuturesMarket, rest_model::KlineSummaries};
 use getset::{Getters, MutGetters};
 use ta::{indicators, Next};
 
@@ -53,7 +53,7 @@ async fn load_ticker(
     config: &Config,
 ) -> Result<TickerData, Box<dyn Error>> {
     let mut candlesticks = Vec::new();
-    let market: Market = Binance::new(config.api_key().clone(), config.api_secret().clone());
+    let market: FuturesMarket = Binance::new(config.api_key().clone(), config.api_secret().clone());
     let addition = MINS_TO_MILLIS * 1000 * config.interval_minutes()?;
     let mut start_time = start_time;
     let mut start_times = Vec::new();
@@ -89,13 +89,13 @@ async fn load_chunk(
     start_time: u64,
     end_time: u64,
     config: &Config,
-    market: &Market,
+    market: &FuturesMarket,
 ) -> Result<Vec<Candlestick>, Box<dyn Error>> {
     let summaries = market
         .get_klines(
             ticker.clone(),
             config.interval(),
-            1000,
+            1000u16,
             Some(start_time),
             Some(end_time),
         )

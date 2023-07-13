@@ -1,25 +1,24 @@
-use std::{error::Error, sync::Arc};
+use std::error::Error;
 
 use binance::{
-    account::Account,
     api::Binance,
-    general::General,
-    margin::Margin,
-    market::Market,
-    rest_model::{ExchangeInformation, Filters, MarginOrdersQuery},
+    futures::{
+        account::FuturesAccount,
+        general::FuturesGeneral,
+        market::FuturesMarket,
+        rest_model::{AccountBalance, ExchangeInformation, Filters, Symbol},
+    },
+    rest_model::OrderSide,
 };
 use getset::Getters;
-use tokio::sync::Mutex;
 
 use crate::config::Config;
 
-#[derive(Clone)]
 pub struct KryptoAccount {
-    pub margin: Margin,
-    pub general: General,
-    pub market: Market,
-    pub account: Account,
-    exchange_info: Arc<Mutex<Option<ExchangeInformation>>>,
+    pub account: FuturesAccount,
+    pub general: FuturesGeneral,
+    pub market: FuturesMarket,
+    pub exchange_info: Option<ExchangeInformation>,
 }
 
 #[derive(Debug, Clone, Getters)]
@@ -32,38 +31,30 @@ pub struct PrecisionData {
     step_precision: usize,
 }
 
+pub struct Order {
+    pub symbol: String,
+    pub side: OrderSide,
+    pub quantity: f32,
+}
+
 impl KryptoAccount {
     pub fn new(config: &Config) -> Self {
-        let mut margin: Margin =
+        let market: FuturesMarket =
             Binance::new(config.api_key().clone(), config.api_secret().clone());
-        margin.recv_window = 10000;
-        let general: General = Binance::new(config.api_key().clone(), config.api_secret().clone());
-        let market: Market = Binance::new(config.api_key().clone(), config.api_secret().clone());
-        let account: Account = Binance::new(config.api_key().clone(), config.api_secret().clone());
-        KryptoAccount {
-            margin,
+        let account: FuturesAccount =
+            Binance::new(config.api_key().clone(), config.api_secret().clone());
+        let general: FuturesGeneral =
+            Binance::new(config.api_key().clone(), config.api_secret().clone());
+        Self {
+            account,
             general,
             market,
-            account,
-            exchange_info: Arc::new(Mutex::new(None)),
+            exchange_info: None,
         }
     }
 
-    pub async fn get_precision_data(
-        &mut self,
-        ticker: String,
-    ) -> Result<Box<PrecisionData>, Box<dyn Error>> {
-        if self.exchange_info.lock().await.is_none() {
-            self.update_exchange_info().await?;
-        }
-        let ei = self.exchange_info.lock().await;
-        let symbol = ei
-            .as_ref()
-            .unwrap()
-            .symbols
-            .iter()
-            .find(|symbol| symbol.symbol == ticker)
-            .unwrap();
+    pub async fn precision(&mut self, ticker: String) -> Result<PrecisionData, Box<dyn Error>> {
+        let symbol = self.get_symbol(ticker.clone()).await?;
         let mut ts = None;
         let mut ss = None;
         for filter in &symbol.filters {
@@ -74,74 +65,137 @@ impl KryptoAccount {
                 ss = Some(step_size);
             }
         }
-        let tick_size = *ts.unwrap();
-        let step_size = *ss.unwrap();
-        let tick_precision = tick_size.log10().abs() as usize;
-        let step_precision = step_size.log10().abs() as usize;
-        Ok(Box::new(PrecisionData {
+        Ok(PrecisionData {
             ticker,
-            tick_size,
-            step_size,
-            tick_precision,
-            step_precision,
-        }))
+            tick_size: *ts.unwrap(),
+            step_size: *ss.unwrap(),
+            tick_precision: ts.unwrap().log10().abs() as usize,
+            step_precision: ss.unwrap().log10().abs() as usize,
+        })
     }
 
-    pub async fn extract_base_asset(&mut self, ticker: &str) -> Result<String, Box<dyn Error>> {
-        if self.exchange_info.lock().await.is_none() {
-            self.update_exchange_info().await?;
+    async fn get_symbol(&mut self, ticker: String) -> Result<Symbol, Box<dyn Error>> {
+        if self.exchange_info.is_none() {
+            self.exchange_info = Some(
+                self.general
+                    .exchange_info()
+                    .await
+                    .map_err(|e| Box::new(KryptoError::ExchangeInfoError(e.to_string())))?,
+            );
         }
-        let ei = self.exchange_info.lock().await;
-        let symbol = ei
+        let symbol = self
+            .exchange_info
             .as_ref()
             .unwrap()
             .symbols
             .iter()
-            .find(|symbol| symbol.symbol == ticker)
-            .unwrap();
-        Ok(symbol.base_asset.clone())
+            .find(|symbol| symbol.symbol == ticker);
+        if symbol.is_none() {
+            return Err(Box::new(KryptoError::InvalidSymbol(ticker)));
+        }
+        Ok(symbol.unwrap().clone())
     }
 
-    pub async fn max_borrowable(&mut self, ticker: &str) -> Result<f64, Box<dyn Error>> {
-        let base_asset = self.extract_base_asset(ticker).await?;
-        let max_borrowable = self.margin.max_borrowable(base_asset, None).await?.amount;
-        Ok(max_borrowable)
+    pub async fn extract_base(&mut self, ticker: String) -> Result<String, Box<dyn Error>> {
+        let symbol = self.get_symbol(ticker).await?;
+        Ok(symbol.base_asset)
     }
 
-    pub async fn update_exchange_info(&mut self) -> Result<(), Box<dyn Error>> {
-        self.exchange_info
-            .lock()
+    pub async fn extract_quote(&mut self, ticker: String) -> Result<String, Box<dyn Error>> {
+        let symbol = self.get_symbol(ticker).await?;
+        Ok(symbol.quote_asset)
+    }
+
+    pub async fn get_price(&mut self, ticker: String) -> Result<f32, Box<dyn Error>> {
+        let symbol = self.get_symbol(ticker).await?;
+        let price = self
+            .market
+            .get_price(&symbol.symbol)
             .await
-            .replace(self.general.exchange_info().await?);
-        Ok(())
+            .map_err(|e| Box::new(KryptoError::PriceError(e.to_string())))?;
+        Ok(price.price as f32)
     }
 
-    pub async fn get_balance(&mut self) -> Result<f64, Box<dyn Error>> {
-        let account = self.margin.details().await?;
-        let total_balance = account.total_net_asset_of_btc;
-        let btc_price = self.market.get_price("BTCUSDT").await?.price;
-        let total_balance = total_balance * btc_price;
-        Ok(total_balance)
+    pub async fn order(&mut self, order: Order) -> Result<f64, Box<dyn Error>> {
+        let symbol = self.get_symbol(order.symbol.clone()).await?;
+        let qty = self
+            .precision(order.symbol.clone())
+            .await?
+            .fmt_quantity(order.quantity as f64)?;
+        let result = match order.side {
+            OrderSide::Buy => self.account.market_buy(symbol.symbol, qty).await,
+            OrderSide::Sell => self.account.market_sell(symbol.symbol, qty).await,
+        };
+        if result.is_err() {
+            return Err(Box::new(KryptoError::OrderError(
+                result.err().unwrap().to_string(),
+            )));
+        }
+        Ok(qty)
     }
 
-    pub async fn close_all_orders(&self, config: &Config) -> Result<(), Box<dyn Error>> {
+    pub async fn set_default_leverages(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
+        let blacklist = config.blacklist().clone().unwrap_or_default();
         for ticker in config.tickers() {
-            let orders = self
-                .margin
-                .orders(MarginOrdersQuery {
-                    symbol: ticker.clone(),
-                    ..Default::default()
-                })
-                .await?;
-            if !orders.is_empty() {
-                println!("{} has {} open orders", ticker, orders.len());
-                let result = self.margin.cancel_all_orders(ticker, None).await;
-                if result.is_err() {
-                    println!("Error (Could not cancel order): {}", result.err().unwrap());
-                }
+            if blacklist.contains(ticker) {
+                continue;
             }
+            self.set_leverage(ticker, *config.leverage()).await?;
         }
         Ok(())
+    }
+
+    pub async fn set_leverage(
+        &mut self,
+        ticker: &String,
+        leverage: u8,
+    ) -> Result<(), Box<dyn Error>> {
+        let symbol = self.get_symbol(ticker.clone()).await?;
+        self.account
+            .change_initial_leverage(symbol.symbol, leverage)
+            .await
+            .map_err(|e| Box::new(KryptoError::LeverageError(e.to_string())))?;
+        Ok(())
+    }
+
+    pub async fn get_total_balance_in(&mut self, asset: &str) -> Result<f32, Box<dyn Error>> {
+        let balances: Vec<AccountBalance> = self
+            .account
+            .account_balance()
+            .await
+            .map_err(|e| Box::new(KryptoError::BalanceError(e.to_string())))?;
+        let mut total = 0.0 as f32;
+        for balance in balances {
+            if balance.available_balance == 0.0 {
+                continue;
+            }
+            if balance.asset == asset {
+                total += balance.available_balance as f32;
+            } else {
+                let price = self
+                    .get_price(format!("{}{}", balance.asset, asset))
+                    .await?;
+                total += balance.available_balance as f32 * price;
+            }
+        }
+        Ok(total)
+    }
+
+    pub async fn get_balance(&mut self, asset: &str) -> Result<f32, Box<dyn Error>> {
+        let balances: Vec<AccountBalance> = self
+            .account
+            .account_balance()
+            .await
+            .map_err(|e| Box::new(KryptoError::BalanceError(e.to_string())))?;
+        let balance = balances.iter().find(|balance| balance.asset == asset);
+        if balance.is_none() {
+            return Err(Box::new(KryptoError::BalanceError(format!(
+                "Unable to find balance for {}",
+                asset
+            ))));
+        }
+        let balance = balance.unwrap();
+        Ok(balance.available_balance as f32)
     }
 }
 
@@ -161,4 +215,20 @@ impl PrecisionData {
     pub fn fmt_quantity(&self, quantity: f64) -> Result<f64, Box<dyn Error>> {
         Ok(format!("{:.1$}", quantity, self.step_precision).parse::<f64>()?)
     }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum KryptoError {
+    #[error("Invalid symbol: {0}")]
+    InvalidSymbol(String),
+    #[error("Unable to retrieve exchange information: {0}")]
+    ExchangeInfoError(String),
+    #[error("Unable to retrieve price: {0}")]
+    PriceError(String),
+    #[error("Error sending order: {0}")]
+    OrderError(String),
+    #[error("Error updating default leverage: {0}")]
+    LeverageError(String),
+    #[error("Error retrieving balance: {0}")]
+    BalanceError(String),
 }

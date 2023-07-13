@@ -1,39 +1,36 @@
-use std::{error::Error, sync::Arc, time::Duration};
+use std::{error::Error, time::Duration};
 
 use binance::rest_model::OrderSide;
 use chrono::Utc;
-use tokio::sync::Mutex;
 
 use crate::{
     config::Config,
     historical_data::{calculate_technicals, load, TickerData, MINS_TO_MILLIS},
-    krypto_account::KryptoAccount,
-    math::percentage_change,
-    order_event::{OrderDetails, OrderEvent},
+    krypto_account::{KryptoAccount, Order},
+    math::{format_number, percentage_change},
     relationships::{compute_relationships, predict, Relationship},
     testing::{test_headers, TestData},
 };
 
-const MARGIN: f32 = 0.05;
+const MARGIN: f32 = 0.2;
 const STARTING_CASH: f32 = 1000.0;
-const WAIT_WINDOW: i64 = 20000;
-const ENTRY_TIME_PERCENT: f64 = 0.2;
-const EXIT_TIME_PERCENT: f64 = 0.075;
+const WAIT_WINDOW: i64 = 15000;
 
 pub async fn backtest(
     candles: &[TickerData],
     relationships: &[Relationship],
     config: &Config,
 ) -> TestData {
-    let mut test = TestData::new(STARTING_CASH);
+    let mut test = &mut TestData::new(STARTING_CASH);
 
     for i in *config.depth()..*config.periods() - *config.depth() {
         let (index, score) = predict(relationships, i, candles, config).await;
-        if score > config.min_score().unwrap_or_default() {
+        if score.abs() > config.min_score().unwrap_or_default() {
             let current_price = candles[index].candles()[i].close();
             let exit_price = candles[index].candles()[i + *config.depth()].close();
 
             let change = percentage_change(*current_price, *exit_price);
+            let change = score.signum() * change.abs();
             let fee_change = test.cash() * config.fee().unwrap_or_default() * MARGIN;
 
             test.add_cash(-fee_change);
@@ -46,12 +43,12 @@ pub async fn backtest(
             }
 
             if *test.cash() <= 0.0 {
-                test.set_cash(0.0);
+                test = test.set_cash(0.0);
                 break;
             }
         }
     }
-    test
+    test.clone()
 }
 
 pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
@@ -99,6 +96,7 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
             let li = last_index.unwrap();
             let current_price = lc[li].candles()[999].close();
             let change = percentage_change(ep, *current_price);
+            let change = last_score.unwrap().signum() * change.abs();
             let fee_change = test.cash() * fee * MARGIN;
 
             test.add_cash(-fee_change);
@@ -149,7 +147,7 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
         }
 
         let (index, score) = predict(&relationships, 999, &lc, config).await;
-        if score > min_score {
+        if score.abs() > min_score {
             let current_price = lc[index].candles()[999].close();
             enter_price = Some(*current_price);
             last_index = Some(index);
@@ -162,7 +160,7 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
             enter_price = None;
             last_index = None;
             last_score = None;
-            println!("No trade ({:.5} < {})", score, min_score);
+            println!("No trade ({:.5} < {})", score.abs(), min_score);
         }
     }
 
@@ -172,14 +170,13 @@ pub async fn livetest(config: &Config) -> Result<(), Box<dyn Error>> {
 pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
     let depth = *config.depth();
     let min_score = config.min_score().unwrap_or_default();
-    let interval_mins = config.interval_minutes()?;
-    let order_len = depth as i64 * interval_mins;
+    let mut account = KryptoAccount::new(&config);
+    let balance = account.get_balance("BUSD").await?;
+    let mut test = TestData::new(balance);
+    println!("Starting balance: ${}", format_number(balance));
+    account.set_default_leverages(config).await?;
 
-    let kr = Arc::new(Mutex::new(KryptoAccount::new(config)));
-    kr.lock().await.update_exchange_info().await?;
-    let mut test = TestData::new(kr.lock().await.get_balance().await? as f32);
-
-    let mut file = csv::Writer::from_path("live.csv")?;
+    let mut file = csv::Writer::from_path("run.csv")?;
     let headers = test_headers();
     file.write_record(headers)?;
     let starting_records = vec![
@@ -199,10 +196,9 @@ pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
     let mut candles = load_new_data(config, 2).await?;
     candles = calculate_technicals(candles);
     let mut relationships = compute_relationships(&candles, config).await;
+    wait(config, 1).await?;
 
     loop {
-        wait(config, 1).await?;
-
         let mut c_clone = config.clone();
         c_clone.set_periods(1000);
         let lc = load_new_data(&c_clone, 3).await;
@@ -216,41 +212,49 @@ pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
         let lc = calculate_technicals(lc);
 
         let (index, score) = predict(&relationships, 999, &lc, config).await;
-        if score > min_score {
+        if score.abs() > min_score {
+            println!("Predicted {} ({:.5})", lc[index].ticker(), score);
             let ticker = lc[index].ticker();
-            let (max_entry_time, min_exit_time) = get_entry_and_exit_times(order_len);
-            let order_details = OrderDetails {
-                ticker: ticker.to_string(),
-                side: OrderSide::Buy,
-                quantity: None,
-                max_time: Some(max_entry_time),
+            let price = lc[index].candles()[999].close();
+            let order = Order {
+                symbol: ticker.to_string(),
+                side: match score.signum() as i32 {
+                    1 => OrderSide::Buy,
+                    -1 => OrderSide::Sell,
+                    _ => panic!("Invalid score"),
+                },
+                quantity: *config.trade_size() * test.cash() * *config.leverage() as f32 / price,
             };
-            println!("Buying {} ({:.5})", ticker, score);
-            let order = OrderEvent::new(order_details, kr.lock().await.to_owned()).await;
-
-            if order.is_err() {
-                println!("Error: {}", order.unwrap_err());
-                continue;
-            }
-
-            let order = order?;
-            let enter_price = order.current_order_price().unwrap();
-            let qty = order.details().quantity.unwrap();
-            let update_time = (min_exit_time - Utc::now().timestamp_millis()) / 2;
-            tokio::time::sleep(Duration::from_millis(update_time as u64)).await;
+            let order = account.order(order).await;
+            let quantity = match order {
+                Ok(order) => order,
+                Err(err) => {
+                    println!("Error: {}", err);
+                    continue;
+                }
+            };
+            let direction_string = match score.signum() as i32 {
+                1 => "Long",
+                -1 => "Short",
+                _ => panic!("Invalid score"),
+            };
+            let enter_price = *price;
+            println!(
+                "Entered {} for {} of {} at ${:.5}",
+                direction_string, ticker, quantity, enter_price
+            );
+            wait(config, depth - 1).await?;
             let c_result = load_new_data(config, 1).await;
-
-            if c_result.is_err() {
-                println!("Error: {}", c_result.unwrap_err());
-                continue;
-            }
-
-            candles = c_result.unwrap();
-            candles = calculate_technicals(candles);
-            relationships = compute_relationships(&candles, config).await;
-            kr.lock().await.update_exchange_info().await?;
-            let update_time = min_exit_time - Utc::now().timestamp_millis();
-            tokio::time::sleep(Duration::from_millis(update_time as u64)).await;
+            match c_result {
+                Ok(c_result) => {
+                    candles = calculate_technicals(c_result);
+                    relationships = compute_relationships(&candles, config).await;
+                }
+                Err(err) => {
+                    println!("Error: {}", err);
+                }
+            };
+            wait(config, 1).await?;
 
             loop {
                 let lc = load_new_data(&c_clone, 1).await;
@@ -261,46 +265,45 @@ pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
                     let c = lc.unwrap();
                     let c = calculate_technicals(c);
                     let (index_2, score_2) = predict(&relationships, 999, &c, config).await;
-                    if score_2 > 0.0 && index_2 == index {
-                        let (_, min_exit_time_2) = get_entry_and_exit_times(order_len);
+                    if score_2.abs() > min_score && index_2 == index && score_2 * score > 0.0 {
                         println!("Continuing to hold {} ({:.5})", ticker, score_2);
-                        let update_time_2 = min_exit_time_2 - Utc::now().timestamp_millis();
-                        tokio::time::sleep(Duration::from_millis(update_time_2 as u64)).await;
+                        wait(config, depth).await?;
                     } else {
                         break;
                     }
                 }
             }
 
-            let details = OrderDetails {
-                ticker: ticker.to_string(),
-                side: OrderSide::Sell,
-                quantity: Some(qty),
-                max_time: None,
+            let order = Order {
+                symbol: ticker.to_string(),
+                side: match score.signum() as i32 {
+                    1 => OrderSide::Sell,
+                    -1 => OrderSide::Buy,
+                    _ => panic!("Invalid score"),
+                },
+                quantity: quantity as f32,
             };
-
-            let order = OrderEvent::new(details, kr.lock().await.to_owned()).await;
-
-            if order.is_err() {
-                println!("Error loading order event");
-                println!("This could be an issue! Check your account!");
-                continue;
-            }
-
-            let order = order?;
-            let exit_price = order.current_order_price().unwrap();
+            match account.order(order).await {
+                Ok(_) => {}
+                Err(err) => {
+                    println!("Error: {}", err);
+                    continue;
+                }
+            };
+            let exit_price = *lc[index].candles()[999].close();
+            println!(
+                "Exited {} for {} of {} at ${:.5}",
+                direction_string, ticker, quantity, exit_price
+            );
             let change = percentage_change(enter_price as f32, exit_price as f32);
-            test.set_cash(kr.lock().await.get_balance().await? as f32);
+            let change = score.signum() * change.abs();
             match change {
-                x if x > 0.0 => {
-                    test.add_correct();
-                }
-                x if x < 0.0 => {
-                    test.add_incorrect();
-                }
+                x if x > 0.0 => test.add_correct(),
+                x if x < 0.0 => test.add_incorrect(),
                 _ => (),
             }
-
+            let balance = account.get_balance("BUSD").await?;
+            test.set_cash(balance);
             let record = vec![
                 test.cash().to_string(),
                 test.get_accuracy().to_string(),
@@ -316,26 +319,27 @@ pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
                 change.to_string(),
                 chrono::Utc::now().to_rfc3339(),
             ];
-
             file.write_record(&record).unwrap_or_else(|err| {
                 println!("Error writing record: {}", err);
             });
-
             file.flush().unwrap_or_else(|err| {
                 println!("Error flushing file: {}", err);
             });
         } else {
-            println!("No trade ({:.5} < {})", score, min_score);
+            println!("No trade ({:.5} < {})", score.abs(), min_score);
+            let c_result = load_new_data(config, 1).await;
+            match c_result {
+                Ok(c_result) => {
+                    candles = calculate_technicals(c_result);
+                    relationships = compute_relationships(&candles, config).await;
+                }
+                Err(err) => {
+                    println!("Error: {}", err);
+                }
+            };
+            wait(config, 1).await?;
         }
     }
-}
-
-fn get_entry_and_exit_times(order_length: i64) -> (i64, i64) {
-    let entry_amount = ENTRY_TIME_PERCENT * order_length as f64;
-    let max_entry_time = Utc::now().timestamp_millis() + (entry_amount as i64 * MINS_TO_MILLIS);
-    let exit_amount = (1.0 - EXIT_TIME_PERCENT) * order_length as f64;
-    let min_exit_time = Utc::now().timestamp_millis() + (exit_amount as i64 * MINS_TO_MILLIS);
-    (max_entry_time, min_exit_time)
 }
 
 const MAX_REPEATS: usize = 5;
@@ -383,7 +387,10 @@ async fn wait(config: &Config, periods: usize) -> Result<(), Box<dyn Error>> {
 #[cfg(test)]
 pub mod tests {
 
-    use crate::{historical_data::{calculate_technicals, load}, candlestick::TECHNICAL_COUNT};
+    use crate::{
+        candlestick::TECHNICAL_COUNT,
+        historical_data::{calculate_technicals, load},
+    };
 
     use super::*;
 
