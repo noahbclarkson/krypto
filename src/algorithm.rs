@@ -288,6 +288,18 @@ pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
     let mut file = csv::Writer::from_path("live.csv")?;
     let headers = test_headers();
     file.write_record(headers)?;
+    let starting_records = vec![
+        test.cash().to_string(),
+        "".to_string(),
+        "".to_string(),
+        "".to_string(),
+        "".to_string(),
+        "".to_string(),
+        "".to_string(),
+        "".to_string(),
+        chrono::Utc::now().to_rfc3339(),
+    ];
+    file.write_record(&starting_records)?;
     file.flush()?;
 
     let mut candles = load_new_data(config, 2).await?;
