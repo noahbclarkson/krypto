@@ -362,7 +362,7 @@ pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
                 max_time: Some(max_entry_time),
             };
             println!("Buying {} ({:.5})", ticker, score);
-            let order = OrderEvent::new(order_details, kr.clone()).await;
+            let order = OrderEvent::new(order_details, kr.lock().await.to_owned()).await;
 
             if order.is_err() {
                 println!("Error: {}", order.unwrap_err());
@@ -415,7 +415,7 @@ pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
                 max_time: None,
             };
 
-            let order = OrderEvent::new(details, kr.clone()).await;
+            let order = OrderEvent::new(details, kr.lock().await.to_owned()).await;
 
             if order.is_err() {
                 println!("Error loading order event");

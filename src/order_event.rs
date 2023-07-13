@@ -1,4 +1,4 @@
-use std::{error::Error, sync::Arc};
+use std::error::Error;
 
 use binance::rest_model::{
     MarginOrder, MarginOrderQuery, MarginOrderState, OrderResponse, OrderSide, OrderStatus,
@@ -6,7 +6,6 @@ use binance::rest_model::{
 };
 use chrono::Utc;
 use getset::Getters;
-use tokio::sync::Mutex;
 
 use crate::krypto_account::{KryptoAccount, PrecisionData};
 
@@ -26,7 +25,7 @@ pub struct OrderDetails {
 pub struct OrderEvent {
     details: OrderDetails,
     precision: Box<PrecisionData>,
-    account: Arc<Mutex<KryptoAccount>>,
+    account: KryptoAccount,
     latest_price: f64,
     current_order_price: Option<f64>,
     current_order_id: Option<u64>,
@@ -36,15 +35,16 @@ pub struct OrderEvent {
 impl OrderEvent {
     pub async fn new(
         details: OrderDetails,
-        account: Arc<Mutex<KryptoAccount>>,
+        mut account: KryptoAccount,
     ) -> Result<Self, Box<dyn Error>> {
-        let acc = account.clone();
-        let mut kr = acc.lock().await;
-        let max_borrow = kr.max_borrowable(details.ticker.as_str()).await?;
+        let max_borrow = account.max_borrowable(details.ticker.as_str()).await?;
         let quantity = details.quantity.unwrap_or(max_borrow * TRADE_PERCENTAGE);
-        let latest_price = kr.market.get_price(details.ticker.clone()).await?.price;
-        let precision = kr.get_precision_data(details.ticker.clone()).await?;
-        drop(kr);
+        let latest_price = account
+            .market
+            .get_price(details.ticker.clone())
+            .await?
+            .price;
+        let precision = account.get_precision_data(details.ticker.clone()).await?;
         let mut event = Self {
             details: OrderDetails {
                 quantity: Some(quantity),
@@ -121,8 +121,8 @@ impl OrderEvent {
 
     async fn update_latest_price(&mut self) -> Result<(), Box<dyn Error>> {
         let last_price = self.latest_price;
-        let kr = self.account.lock().await;
-        self.latest_price = kr
+        self.latest_price = self
+            .account
             .market
             .get_price(self.details.ticker.clone())
             .await?
@@ -162,14 +162,12 @@ impl OrderEvent {
 
     async fn place_order(&mut self) -> Result<(), Box<dyn Error>> {
         let order = self.get_order()?;
-        let kr = self.account.lock().await;
-        let order = kr.margin.new_order(order).await.map_err(|e| {
+        let order = self.account.margin.new_order(order).await.map_err(|e| {
             Box::new(OrderError::OrderError(format!(
                 "Error placing order: {}",
                 e
             )))
         })?;
-        drop(kr);
         self.current_order_id = Some(order.order_id);
         self.current_order_price = Some(order.price);
         println!(
@@ -181,12 +179,11 @@ impl OrderEvent {
     }
 
     async fn cancel_order(&mut self) {
-        let kr = self.account.lock().await;
-        let result = kr
+        let result = self
+            .account
             .margin
             .cancel_all_orders(self.details.ticker.clone(), None)
             .await;
-        drop(kr);
         match result {
             Ok(_) => {}
             Err(e) => {
@@ -197,14 +194,13 @@ impl OrderEvent {
     }
 
     async fn query_order(&mut self) -> Result<MarginOrderState, Box<dyn Error>> {
-        let kr = self.account.lock().await;
         let order_id = String::from(self.current_order_id.unwrap().to_string());
         let query = MarginOrderQuery {
             symbol: self.details.ticker.clone(),
             order_id: Some(order_id),
             ..Default::default()
         };
-        let order = kr.margin.order(query).await.map_err(|e| {
+        let order = self.account.margin.order(query).await.map_err(|e| {
             Box::new(OrderError::OrderQueryError(format!(
                 "Error querying order: {}",
                 e
