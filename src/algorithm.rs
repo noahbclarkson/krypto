@@ -16,9 +16,9 @@ use crate::{
 
 const MARGIN: f32 = 0.05;
 const STARTING_CASH: f32 = 1000.0;
-const WAIT_WINDOW: i64 = 25000;
-const ENTRY_TIME_PERCENT: f64 = 0.07;
-const EXIT_TIME_PERCENT: f64 = 0.03;
+const WAIT_WINDOW: i64 = 20000;
+const ENTRY_TIME_PERCENT: f64 = 0.2;
+const EXIT_TIME_PERCENT: f64 = 0.075;
 
 pub async fn backtest(
     candles: &[TickerData],

@@ -9,9 +9,9 @@ use getset::Getters;
 
 use crate::krypto_account::{KryptoAccount, PrecisionData};
 
-const BUY_TICK_SIZE_MULTIPLIER: f64 = 1.0;
-const SELL_TICK_SIZE_MULTIPLIER: f64 = 1.0;
-const TRADE_PERCENTAGE: f64 = 1.0;
+const BUY_TICK_SIZE_MULTIPLIER: f64 = 4.0;
+const SELL_TICK_SIZE_MULTIPLIER: f64 = 3.0;
+const TRADE_PERCENTAGE: f64 = 1.5;
 
 #[derive(Debug, Clone)]
 pub struct OrderDetails {
@@ -214,7 +214,7 @@ impl OrderEvent {
     fn get_difference(&self) -> f64 {
         match self.details.side {
             OrderSide::Buy => -self.precision.tick_size() * BUY_TICK_SIZE_MULTIPLIER,
-            OrderSide::Sell => self.precision.tick_size() * SELL_TICK_SIZE_MULTIPLIER,
+            OrderSide::Sell => *self.precision.tick_size() * SELL_TICK_SIZE_MULTIPLIER,
         }
     }
 
@@ -228,8 +228,8 @@ impl OrderEvent {
         let price_to_order_dif = self.current_order_price.unwrap() - self.latest_price;
         let buffer = self.get_difference();
         match self.details.side {
-            OrderSide::Buy => price_to_order_dif < buffer * 4.0,
-            OrderSide::Sell => price_to_order_dif > buffer * 2.0,
+            OrderSide::Buy => price_to_order_dif < buffer - self.precision.tick_size(),
+            OrderSide::Sell => price_to_order_dif > buffer + self.precision.tick_size(),
         }
     }
 }
