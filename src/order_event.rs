@@ -9,7 +9,7 @@ use getset::Getters;
 
 use crate::krypto_account::{KryptoAccount, PrecisionData};
 
-const BUY_TICK_SIZE_MULTIPLIER: f64 = 2.0;
+const BUY_TICK_SIZE_MULTIPLIER: f64 = 1.0;
 const SELL_TICK_SIZE_MULTIPLIER: f64 = 1.0;
 const TRADE_PERCENTAGE: f64 = 1.0;
 
@@ -228,7 +228,7 @@ impl OrderEvent {
         let price_to_order_dif = self.current_order_price.unwrap() - self.latest_price;
         let buffer = self.get_difference();
         match self.details.side {
-            OrderSide::Buy => price_to_order_dif < buffer * 2.0,
+            OrderSide::Buy => price_to_order_dif < buffer * 4.0,
             OrderSide::Sell => price_to_order_dif > buffer * 2.0,
         }
     }
