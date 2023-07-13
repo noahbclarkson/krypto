@@ -2,11 +2,12 @@ use std::error::Error;
 
 use clap::Parser;
 use krypto::{
-    algorithm::{backtest, compute_relationships, livetest, run},
+    algorithm::{backtest, livetest, run},
     args::Args,
     config::Config,
     historical_data::{calculate_technicals, load, TickerData},
     krypto_account::KryptoAccount,
+    relationships::compute_relationships,
     testing::PerPeriod,
 };
 
