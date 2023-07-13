@@ -53,13 +53,26 @@ jobs:
     - name: Create Artifact Directory
       run: mkdir artifacts
 
-    - name: Move Artifact
+    - name: Move Artifact (UNIX)
+      if: runner.os != 'Windows'
       run: mv target/release/krypto artifacts/
 
-    - name: Upload Artifact
+    - name: Move Artifact (Windows)
+      if: runner.os == 'Windows'
+      run: mv target/release/krypto.exe artifacts/
+
+    - name: Upload Artifact (UNIX)
+      if: runner.os != 'Windows'
       uses: actions/upload-artifact@v2
       with:
         name: krypto-${{ runner.os }}
         path: artifacts/krypto
+
+    - name: Upload Artifact (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/upload-artifact@v2
+      with:
+        name: krypto-${{ runner.os }}
+        path: artifacts/krypto.exe
 
 
