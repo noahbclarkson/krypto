@@ -82,7 +82,7 @@ impl OrderEvent {
                 }
                 OrderStatus::PartiallyFilled => {
                     if self.should_update() {
-                        self.mutable_quantity = self.mutable_quantity - order.executed_qty;
+                        self.mutable_quantity -= order.executed_qty;
                         self.cancel_order().await;
                         println!("Order partially filled but canceled");
                         self.place_order_catch().await?;
@@ -194,7 +194,7 @@ impl OrderEvent {
     }
 
     async fn query_order(&mut self) -> Result<MarginOrderState, Box<dyn Error>> {
-        let order_id = String::from(self.current_order_id.unwrap().to_string());
+        let order_id = self.current_order_id.unwrap().to_string();
         let query = MarginOrderQuery {
             symbol: self.details.ticker.clone(),
             order_id: Some(order_id),

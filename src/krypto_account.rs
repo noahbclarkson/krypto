@@ -133,7 +133,7 @@ impl KryptoAccount {
                     ..Default::default()
                 })
                 .await?;
-            if orders.len() > 0 {
+            if !orders.is_empty() {
                 println!("{} has {} open orders", ticker, orders.len());
                 let result = self.margin.cancel_all_orders(ticker, None).await;
                 if result.is_err() {

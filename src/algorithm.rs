@@ -474,13 +474,15 @@ fn get_entry_and_exit_times(order_length: i64) -> (i64, i64) {
     (max_entry_time, min_exit_time)
 }
 
+const MAX_REPEATS: usize = 5;
+
 async fn load_new_data(
     config: &Config,
     repeats: usize,
 ) -> Result<Box<[TickerData]>, Box<dyn Error>> {
-    let repeat_count = 0;
+    let mut repeat_count = 0;
     let mut error = None;
-    while repeat_count <= repeats {
+    while repeat_count <= repeats.min(MAX_REPEATS) {
         let new_candles = load(config).await;
         match new_candles {
             Ok(new_candles) => {
@@ -490,6 +492,7 @@ async fn load_new_data(
                 error = Some(err);
             }
         }
+        repeat_count += 1;
     }
     Err(error.unwrap())
 }
