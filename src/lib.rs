@@ -1,3 +1,11 @@
-pub mod ticker_data;
-pub mod candlestick;
+pub mod algorithm;
+pub mod candle;
 pub mod config;
+pub mod historical_data;
+pub mod historical_data_request;
+pub mod krypto_error;
+pub mod math;
+pub mod relationship;
+pub mod technical_calculator;
+pub mod test_result;
+pub mod ticker_data;
