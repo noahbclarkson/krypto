@@ -74,7 +74,7 @@ mod tests {
         let result = RData::<TestIdentity>::new(data);
         let result = result.err();
         match result {
-            Some(error) => assert_eq!(error, RError::MultipleTargetEntriesError),
+            Some(error) => assert_eq!(error, RError::MultipleTargetEntriesError(2)),
             _ => panic!("Expected TooManyTargetEntriesError"),
         }
     }

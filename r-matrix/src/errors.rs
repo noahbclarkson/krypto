@@ -5,10 +5,18 @@ pub enum RError {
     NoTargetEntryError,
     #[error("The RMatrix dataset must have at least one record entry.")]
     NoRecordEntryError,
-    #[error("The RMatrix dataset must have only one target entry")]
-    MultipleTargetEntriesError,
-    #[error("The number of RMatrix dataset records must match the number of relationships.")]
-    RelationshipRecordCountMismatchError,
-    #[error("The RMatrix dataset record index is out of bounds.")]
-    RecordIndexOutOfBoundsError,
+    #[error("The RMatrix dataset must have only one target entry (found {0}).")]
+    MultipleTargetEntriesError(usize),
+    #[error("The number of RMatrix dataset records must match the number of relationships (found {0} records and {1} relationships).")]
+    RelationshipRecordCountMismatchError(usize, usize),
+    #[error("The RMatrix dataset record index is out of bounds (found {index} but the length is {length}).")]
+    RecordIndexOutOfBoundsError {
+        index: usize,
+        length: usize,
+    },
+    #[error("The RMatrix relationship index is out of bounds (found {index} but the length is {length}).")]
+    RelationshipIndexOutOfBoundsError {
+        index: usize,
+        length: usize,
+    },
 }

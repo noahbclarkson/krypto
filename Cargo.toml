@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 r-matrix = { path = "r-matrix" }
 binance-r-matrix = { path = "binance-r-matrix" }
+tokio = { version = "1.32.0", features = ["full"] }
 
 [workspace]
 members = [
