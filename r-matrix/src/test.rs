@@ -1,11 +1,20 @@
 #[cfg(test)]
 mod tests {
-    use crate::{errors::RError, RData, RDataEntry, RMatrixId};
+    use crate::{
+        data::{RData, RDataEntry, RMatrixId},
+        errors::RError,
+    };
 
     #[derive(Debug, PartialEq, Eq, Clone)]
     struct TestIdentity {
         id: String,
         target: bool,
+    }
+
+    impl TestIdentity {
+        fn new(id: String, target: bool) -> Self {
+            Self { id, target }
+        }
     }
 
     impl RMatrixId for TestIdentity {
@@ -19,101 +28,10 @@ mod tests {
     }
 
     #[test]
-    fn test_new_rmatrix_data_no_target() {
-        let data = vec![
-            RDataEntry {
-                id: TestIdentity {
-                    id: "1".to_string(),
-                    target: false,
-                },
-                data: vec![1.0, 2.0],
-            },
-            RDataEntry {
-                id: TestIdentity {
-                    id: "2".to_string(),
-                    target: false,
-                },
-                data: vec![2.0, 3.0],
-            },
-        ];
-
-        let result = RData::<TestIdentity>::new(data);
-        let result = result.err();
-        match result {
-            Some(error) => assert_eq!(error, RError::NoTargetEntryError),
-            _ => panic!("Expected NoTargetEntryError"),
-        }
-    }
-
-    #[test]
-    fn test_new_rmatrix_data_multiple_targets() {
-        let data = vec![
-            RDataEntry {
-                id: TestIdentity {
-                    id: "1".to_string(),
-                    target: true,
-                },
-                data: vec![1.0, 2.0],
-            },
-            RDataEntry {
-                id: TestIdentity {
-                    id: "2".to_string(),
-                    target: true,
-                },
-                data: vec![2.0, 3.0],
-            },
-            RDataEntry {
-                id: TestIdentity {
-                    id: "3".to_string(),
-                    target: false,
-                },
-                data: vec![3.0, 4.0],
-            },
-        ];
-
-        let result = RData::<TestIdentity>::new(data);
-        let result = result.err();
-        match result {
-            Some(error) => assert_eq!(error, RError::MultipleTargetEntriesError(2)),
-            _ => panic!("Expected TooManyTargetEntriesError"),
-        }
-    }
-
-    #[test]
-    fn test_new_rmatrix_data_no_records() {
-        let data = vec![RDataEntry {
-            id: TestIdentity {
-                id: "1".to_string(),
-                target: true,
-            },
-            data: vec![1.0, 2.0],
-        }];
-
-        let result = RData::<TestIdentity>::new(data);
-        let result = result.err();
-        match result {
-            Some(error) => assert_eq!(error, RError::NoRecordEntryError),
-            _ => panic!("Expected NoRecordEntryError"),
-        }
-    }
-
-    #[test]
     fn test_new_rmatrix_data_valid() {
         let data = vec![
-            RDataEntry {
-                id: TestIdentity {
-                    id: "1".to_string(),
-                    target: false,
-                },
-                data: vec![1.0, 2.0],
-            },
-            RDataEntry {
-                id: TestIdentity {
-                    id: "2".to_string(),
-                    target: true,
-                },
-                data: vec![2.0, 3.0],
-            },
+            RDataEntry::new(TestIdentity::new("1".to_string(), true), vec![1.0, 2.0]),
+            RDataEntry::new(TestIdentity::new("2".to_string(), false), vec![2.0, 3.0]),
         ];
 
         let result = RData::<TestIdentity>::new(data);

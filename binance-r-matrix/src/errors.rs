@@ -7,11 +7,8 @@ pub enum DataError {
         symbol: String,
         error: binance::errors::Error,
     },
-    #[error("Technical error: {error} for symbol {symbol}")]
-    TechnicalError{
-        symbol: String,
-        error: ta::errors::TaError,
-    },
+    #[error("Technical error: {0}")]
+    TechnicalError(#[from] ta::errors::TaError),
     #[error("{symbol} doesn't have enough data (desired: {desired}, actual: {actual})")]
     NotEnoughData{
         symbol: String,

@@ -1,4 +1,4 @@
-#[derive(Debug, thiserror::Error, PartialEq, Eq, Clone)]
+#[derive(Debug, thiserror::Error)]
 /// An error type for the RMatrix crate.
 pub enum RError {
     #[error("The RMatrix dataset must have at least one target entry.")]
@@ -19,4 +19,6 @@ pub enum RError {
         index: usize,
         length: usize,
     },
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
 }

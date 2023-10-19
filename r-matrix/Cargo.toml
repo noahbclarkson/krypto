@@ -11,3 +11,6 @@ serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"
 futures = "0.3"
 statrs = "0.16"
+randomforest = "0.1"
+derive_builder = "0.12"
+bincode = "1.3"

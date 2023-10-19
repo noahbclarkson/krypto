@@ -1,13 +1,18 @@
-use binance::{api::Binance, market::Market, rest_model::KlineSummary};
+use binance::{api::Binance, rest_model::KlineSummary};
 use derive_builder::Builder;
 use errors::DataError;
 use getset::Getters;
 use historical_data_request::HistoricalDataRequest;
-use r_matrix::RMatrixId;
+use r_matrix::{
+    data::{RData, RDataEntry, RMatrixId},
+    errors::RError,
+};
+use technical_calulator::TECHNICALS;
 
 pub mod errors;
 mod historical_data_request;
-mod math;
+pub mod math;
+pub mod matrix;
 mod technical_calulator;
 pub mod test;
 
@@ -18,7 +23,9 @@ pub struct HistoricalDataConfig {
     periods: usize,
     interval: Interval,
     tickers: Vec<String>,
+    #[builder(default)]
     api_key: Option<String>,
+    #[builder(default)]
     api_secret: Option<String>,
 }
 
@@ -49,6 +56,7 @@ impl Default for HistoricalDataConfig {
 }
 
 #[derive(Debug, Getters)]
+#[getset(get = "pub")]
 pub struct HistoricalData {
     data: Vec<TickerData>,
     config: HistoricalDataConfig,
@@ -105,9 +113,32 @@ impl HistoricalData {
         }
         Ok(())
     }
+
+    pub fn calculate_technicals(&mut self) -> Result<(), DataError> {
+        for t_data in self.data.iter_mut() {
+            t_data.load_technicals()?;
+        }
+        Ok(())
+    }
+
+    pub fn to_rdata(&self) -> Result<Vec<RData<BinanceDataId>>, RError> {
+        let mut rdata = Vec::with_capacity(self.data.len());
+        for t_data in self.data.iter() {
+            let mut r = t_data.to_rdata()?;
+            r.normalize();
+            rdata.push(r);
+        }
+        // Combine all records
+        let mut records = Vec::new();
+        for r in rdata.iter() {
+            records.push(r.records());
+        }
+        Ok(rdata)
+    }
 }
 
 #[derive(Debug, Getters)]
+#[getset(get = "pub")]
 pub struct TickerData {
     klines: Box<[KlineSummary]>,
     technicals: Box<[Box<[f64]>]>,
@@ -125,6 +156,34 @@ impl TickerData {
 
     fn close_times(&self) -> impl Iterator<Item = i64> + '_ {
         self.klines.iter().map(|kline| kline.close_time)
+    }
+
+    pub fn load_technicals(&mut self) -> Result<(), DataError> {
+        let mut calculator = technical_calulator::TechnicalCalulator::new();
+        let technicals = calculator.calculate_technicals(&self.klines)?;
+        self.technicals = technicals.into_boxed_slice();
+        Ok(())
+    }
+
+    pub fn to_rdata(&self) -> Result<RData<BinanceDataId>, RError> {
+        let mut data = Vec::with_capacity(TECHNICALS);
+        for _ in 0..TECHNICALS {
+            data.push(Vec::new());
+        }
+
+        for technicals in self.technicals.iter() {
+            for (j, technical) in technicals.iter().enumerate() {
+                data[j].push(*technical);
+            }
+        }
+
+        let mut records = Vec::with_capacity(TECHNICALS);
+        for (i, technicals) in data.into_iter().enumerate() {
+            let id = BinanceDataId::new(BinanceDataType::from_usize(i));
+            records.push(RDataEntry::new(id, technicals));
+        }
+
+        Ok(RData::new(records)?)
     }
 }
 
@@ -198,6 +257,34 @@ pub struct BinanceDataId {
 pub enum BinanceDataType {
     PercentageChange,
     PercentageChangeReal,
+    VolumeEma30,
+    CandlestickRatio,
+    StochasticOscillator,
+    RelativeStrengthIndex,
+    CommodityChannelIndex,
+    MoneyFlowIndex,
+    PercentagePriceOscillator,
+    EfficiencyRatio,
+    PercentageChangeEma,
+}
+
+impl BinanceDataType {
+    pub fn from_usize(i: usize) -> Self {
+        match i {
+            0 => BinanceDataType::PercentageChange,
+            1 => BinanceDataType::PercentageChangeReal,
+            2 => BinanceDataType::VolumeEma30,
+            3 => BinanceDataType::CandlestickRatio,
+            4 => BinanceDataType::StochasticOscillator,
+            5 => BinanceDataType::RelativeStrengthIndex,
+            6 => BinanceDataType::CommodityChannelIndex,
+            7 => BinanceDataType::MoneyFlowIndex,
+            8 => BinanceDataType::PercentagePriceOscillator,
+            9 => BinanceDataType::EfficiencyRatio,
+            10 => BinanceDataType::PercentageChangeEma,
+            _ => panic!("Invalid index"),
+        }
+    }
 }
 
 impl BinanceDataId {
@@ -211,6 +298,15 @@ impl RMatrixId for BinanceDataId {
         match self.id {
             BinanceDataType::PercentageChange => "Percentage Change",
             BinanceDataType::PercentageChangeReal => "Real Percentage Change",
+            BinanceDataType::VolumeEma30 => "Volume EMA 30",
+            BinanceDataType::CandlestickRatio => "Candlestick Ratio",
+            BinanceDataType::StochasticOscillator => "Stochastic Oscillator",
+            BinanceDataType::RelativeStrengthIndex => "Relative Strength Index",
+            BinanceDataType::CommodityChannelIndex => "Commodity Channel Index",
+            BinanceDataType::MoneyFlowIndex => "Money Flow Index",
+            BinanceDataType::PercentagePriceOscillator => "Percentage Price Oscillator",
+            BinanceDataType::EfficiencyRatio => "Efficiency Ratio",
+            BinanceDataType::PercentageChangeEma => "Percentage Change EMA",
         }
     }
 

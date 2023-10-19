@@ -43,6 +43,30 @@ pub fn bayes_combine(prior: f64, likelihood: f64) -> f64 {
     (prior * likelihood) / ((prior * likelihood) + ((1.0 - prior) * (1.0 - likelihood)))
 }
 
+
+#[inline]
+pub fn format_number(num: f64) -> String {
+    let original_num = num;
+    let suffixes = [
+        "", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "De", "Ud", "Dd", "Td", "Qad",
+        "Qid", "Sxd", "Spd", "Od", "Nd", "V", "Ct",
+    ];
+
+    let mut num = num;
+    let mut index = 0;
+
+    while num >= 1000.0 && index < suffixes.len() - 1 {
+        num /= 1000.0;
+        index += 1;
+    }
+
+    match original_num {
+        n if n < 10.0 => format!("{:.4}{}", num, suffixes[index]),
+        n if n < 100.0 => format!("{:.3}{}", num, suffixes[index]),
+        _ => format!("{:.2}{}", num, suffixes[index]),
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// A struct that represents a normalization function.
 pub enum NormalizationFunctionType {

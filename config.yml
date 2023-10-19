@@ -1,0 +1,32 @@
+training-periods: 9000
+testing-periods: 1000
+interval: "15m"
+depth: 3
+margin: 5.0
+trees: 100
+seed: 3
+fee: 0.04
+min-score: 0.0
+tickers: 
+  - "BTCUSDT"
+  - "ETHUSDT"
+  - "BNBUSDT"
+  - "XRPUSDT"
+  - "SOLUSDT"
+  - "ADAUSDT"
+  - "DOGEUSDT"
+  - "TRXUSDT"
+  - "MATICUSDT"
+  - "DOTUSDT"
+  - "LTCUSDT"
+  - "BCHUSDT"
+  - "SHIBUSDT"
+  - "LINKUSDT"
+  - "AVAXUSDT"
+  - "XLMUSDT"
+  - "XMRUSDT"
+  - "ATOMUSDT"
+  - "UNIUSDT"
+  - "ETCUSDT"
+  - "HBARUSDT"
+  - "FILUSDT"

@@ -72,4 +72,5 @@ impl<'a> HistoricalDataRequest<'a> {
         };
         Ok(result)
     }
+
 }

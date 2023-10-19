@@ -1,9 +1,9 @@
 use binance::rest_model::KlineSummary;
 use ta::{errors::TaError, indicators::*, DataItem, Next};
 
-use crate::{errors::DataError, math::percentage_change};
+use crate::{errors::DataError, math::{percentage_change, cr_ratio}, BinanceDataType};
 
-const TECHNICALS: usize = 10;
+pub const TECHNICALS: usize = 11;
 
 pub(crate) struct TechnicalCalulator {
     stoch: SlowStochastic,
@@ -14,20 +14,6 @@ pub(crate) struct TechnicalCalulator {
     efficiency: EfficiencyRatio,
     pc_ema: ExponentialMovingAverage,
     volume_ema: ExponentialMovingAverage,
-}
-
-pub enum TechnicalType {
-    PercentageChangeReal,
-    PercentageChange,
-    VolumeEma30,
-    CandlestickRatio,
-    StochasticOscillator,
-    RelativeStrengthIndex,
-    CommodityChannelIndex,
-    MoneyFlowIndex,
-    PercentagePriceOscillator,
-    EfficiencyRatio,
-    PercentageChangeEma,
 }
 
 impl TechnicalCalulator {
@@ -44,26 +30,42 @@ impl TechnicalCalulator {
         }
     }
 
-    // pub(crate) fn calculate_technicals(
-    //     klines: Vec<KlineSummary>,
-    // ) -> Result<Vec<Box<[f64]>>, DataError> {
-    //     let mut previous_close = klines[0].close;
-    //     for kline in klines.iter() {
-    //         Self::process_candle(kline, &mut previous_close)?;
-    //     }
-    //     Ok(())
-    // }
+    pub(crate) fn calculate_technicals(
+        &mut self,
+        klines: &Box<[KlineSummary]>,
+    ) -> Result<Vec<Box<[f64]>>, DataError> {
+        let mut previous_close = klines[0].close;
+        let mut results = Vec::with_capacity(klines.len());
+        for kline in klines.iter() {
+            let technicals = self.process_candle(kline, &mut previous_close)?;
+            results.push(technicals.into_boxed_slice());
+        }
+        Ok(results)
+    }
 
-    // #[inline]
-    // fn process_candle(
-    //     candle: &KlineSummary,
-    //     previous_close: &mut f64,
-    // ) -> Result<Vec<f64>, DataError> {
-    //     let pc = normalized_pc(*previous_close, candle.close);
-    //     let mut technicals = Vec::with_capacity(TECHNICALS);
-
-    //     Ok(())
-    // }
+    #[inline]
+    fn process_candle(
+        &mut self,
+        candle: &KlineSummary,
+        previous_close: &mut f64,
+    ) -> Result<Vec<f64>, DataError> {
+        let pc = normalized_pc(*previous_close, candle.close);
+        *previous_close = candle.close;
+        let mut technicals = [0.0; TECHNICALS];
+        let item = &candle_to_item(candle)?;
+        technicals[BinanceDataType::PercentageChangeReal as usize] = pc;
+        technicals[BinanceDataType::PercentageChange as usize] = pc;
+        technicals[BinanceDataType::VolumeEma30 as usize] = self.volume_ema.next(candle.volume);
+        technicals[BinanceDataType::CandlestickRatio as usize] = cr_ratio(candle);
+        technicals[BinanceDataType::StochasticOscillator as usize] = self.stoch.next(item);
+        technicals[BinanceDataType::RelativeStrengthIndex as usize] = self.rsi.next(item);
+        technicals[BinanceDataType::CommodityChannelIndex as usize] = self.cci.next(item);
+        technicals[BinanceDataType::MoneyFlowIndex as usize] = self.mfi.next(item);
+        technicals[BinanceDataType::PercentagePriceOscillator as usize] = self.ppo.next(item).ppo;
+        technicals[BinanceDataType::EfficiencyRatio as usize] = self.efficiency.next(item);
+        technicals[BinanceDataType::PercentageChangeEma as usize] = self.pc_ema.next(pc);
+        Ok(technicals.to_vec())
+    }
 }
 
 #[inline(always)]
@@ -73,4 +75,14 @@ fn normalized_pc(previous: f64, current: f64) -> f64 {
         true => 0.0,
         false => pc,
     }
+}
+
+fn candle_to_item(kline: &KlineSummary) -> Result<DataItem, TaError> {
+    DataItem::builder()
+            .open(kline.open)
+            .high(kline.high)
+            .low(kline.low)
+            .close(kline.close)
+            .volume(kline.volume)
+            .build()
 }
