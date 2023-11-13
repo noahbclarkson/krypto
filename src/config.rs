@@ -7,8 +7,8 @@ use std::{
 use binance_r_matrix::{HistoricalDataConfig, HistoricalDataConfigBuilder, Interval};
 use getset::{Getters, Setters};
 use r_matrix::{
-    matricies::{ForestConfig, ForestConfigBuilder},
-    rtest::{RTestConfig, RTestConfigBuilder},
+    matricies::{ForestConfig, ForestConfigBuilder, SimpleConfigBuilder, SimpleConfig},
+    rtest::{RTestConfig, RTestConfigBuilder}, math::NormalizationFunctionType,
 };
 use serde::{Deserialize, Serialize};
 use serde_yaml::from_reader;
@@ -37,6 +37,9 @@ pub struct Config {
     fee: Option<f64>,
     margin: f64,
     trees: Option<usize>,
+    function: Option<String>,
+    #[serde(rename = "function-multiplier")]
+    function_multiplier: Option<f64>,
     seed: Option<u64>,
     #[serde(rename = "sampling-rate")]
     sampling_rate: Option<f32>,
@@ -116,6 +119,18 @@ impl Into<ForestConfig> for Config {
             .seed(self.seed.unwrap_or(0))
             .ending_position(self.training_periods)
             .max_samples((self.sampling_rate.unwrap_or(1.0) * self.training_periods as f32) as usize)
+            .build()
+            .unwrap()
+    }
+}
+
+impl Into<SimpleConfig> for Config {
+    fn into(self) -> SimpleConfig {
+        SimpleConfigBuilder::default()
+            .depth(self.depth)
+            .function(NormalizationFunctionType::from_string(self.function.as_deref().unwrap_or("Tanh")))
+            .training_periods(self.training_periods)
+            .function_multiplier(self.function_multiplier.unwrap_or(1.0))
             .build()
             .unwrap()
     }

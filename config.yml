@@ -1,11 +1,13 @@
-training-periods: 9000
+training-periods: 2000
 testing-periods: 1000
-interval: "15m"
-depth: 3
+interval: "30m"
+depth: 1
 margin: 5.0
-trees: 100
+trees: 20
 seed: 3
-fee: 0.04
+fee: 0.027
+function-multiplier: 100
+function: "Softsign"
 min-score: 0.0
 tickers: 
   - "BTCUSDT"

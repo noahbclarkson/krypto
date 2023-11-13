@@ -1,4 +1,4 @@
-use std::io::{Write, Read};
+use std::io::{Read, Write};
 use std::num::NonZeroUsize;
 
 use crate::data::{RData, RDataEntry, RMatrixId};
@@ -19,6 +19,15 @@ pub trait RMatrix<T> {
     fn predict_stable(&self, data: &RData<T>, index: usize) -> Result<f64, RError>;
 }
 
+#[derive(Debug, Getters, Builder)]
+#[getset(get = "pub")]
+pub struct SimpleConfig {
+    depth: usize,
+    function: NormalizationFunctionType,
+    training_periods: usize,
+    function_multiplier: f64,
+}
+
 #[derive(Debug, Getters, Serialize, Deserialize)]
 #[getset(get = "pub")]
 /// A struct that represents the RMatrix.
@@ -27,19 +36,28 @@ pub struct SimpleRMatrix<T> {
     /// The list is ordered by record entry and then by depth.
     relationships: Box<[RelationshipEntry]>,
     /// The maximum depth of the RMatrix.
+    #[serde(rename = "max-depth")]
     max_depth: usize,
     /// The normalization function to use for the RMatrix. Default is `tanh`.
     function: NormalizationFunctionType,
+    /// The function multiplier for training
+    #[serde(rename = "function-multiplier")]
+    function_multiplier: f64,
+    /// The number of training periods used to calculate the RMatrix.
+    #[serde(rename = "training-periods")]
+    training_periods: usize,
     #[serde(skip)]
     _phantom: std::marker::PhantomData<T>,
 }
 
 impl<T: RMatrixId> SimpleRMatrix<T> {
-    pub fn new(max_depth: usize, function: NormalizationFunctionType) -> Self {
+    pub fn new(config: SimpleConfig) -> Self {
         Self {
             relationships: Box::new([]),
-            max_depth,
-            function,
+            max_depth: config.depth,
+            function: config.function,
+            training_periods: config.training_periods,
+            function_multiplier: config.function_multiplier,
             _phantom: std::marker::PhantomData,
         }
     }
@@ -51,6 +69,7 @@ impl<T: RMatrixId> SimpleRMatrix<T> {
         let records = data.records();
         let tasks = records
             .iter()
+            .take(self.training_periods)
             .map(|record| self.compute(record, target))
             .collect::<Vec<_>>();
         let relationships = futures::future::join_all(tasks)
@@ -64,11 +83,12 @@ impl<T: RMatrixId> SimpleRMatrix<T> {
         let max_depth = self.max_depth;
         let length = record.data().len();
         let mut results = vec![Vec::new(); max_depth];
-        for i in max_depth..length.saturating_sub(1) {
+        for i in max_depth..length - 1 {
             let target_value = target.data().get(i + 1).unwrap_or(&0.0);
             for depth in 0..max_depth {
                 let record_value = record.data().get(i - depth).unwrap_or(&0.0);
-                let result = self.function.get_function()(*record_value * *target_value);
+                let input = record_value * target_value * self.function_multiplier;
+                let result = self.function.get_function()(input);
                 results[depth].push(result);
             }
         }
@@ -79,15 +99,29 @@ impl<T: RMatrixId> SimpleRMatrix<T> {
         RelationshipEntry::new(results.collect())
     }
 
-    #[inline]
-    pub async fn predict_stable(&self, data: &RData<T>, index: usize) -> Result<f64, RError> {
+}
+
+impl<T: RMatrixId> RMatrix<T> for SimpleRMatrix<T> {
+    fn predict(&self, data: &RData<T>, index: usize) -> f64 {
+        let mut total = 0.0;
+        for (i, entry) in self.relationships.iter().enumerate() {
+            for relationship in entry.relationships().iter() {
+                let record = data.records()[i].data()[index - relationship.depth];
+                let input = record * data.mean();
+                total += self.function.get_function()(input);
+            }
+        }
+        total
+    }
+
+    fn predict_stable(&self, data: &RData<T>, index: usize) -> Result<f64, RError> {
         if data.records().len() != self.relationships.len() {
             return Err(RError::RelationshipRecordCountMismatchError(
                 data.records().len(),
                 self.relationships.len(),
             ));
         }
-        let mut prior = *data.prior();
+        let mut total = 0.0;
         for (i, entry) in self.relationships.iter().enumerate() {
             for relationship in entry.relationships().iter() {
                 let record = data.records().get(i);
@@ -104,40 +138,12 @@ impl<T: RMatrixId> SimpleRMatrix<T> {
                         length: data.records()[i].data().len(),
                     });
                 }
-                let predicted = record.unwrap() * data.mean();
-                prior = bayes_combine(prior, Self::calculate_probability(relationship, predicted));
+                let record = record.unwrap();
+                let input = record * data.mean();
+                total += self.function.get_function()(input);
             }
         }
-        Ok(prior)
-    }
-
-    #[inline(always)]
-    pub async fn predict(&self, data: &RData<T>, index: usize) -> f64 {
-        let mut prior = *data.prior();
-        for (i, entry) in self.relationships.iter().enumerate() {
-            let record = &data.records()[i];
-            for relationship in entry.relationships().iter() {
-                let predicted = record.data()[index - relationship.depth] * data.mean();
-                prior = bayes_combine(prior, Self::calculate_probability(relationship, predicted));
-            }
-        }
-        prior
-    }
-
-    #[inline(always)]
-    fn calculate_probability(relationship: &Relationship, predicted: f64) -> f64 {
-        let z_score = (0.0 - predicted) / relationship.standard_deviation();
-        crate::math::norm_s_dist(z_score)
-    }
-}
-
-impl<T: RMatrixId> RMatrix<T> for SimpleRMatrix<T> {
-    fn predict(&self, data: &RData<T>, index: usize) -> f64 {
-        futures::executor::block_on(self.predict(data, index))
-    }
-
-    fn predict_stable(&self, data: &RData<T>, index: usize) -> Result<f64, RError> {
-        futures::executor::block_on(self.predict_stable(data, index))
+        Ok(total)
     }
 }
 
@@ -232,8 +238,6 @@ impl<T: RMatrixId> ForestRMatrix<T> {
             _phantom: std::marker::PhantomData,
         })
     }
-
-
 }
 
 impl<T: RMatrixId> RMatrix<T> for ForestRMatrix<T> {

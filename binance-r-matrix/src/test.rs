@@ -3,7 +3,7 @@ mod tests {
     use r_matrix::{
         data::{RData, RDataEntry},
         math::NormalizationFunctionType,
-        matricies::SimpleRMatrix,
+        matricies::{SimpleRMatrix, SimpleConfigBuilder, RMatrix},
     };
 
     use crate::{BinanceDataId, BinanceDataType};
@@ -28,9 +28,14 @@ mod tests {
             _ => panic!("Expected the RData to be created"),
         };
         let function = NormalizationFunctionType::default();
-        let mut r_matrix: SimpleRMatrix<BinanceDataId> = SimpleRMatrix::new(1, function);
+        let config = SimpleConfigBuilder::default()
+            .depth(1)
+            .function(function)
+            .build()
+            .unwrap();
+        let mut r_matrix: SimpleRMatrix<BinanceDataId> = SimpleRMatrix::new(config);
         r_matrix.calculate_relationships(&result).await;
-        let result = r_matrix.predict_stable(&result, 1).await;
+        let result = r_matrix.predict_stable(&result, 1);
         let result = result.ok();
         match result {
             Some(_) => (),

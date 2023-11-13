@@ -83,6 +83,17 @@ impl Default for NormalizationFunctionType {
 }
 
 impl NormalizationFunctionType {
+
+    pub fn from_string(string: &str) -> Self {
+        match string {
+            "Tanh" => NormalizationFunctionType::Tanh,
+            "Gudermannian" => NormalizationFunctionType::Gudermannian,
+            "Algebraic Sigmoid" => NormalizationFunctionType::AlgebraicSigmoid,
+            "Softsign" => NormalizationFunctionType::Softsign,
+            _ => NormalizationFunctionType::Tanh,
+        }
+    }
+
     /// Get the normalization function.
     pub fn get_function(&self) -> fn(f64) -> f64 {
         match self {

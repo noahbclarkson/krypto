@@ -86,6 +86,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn test(predictions: Vec<f64>) {
+
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum DataType {
     PercentageChangePredict,
