@@ -1,10 +1,44 @@
-# krypto
+# Krypto
 
-----------------------
+> Advanced Crypto-Futures Trading Algorithm
 
-## What is Krypto?
+## Overview
 
-Krypto is a quantitative crypto-futures trading algorithm based on the self-developed mass-correlation-relation algorithm. Krypto comes fully equppied with backtesting, livetesting, and a number of configurable parameters to optimize cash return.
+Krypto is an innovative quantitative trading algorithm specifically designed for crypto-futures markets. It leverages the unique mass-correlation-relation algorithm to predict market movements and optimize returns. Krypto is equipped with functionalities for backtesting, live testing, and adjustable parameters for strategic trading.
+
+## Features
+
+- **Mass-Correlation-Relation Algorithm**: Utilizes complex relationships between various market indicators to predict price movements.
+- **Comprehensive Data Analysis**: Integrates multiple technical indicators and normalizes data for accurate predictions.
+- **Backtesting & Live Testing**: Evaluate the performance of trading strategies against historical data and in real-time market conditions.
+- **Customizable Strategies**: Offers configurable parameters to tailor the algorithm according to specific trading preferences and market scenarios.
+
+## Getting Started
+
+### Prerequisites
+
+- Rust (latest stable version)
+- Cargo (Rust's package manager)
+- Basic understanding of cryptocurrency markets and futures trading
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/krypto.git
+   ```
+2. Navigate to the project directory:
+    ```bash
+    cd krypto
+    ```
+3. Run the project using Cargo:
+    ```bash
+    cargo run --release
+    ```
+
+## Configuration
+
+Modify the config.yml file to set your trading preferences, such as target tickers, trading intervals, and backtesting parameters.
 
 ## What is the mass-correlation-relation algorithm?
 
@@ -151,7 +185,24 @@ async fn compute_relationship(
                 predict_index,
             });
         }
+
     }
     relationships
 }
 ```
+
+## Contributing
+
+Contributions are what make the open-source community an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch (git checkout -b feature/AmazingFeature)
+3. Commit your Changes (git commit -m 'Add some AmazingFeature')
+4. Push to the Branch (git push origin feature/AmazingFeature)
+5. Open a Pull Request
+
+## License
+
+Distributed under the MIT License. See LICENSE for more information
+
+
