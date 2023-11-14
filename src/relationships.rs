@@ -102,14 +102,16 @@ pub async fn predict(
     let blacklist_indexes = blacklist_indexes_task.await.unwrap();
 
     let mut max_index = None;
-    let mut max = None;
+    let mut max: Option<f32> = None;
     for (i, score) in scores.iter().enumerate().skip(1) {
-        if (max_index.is_none() || score > max.unwrap()) && !blacklist_indexes.contains(&i) {
+        if (max_index.is_none() || score.abs() > max.unwrap().abs())
+            && !blacklist_indexes.contains(&i)
+        {
             max_index = Some(i);
-            max = Some(score);
+            max = Some(*score);
         }
     }
-    (max_index.unwrap(), *max.unwrap())
+    (max_index.unwrap(), max.unwrap())
 }
 
 async fn get_blacklist_indexes(tickers: Vec<String>, blacklist: Vec<String>) -> Vec<usize> {

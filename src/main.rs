@@ -6,7 +6,6 @@ use krypto::{
     args::Args,
     config::Config,
     historical_data::{calculate_technicals, load, TickerData},
-    krypto_account::KryptoAccount,
     relationships::compute_relationships,
     testing::PerPeriod,
 };
@@ -36,25 +35,23 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
         let result = run(&config).await;
         if result.is_err() {
             println!("Error: {}", result.err().unwrap());
-            let account = KryptoAccount::new(&config);
-            account.close_all_orders(&config).await?;
         }
     }
     Ok(())
 }
 
 async fn find_best_parameters(config: &mut Config, candles: &[TickerData]) -> Box<Config> {
-    let mut best_return = 0.0;
+    let mut best_return = f32::NEG_INFINITY;
     let mut best_config = config.clone();
     let interval_num = config.interval_minutes().unwrap() as usize;
     let mut results_file = csv::Writer::from_path("results.csv").unwrap();
     let headers = vec!["min_score", "depth", "cash", "accuracy", "return"];
     results_file.write_record(&headers).unwrap();
-    for depth in 3..=10 {
+    for depth in 2..=10 {
         let config = config.set_depth(depth);
         let relationships = compute_relationships(candles, config).await;
-        for i in 0..=75 {
-            let min_score = i as f32 / 25.0;
+        for i in 0..=100 {
+            let min_score = i as f32 / 10.0;
             let config = config.set_min_score(Some(min_score));
             let test = backtest(candles, &relationships, config).await;
             let test_return = test.compute_average_return(
