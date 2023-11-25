@@ -35,7 +35,7 @@ impl<T: RMatrixId> RTest<T> {
         let mut cash_history = Vec::new();
         let mut predictions = Vec::new();
         for i in config.starting_position..rdata.target().data().len() {
-            let prediction = matrix.predict(&rdata, i);
+            let prediction = matrix.predict(rdata, i);
             predictions.push(prediction);
             let actual = rdata.target().data()[i];
             if prediction * actual > 0.0 && prediction.abs() > config.min_change {
@@ -71,10 +71,8 @@ impl<T: RMatrixId> RTest<T> {
         let mut correct = 0;
         let mut incorrect = 0;
         let mut cash_history = Vec::new();
-        let mut p_index = 0;
-        for i in self.config.starting_position..rdata.target().data().len() {
+        for (p_index, i) in (self.config.starting_position..rdata.target().data().len()).enumerate() {
             let prediction = self.predictions[p_index];
-            p_index += 1;
             let actual = rdata.target().data()[i];
             if prediction * actual > 0.0 && prediction.abs() > self.config.min_change {
                 cash += cash * actual.abs() * self.config.margin;

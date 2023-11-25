@@ -97,52 +97,52 @@ impl Config {
     }
 }
 
-impl Into<HistoricalDataConfig> for Config {
-    fn into(self) -> HistoricalDataConfig {
-        let interval = self.get_interval();
+impl From<Config> for HistoricalDataConfig {
+    fn from(val: Config) -> Self {
+        let interval = val.get_interval();
         HistoricalDataConfigBuilder::default()
-            .tickers(self.tickers)
-            .periods(self.training_periods + self.testing_periods)
+            .tickers(val.tickers)
+            .periods(val.training_periods + val.testing_periods)
             .interval(interval)
-            .api_key(self.api_key)
-            .api_secret(self.api_secret)
+            .api_key(val.api_key)
+            .api_secret(val.api_secret)
             .build()
             .unwrap()
     }
 }
 
-impl Into<ForestConfig> for Config {
-    fn into(self) -> ForestConfig {
+impl From<Config> for ForestConfig {
+    fn from(val: Config) -> Self {
         ForestConfigBuilder::default()
-            .depth(self.depth)
-            .trees(self.trees.unwrap_or(100))
-            .seed(self.seed.unwrap_or(0))
-            .ending_position(self.training_periods)
-            .max_samples((self.sampling_rate.unwrap_or(1.0) * self.training_periods as f32) as usize)
+            .depth(val.depth)
+            .trees(val.trees.unwrap_or(100))
+            .seed(val.seed.unwrap_or(0))
+            .ending_position(val.training_periods)
+            .max_samples((val.sampling_rate.unwrap_or(1.0) * val.training_periods as f32) as usize)
             .build()
             .unwrap()
     }
 }
 
-impl Into<SimpleConfig> for Config {
-    fn into(self) -> SimpleConfig {
+impl From<Config> for SimpleConfig {
+    fn from(val: Config) -> Self {
         SimpleConfigBuilder::default()
-            .depth(self.depth)
-            .function(NormalizationFunctionType::from_string(self.function.as_deref().unwrap_or("Tanh")))
-            .training_periods(self.training_periods)
-            .function_multiplier(self.function_multiplier.unwrap_or(1.0))
+            .depth(val.depth)
+            .function(NormalizationFunctionType::from_string(val.function.as_deref().unwrap_or("Tanh")))
+            .training_periods(val.training_periods)
+            .function_multiplier(val.function_multiplier.unwrap_or(1.0))
             .build()
             .unwrap()
     }
 }
 
-impl Into<RTestConfig> for Config {
-    fn into(self) -> RTestConfig {
+impl From<Config> for RTestConfig {
+    fn from(val: Config) -> Self {
         RTestConfigBuilder::default()
-            .margin(self.margin)
-            .starting_position(self.training_periods + self.depth)
-            .min_change(self.min_score.unwrap_or(0.0))
-            .margin(self.margin)
+            .margin(val.margin)
+            .starting_position(val.training_periods + val.depth)
+            .min_change(val.min_score.unwrap_or(0.0))
+            .margin(val.margin)
             .starting_cash(1000.0)
             .build()
             .unwrap()

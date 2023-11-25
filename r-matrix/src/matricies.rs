@@ -3,7 +3,7 @@ use std::num::NonZeroUsize;
 
 use crate::data::{RData, RDataEntry, RMatrixId};
 use crate::errors::RError;
-use crate::math::{bayes_combine, NormalizationFunctionType};
+use crate::math::NormalizationFunctionType;
 use crate::relationship::{Relationship, RelationshipEntry};
 use derive_builder::Builder;
 use getset::Getters;
@@ -85,11 +85,11 @@ impl<T: RMatrixId> SimpleRMatrix<T> {
         let mut results = vec![Vec::new(); max_depth];
         for i in max_depth..length - 1 {
             let target_value = target.data().get(i + 1).unwrap_or(&0.0);
-            for depth in 0..max_depth {
+            for (depth, results_inner) in results.iter_mut().enumerate().take(max_depth) {
                 let record_value = record.data().get(i - depth).unwrap_or(&0.0);
                 let input = record_value * target_value * self.function_multiplier;
                 let result = self.function.get_function()(input);
-                results[depth].push(result);
+                results_inner.push(result);
             }
         }
         let results = results
@@ -98,7 +98,6 @@ impl<T: RMatrixId> SimpleRMatrix<T> {
             .map(|(depth, values)| Relationship::new(values, depth + 1));
         RelationshipEntry::new(results.collect())
     }
-
 }
 
 impl<T: RMatrixId> RMatrix<T> for SimpleRMatrix<T> {

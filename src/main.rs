@@ -1,13 +1,8 @@
-use std::panic::catch_unwind;
-
 use binance_r_matrix::matrix::BinanceRMatrix;
-use binance_r_matrix::{
-    HistoricalData, HistoricalDataConfig, HistoricalDataConfigBuilder, Interval, BinanceDataId,
-};
+use binance_r_matrix::{BinanceDataId, HistoricalData};
 use krypto::config::Config;
 use r_matrix::data::RMatrixId;
-use r_matrix::matricies::{ForestConfigBuilder, ForestRMatrix, RMatrix};
-use r_matrix::rtest::{RTest, RTestConfigBuilder};
+use r_matrix::matricies::{ForestRMatrix, RMatrix};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,13 +15,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for (individual, ticker) in rdata.iter().zip(config.tickers().iter()) {
         println!("Creating matrix for {}", ticker);
-        
+
         let config = config.clone().into();
-        
-        let result = std::panic::catch_unwind(|| {
-            Box::new(ForestRMatrix::new(&individual, config).unwrap())
-        });
-    
+
+        let result =
+            std::panic::catch_unwind(|| Box::new(ForestRMatrix::new(individual, config).unwrap()));
+
         match result {
             Ok(r_matrix) => matricies.push(Some(r_matrix)),
             Err(_) => {
@@ -41,7 +35,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut incorrect = 0;
     let mut last_ticker = "".to_string();
     let mut last_prediction = 0.0;
-    for i in *config.training_periods()..(config.training_periods() + config.testing_periods() - 1) {
+    for i in *config.training_periods()..(config.training_periods() + config.testing_periods() - 1)
+    {
         let predictions = rmatrix.predict(i);
         // Get the index of the prediction with the higest value
         let mut max_index = 0;
@@ -73,7 +68,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         last_prediction = prediction;
         println!(
             "Prediction: {:.3}%, Real: {:.3}%, Cash: {:.3}, Ticker: {}",
-            prediction * 100.0, real * 100.0, cash, config.tickers()[max_index]
+            prediction * 100.0,
+            real * 100.0,
+            cash,
+            config.tickers()[max_index]
         );
         // println!("{}", cash);
     }
@@ -84,10 +82,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         correct as f64 / (correct + incorrect) as f64 * 100.0
     );
     Ok(())
-}
-
-fn test(predictions: Vec<f64>) {
-
 }
 
 #[derive(Debug, Clone, Copy)]

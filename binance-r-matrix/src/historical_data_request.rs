@@ -23,14 +23,14 @@ impl<'a> HistoricalDataRequest<'a> {
         }
     }
 
-    pub async fn run(&self, ticker: &String) -> Result<TickerData, DataError> {
+    pub async fn run(&self, ticker: &str) -> Result<TickerData, DataError> {
         let mut candlesticks = Vec::new();
         let addition = MINS_TO_MILLIS * 1000 * self.config.interval_minutes() as i64;
         let mut start_times = Vec::new();
         let mut start = self.start_time;
         while start < self.end_time {
             start_times.push(start as u64);
-            start = start + addition;
+            start += addition;
         }
 
         let tasks = start_times
@@ -40,23 +40,23 @@ impl<'a> HistoricalDataRequest<'a> {
         let mut results = futures::future::join_all(tasks).await;
         for result in results.drain(..) {
             let summaries = result?;
-            candlesticks.extend(summaries.into_iter().map(|summary| summary.into()));
+            candlesticks.extend(summaries.into_iter());
         }
 
-        let ticker_data = TickerData::new(ticker.clone(), candlesticks);
+        let ticker_data = TickerData::new(ticker.to_owned(), candlesticks);
         Ok(ticker_data)
     }
 
     async fn load_chunk(
         &self,
-        ticker: &String,
+        ticker: &str,
         start: u64,
         end: u64,
     ) -> Result<Vec<KlineSummary>, DataError> {
         let market: Market = self.config.get_binance();
         let summaries = market
             .get_klines(
-                ticker.clone(),
+                ticker,
                 self.config.interval_string(),
                 1000,
                 Some(start),
@@ -64,12 +64,10 @@ impl<'a> HistoricalDataRequest<'a> {
             )
             .await
             .map_err(|error| DataError::BinanceError {
-                symbol: ticker.clone(),
+                symbol: ticker.to_owned(),
                 error,
             });
-        let result = match summaries? {
-            KlineSummaries::AllKlineSummaries(summaries) => summaries,
-        };
+        let KlineSummaries::AllKlineSummaries(result) = summaries?;
         Ok(result)
     }
 

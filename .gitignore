@@ -1,1 +1,66 @@
-/target
+# ---- Rust ----
+/target/
+**/*.rs.bk
+
+# Compiled files
+*.o
+*.so
+*.rlib
+*.dll
+*.dylib
+*.exe
+
+# Generated files
+Cargo.lock # Include this if you are building a binary, ignore if a library
+**/*.rs.bk
+
+# FFI
+/bindings/
+
+# ---- IDEs and editors ----
+# IntelliJ
+.idea/
+*.iml
+
+# VSCode
+.vscode/
+
+# Vim/Emacs
+**/*.swp
+**/*~
+
+# ---- Operating Systems ----
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ---- Version Control ----
+# Git
+/.git
+.gitignore
+.gitattributes
+
+# ---- Build tools ----
+# Cargo
+/.cargo/
+
+# Coverage
+/coverage/
+Cargo.lock
+
+# ---- Miscellaneous ----
+# Environment variables
+.env
+.env.local
+
+# Logs
+*.log
+
+# Temp files
+/tmp

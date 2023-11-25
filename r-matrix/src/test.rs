@@ -1,9 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::{
-        data::{RData, RDataEntry, RMatrixId},
-        errors::RError,
-    };
+    use crate::data::{RData, RDataEntry, RMatrixId};
 
     #[derive(Debug, PartialEq, Eq, Clone)]
     struct TestIdentity {
@@ -39,6 +36,6 @@ mod tests {
 
         let rmatrix_data = result.unwrap();
         assert_eq!(rmatrix_data.records().len(), 1);
-        assert_eq!(rmatrix_data.target().id().is_target(), true);
+        assert!(rmatrix_data.target().id().is_target());
     }
 }

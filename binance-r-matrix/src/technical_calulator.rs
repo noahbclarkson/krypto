@@ -32,7 +32,7 @@ impl TechnicalCalulator {
 
     pub(crate) fn calculate_technicals(
         &mut self,
-        klines: &Box<[KlineSummary]>,
+        klines: &[KlineSummary],
     ) -> Result<Vec<Box<[f64]>>, DataError> {
         let mut previous_close = klines[0].close;
         let mut results = Vec::with_capacity(klines.len());

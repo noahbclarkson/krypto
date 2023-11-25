@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use getset::Getters;
 use r_matrix::{matricies::RMatrix, data::RData};
 

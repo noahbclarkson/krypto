@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 use statrs::function::erf::erf;
 
 #[inline]
-pub (crate) fn mean(values: &[f64]) -> f64 {
+pub(crate) fn mean(values: &[f64]) -> f64 {
     values.iter().sum::<f64>() / values.len() as f64
 }
 
 #[inline]
-pub (crate) fn standard_deviation(values: &[f64]) -> f64 {
+pub(crate) fn standard_deviation(values: &[f64]) -> f64 {
     let mean = mean(values);
     let variance = values
         .iter()
@@ -20,7 +20,7 @@ pub (crate) fn standard_deviation(values: &[f64]) -> f64 {
 }
 
 #[inline]
-pub (crate) fn probability_positive(values: &[f64]) -> f64 {
+pub(crate) fn probability_positive(values: &[f64]) -> f64 {
     let mut positive = 0.0;
     for value in values {
         if *value > 0.0 {
@@ -37,12 +37,10 @@ pub fn norm_s_dist(z_score: f64) -> f64 {
     0.5 * (1.0 + erf(z_score / (2.0f64).sqrt()))
 }
 
-
 #[inline(always)]
 pub fn bayes_combine(prior: f64, likelihood: f64) -> f64 {
     (prior * likelihood) / ((prior * likelihood) + ((1.0 - prior) * (1.0 - likelihood)))
 }
-
 
 #[inline]
 pub fn format_number(num: f64) -> String {
@@ -67,23 +65,17 @@ pub fn format_number(num: f64) -> String {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 /// A struct that represents a normalization function.
 pub enum NormalizationFunctionType {
+    #[default]
     Tanh,
     Gudermannian,
     AlgebraicSigmoid,
     Softsign,
 }
 
-impl Default for NormalizationFunctionType {
-    fn default() -> Self {
-        NormalizationFunctionType::Tanh
-    }
-}
-
 impl NormalizationFunctionType {
-
     pub fn from_string(string: &str) -> Self {
         match string {
             "Tanh" => NormalizationFunctionType::Tanh,

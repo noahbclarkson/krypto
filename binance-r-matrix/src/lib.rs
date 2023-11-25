@@ -84,18 +84,22 @@ impl HistoricalData {
             let actual = t_data.klines.len();
             let desired = self.config.periods;
             let symbol = t_data.ticker.to_string();
-            if actual < desired {
-                return Err(DataError::NotEnoughData {
-                    symbol,
-                    desired,
-                    actual,
-                });
-            } else if actual > desired {
-                return Err(DataError::TooMuchData {
-                    symbol,
-                    desired,
-                    actual,
-                });
+            match actual.cmp(&desired) {
+                std::cmp::Ordering::Less => {
+                    return Err(DataError::NotEnoughData {
+                        symbol,
+                        desired,
+                        actual,
+                    });
+                }
+                std::cmp::Ordering::Greater => {
+                    return Err(DataError::TooMuchData {
+                        symbol,
+                        desired,
+                        actual,
+                    });
+                }
+                std::cmp::Ordering::Equal => {}
             }
         }
         let close_times = self.data[0].close_times().collect::<Vec<_>>();
@@ -183,7 +187,7 @@ impl TickerData {
             records.push(RDataEntry::new(id, technicals));
         }
 
-        Ok(RData::new(records)?)
+        RData::new(records)
     }
 }
 
@@ -311,9 +315,6 @@ impl RMatrixId for BinanceDataId {
     }
 
     fn is_target(&self) -> bool {
-        match self.id {
-            BinanceDataType::PercentageChangeReal => true,
-            _ => false,
-        }
+        matches!(self.id, BinanceDataType::PercentageChangeReal)
     }
 }
