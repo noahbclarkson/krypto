@@ -36,3 +36,15 @@ impl TestResult for RMatrixTestResult {
         sum / self.prediction_real_map.len() as f64
     }
 }
+
+impl RMatrixTestResult {
+
+    pub(crate) fn add_prediction_real(&mut self, prediction: f64, real: f64) {
+        if (prediction - real).abs() < 0.5 {
+            self.correct += 1;
+        } else {
+            self.incorrect += 1;
+        }
+        self.prediction_real_map.push((prediction, real));
+    }
+}

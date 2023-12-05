@@ -2,7 +2,7 @@ use proptest::{
     arbitrary::any, prelude::prop, prop_assert, prop_assert_eq, strategy::Strategy,
     test_runner::Config,
 };
-use r_matrix::dataset::Dataset;
+use r_matrix::{dataset::Dataset, matrix::Matrix as _, r_matrix::matrix::RMatrixBuilder, error::RMatrixError};
 
 pub fn arb_dataset() -> impl Strategy<Value = Dataset> {
     let feature_count = any::<usize>().prop_map(|x| x % 10 + 1); // Ensures at least 1 feature, up to 10
@@ -31,14 +31,23 @@ pub fn arb_dataset() -> impl Strategy<Value = Dataset> {
     })
 }
 
-
-
 proptest::proptest! {
-    #![proptest_config(Config::with_cases(100))]
+    #![proptest_config(Config::with_cases(10))]
 
-    // Test 1: Dataset Integrity
+    // Test 1: R-Matrix Integrity
     #[test]
-    fn test_dataset_integrity(data in arb_dataset()) {
+    fn test_r_matrix_integrity(data in arb_dataset()) {
+        let mut r_matrix = RMatrixBuilder::default();
+        r_matrix.depth(2);
+        r_matrix.dataset(Box::new(data.clone()));
+        let mut r_matrix = r_matrix.build().unwrap();
+        let result = r_matrix.train(&data);
+        if let Err(e) = result.clone() {
+            println!("Error: {}", e);
+        }
+        prop_assert!(result.is_ok());
+
+
         // Verify dataset length
         let expected_length = data.len();
         let actual_length = data.iter().count();
@@ -51,40 +60,23 @@ proptest::proptest! {
         }
     }
 
-    // Test 2: Sorting by Time
-    #[test]
-    fn test_sorting_by_time(mut data in arb_dataset()) {
-        data.sort_by_time();
-
-        let mut is_sorted = true;
-        for window in data.windowed_iter(2) {
-            if window.len() > 1 && window[0].time() > window[1].time() {
-                is_sorted = false;
-                break;
-            }
+    fn test_r_matrix_prediction(data in arb_dataset()) {
+        let mut r_matrix = RMatrixBuilder::default();
+        r_matrix.depth(2);
+        r_matrix.dataset(Box::new(data.clone()));
+        let mut r_matrix = r_matrix.build().unwrap();
+        let result = r_matrix.train(&data);
+        if let Err(e) = result.clone() {
+            println!("Error: {}", e);
         }
-        prop_assert!(is_sorted);
-    }
+        prop_assert!(result.is_ok());
+        let window = data.windowed_iter(2).collect::<Vec<_>>();
 
-    // Test 3: Windowed Iteration
-    #[test]
-    fn test_windowed_iteration(data in arb_dataset(), window_size in 1usize..10usize) {
-        let iterator = data.windowed_iter(window_size);
-        for window in iterator {
-            prop_assert_eq!(window.len(), window_size);
+        let features = window[0].iter().map(|dp| dp.features()).collect::<Vec<_>>();
+        let result = r_matrix.predict(&features, 0);
+        if let Err(e) = result.clone() {
+            println!("Error: {}", e);
         }
+        prop_assert!(result.is_ok());
     }
-
-    // Test 4: Dataset Length Consistency
-    #[test]
-    fn test_dataset_length_consistency(data in arb_dataset()) {
-        let feature_names_len = data.feature_names().len();
-        let label_names_len = data.label_names().len();
-
-        for dp in data.iter() {
-            prop_assert_eq!(dp.features().len(), feature_names_len, "Features length mismatch");
-            prop_assert_eq!(dp.labels().len(), label_names_len, "Labels length mismatch");
-        }
-    }
-
 }

@@ -48,40 +48,50 @@ impl Matrix for RMatrix {
 
     fn predict(
         &self,
-        features: &[Features],
-        forward_depth: usize,
+        features: &[&Features],
         label_index: usize,
-    ) -> Result<f64, Box<dyn MatrixError>> {
-        if forward_depth > self.max_forward_depth {
-            return Err(Box::new(RMatrixError::ForwardDepthTooLarge(
-                forward_depth,
-                self.max_forward_depth,
-            )));
-        }
+    ) -> Result<Vec<f64>, Box<dyn MatrixError>> {
         if features.len() < self.depth {
             return Err(Box::new(RMatrixError::WrongNumberOfFeatures(
                 features.len(),
                 self.depth,
             )));
         }
-        for (depth, feauture_array) in features.iter().rev().enumerate() {
+        let mut results: Vec<Vec<f64>> = Vec::new();
+        for _ in 0..self.max_forward_depth {
+            results.push(Vec::new());
+        }
+        for (backward_depth, feauture_array) in features.iter().rev().enumerate() {
             for (feature_index, feature_value) in feauture_array.iter().enumerate() {
-                for d in depth..self.depth {
-                    let relationship = self.get_relationship(feature_index, label_index, d).map_err(|e| Box::new(e) as Box<dyn MatrixError>)?;
-                    let forward_index = self.depth - d;
-                    
+                for real_depth in backward_depth..self.depth {
+                    let relationship = self
+                        .get_relationship(feature_index, label_index, real_depth)
+                        .map_err(|e| Box::new(e) as Box<dyn MatrixError>)?;
+                    let forward_depth = self.depth - real_depth;
+                    let result =
+                        self.function.get_function()(feature_value * relationship.strength());
+                    results[forward_depth - 1].push(result);
                 }
             }
         }
-        Ok(())
+        let mut final_results = Vec::new();
+        for result in results {
+            final_results.push(result.iter().sum::<f64>() / result.len() as f64);
+        }
+        Ok(final_results)
     }
 
-    fn test(&self, dataset: &Dataset) -> Result<Box<dyn TestResult>, Box<dyn MatrixError>> {
+    fn test(&self) -> Result<Box<dyn TestResult>, Box<dyn MatrixError>> {
         let mut test = RMatrixTestResult::default();
-        let iter = dataset.windowed_iter(self.depth + 1);
+        let iter = self.dataset.windowed_iter(self.depth * 2);
         for window in iter {
-            let features = get_features_from_window(window, 0)
-                .map_err(|e| Box::new(e) as Box<dyn MatrixError>)?;
+            let features = get_all_features_from_window(window, self.depth)?;
+            let labels = get_all_labels_from_window(window, self.depth * 2)?;
+            let mut predictions = Vec::new();
+            for label_index in 0..self.dataset.label_names().len() {
+                predictions.push(self.predict(features.as_slice(), label_index)?);
+            }
+            
         }
         Ok(Box::new(test))
     }
@@ -91,8 +101,8 @@ impl RMatrix {
     fn update_relationships(&mut self, window: &[DataPoint]) -> Result<(), RMatrixError> {
         let function = self.function.get_function();
         for d in 0..self.depth {
-            let labels = get_labels_from_window(window, self.depth + 1)?;
-            let feature = get_features_from_window(window, self.depth - d)?;
+            let labels = get_labels_from_window(window, self.depth)?;
+            let feature = get_features_from_window(window, self.depth - d - 1)?;
             for (feature_index, feature_value) in feature.iter().enumerate() {
                 for (label_index, label_value) in labels.iter().enumerate() {
                     let relationship = self.get_relationship_mut(feature_index, label_index, d)?;
@@ -101,7 +111,6 @@ impl RMatrix {
                 }
             }
         }
-
         Ok(())
     }
 
@@ -134,18 +143,48 @@ impl RMatrix {
                 depth,
             ))
     }
+
+    fn optimize_cmaes(&mut self) {
+        todo!()
+    }
 }
 
 fn get_features_from_window(window: &[DataPoint], index: usize) -> Result<&Features, RMatrixError> {
     Ok(window
         .get(index)
-        .ok_or(RMatrixError::CantIndexFeatures(index))?
+        .ok_or(RMatrixError::CantIndexDatasetWindow(index))?
         .features())
 }
 
 fn get_labels_from_window(window: &[DataPoint], index: usize) -> Result<&Labels, RMatrixError> {
     Ok(window
         .get(index)
-        .ok_or(RMatrixError::CantIndexFeatures(index))?
+        .ok_or(RMatrixError::CantIndexDatasetWindow(index))?
         .labels())
+}
+
+fn get_all_features_from_window(
+    window: &[DataPoint],
+    depth: usize,
+) -> Result<Vec<&Features>, Box<dyn MatrixError>> {
+    let mut features = Vec::new();
+    for i in 0..depth {
+        features.push(
+            get_features_from_window(window, i).map_err(|e| Box::new(e) as Box<dyn MatrixError>)?,
+        );
+    }
+    Ok(features)
+}
+
+fn get_all_labels_from_window(
+    window: &[DataPoint],
+    depth: usize,
+) -> Result<Vec<&Labels>, Box<dyn MatrixError>> {
+    let mut labels = Vec::new();
+    for i in 0..depth {
+        labels.push(
+            get_labels_from_window(window, i).map_err(|e| Box::new(e) as Box<dyn MatrixError>)?,
+        );
+    }
+    Ok(labels)
 }
