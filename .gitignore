@@ -17,6 +17,17 @@ Cargo.lock # Include this if you are building a binary, ignore if a library
 # FFI
 /bindings/
 
+# ---- Program Output Files ---- 
+# CSV
+*.csv
+
+# Images
+*.jpg
+*.jpeg
+*.png
+*.svg
+*.gif
+
 # ---- IDEs and editors ----
 # IntelliJ
 .idea/

@@ -1,4 +1,4 @@
-pub mod r_matrix_test_result;
-pub mod r_matrix_relationship;
 pub mod matrix;
-pub mod r_matrix_decision_algorithm;
+pub mod relationship;
+pub mod cmaes;
+pub mod test_data;

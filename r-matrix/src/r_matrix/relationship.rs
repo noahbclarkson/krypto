@@ -91,17 +91,3 @@ impl Default for RMatrixRelationshipMatrix {
         Self::new(0, 0, 0)
     }
 }
-
-impl std::ops::Index<usize> for RMatrixRelationshipMatrix {
-    type Output = RMatrixRelationship;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.relationships[index]
-    }
-}
-
-impl std::ops::IndexMut<usize> for RMatrixRelationshipMatrix {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.relationships[index]
-    }
-}

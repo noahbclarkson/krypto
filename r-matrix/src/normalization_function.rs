@@ -53,6 +53,16 @@ impl NormalizationFunctionType {
         }
     }
 
+    pub fn from_index(index: usize) -> Self {
+        match index {
+            0 => NormalizationFunctionType::Tanh,
+            1 => NormalizationFunctionType::Gudermannian,
+            2 => NormalizationFunctionType::AlgebraicSigmoid,
+            3 => NormalizationFunctionType::Softsign,
+            _ => NormalizationFunctionType::Tanh,
+        }
+    }
+
     fn tanh(x: f64) -> f64 {
         x.tanh()
     }

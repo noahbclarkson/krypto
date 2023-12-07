@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 r-matrix = {path = "../r-matrix"}
-tokio = { version = "1.32", features = ["full"] }
+tokio = { version = "1.34", features = ["full"] }
 binance-rs-async = { git = "https://github.com/Igosuki/binance-rs-async.git", features = ["margin_api"] }
 ta = "0.5"
 getset = "0.1"
@@ -15,3 +15,4 @@ derive_builder = "0.12"
 thiserror = "1.0"
 chrono = "0.4"
 futures = "0.3"
+statrs = "0.16"

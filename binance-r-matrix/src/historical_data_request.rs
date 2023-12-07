@@ -1,7 +1,7 @@
-use binance::{market::Market, rest_model::{KlineSummaries, KlineSummary}};
+use binance::{rest_model::{KlineSummary, KlineSummaries}, market::Market};
 use chrono::Utc;
 
-use crate::{errors::DataError, HistoricalDataConfig, TickerData};
+use crate::{config::HistoricalDataConfig, error::BinanceDataError, ticker_data::TickerData};
 
 const MINS_TO_MILLIS: i64 = 60_000;
 
@@ -14,7 +14,7 @@ pub struct HistoricalDataRequest<'a> {
 impl<'a> HistoricalDataRequest<'a> {
     pub fn new(config: &'a HistoricalDataConfig) -> Self {
         let end_time = Utc::now().timestamp_millis();
-        let interval_minutes = config.interval_minutes() * config.periods;
+        let interval_minutes = config.interval_minutes() * config.periods();
         let start_time = end_time - (interval_minutes as i64 * MINS_TO_MILLIS);
         Self {
             start_time,
@@ -23,7 +23,7 @@ impl<'a> HistoricalDataRequest<'a> {
         }
     }
 
-    pub async fn run(&self, ticker: &str) -> Result<TickerData, DataError> {
+    pub async fn run(&self, ticker: &str) -> Result<TickerData, BinanceDataError> {
         let mut candlesticks = Vec::new();
         let addition = MINS_TO_MILLIS * 1000 * self.config.interval_minutes() as i64;
         let mut start_times = Vec::new();
@@ -52,7 +52,7 @@ impl<'a> HistoricalDataRequest<'a> {
         ticker: &str,
         start: u64,
         end: u64,
-    ) -> Result<Vec<KlineSummary>, DataError> {
+    ) -> Result<Vec<KlineSummary>, BinanceDataError> {
         let market: Market = self.config.get_binance();
         let summaries = market
             .get_klines(
@@ -63,7 +63,7 @@ impl<'a> HistoricalDataRequest<'a> {
                 Some(end),
             )
             .await
-            .map_err(|error| DataError::BinanceError {
+            .map_err(|error| BinanceDataError::BinanceError {
                 symbol: ticker.to_owned(),
                 error,
             });

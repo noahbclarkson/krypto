@@ -60,6 +60,14 @@ impl Dataset {
         self.data.get(index)
     }
 
+    pub fn feature_at_index(&self, index: usize) -> Option<&Features> {
+        self.data.get(index).map(|dp| &dp.features)
+    }
+
+    pub fn label_at_index(&self, index: usize) -> Option<&Labels> {
+        self.data.get(index).map(|dp| &dp.labels)
+    }
+
     pub fn len(&self) -> usize {
         self.data.len()
     }
@@ -82,6 +90,19 @@ impl Dataset {
 
     pub fn iter(&self) -> std::slice::Iter<DataPoint> {
         self.data.iter()
+    }
+
+    pub fn features_len(&self) -> usize {
+        self.feature_names.len()
+    }
+
+    pub fn labels_len(&self) -> usize {
+        self.label_names.len()
+    }
+
+    pub fn add_data_point(&mut self, data_point: DataPoint) {
+        self.data.push(data_point);
+        self.sort_by_time();
     }
 
     pub fn windowed_iter(&self, window_size: usize) -> DatasetWindowIterator {
@@ -108,6 +129,28 @@ impl Dataset {
                 label_names: self.label_names.clone(),
             },
         )
+    }
+
+    pub fn to_csv(&self, path: &str) -> Result<(), DatasetError> {
+        let mut wtr = csv::Writer::from_path(path)?;
+
+        let mut headers = Vec::new();
+        headers.extend(self.feature_names());
+        headers.extend(self.label_names());
+
+        wtr.write_record(headers)?;
+
+        for data_point in &self.data {
+            let mut row = Vec::new();
+            row.extend(data_point.features.iter().map(|f| f.to_string()));
+            row.extend(data_point.labels.iter().map(|l| l.to_string()));
+
+            wtr.write_record(row)?;
+        }
+
+        wtr.flush()?;
+
+        Ok(())
     }
 }
 
@@ -163,6 +206,7 @@ impl DatasetBuilder {
             label_names,
         })
     }
+
 }
 
 pub struct DatasetWindowIterator<'a> {
@@ -178,7 +222,7 @@ impl<'a> Iterator for DatasetWindowIterator<'a> {
         if self.start_index + self.window_size <= self.dataset.data.len() {
             let window = &self.dataset.data[self.start_index..self.start_index + self.window_size];
 
-            self.start_index += 1; // Move to the next window
+            self.start_index += 1;
             Some(window)
         } else {
             None
@@ -210,6 +254,14 @@ impl Features {
     }
 }
 
+impl std::ops::Index<usize> for Features {
+    type Output = f64;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.data[index]
+    }
+}
+
 #[derive(Clone, Debug, Getters)]
 #[getset(get = "pub")]
 pub struct Labels {
@@ -231,5 +283,13 @@ impl Labels {
 
     pub fn iter(&self) -> std::slice::Iter<f64> {
         self.data.iter()
+    }
+}
+
+impl std::ops::Index<usize> for Labels {
+    type Output = f64;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.data[index]
     }
 }
