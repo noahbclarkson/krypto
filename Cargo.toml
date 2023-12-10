@@ -14,9 +14,7 @@ getset = "0.1"
 thiserror = "1.0"
 serde_yaml = "0.9"
 csv = "1.3"
+bincode = "1.3"
 
 [workspace]
-members = [
-    "r-matrix",
-    "binance-r-matrix",
-]
+members = ["r-matrix", "binance-r-matrix"]

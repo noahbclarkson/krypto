@@ -7,8 +7,6 @@ use crate::{
     technical_calculator::BinanceDataType, ticker_data::TickerData,
 };
 
-const CLOSE_TIME_VARIANCE: i64 = 15000;
-
 #[derive(Debug, Getters)]
 #[getset(get = "pub")]
 pub struct HistoricalData {
@@ -38,6 +36,7 @@ impl HistoricalData {
     }
 
     fn validate(&mut self) -> Result<(), BinanceDataError> {
+        let close_time_variance = self.config.interval_minutes() * 60 * 300;
         for t_data in self.data.iter() {
             t_data.validate(*self.config.periods())?;
         }
@@ -45,7 +44,7 @@ impl HistoricalData {
         for t_data in self.data.iter().skip(1) {
             let close_times_2 = t_data.close_times();
             for (time_1, time_2) in close_times.iter().zip(close_times_2) {
-                if (time_1 - time_2).abs() > CLOSE_TIME_VARIANCE {
+                if (time_1 - time_2).abs() > close_time_variance as i64 {
                     return Err(BinanceDataError::MismatchedCloseTimes {
                         symbol: t_data.ticker().to_string(),
                         time_1: *time_1,

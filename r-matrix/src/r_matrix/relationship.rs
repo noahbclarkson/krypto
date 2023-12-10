@@ -1,8 +1,11 @@
-use getset::{Getters, MutGetters};
+use std::fmt::{Display, Formatter};
+
+use getset::{Getters, MutGetters, Setters};
+use serde::{Deserialize, Serialize};
 
 use crate::normalization_function::NormalizationFunctionType;
 
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone, Getters, Setters, Serialize, Deserialize)]
 #[getset(get = "pub")]
 pub struct RMatrixRelationship {
     feature_index: usize,
@@ -10,6 +13,8 @@ pub struct RMatrixRelationship {
     strength: f64,
     results: Vec<f64>,
     depth: usize,
+    #[getset(set = "pub")]
+    weight: f64,
 }
 
 impl RMatrixRelationship {
@@ -20,6 +25,7 @@ impl RMatrixRelationship {
             strength: 0.0,
             results: Vec::new(),
             depth,
+            weight: 1.0,
         }
     }
 
@@ -33,7 +39,7 @@ impl RMatrixRelationship {
     }
 }
 
-#[derive(Debug, Clone, Getters, MutGetters)]
+#[derive(Debug, Clone, Getters, MutGetters, Serialize, Deserialize)]
 #[getset(get = "pub")]
 pub struct RMatrixRelationshipMatrix {
     #[getset(get_mut = "pub")]
@@ -89,5 +95,34 @@ impl RMatrixRelationshipMatrix {
 impl Default for RMatrixRelationshipMatrix {
     fn default() -> Self {
         Self::new(0, 0, 0)
+    }
+}
+
+impl Display for RMatrixRelationshipMatrix {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Relationship Matrix")?;
+        writeln!(f, "===================")?;
+        writeln!(f, "Depth: {}", self.depth())?;
+        writeln!(f, "Relationships: {}", self.relationships.len())?;
+        writeln!(f, "===================")?;
+        writeln!(f, "Relationships")?;
+        writeln!(f, "===================")?;
+        for relationship in self.relationships.iter() {
+            writeln!(f, "{}", relationship)?;
+        }
+        writeln!(f, "===================")?;
+        Ok(())
+    }
+}
+
+impl Display for RMatrixRelationship {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Feature Index: {}", self.feature_index())?;
+        writeln!(f, "Label Index: {}", self.label_index())?;
+        writeln!(f, "Strength: {}", self.strength())?;
+        writeln!(f, "Results: {:?}", self.results())?;
+        writeln!(f, "Depth: {}", self.depth())?;
+        writeln!(f, "Weight: {}", self.weight())?;
+        Ok(())
     }
 }

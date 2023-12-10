@@ -1,8 +1,8 @@
 use std::f64::consts::PI;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Default)]
 /// A struct that represents a normalization function.
 pub enum NormalizationFunctionType {
     #[default]
@@ -94,5 +94,24 @@ impl NormalizationFunctionType {
 
     fn softsign_derivative(x: f64) -> f64 {
         1.0 / ((1.0 + x.abs()) * (1.0 + x.abs()))
+    }
+}
+
+impl Serialize for NormalizationFunctionType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.get_name())
+    }
+}
+
+impl<'de> Deserialize<'de> for NormalizationFunctionType {
+    fn deserialize<D>(deserializer: D) -> Result<NormalizationFunctionType, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(NormalizationFunctionType::from_string(&s))
     }
 }

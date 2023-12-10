@@ -1,118 +1,97 @@
-use std::{fs::File, error::Error};
+use std::error::Error;
 
-use binance_r_matrix::{error::BinanceDataError, config::HistoricalDataConfigBuilder, interval::Interval, historical_data::HistoricalData};
+use binance_r_matrix::{config::HistoricalDataConfig, historical_data::HistoricalData};
 use r_matrix::{
-    dataset::DatasetBuilder,
-    r_matrix::{
-        cmaes::{CMAESOptimize, RMatrixCMAESSettingsBuilder},
-        matrix::RMatrixBuilder,
-    },
-    NormalizationFunctionType,
+    r_matrix::cmaes::{CMAESOptimize, RMatrixCMAESSettingsBuilder},
+    return_calculator::ReturnCalculator,
+    Dataset, RMatrix,
 };
 
-const TICKERS: [&str; 4] = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "ADAUSDT"];
+use crate::config::Config;
+
+mod config;
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn Error>> {
-    let tickers = TICKERS.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-    let config = HistoricalDataConfigBuilder::default()
-        .tickers(tickers)
-        .periods(3000)
-        .interval(Interval::FifteenMinutes)
-        .build()
-        .unwrap();
-    let mut historical_data = HistoricalData::new(config);
+    let config = Config::load()?;
+    let h_config: HistoricalDataConfig = config.clone().into();
+    let mut historical_data = HistoricalData::new(h_config);
     historical_data.load().await?;
     historical_data.calculate_technicals()?;
     let dataset = historical_data.to_dataset();
-    let mut r_matrix = RMatrixBuilder::default()
-        .depth(10)
-        .max_forward_depth(10)
-        .function(NormalizationFunctionType::Softsign)
-        .build()
-        .unwrap();
-    let data = Box::new(dataset);
-    r_matrix.train(&data).unwrap();
+    let mut r_matrix: RMatrix = config.clone().into();
+    let (train_data, test_data) = dataset.split(*config.train_test_split());
+    let train = Box::new(train_data);
+    let test = Box::new(test_data);
+    r_matrix.train(&train).unwrap();
     let cmaes_settings = RMatrixCMAESSettingsBuilder::default()
         .optimize(CMAESOptimize::Cash)
+        .with_individuals(*config.with_individuals())
+        .interval(config.interval().to_minutes())
         .build()
         .unwrap();
-    r_matrix.optimize(&data, cmaes_settings);
-    r_matrix.plot_cash(&data).unwrap();
-    let test_data = r_matrix
-        .clone()
-        .test(&data);
-    
+    r_matrix.optimize(&test, cmaes_settings);
+    r_matrix.plot_cash(&test).unwrap();
+    let test_data = r_matrix.clone().test(&test);
+    println!("{}", test_data);
+    let returns = ReturnCalculator::new(
+        config.interval().clone().to_minutes(),
+        test_data.cash_history().clone(),
+        *test_data.hold_periods(),
+    );
+    print_returns(returns.clone());
+    optimize_for_min_score(&mut r_matrix, &test);
+    let returns = ReturnCalculator::new(
+        config.interval().clone().to_minutes(),
+        test_data.cash_history().clone(),
+        *test_data.hold_periods(),
+    );
+    print_returns(returns.clone());
     Ok(())
 }
 
-// pub fn main() {
-//     // Load dataset from dataset.csv file
-//     // Date,Close/Last,Volume,Open,High,Low
-//     let appl = get_percentage_changes("dataset.csv");
-//     let sbux = get_percentage_changes("dataset2.csv");
-//     let msft = get_percentage_changes("dataset3.csv");
-//     // Make both the same length by removing the first few days if needed
-//     println!("appl: {}", appl.len());
-//     println!("sbux: {}", sbux.len());
-//     println!("msft: {}", msft.len());
-//     let mut dataset = DatasetBuilder::default();
-//     dataset.set_feature_names(vec![
-//         "appl".to_string(),
-//         "sbux".to_string(),
-//         "msft".to_string(),
-//     ]);
-//     dataset.set_label_names(vec![
-//         "appl".to_string(),
-//         "sbux".to_string(),
-//         "msft".to_string(),
-//     ]);
-//     for i in 0..appl.len() {
-//         dataset.add_data_point(
-//             i,
-//             vec![appl[i], sbux[i], msft[i]],
-//             vec![appl[i], sbux[i], msft[i]],
-//         );
-//     }
-//     let dataset = dataset.build().unwrap();
-//     let mut r_matrix = RMatrixBuilder::default()
-//         .depth(10)
-//         .max_forward_depth(10)
-//         .function(NormalizationFunctionType::Softsign)
-//         .build()
-//         .unwrap();
-//     let data = Box::new(dataset);
-//     r_matrix.train(&data).unwrap();
-//     let cmaes_settings = RMatrixCMAESSettingsBuilder::default()
-//         .optimize(CMAESOptimize::Cash)
-//         .build()
-//         .unwrap();
-//     r_matrix.optimize(&data, cmaes_settings);
-//     r_matrix.plot_cash(&data).unwrap();
-//     let (accuracy, error, cash) = r_matrix
-//         .clone()
-//         .accuracy_error_cash(r_matrix.weights(), &data)
-//         .unwrap();
-//     // Print in a pretty way
-//     println!("Accuracy: {:.2}%", accuracy * 100.0);
-//     println!("Error: {:.6}", error);
-//     println!("Cash: ${:.2}", cash);
-// }
+fn print_returns(calculator: ReturnCalculator) {
+    println!(
+        "Average Hourly Return: {:.2}%",
+        calculator.average_hourly_return() * 100.0
+    );
+    println!(
+        "Average Daily Return: {:.2}%",
+        calculator.average_daily_return() * 100.0
+    );
+    println!(
+        "Average Weekly Return: {:.2}%",
+        calculator.average_weekly_return() * 100.0
+    );
+    println!(
+        "Average Monthly Return: {:.2}%",
+        calculator.average_monthly_return() * 100.0
+    );
+}
 
-// fn get_percentage_changes(filepath: &str) -> Vec<f64> {
-//     let file = File::open(filepath).unwrap();
-//     let mut rdr = csv::Reader::from_reader(file);
-//     // Get the percentage change for each day
-//     let mut last_close = 0.0;
-//     let mut percentage_change = Vec::new();
-//     for result in rdr.records() {
-//         let record = result.unwrap();
-//         let close = record[1].replace('$', "").parse::<f64>().unwrap();
-//         if last_close != 0.0 {
-//             let change = (close - last_close) / last_close;
-//             percentage_change.push(change);
-//         }
-//         last_close = close;
-//     }
-//     percentage_change
-// }
+fn optimize_for_min_score(r_matrix: &mut RMatrix, dataset: &Dataset) {
+    let mut best_min_score = 0.0;
+    let mut best_cash = 0.0;
+    for min_score in 0..=1000 {
+        r_matrix.set_min_score(min_score as f64 / 1000000.0);
+        let test_data = r_matrix.test(dataset);
+        if test_data.cash() < &0.0 || test_data.get_accuracy().is_nan() {
+            break;
+        }
+        println!(
+            "Min Score: {} | Accuracy: {:.2}% | Cash: ${:.2}",
+            min_score,
+            test_data.get_accuracy() * 100.0,
+            test_data.cash()
+        );
+        if *test_data.cash() > best_cash {
+            best_min_score = min_score as f64 / 1000000.0;
+            best_cash = *test_data.cash();
+        }
+    }
+    println!(
+        "Best Min Score: {} | Best Cash: ${:.2}",
+        best_min_score, best_cash
+    );
+    r_matrix.set_min_score(best_min_score);
+}

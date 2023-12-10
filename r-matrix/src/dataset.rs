@@ -206,7 +206,6 @@ impl DatasetBuilder {
             label_names,
         })
     }
-
 }
 
 pub struct DatasetWindowIterator<'a> {

@@ -1,4 +1,7 @@
-use binance::{rest_model::{KlineSummary, KlineSummaries}, market::Market};
+use binance::{
+    market::Market,
+    rest_model::{KlineSummaries, KlineSummary},
+};
 use chrono::Utc;
 
 use crate::{config::HistoricalDataConfig, error::BinanceDataError, ticker_data::TickerData};
@@ -36,7 +39,7 @@ impl<'a> HistoricalDataRequest<'a> {
         let tasks = start_times
             .into_iter()
             .map(|s| self.load_chunk(ticker, s, s + addition as u64));
-        
+
         let mut results = futures::future::join_all(tasks).await;
         for result in results.drain(..) {
             let summaries = result?;
@@ -70,5 +73,4 @@ impl<'a> HistoricalDataRequest<'a> {
         let KlineSummaries::AllKlineSummaries(result) = summaries?;
         Ok(result)
     }
-
 }

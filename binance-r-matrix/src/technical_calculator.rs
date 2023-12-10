@@ -78,13 +78,19 @@ fn normalize(values: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     // Iterate over each technical indicator
     for i in 0..TECHNICALS {
         let mut technicals: Vec<f64> = values.iter().map(|v| v[i]).collect();
+        let mut calc_tech = technicals.clone();
+        // Remove any NaN or infinite values
+        calc_tech.retain(|v| !v.is_nan() && v.is_finite());
 
         // Calculate mean and standard deviation for each technical indicator
-        let mean = technicals.clone().mean();
-        let stddev = technicals.clone().std_dev();
+        let mean = calc_tech.clone().mean();
+        let stddev = calc_tech.clone().std_dev();
 
         // Normalize values for this technical
         for (j, value) in technicals.iter_mut().enumerate() {
+            if value.is_nan() || !value.is_finite() {
+                *value = 0.0;
+            }
             normalized_values[j][i] = if stddev == 0.0 {
                 0.0
             } else {

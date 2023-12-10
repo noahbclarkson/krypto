@@ -15,7 +15,7 @@ pub(crate) fn cr_ratio(candle: &KlineSummary) -> f64 {
     let wick_sum = top_wick - bottom_wick;
 
     if body.abs() < f64::EPSILON {
-        return wick_sum.signum()
+        return wick_sum.signum();
     }
     (wick_sum / body).tanh()
 }

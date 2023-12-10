@@ -1,7 +1,10 @@
+use std::fmt::{Display, Formatter};
+
 use cmaes::{CMAESOptions, DVector, Mode, PlotOptions};
 use derive_builder::Builder;
-use getset::{Getters, Setters};
+use getset::{Getters, MutGetters, Setters};
 use plotters::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     dataset::{DataPoint, Dataset, Features},
@@ -17,7 +20,7 @@ use super::{
     test_data::TestData,
 };
 
-#[derive(Debug, Builder, Getters, Clone, Setters)]
+#[derive(Debug, Builder, Getters, Clone, Setters, MutGetters, Serialize, Deserialize)]
 #[getset(get = "pub", set = "pub")]
 pub struct RMatrix {
     #[builder(default = "1")]
@@ -26,6 +29,7 @@ pub struct RMatrix {
     function: NormalizationFunctionType,
     #[builder(default = "RMatrixRelationshipMatrix::default()")]
     #[builder(setter(skip))]
+    #[getset(get_mut = "pub")]
     relationships: RMatrixRelationshipMatrix,
     #[builder(default = "1")]
     max_forward_depth: usize,
@@ -38,6 +42,12 @@ pub struct RMatrix {
     #[builder(default = "Vec::new()")]
     #[builder(setter(skip))]
     weights: Vec<f64>,
+    #[builder(default = "0.0")]
+    reduction: f64,
+    #[builder(default = "0.0")]
+    min_score: f64,
+    #[builder(default = "1.0")]
+    margin: f64,
 }
 
 impl RMatrix {
@@ -122,7 +132,7 @@ impl RMatrix {
         let f = self.function.get_function();
         let mut results: Vec<Vec<f64>> = vec![Vec::new(); self.max_forward_depth];
         let weights = if self.weights.is_empty() {
-            vec![1.0; self.depth]
+            vec![1.0; self.max_forward_depth]
         } else {
             self.weights.clone()
         };
@@ -134,8 +144,8 @@ impl RMatrix {
                         continue;
                     }
                     let relationship = self.get_relationship(f_index, label_index, real_depth)?;
-                    let result =
-                        f(feature_value * relationship.strength()) * weights[forward_depth - 1];
+                    let result = f(feature_value * relationship.strength() * relationship.weight())
+                        * weights[forward_depth - 1];
                     results[forward_depth - 1].push(result);
                 }
             }
@@ -153,11 +163,29 @@ impl RMatrix {
             let (features, labels) = self.split_window(window).unwrap();
             let predictions = self.generate_predictions(&features).unwrap();
             let max_index = max_index(&predictions);
-            let next_periods = labels[max_index].data();
+            let next_periods = labels.iter().map(|l| l[max_index]).collect::<Vec<f64>>();
             let prediction = predictions[max_index];
-            let total_pc = next_periods.iter().sum::<f64>();
+            if prediction < self.min_score {
+                continue;
+            }
+            let t_predictions = self.raw_predict(&features, max_index).unwrap();
+            if t_predictions[0].signum() != prediction.signum() {
+                continue;
+            }
+            let mut hold_periods = self.max_forward_depth;
+            for (i, p) in t_predictions.iter().rev().enumerate() {
+                if p.signum() == prediction.signum() {
+                    break;
+                }
+                hold_periods = self.max_forward_depth - i;
+            }
+            let total_pc = next_periods.iter().take(hold_periods).sum::<f64>();
             test_data.add_error(prediction, total_pc);
-            test_data.add_cash(test_data.cash() * total_pc * prediction.signum());
+            test_data.add_cash(
+                (test_data.cash() * total_pc * prediction.signum() * self.margin)
+                    - test_data.cash() * self.reduction * self.margin,
+            );
+            test_data.add_hold_periods(hold_periods);
         }
         test_data
     }
@@ -170,7 +198,7 @@ impl RMatrix {
             .iter()
             .map(|d| d.features().clone())
             .collect();
-        let labels = window[self.depth..self.depth * 2]
+        let labels = window[self.depth..self.depth + self.max_forward_depth]
             .iter()
             .map(|d| d.labels().clone())
             .collect();
@@ -189,7 +217,14 @@ impl RMatrix {
     pub fn optimize(&mut self, dataset: &Dataset, settings: RMatrixCMAESSettings) {
         let obj_function =
             RMatrixObjectiveFunction::new(self.clone(), dataset.clone(), settings.clone());
-        let start = DVector::from_vec(vec![1.0; self.depth]);
+        let mut start = DVector::from_vec(vec![1.0; self.max_forward_depth]);
+        if *settings.with_individuals() {
+            start = DVector::from_vec(vec![
+                1.0;
+                self.max_forward_depth
+                    + self.relationships.relationships().len()
+            ]);
+        }
         let mode = match settings.optimize() {
             CMAESOptimize::Accuracy => Mode::Maximize,
             CMAESOptimize::Error => Mode::Minimize,
@@ -198,8 +233,8 @@ impl RMatrix {
         let mut cmaes = CMAESOptions::new(start, 0.1)
             .mode(mode)
             // .population_size(50)
-            .initial_step_size(0.05)
-            // .tol_fun_hist(1e-14)
+            .initial_step_size(0.1)
+            .tol_fun_hist(1e-11)
             .enable_printing(100)
             .enable_plot(PlotOptions::new(3, false))
             .build(obj_function)
@@ -212,7 +247,19 @@ impl RMatrix {
             .unwrap();
         match results.overall_best {
             Some(best) => {
-                self.weights = best.point.as_slice().to_vec();
+                if *settings.with_individuals() {
+                    self.set_weights(best.point.as_slice().to_vec()[..self.depth].to_vec());
+                    for (i, relationship) in self
+                        .relationships
+                        .relationships_mut()
+                        .iter_mut()
+                        .enumerate()
+                    {
+                        relationship.set_weight(best.point.as_slice().to_vec()[i + self.depth]);
+                    }
+                } else {
+                    self.set_weights(best.point.as_slice().to_vec());
+                }
             }
             None => {
                 panic!("CMAES failed to find a solution.");
@@ -295,5 +342,21 @@ impl RMatrix {
                 label_index,
                 depth,
             ))
+    }
+}
+
+impl Display for RMatrix {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "R-Matrix:")?;
+        writeln!(f, "  Depth: {}", self.depth)?;
+        writeln!(f, "  Function: {}", self.function.get_name())?;
+        writeln!(f, "  Max Forward Depth: {}", self.max_forward_depth)?;
+        writeln!(f, "  Labels Length: {}", self.labels_len)?;
+        writeln!(f, "  Features Length: {}", self.features_len)?;
+        writeln!(f, "  Weights: {:?}", self.weights)?;
+        writeln!(f, "  Reduction: {}", self.reduction)?;
+        writeln!(f, "  Min Score: {}", self.min_score)?;
+        writeln!(f, "  Margin: {}", self.margin)?;
+        Ok(())
     }
 }

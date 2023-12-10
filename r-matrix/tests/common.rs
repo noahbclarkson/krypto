@@ -14,7 +14,9 @@ pub fn arb_dataset() -> impl Strategy<Value = Dataset> {
                 let feature_names = (1..=fc)
                     .map(|i| format!("test_feature_{}", i))
                     .collect::<Vec<_>>();
-                let label_names = (1..=lc).map(|i| format!("test_label_{}", i)).collect::<Vec<_>>();
+                let label_names = (1..=lc)
+                    .map(|i| format!("test_label_{}", i))
+                    .collect::<Vec<_>>();
                 let mut builder = Dataset::builder();
                 for (time, features, labels) in data.iter() {
                     builder.add_data_point(*time, features.clone(), labels.clone());

@@ -51,9 +51,4 @@ impl TickerData {
         self.technicals = technicals.into_boxed_slice();
         Ok(())
     }
-
-    // pub fn get_features(&self, index: usize) -> &[f64] {
-    //     &self.technicals[index]
-    // }
-
 }

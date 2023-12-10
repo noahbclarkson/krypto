@@ -12,6 +12,7 @@ pub struct TestData {
     pub incorrect: usize,
     pub mses: Vec<f64>,
     pub cash_history: Vec<f64>,
+    pub hold_periods: usize,
 }
 
 impl TestData {
@@ -36,6 +37,14 @@ impl TestData {
     pub fn get_accuracy(&self) -> f64 {
         self.correct as f64 / (self.correct + self.incorrect) as f64
     }
+
+    pub fn add_hold_period(&mut self) {
+        self.hold_periods += 1;
+    }
+
+    pub fn add_hold_periods(&mut self, periods: usize) {
+        self.hold_periods += periods;
+    }
 }
 
 impl Default for TestData {
@@ -46,10 +55,10 @@ impl Default for TestData {
             incorrect: 0,
             mses: Vec::new(),
             cash_history: Vec::new(),
+            hold_periods: 0,
         }
     }
 }
-
 
 impl Display for TestData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

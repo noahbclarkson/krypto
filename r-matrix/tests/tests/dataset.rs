@@ -2,7 +2,6 @@ use proptest::{prop_assert, prop_assert_eq, test_runner::Config};
 
 use crate::common::arb_dataset;
 
-
 proptest::proptest! {
     #![proptest_config(Config::with_cases(100))]
 

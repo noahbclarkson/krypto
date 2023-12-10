@@ -1,3 +1,7 @@
+use std::fmt::{Display, Formatter};
+
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Interval {
     OneMinute,
@@ -59,3 +63,44 @@ impl Interval {
     }
 }
 
+impl Serialize for Interval {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for Interval {
+    fn deserialize<D>(deserializer: D) -> Result<Interval, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        match s.as_str() {
+            "1m" => Ok(Interval::OneMinute),
+            "3m" => Ok(Interval::ThreeMinutes),
+            "5m" => Ok(Interval::FiveMinutes),
+            "15m" => Ok(Interval::FifteenMinutes),
+            "30m" => Ok(Interval::ThirtyMinutes),
+            "1h" => Ok(Interval::OneHour),
+            "2h" => Ok(Interval::TwoHours),
+            "4h" => Ok(Interval::FourHours),
+            "6h" => Ok(Interval::SixHours),
+            "8h" => Ok(Interval::EightHours),
+            "12h" => Ok(Interval::TwelveHours),
+            "1d" => Ok(Interval::OneDay),
+            "3d" => Ok(Interval::ThreeDays),
+            "1w" => Ok(Interval::OneWeek),
+            "1M" => Ok(Interval::OneMonth),
+            _ => panic!("Invalid interval"),
+        }
+    }
+}
+
+impl Display for Interval {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}
