@@ -5,20 +5,21 @@ use std::{
     path::Path,
 };
 
+use binance::api::Binance;
 use binance_r_matrix::{
     config::{HistoricalDataConfig, HistoricalDataConfigBuilder},
     interval::Interval,
 };
-use getset::Getters;
+use getset::{Getters, Setters};
 use r_matrix::{
     r_matrix::{cmaes::CMAESOptimize, matrix::RMatrixBuilder},
     NormalizationFunctionType, RMatrix,
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Getters, Clone)]
+#[derive(Debug, Serialize, Deserialize, Getters, Clone, Setters)]
 #[serde(rename_all = "camelCase")]
-#[getset(get = "pub")]
+#[getset(get = "pub", set = "pub")]
 pub struct Config {
     depth: usize,
     tickers: Vec<String>,
@@ -52,6 +53,10 @@ impl Config {
         let config: Config = serde_yaml::from_str(&config_str)?;
 
         Ok(config)
+    }
+
+    pub fn get_binance<T: Binance>(&self) -> T {
+        T::new(self.api_key.clone(), self.api_secret.clone())
     }
 }
 

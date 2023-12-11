@@ -80,6 +80,7 @@ impl RMatrix {
         Ok(())
     }
 
+    #[inline]
     fn update_relationships_checked(&mut self, window: &[DataPoint]) -> Result<(), RMatrixError> {
         if window.len() < self.depth + 1 {
             return Err(RMatrixError::InvalidDatasetSize);
@@ -87,6 +88,7 @@ impl RMatrix {
         self.update_relationships(window)
     }
 
+    #[inline]
     fn update_relationships(&mut self, window: &[DataPoint]) -> Result<(), RMatrixError> {
         if window.len() < self.depth + 1 {
             return Err(RMatrixError::InvalidDatasetSize);
@@ -99,6 +101,7 @@ impl RMatrix {
         Ok(())
     }
 
+    #[inline(always)]
     fn update_relationships_at_depth(
         &mut self,
         window: &[DataPoint],
@@ -159,17 +162,25 @@ impl RMatrix {
 
     pub fn test(&self, dataset: &Dataset) -> TestData {
         let mut test_data = TestData::default();
+        let mut hold_for = 0;
         for window in dataset.windowed_iter(self.depth * 2) {
+            if hold_for > 0 {
+                hold_for -= 1;
+                test_data.add_hold_period();
+                continue;
+            }
             let (features, labels) = self.split_window(window).unwrap();
             let predictions = self.generate_predictions(&features).unwrap();
             let max_index = max_index(&predictions);
             let next_periods = labels.iter().map(|l| l[max_index]).collect::<Vec<f64>>();
             let prediction = predictions[max_index];
             if prediction < self.min_score {
+                test_data.add_hold_period();
                 continue;
             }
             let t_predictions = self.raw_predict(&features, max_index).unwrap();
             if t_predictions[0].signum() != prediction.signum() {
+                test_data.add_hold_period();
                 continue;
             }
             let mut hold_periods = self.max_forward_depth;
@@ -185,7 +196,7 @@ impl RMatrix {
                 (test_data.cash() * total_pc * prediction.signum() * self.margin)
                     - test_data.cash() * self.reduction * self.margin,
             );
-            test_data.add_hold_periods(hold_periods);
+            hold_for = hold_periods;
         }
         test_data
     }
@@ -234,7 +245,7 @@ impl RMatrix {
             .mode(mode)
             // .population_size(50)
             .initial_step_size(0.1)
-            .tol_fun_hist(1e-11)
+            .tol_fun_hist(1e-10)
             .enable_printing(100)
             .enable_plot(PlotOptions::new(3, false))
             .build(obj_function)
@@ -281,7 +292,7 @@ impl RMatrix {
 
         let mut chart = ChartBuilder::on(&root)
             .caption("Cash", ("sans-serif", 50).into_font())
-            .margin(5)
+            .margin(8)
             .x_label_area_size(30)
             .y_label_area_size(40)
             .build_cartesian_2d(0..cashes.len(), (1.0..max_cash * 1.1).log_scale())

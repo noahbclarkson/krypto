@@ -66,14 +66,13 @@ impl HistoricalData {
     pub fn to_dataset(&self) -> Dataset {
         let mut dataset = DatasetBuilder::default();
 
-        // Assuming self.data is a Vec and each element has a method `technicals()` that returns a Vec
         if self.data.is_empty() || self.data[0].technicals().is_empty() {
             return dataset.build().unwrap(); // Return an empty dataset if no data is present
         }
 
         for i in 0..self.data[0].technicals().len() {
-            let mut features: Vec<f64> = Vec::new(); // Assuming the feature type is f64
-            let mut labels: Vec<f64> = Vec::new(); // Assuming the label type is f64
+            let mut features: Vec<f64> = Vec::new();
+            let mut labels: Vec<f64> = Vec::new();
 
             for t_data in &self.data {
                 let technicals = t_data.technicals();
@@ -97,7 +96,6 @@ impl HistoricalData {
             dataset.add_data_point(i, features, labels);
         }
 
-        // Add the feature and label names
         let mut feature_names = Vec::new();
         let mut label_names = Vec::new();
 
@@ -114,6 +112,6 @@ impl HistoricalData {
         dataset.set_feature_names(feature_names);
         dataset.set_label_names(label_names);
 
-        dataset.build().unwrap() // Assuming build() returns a Result and unwrapping is safe
+        dataset.build().unwrap()
     }
 }

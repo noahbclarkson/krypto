@@ -75,3 +75,9 @@ Cargo.lock
 
 # Temp files
 /tmp
+
+# Configuration file (in this directory and not others)
+config.yml
+
+# Text files
+*.txt

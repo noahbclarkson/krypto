@@ -1,11 +1,11 @@
 use binance::api::Binance;
 use derive_builder::Builder;
-use getset::Getters;
+use getset::{Getters, Setters};
 
 use crate::interval::Interval;
 
-#[derive(Debug, Getters, Builder, Clone)]
-#[getset(get = "pub")]
+#[derive(Debug, Getters, Setters, Builder, Clone)]
+#[getset(get = "pub", set = "pub")]
 pub struct HistoricalDataConfig {
     periods: usize,
     interval: Interval,

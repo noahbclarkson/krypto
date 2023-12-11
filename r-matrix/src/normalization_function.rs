@@ -1,5 +1,3 @@
-use std::f64::consts::PI;
-
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Clone, Default)]
@@ -7,8 +5,6 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub enum NormalizationFunctionType {
     #[default]
     Tanh,
-    Gudermannian,
-    AlgebraicSigmoid,
     Softsign,
 }
 
@@ -16,8 +12,6 @@ impl NormalizationFunctionType {
     pub fn from_string(string: &str) -> Self {
         match string {
             "Tanh" => NormalizationFunctionType::Tanh,
-            "Gudermannian" => NormalizationFunctionType::Gudermannian,
-            "Algebraic Sigmoid" => NormalizationFunctionType::AlgebraicSigmoid,
             "Softsign" => NormalizationFunctionType::Softsign,
             _ => NormalizationFunctionType::Tanh,
         }
@@ -27,8 +21,6 @@ impl NormalizationFunctionType {
     pub fn get_function(&self) -> fn(f64) -> f64 {
         match self {
             NormalizationFunctionType::Tanh => Self::tanh,
-            NormalizationFunctionType::Gudermannian => Self::gudermannian,
-            NormalizationFunctionType::AlgebraicSigmoid => Self::algebraic_sigmoid,
             NormalizationFunctionType::Softsign => Self::softsign,
         }
     }
@@ -37,8 +29,6 @@ impl NormalizationFunctionType {
     pub fn get_derivative(&self) -> fn(f64) -> f64 {
         match self {
             NormalizationFunctionType::Tanh => Self::tanh_derivative,
-            NormalizationFunctionType::Gudermannian => Self::gudermannian_derivative,
-            NormalizationFunctionType::AlgebraicSigmoid => Self::algebraic_sigmoid_derivative,
             NormalizationFunctionType::Softsign => Self::softsign_derivative,
         }
     }
@@ -47,8 +37,6 @@ impl NormalizationFunctionType {
     pub fn get_name(&self) -> &str {
         match self {
             NormalizationFunctionType::Tanh => "Tanh",
-            NormalizationFunctionType::Gudermannian => "Gudermannian",
-            NormalizationFunctionType::AlgebraicSigmoid => "Algebraic Sigmoid",
             NormalizationFunctionType::Softsign => "Softsign",
         }
     }
@@ -56,9 +44,7 @@ impl NormalizationFunctionType {
     pub fn from_index(index: usize) -> Self {
         match index {
             0 => NormalizationFunctionType::Tanh,
-            1 => NormalizationFunctionType::Gudermannian,
-            2 => NormalizationFunctionType::AlgebraicSigmoid,
-            3 => NormalizationFunctionType::Softsign,
+            1 => NormalizationFunctionType::Softsign,
             _ => NormalizationFunctionType::Tanh,
         }
     }
@@ -72,21 +58,6 @@ impl NormalizationFunctionType {
         1.0 - tanh * tanh
     }
 
-    fn gudermannian(x: f64) -> f64 {
-        (2.0 / PI) * (x.atan() - (PI / 2.0))
-    }
-
-    fn gudermannian_derivative(x: f64) -> f64 {
-        2.0 / (PI * (1.0 + x * x))
-    }
-
-    fn algebraic_sigmoid(x: f64) -> f64 {
-        x / (1.0 + x.abs())
-    }
-
-    fn algebraic_sigmoid_derivative(x: f64) -> f64 {
-        1.0 / ((1.0 + x.abs()) * (1.0 + x.abs()))
-    }
 
     fn softsign(x: f64) -> f64 {
         x / (1.0 + x.abs())

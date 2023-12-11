@@ -14,6 +14,7 @@ use super::matrix::RMatrix;
 pub struct RMatrixCMAESSettings {
     #[builder(default = "CMAESOptimize::Accuracy")]
     optimize: CMAESOptimize,
+    #[builder(default = "false")]
     with_individuals: bool,
     interval: usize,
 }

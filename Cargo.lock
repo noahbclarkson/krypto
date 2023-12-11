@@ -1028,10 +1028,13 @@ name = "krypto"
 version = "0.1.0"
 dependencies = [
  "binance-r-matrix",
+ "binance-rs-async",
  "bincode",
+ "chrono",
  "csv",
  "getset",
  "r-matrix",
+ "rand",
  "serde",
  "serde_yaml",
  "thiserror",
