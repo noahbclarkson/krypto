@@ -2,46 +2,37 @@ use std::{error::Error, sync::Arc};
 
 use binance::{
     account::Account,
-    api::Binance,
     general::General,
-    margin::Margin,
     market::Market,
-    rest_model::{ExchangeInformation, Filters, MarginOrdersQuery},
+    model::{ExchangeInformation, Filters},
 };
-use getset::Getters;
 use tokio::sync::Mutex;
 
-use crate::config::Config;
+use crate::{config::KryptoConfig, KryptoError};
 
 #[derive(Clone)]
 pub struct KryptoAccount {
-    pub margin: Margin,
     pub general: General,
     pub market: Market,
     pub account: Account,
     exchange_info: Arc<Mutex<Option<ExchangeInformation>>>,
 }
 
-#[derive(Debug, Clone, Getters)]
-#[getset(get = "pub")]
+#[derive(Debug, Clone)]
 pub struct PrecisionData {
-    ticker: String,
-    tick_size: f64,
-    step_size: f64,
-    tick_precision: usize,
-    step_precision: usize,
+    pub ticker: String,
+    pub tick_size: f64,
+    pub step_size: f64,
+    pub tick_precision: usize,
+    pub step_precision: usize,
 }
 
 impl KryptoAccount {
-    pub fn new(config: &Config) -> Self {
-        let mut margin: Margin =
-            Binance::new(config.api_key().clone(), config.api_secret().clone());
-        margin.recv_window = 10000;
-        let general: General = Binance::new(config.api_key().clone(), config.api_secret().clone());
-        let market: Market = Binance::new(config.api_key().clone(), config.api_secret().clone());
-        let account: Account = Binance::new(config.api_key().clone(), config.api_secret().clone());
+    pub fn new(config: &KryptoConfig) -> Self {
+        let general: General = config.get_binance();
+        let market: Market = config.get_binance();
+        let account: Account = config.get_binance();
         KryptoAccount {
-            margin,
             general,
             market,
             account,
@@ -74,8 +65,8 @@ impl KryptoAccount {
                 ss = Some(step_size);
             }
         }
-        let tick_size = *ts.unwrap();
-        let step_size = *ss.unwrap();
+        let tick_size = ts.unwrap().parse::<f64>()?;
+        let step_size = ss.unwrap().parse::<f64>()?;
         let tick_precision = tick_size.log10().abs() as usize;
         let step_precision = step_size.log10().abs() as usize;
         Ok(Box::new(PrecisionData {
@@ -102,63 +93,39 @@ impl KryptoAccount {
         Ok(symbol.base_asset.clone())
     }
 
-    pub async fn max_borrowable(&mut self, ticker: &str) -> Result<f64, Box<dyn Error>> {
-        let base_asset = self.extract_base_asset(ticker).await?;
-        let max_borrowable = self.margin.max_borrowable(base_asset, None).await?.amount;
-        Ok(max_borrowable)
-    }
-
-    pub async fn update_exchange_info(&mut self) -> Result<(), Box<dyn Error>> {
+    pub async fn update_exchange_info(&mut self) -> Result<(), KryptoError> {
         self.exchange_info
             .lock()
             .await
-            .replace(self.general.exchange_info().await?);
-        Ok(())
-    }
-
-    pub async fn get_balance(&mut self) -> Result<f64, Box<dyn Error>> {
-        let account = self.margin.details().await?;
-        let total_balance = account.total_net_asset_of_btc;
-        let btc_price = self.market.get_price("BTCUSDT").await?.price;
-        let total_balance = total_balance * btc_price;
-        Ok(total_balance)
-    }
-
-    pub async fn close_all_orders(&self, config: &Config) -> Result<(), Box<dyn Error>> {
-        for ticker in config.tickers() {
-            let orders = self
-                .margin
-                .orders(MarginOrdersQuery {
-                    symbol: ticker.clone(),
-                    ..Default::default()
-                })
-                .await?;
-            if !orders.is_empty() {
-                println!("{} has {} open orders", ticker, orders.len());
-                let result = self.margin.cancel_all_orders(ticker, None).await;
-                if result.is_err() {
-                    println!("Error (Could not cancel order): {}", result.err().unwrap());
-                }
-            }
-        }
+            .replace(self.general.exchange_info()?);
         Ok(())
     }
 }
 
 impl PrecisionData {
+    /// Helper function to round down a value to a specified number of decimal places.
+    fn round_down(value: f64, decimal_places: usize) -> f64 {
+        let factor = 10f64.powi(decimal_places as i32);
+        (value * factor).floor() / factor
+    }
+
     pub fn fmt_price_to_string(&self, price: f64) -> String {
-        format!("{:.1$}", price, self.tick_precision)
+        let rounded_price = Self::round_down(price, self.tick_precision);
+        format!("{:.*}", self.tick_precision, rounded_price)
     }
 
     pub fn fmt_quantity_to_string(&self, quantity: f64) -> String {
-        format!("{:.1$}", quantity, self.step_precision)
+        let rounded_quantity = Self::round_down(quantity, self.step_precision);
+        format!("{:.*}", self.step_precision, rounded_quantity)
     }
 
     pub fn fmt_price(&self, price: f64) -> Result<f64, Box<dyn Error>> {
-        Ok(format!("{:.1$}", price, self.tick_precision).parse::<f64>()?)
+        let rounded_price = Self::round_down(price, self.tick_precision);
+        Ok(rounded_price)
     }
 
     pub fn fmt_quantity(&self, quantity: f64) -> Result<f64, Box<dyn Error>> {
-        Ok(format!("{:.1$}", quantity, self.step_precision).parse::<f64>()?)
+        let rounded_quantity = Self::round_down(quantity, self.step_precision);
+        Ok(rounded_quantity)
     }
 }

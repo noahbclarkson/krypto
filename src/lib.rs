@@ -1,14 +1,15 @@
-#![feature(test)]
-
-extern crate test;
-
 pub mod algorithm;
-pub mod args;
+pub mod algorithm_type;
 pub mod candlestick;
 pub mod config;
-pub mod historical_data;
+pub mod connection;
+pub mod dataset;
+pub mod error;
+pub mod interval;
+pub mod logging;
+pub mod technicals;
+pub mod util;
 pub mod krypto_account;
-pub mod math;
-pub mod order_event;
-pub mod relationships;
-pub mod testing;
+
+pub use config::KryptoConfig;
+pub use error::KryptoError;

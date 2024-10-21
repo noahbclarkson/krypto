@@ -8,3 +8,9 @@ rr = "run --release"
 
 [build]
 rustflags = ["-Z", "threads=8"]
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[target.x86_64-pc-windows-gnu]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]

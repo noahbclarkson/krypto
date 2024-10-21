@@ -1,147 +1,165 @@
+// config.rs
+
 use std::{
-    error::Error,
     fs::File,
     io::{BufReader, Write},
     path::Path,
 };
 
-use getset::{Getters, Setters};
+use binance::api::Binance;
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use serde_yaml::from_reader;
+use tracing::{debug, error, info, instrument};
 
-const DEFAULT_DATA: &str = r#"
-periods: 2000
-interval: "15m"
-depth: 3
-tickers: 
-    - "BTCBUSD"
-    - "ETHBUSD"
+use crate::{algorithm_type::AlgorithmType, interval::Interval, KryptoError};
+
+/// Configuration structure for the Krypto application.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct KryptoConfig {
+    #[serde(rename = "start-date")]
+    pub start_date: String,
+    pub fee: f64,
+    #[serde(rename = "api-key")]
+    pub api_key: Option<String>,
+    #[serde(rename = "api-secret")]
+    pub api_secret: Option<String>,
+    #[serde(rename = "pls-components")]
+    pub pls_components: usize,
+    pub tickers: Vec<String>,
+    pub margin: f64,
+    pub intervals: Vec<Interval>,
+    pub split: f64,
+    pub algorithms: Vec<AlgorithmType>,
+}
+
+const DEFAULT_DATA: &str = r#"---
+start-date: "2023-01-01"
+fee: 0.001
+margin: 1.0
+split: 0.8
+pls-components: 3
+tickers:
+  - BTCUSDT
+  - ETHUSDT
+intervals:
+  - 3m
+  - 5m
+algorithms:
+  - RandomForest
+  - PartialLeastSquares
+  - RMatrix
 "#;
 
-#[derive(Debug, Serialize, Deserialize, Clone, Getters, Setters)]
-#[getset(get = "pub", set = "pub")]
-pub struct Config {
-    periods: usize,
-    interval: String,
-    depth: usize,
-    fee: Option<f32>,
-    #[serde(rename = "min-score")]
-    min_score: Option<f32>,
-    tickers: Vec<String>,
-    #[serde(rename = "api-key")]
-    api_key: Option<String>,
-    #[serde(rename = "api-secret")]
-    api_secret: Option<String>,
-    blacklist: Option<Vec<String>>,
-}
-
-impl Default for Config {
+impl Default for KryptoConfig {
     fn default() -> Self {
-        Self {
-            periods: 2000,
-            interval: "15m".to_string(),
-            depth: 3,
-            tickers: vec!["BTCBUSD".to_string(), "ETHBUSD".to_string()],
-            fee: None,
-            min_score: None,
+        KryptoConfig {
+            start_date: "2023-01-01".to_string(),
+            fee: 0.001,
             api_key: None,
             api_secret: None,
-            blacklist: None,
+            pls_components: 3,
+            tickers: vec!["BTCUSDT".to_string(), "ETHUSDT".to_string()],
+            margin: 1.0,
+            intervals: vec![Interval::ThreeMinutes, Interval::FiveMinutes],
+            split: 0.8,
+            algorithms: vec![
+                AlgorithmType::RandomForest,
+                AlgorithmType::PartialLeastSquares,
+                AlgorithmType::RMatrix,
+            ],
         }
     }
 }
 
-impl Config {
+impl KryptoConfig {
+    /// Reads the configuration from a YAML file.
+    ///
+    /// If the file does not exist, it creates a default configuration file.
+    ///
+    /// # Arguments
+    ///
+    /// * `filename` - Optional path to the configuration file.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the `KryptoConfig` on success or an `Error` on failure.
+    #[instrument(level = "info", skip(filename))]
+    pub fn read_config<P: AsRef<Path>>(filename: Option<P>) -> Result<Self, KryptoError> {
+        let path = filename
+            .map(|p| p.as_ref().to_path_buf())
+            .unwrap_or_else(|| Path::new("config.yml").to_path_buf());
 
-    #[inline]
-    pub async fn read_config(filename: Option<&str>) -> Result<Box<Self>, Box<dyn Error>> {
-        let path = match filename {
-            Some(filename) => Path::new(filename),
-            None => Path::new("config.yml"),
-        };
-        let path = path.canonicalize()?;
+        info!(path = %path.display(), "Reading configuration");
 
         if !path.exists() {
-            let mut file = File::create(path)?;
-            file.write_all(DEFAULT_DATA.as_bytes())?;
-            return Err(Box::new(ConfigurationError::FileNotFound));
+            info!(
+                "Config file does not exist. Creating default config at {}",
+                path.display()
+            );
+            let mut file = File::create(&path).map_err(|e| {
+                error!(error = %e, "Failed to create config file");
+                e
+            })?;
+            file.write_all(DEFAULT_DATA.as_bytes()).map_err(|e| {
+                error!(error = %e, "Failed to write default config");
+                e
+            })?;
+            info!("Default configuration file created");
+            return Ok(KryptoConfig::default());
         }
 
-        let file = File::open(path)?;
+        let file = File::open(&path).map_err(|e| {
+            error!(error = %e, "Failed to open config file");
+            e
+        })?;
         let reader = BufReader::new(file);
-        let config: Config = from_reader(reader).map_err(|err| Box::new(err) as Box<dyn Error>)?;
-        Ok(Box::new(config))
+        let config: Self = from_reader(reader).map_err(|e| {
+            error!(error = %e, "Failed to parse config file");
+            KryptoError::ConfigLoadError
+        })?;
+        info!("Configuration loaded successfully");
+        Ok(config)
     }
 
-    #[inline]
-    pub fn interval_minutes(&self) -> Result<i64, Box<dyn std::error::Error>> {
-        match self.interval.as_str() {
-            "1m" => Ok(1),
-            "3m" => Ok(3),
-            "5m" => Ok(5),
-            "15m" => Ok(15),
-            "30m" => Ok(30),
-            "1h" => Ok(60),
-            "2h" => Ok(120),
-            "4h" => Ok(240),
-            "6h" => Ok(360),
-            "8h" => Ok(480),
-            "12h" => Ok(720),
-            "1d" => Ok(1440),
-            "3d" => Ok(4320),
-            "1w" => Ok(10080),
-            "1M" => Ok(43200),
-            _ => Err(Box::new(ConfigurationError::IntervalError(
-                self.interval.clone(),
-            ))),
-        }
-    }
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum ConfigurationError {
-    #[error("Configuration file not found")]
-    FileNotFound,
-    #[error("Interval (`{0}`) not supported")]
-    IntervalError(String),
-}
-
-#[cfg(test)]
-mod tests {
-    use std::fs;
-
-    use super::*;
-
-    #[test]
-    fn test_interval_minutes() {
-        let config = Config::default();
-        assert_eq!(config.interval_minutes().unwrap(), 15);
+    /// Converts the start date to a `NaiveDate`.
+    /// 
+    /// # Returns
+    /// 
+    /// A `NaiveDate` representing the start date.
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if the date cannot be parsed.
+    #[instrument(level = "debug")]
+    pub fn start_date(&self) -> Result<NaiveDate, KryptoError> {
+        let date = NaiveDate::parse_from_str(&self.start_date, "%Y-%m-%d").map_err(|e| {
+            error!(error = %e, "Failed to parse start date");
+            KryptoError::ConfigLoadError
+        })?;
+        Ok(date)
     }
 
-    #[test]
-    fn check_default() {
-        let config = Config::default();
-        assert_eq!(config.periods, 2000);
-        assert_eq!(config.interval, "15m");
-        assert_eq!(config.depth, 3);
-        assert_eq!(
-            config.tickers,
-            vec!["BTCBUSD".to_string(), "ETHBUSD".to_string()]
-        );
+    /// Converts interval enums to their corresponding minutes.
+    ///
+    /// # Returns
+    ///
+    /// A vector of minutes for each interval.
+    #[instrument(level = "debug")]
+    pub fn interval_minutes(&self) -> Vec<i64> {
+        let minutes = self.intervals.iter().map(|i| i.to_minutes()).collect();
+        debug!(?minutes, "Converted intervals to minutes");
+        minutes
     }
 
-    #[tokio::test]
-    async fn check_default_match() {
-        let default_config = Config::default();
-        let path = Path::new("test_config.yml");
-        let mut file = File::create(path).unwrap();
-        file.write_all(DEFAULT_DATA.as_bytes()).unwrap();
-        let config = Config::read_config(Some("test_config.yml")).await.unwrap();
-        fs::remove_file(path).unwrap();
-
-        assert_eq!(config.periods, default_config.periods);
-        assert_eq!(config.interval, default_config.interval);
-        assert_eq!(config.depth, default_config.depth);
-        assert_eq!(config.tickers, default_config.tickers);
+    /// Creates a Binance client using the provided API key and secret.
+    ///
+    /// # Returns
+    ///
+    /// An instance of the Binance client.
+    #[instrument(level = "info", skip(self))]
+    pub fn get_binance<T: Binance>(&self) -> T {
+        info!("Creating Binance client");
+        T::new(self.api_key.clone(), self.api_secret.clone())
     }
 }
