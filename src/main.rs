@@ -1,6 +1,8 @@
 use std::{
     collections::HashMap,
-    sync::{atomic::AtomicBool, Arc, Mutex}, thread, time::Duration,
+    sync::{atomic::AtomicBool, Arc, Mutex},
+    thread,
+    time::Duration,
 };
 
 use binance::websockets::{WebSockets, WebsocketEvent};
@@ -31,8 +33,31 @@ pub async fn main() -> Result<(), KryptoError> {
 
 #[instrument(level = "info")]
 async fn run() -> Result<(), KryptoError> {
-    let config: KryptoConfig = KryptoConfig::read_config(None::<&str>)?;
+    let mut config: KryptoConfig = KryptoConfig::read_config(None::<&str>)?;
     let dataset = Dataset::load_from_binance(&config).await?;
+    let mut best_result = None;
+    for i in 1..=6 {
+        let mut config_clone = config.clone();
+        config_clone.pls_components = i;
+        let mut results = load_algorithm(&config_clone, &dataset).await?;
+        results.sort();
+        results.reverse();
+        let best = results.first().unwrap();
+        info!("PLS Components: {}", i);
+        info!("Best Result for PLS:");
+        info!("{}", best);
+        match &best_result {
+            None => {
+                best_result = Some(best.clone());
+                config = config_clone;
+            }
+            Some(current_best) if best > current_best => {
+                best_result = Some(best.clone());
+                config = config_clone;
+            }
+            _ => {}
+        }
+    }
     let mut results = load_algorithm(&config, &dataset).await?;
     results.sort();
     results.reverse();
@@ -103,8 +128,8 @@ async fn setup_web_socket(
             let prediction = pls.predict(&input_features);
             let prediction = prediction.into_raw_vec()[0];
             debug!("Raw Prediction: {}", prediction);
-            let prediction = prediction.signum();
-            let buy_bool = match prediction == 1.0 {
+            let prediction = prediction.signum() as usize;
+            let buy_bool = match prediction == 1 {
                 true => {
                     info!("Prediction: Buy");
                     true
@@ -129,7 +154,12 @@ async fn setup_web_socket(
                 let quantity = precision.fmt_quantity(quantity).unwrap();
                 let transaction = ka.account.market_buy(ticker.as_str(), quantity).unwrap();
                 currently_holding = true;
-                info!("Bought: {} {} at {}", quantity, ticker, transaction.clone().fills.unwrap()[0].price);
+                info!(
+                    "Bought: {} {} at {}",
+                    quantity,
+                    ticker,
+                    transaction.clone().fills.unwrap()[0].price
+                );
                 debug!("Transaction: {:?}", transaction);
             } else if !buy_bool && currently_holding {
                 let balances = ka.account.get_account().unwrap().balances;
@@ -142,7 +172,12 @@ async fn setup_web_socket(
                     .unwrap();
                 let transaction = ka.account.market_sell(ticker.as_str(), quantity).unwrap();
                 currently_holding = false;
-                info!("Sold: {} {} at {}", quantity, ticker, transaction.clone().fills.unwrap()[0].price);
+                info!(
+                    "Sold: {} {} at {}",
+                    quantity,
+                    ticker,
+                    transaction.clone().fills.unwrap()[0].price
+                );
                 debug!("Transaction: {:?}", transaction);
             }
             thread::sleep(Duration::from_secs(1));
@@ -163,7 +198,8 @@ async fn setup_web_socket(
                 .parse::<f64>()
                 .unwrap();
             info!("{} Balance: {}", ticker.replace("USDT", ""), asset_balance);
-            let total_balance = usdt_balance + (asset_balance * ka.market.get_price(ticker.as_str()).unwrap().price);
+            let total_balance = usdt_balance
+                + (asset_balance * ka.market.get_price(ticker.as_str()).unwrap().price);
             info!("Total Balance in USDT: ${}", total_balance);
         }
         Ok(())

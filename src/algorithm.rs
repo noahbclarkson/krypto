@@ -31,7 +31,7 @@ pub async fn load_algorithm(
                 .data
                 .iter()
                 .skip(1)
-                .map(|c| c.percentage_change.unwrap())
+                .map(|c| c.percentage_change.unwrap().signum())
                 .collect::<Vec<_>>();
             let mut cash = 1000.0;
             let mut correct = 0;
@@ -208,7 +208,7 @@ fn features_and_labels(data: &DataArray) -> (Vec<&[f64]>, Vec<f64>) {
         .data
         .iter()
         .skip(1)
-        .map(|c| c.percentage_change.unwrap())
+        .map(|c| c.percentage_change.unwrap().signum())
         .collect();
     // Remove the last row from features
     let features = features.iter().take(features.len() - 1).cloned().collect();
