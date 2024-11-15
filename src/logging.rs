@@ -6,18 +6,21 @@ use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
 
 /// Sets up tracing with INFO+ to console and DEBUG+ from your crate to a file.
-pub fn setup_tracing() -> Result<(NonBlocking, WorkerGuard), Box<dyn std::error::Error>> {
-    // Create logs directory if it doesn't exist
-    let log_dir = Path::new("logs");
+pub fn setup_tracing(
+    log_dir: Option<&str>,
+) -> Result<(NonBlocking, WorkerGuard), Box<dyn std::error::Error>> {
+    // Use the provided log directory or default to "logs"
+    let log_dir_str = log_dir.unwrap_or("logs");
+    let log_dir = Path::new(log_dir_str);
     if !log_dir.exists() {
-        std::fs::create_dir(log_dir)?;
+        std::fs::create_dir_all(log_dir)?;
     }
 
     // Generate a timestamped log file name
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
 
     // Set up file appender with non-blocking writer
-    let file_appender = tracing_appender::rolling::never("logs", format!("{}.log", timestamp));
+    let file_appender = tracing_appender::rolling::never(log_dir_str, format!("{}.log", timestamp));
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
     // Console layer: INFO and above for all logs
@@ -40,13 +43,7 @@ pub fn setup_tracing() -> Result<(NonBlocking, WorkerGuard), Box<dyn std::error:
         .with_thread_ids(true)
         .with_thread_names(true)
         // Set the filter to include only your crate's logs at DEBUG level
-        .with_filter(
-            EnvFilter::from_default_env()
-                // Replace "your_crate" with the actual crate name or module path
-                .add_directive("krypto=DEBUG".parse()?)
-                .add_directive("tokio=OFF".parse()?) // Example for tokio
-                .add_directive("hyper=OFF".parse()?), // Example for hyper
-        );
+        .with_filter(EnvFilter::from_default_env().add_directive("krypto=DEBUG".parse()?));
 
     // Combine layers
     let subscriber = Registry::default().with(console_layer).with(file_layer);

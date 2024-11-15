@@ -1,46 +1,48 @@
-use smartcore::error::Failed;
+use std::fmt;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Debug, Clone, thiserror::Error, PartialEq)]
 pub enum KryptoError {
-    #[error("Configuration file not found")]
-    ConfigFileNotFound,
-    #[error("Interval (`{0}`) not supported")]
-    IntervalError(String),
-    #[error("Date parsing error: {0}")]
-    DateParseError(String),
-    #[error("Binance error: {0}")]
-    BinanceError(#[from] binance::errors::Error),
-    #[error("IO error: {0}")]
-    IoError(#[from] std::io::Error),
-    #[error("No data found for ticker `{0}`")]
-    NoDataFound(String),
-    #[error("Error loading config file")]
-    ConfigLoadError,
-    #[error("Invalid timestamp")]
-    InvalidTimestamp,
-    #[error("Invalid date time")]
-    InvalidDateTime,
-    #[error("Join error")]
-    JoinError(#[from] tokio::task::JoinError),
-    #[error("CSV error: {0}")]
-    CsvError(#[from] csv::Error),
-    #[error("Random Forest error: {0}")]
-    RandomForestError(#[from] Failed),
-    #[error("TA error: {0}")]
-    TaError(#[from] ta::errors::TaError),
-    #[error(
-        "Data mismatch: features length {features_len} does not match labels length {labels_len}"
-    )]
-    DataMismatch {
-        features_len: usize,
-        labels_len: usize,
-    },
-    #[error("Features vector is empty")]
-    EmptyData,
-    #[error("Test data features are empty")]
-    EmptyTestData,
-    #[error("Training error: {0}")]
-    TrainingError(String),
-    #[error("Prediction error: {0}")]
-    PredictionError(String),
+    #[error("Invalid candlestick date time on {when} occurred with time {timestamp}.")]
+    InvalidCandlestickDateTime { when: When, timestamp: i64 },
+    #[error("Failed to parse value {value_name} at time {timestamp}.")]
+    ParseError { value_name: String, timestamp: i64 },
+    #[error("Open time is greater than close time for candle. Open time: {open_time}, Close time: {close_time}.")]
+    OpenTimeGreaterThanCloseTime { open_time: i64, close_time: i64 },
+    #[error("Parse Interval Error: {0}")]
+    ParseIntervalError(#[from] ParseIntervalError),
+    #[error("Failed to read config file: {0}")]
+    ConfigReadError(String),
+    #[error("IO Error: {0}")]
+    IoError(String),
+    #[error("Failed to parse date: {0}")]
+    ParseDateError(String),
+    #[error("Binance API Error: {0}")]
+    BinanceApiError(String),
+    #[error("Failed to fit PLS model: {0}")]
+    FitError(String),
+    #[error("CSV Error: {0}")]
+    CsvError(String),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum When {
+    Open,
+    Close,
+}
+
+impl fmt::Display for When {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            When::Open => write!(f, "open"),
+            When::Close => write!(f, "close"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum ParseIntervalError {
+    #[error("Failed to parse interval from string: {0}")]
+    ParseError(String),
+    #[error("Failed to parse interval from integer: {0}")]
+    ParseIntError(usize),
 }
