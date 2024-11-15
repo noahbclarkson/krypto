@@ -113,7 +113,7 @@ impl IntervalData {
         self.symbol_data_map.is_empty()
     }
 
-    // Get all the technicals for all the symbols. Each row contains all the tecnhicals for each of 
+    // Get all the technicals for all the symbols. Each row contains all the tecnhicals for each of
     // the symbols at a given time.
     pub fn get_records(&self) -> Vec<Vec<f64>> {
         let mut records = Vec::new();

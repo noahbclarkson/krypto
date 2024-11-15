@@ -1,7 +1,10 @@
 use core::f64;
 
 use krypto::{
-    algorithm::algo::Algorithm, config::KryptoConfig, data::{dataset::Dataset, technicals::TECHNICAL_COUNT}, error::KryptoError,
+    algorithm::algo::Algorithm,
+    config::KryptoConfig,
+    data::{dataset::Dataset, technicals::TECHNICAL_COUNT},
+    error::KryptoError,
     logging::setup_tracing,
 };
 use tracing::info;
@@ -22,8 +25,17 @@ fn run() -> Result<(), KryptoError> {
     let mut best_return = f64::NEG_INFINITY;
     let mut best_algorithm = None;
     let mut i = 0;
-    let mut csv = csv::Writer::from_path("results.csv").map_err(|e| KryptoError::CsvError(e.to_string()))?;
-    csv.write_record(["n", "depth", "ticker", "monthly_return", "accuracy"]).map_err(|e| KryptoError::CsvError(e.to_string()))?;
+    let mut csv =
+        csv::Writer::from_path("results.csv").map_err(|e| KryptoError::CsvError(e.to_string()))?;
+    csv.write_record([
+        "n",
+        "depth",
+        "ticker",
+        "monthly_return",
+        "accuracy",
+        "interval",
+    ])
+    .map_err(|e| KryptoError::CsvError(e.to_string()))?;
     for (interval, interval_data) in dataset.get_map() {
         info!("Interval: {}", interval);
         for symbol in interval_data.keys() {
@@ -45,16 +57,18 @@ fn run() -> Result<(), KryptoError> {
                         symbol.to_string(),
                         algorithm.get_monthly_return().to_string(),
                         algorithm.get_accuracy().to_string(),
-                    ]).map_err(|e| KryptoError::CsvError(e.to_string()))?;
-                    csv.flush().map_err(|e| KryptoError::CsvError(e.to_string()))?;
+                        interval.to_string(),
+                    ])
+                    .map_err(|e| KryptoError::CsvError(e.to_string()))?;
+                    csv.flush()
+                        .map_err(|e| KryptoError::CsvError(e.to_string()))?;
                     i += 1;
                     algorithms.push(algorithm);
-                    
                 }
             }
         }
     }
     let best_algorithm = algorithms.get(best_algorithm.unwrap());
-    info!("Best Algorithm: {}", &best_algorithm.unwrap()); 
+    info!("Best Algorithm: {}", &best_algorithm.unwrap());
     Ok(())
 }

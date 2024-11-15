@@ -16,13 +16,12 @@ pub struct Candlestick {
 }
 
 impl Candlestick {
-
-    // Create a new Candlestick from a KlineSummary 
+    // Create a new Candlestick from a KlineSummary
     //
     // # Arguments
     //
     // * `summary` - The KlineSummary to convert to a Candlestick.
-    // 
+    //
     // # Returns
     //
     // A Result containing the Candlestick if successful, or a KryptoError if an error occurred.
@@ -33,12 +32,13 @@ impl Candlestick {
                 timestamp: summary.open_time,
             },
         )?;
-        let close_time = Utc.timestamp_millis_opt(summary.close_time).single().ok_or(
-            KryptoError::InvalidCandlestickDateTime {
+        let close_time = Utc
+            .timestamp_millis_opt(summary.close_time)
+            .single()
+            .ok_or(KryptoError::InvalidCandlestickDateTime {
                 when: When::Close,
                 timestamp: summary.close_time,
-            },
-        )?;
+            })?;
         if let Some(std::cmp::Ordering::Greater) = open_time.partial_cmp(&close_time) {
             return Err(KryptoError::OpenTimeGreaterThanCloseTime {
                 open_time: summary.open_time,
@@ -164,8 +164,14 @@ mod tests {
         };
 
         let candlestick = Candlestick::from_summary(summary).unwrap();
-        assert_eq!(candlestick.open_time, Utc.timestamp_millis_opt(1618185600000).single().unwrap());
-        assert_eq!(candlestick.close_time, Utc.timestamp_millis_opt(1618185659999).single().unwrap());
+        assert_eq!(
+            candlestick.open_time,
+            Utc.timestamp_millis_opt(1618185600000).single().unwrap()
+        );
+        assert_eq!(
+            candlestick.close_time,
+            Utc.timestamp_millis_opt(1618185659999).single().unwrap()
+        );
         assert_eq!(candlestick.open, 0.0);
         assert_eq!(candlestick.high, 0.0);
         assert_eq!(candlestick.low, 0.0);

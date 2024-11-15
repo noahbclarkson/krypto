@@ -113,7 +113,10 @@ fn backtest(
         debug!("Cross Validation {}: {}", i + 1, test_data);
         test_datas.push(test_data);
     }
-    let returns = test_datas.iter().map(|d| d.monthly_return).collect::<Vec<f64>>();
+    let returns = test_datas
+        .iter()
+        .map(|d| d.monthly_return)
+        .collect::<Vec<f64>>();
     let accuracies = test_datas.iter().map(|d| d.accuracy).collect::<Vec<f64>>();
     let median_return = returns[returns.len() / 2];
     let median_accuracy = accuracies[accuracies.len() / 2];
@@ -147,7 +150,14 @@ fn get_overall_dataset(
         .iter()
         .map(|r| {
             r.iter()
-                .map(|v| if v.is_nan() { 0.0 } else { *v })
+                .map(|v| {
+                    if v.is_nan() {
+                        debug!("Found NaN value");
+                        0.0
+                    } else {
+                        *v
+                    }
+                })
                 .collect()
         })
         .collect();
