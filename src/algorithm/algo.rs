@@ -15,37 +15,31 @@ use crate::{
 
 pub struct Algorithm {
     pub pls: PlsRegression<f64>,
-    pub n_components: usize,
-    pub depth: usize,
-    pub ticker: String,
-    pub monthly_return: f64,
-    pub accuracy: f64,
+    settings: AlgorithmSettings,
+    monthly_return: f64,
+    accuracy: f64,
 }
 
 impl Algorithm {
     #[instrument(skip(dataset, config))]
     pub fn load(
         dataset: &IntervalData,
-        n: usize,
-        depth: usize,
-        ticker: &str,
+        settings: AlgorithmSettings,
         config: &KryptoConfig,
     ) -> Result<Self, KryptoError> {
-        let (monthly_return, accuracy) = backtest(dataset, n, depth, ticker, config)?;
-        let (features, labels, _) = get_overall_dataset(dataset, depth, ticker);
-        let pls = get_pls(features, labels, n)?;
+        let (monthly_return, accuracy) = backtest(dataset, settings.clone(), config)?;
+        let (features, labels, _) = get_overall_dataset(dataset, settings.clone());
+        let pls = get_pls(features, labels, settings.n)?;
         Ok(Self {
             pls,
-            n_components: n,
-            depth,
-            ticker: ticker.to_string(),
+            settings,
             monthly_return,
             accuracy,
         })
     }
 
-    pub fn get_ticker(&self) -> &str {
-        &self.ticker
+    pub fn get_symbol(&self) -> &str {
+        &self.settings.symbol
     }
 
     pub fn get_monthly_return(&self) -> &f64 {
@@ -57,11 +51,11 @@ impl Algorithm {
     }
 
     pub fn get_n_components(&self) -> usize {
-        self.n_components
+        self.settings.n
     }
 
     pub fn get_depth(&self) -> usize {
-        self.depth
+        self.settings.depth
     }
 }
 
@@ -69,26 +63,22 @@ impl fmt::Display for Algorithm {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Ticker: {} | Monthly Return: {:.2} | Accuracy: {:.2}% | Depth: {} | N Components: {}",
-            self.ticker,
+            "Algorithm: ({}) | Monthly Return: {:.2} | Accuracy: {:.2}%",
+            self.settings,
             self.monthly_return * 100.0,
-            self.accuracy * 100.0,
-            self.depth,
-            self.n_components
+            self.accuracy * 100.0
         )
     }
 }
 
-#[instrument(skip(dataset, config, n, depth, ticker))]
+#[instrument(skip(dataset, config, settings))]
 fn backtest(
     dataset: &IntervalData,
-    n: usize,
-    depth: usize,
-    ticker: &str,
+    settings: AlgorithmSettings,
     config: &KryptoConfig,
 ) -> Result<(f64, f64), KryptoError> {
     info!("Running backtest");
-    let (features, labels, candles) = get_overall_dataset(dataset, depth, ticker);
+    let (features, labels, candles) = get_overall_dataset(dataset, settings.clone());
     let count = config.cross_validations;
     let total_size = candles.len();
     let test_data_size = (total_size as f64 / count as f64).floor() as usize - 1;
@@ -106,7 +96,7 @@ fn backtest(
         let mut train_labels = labels.clone();
         train_labels.drain(start..end);
         let test_candles = candles.clone().drain(start..end).collect();
-        let pls = get_pls(train_features, train_labels, n)?;
+        let pls = get_pls(train_features, train_labels, settings.n)?;
         let predictions = get_predictions(pls, test_features);
         debug!("Running cross validation: {}/{}", i + 1, count);
         let test_data = TestData::new(predictions, test_candles, config);
@@ -140,8 +130,7 @@ fn get_predictions(pls: PlsRegression<f64>, features: Vec<Vec<f64>>) -> Vec<f64>
 #[instrument(skip(dataset))]
 fn get_overall_dataset(
     dataset: &IntervalData,
-    depth: usize,
-    ticker: &str,
+    settings: AlgorithmSettings,
 ) -> (Vec<Vec<f64>>, Vec<f64>, Vec<Candlestick>) {
     let records = dataset.get_records();
     let predictors = normalize_by_columns(records);
@@ -162,17 +151,17 @@ fn get_overall_dataset(
         })
         .collect();
     let features: Vec<Vec<f64>> = predictors
-        .windows(depth)
+        .windows(settings.depth)
         .map(|w| w.iter().flatten().copied().collect::<Vec<f64>>())
         .collect();
     // Remove the last features row to match the labels length
     let features: Vec<Vec<f64>> = features.iter().take(features.len() - 1).cloned().collect();
     let labels: Vec<f64> = dataset
-        .get(ticker)
+        .get(&settings.symbol)
         .unwrap()
         .get_labels()
         .iter()
-        .skip(depth)
+        .skip(settings.depth)
         .cloned()
         .collect();
     // Set NaN values to 1
@@ -181,15 +170,42 @@ fn get_overall_dataset(
         .map(|v| if v.is_nan() { 1.0 } else { *v })
         .collect();
     let candles: Vec<Candlestick> = dataset
-        .get(ticker)
+        .get(&settings.symbol)
         .unwrap()
         .get_candles()
         .iter()
-        .skip(depth)
+        .skip(settings.depth)
         .cloned()
         .collect();
     debug!("Features Shape: {}x{}", features.len(), features[0].len());
     debug!("Labels Shape: {}", labels.len());
     debug!("Candles Shape: {}", candles.len());
     (features, labels, candles)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct AlgorithmSettings {
+    pub n: usize,
+    pub depth: usize,
+    pub symbol: String,
+}
+
+impl AlgorithmSettings {
+    pub fn new(n: usize, depth: usize, symbol: &str) -> Self {
+        Self {
+            n,
+            depth,
+            symbol: symbol.to_string(),
+        }
+    }
+}
+
+impl fmt::Display for AlgorithmSettings {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "symbol: {} | Depth: {} | N Components: {}",
+            self.symbol, self.depth, self.n
+        )
+    }
 }

@@ -1,5 +1,9 @@
 use common::setup_default_data;
-use krypto::{algorithm::algo::Algorithm, config::KryptoConfig, data::interval::Interval};
+use krypto::{
+    algorithm::algo::{Algorithm, AlgorithmSettings},
+    config::KryptoConfig,
+    data::interval::Interval,
+};
 use tracing::info;
 
 mod common;
@@ -18,7 +22,8 @@ fn test_algorithm() {
     let interval = dataset.keys().next().unwrap();
     let interval_data = dataset.get(interval).unwrap();
     let symbol = interval_data.keys().next().unwrap();
-    let result = Algorithm::load(interval_data, 3, 3, symbol, &config);
+    let settings = AlgorithmSettings::new(3, 3, symbol);
+    let result = Algorithm::load(interval_data, settings, &config);
     match result {
         Ok(_) => {
             info!("Algorithm Loaded Successfully");

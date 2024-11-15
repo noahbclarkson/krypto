@@ -1,7 +1,7 @@
 use core::f64;
 
 use krypto::{
-    algorithm::algo::Algorithm,
+    algorithm::algo::{Algorithm, AlgorithmSettings},
     config::KryptoConfig,
     data::{dataset::Dataset, technicals::TECHNICAL_COUNT},
     error::KryptoError,
@@ -45,7 +45,8 @@ fn run() -> Result<(), KryptoError> {
                     if n >= depth * TECHNICAL_COUNT {
                         continue;
                     }
-                    let algorithm = Algorithm::load(interval_data, n, depth, symbol, &config)?;
+                    let settings = AlgorithmSettings::new(n, depth, symbol);
+                    let algorithm = Algorithm::load(interval_data, settings, &config)?;
                     if algorithm.get_monthly_return() > &best_return {
                         best_return = *algorithm.get_monthly_return();
                         best_algorithm = Some(i);
