@@ -70,7 +70,7 @@ jobs:
 
     - name: Upload Artifact (Windows)
       if: runner.os == 'Windows'
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: krypto-${{ runner.os }}
         path: artifacts/krypto.exe

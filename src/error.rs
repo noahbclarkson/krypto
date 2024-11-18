@@ -22,6 +22,10 @@ pub enum KryptoError {
     FitError(String),
     #[error("CSV Error: {0}")]
     CsvError(String),
+    #[error("Candles and predictions cannot be empty")]
+    EmptyCandlesAndPredictions,
+    #[error("Candles and predictions must be of the same length")]
+    UnequalCandlesAndPredictions,
 }
 
 #[derive(Debug, Clone, PartialEq)]

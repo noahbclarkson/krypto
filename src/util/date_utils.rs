@@ -34,10 +34,6 @@ pub fn get_timestamps(
     Ok(timestamps)
 }
 
-pub fn days_between(start: NaiveDate, end: NaiveDate) -> i64 {
-    (end - start).num_days()
-}
-
-pub fn days_between_datetime(start: DateTime<Utc>, end: DateTime<Utc>) -> i64 {
+pub fn days_between(start: DateTime<Utc>, end: DateTime<Utc>) -> i64 {
     (end - start).num_days()
 }

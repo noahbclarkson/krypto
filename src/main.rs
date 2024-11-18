@@ -40,15 +40,15 @@ fn run() -> Result<(), KryptoError> {
         info!("Interval: {}", interval);
         for symbol in interval_data.keys() {
             info!("Symbol: {}", symbol);
-            for n in 1..25 {
-                for depth in 1..25 {
+            for n in 1..50 {
+                for depth in 1..50 {
                     if n >= depth * TECHNICAL_COUNT {
                         continue;
                     }
                     let settings = AlgorithmSettings::new(n, depth, symbol);
                     let algorithm = Algorithm::load(interval_data, settings, &config)?;
-                    if algorithm.get_monthly_return() > &best_return {
-                        best_return = *algorithm.get_monthly_return();
+                    if algorithm.get_monthly_return() > best_return {
+                        best_return = algorithm.get_monthly_return();
                         best_algorithm = Some(i);
                         info!("New best algorithm: {}", &algorithm);
                     }

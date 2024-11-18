@@ -1,8 +1,11 @@
 use std::fmt;
 
 use crate::{
-    config::KryptoConfig, data::candlestick::Candlestick, util::date_utils::days_between_datetime,
+    config::KryptoConfig, data::candlestick::Candlestick, error::KryptoError,
+    util::date_utils::days_between,
 };
+
+const STARTING_CASH: f64 = 1000.0;
 
 pub struct TestData {
     pub cash_history: Vec<f64>,
@@ -11,49 +14,83 @@ pub struct TestData {
 }
 
 impl TestData {
-    pub fn new(predictions: Vec<f64>, candles: Vec<Candlestick>, config: &KryptoConfig) -> Self {
-        let days =
-            days_between_datetime(candles[0].open_time, candles[candles.len() - 1].close_time);
-        let mut position = Position::None;
-        let mut cash = 1000.0;
-        let mut correct = 0;
-        let mut incorrect = 0;
-        let mut cash_history = vec![cash];
-        for i in 0..predictions.len() {
-            let prediction = predictions[i].signum();
-            let position_now = Position::from_f64(prediction, candles[i].close);
-            if position == Position::None {
-                position = position_now.clone();
-            }
-            if position != position_now {
-                let return_now = position.get_return(candles[i].close);
-                cash += cash * return_now;
-                cash -= cash * config.fee.unwrap_or_default();
-                position = position_now;
-                if return_now > 0.0 {
-                    correct += 1;
-                } else {
-                    incorrect += 1;
-                }
-                cash_history.push(cash);
-            }
+    pub fn new(
+        predictions: Vec<f64>,
+        candles: Vec<Candlestick>,
+        config: &KryptoConfig,
+    ) -> Result<Self, KryptoError> {
+        if candles.is_empty() || predictions.is_empty() {
+            return Err(KryptoError::EmptyCandlesAndPredictions);
         }
-        let months = days as f64 / 30.0;
-        let accuracy = correct as f64 / (correct + incorrect) as f64;
-        let monthly_return = (cash / 1000.0).powf(1.0 / months) - 1.0;
-        Self {
-            cash_history,
+
+        if candles.len() != predictions.len() {
+            return Err(KryptoError::UnequalCandlesAndPredictions);
+        }
+
+        let fee = config.fee.unwrap_or(0.0);
+        let days = days_between(
+            candles.first().unwrap().open_time,
+            candles.last().unwrap().close_time,
+        );
+        let mut position: Option<Position> = None;
+        let mut inner = InnerTestData::default();
+
+        for (prediction, candle) in predictions.iter().zip(candles.iter()) {
+            let prediction_sign = prediction.signum();
+
+            let new_position = match prediction_sign {
+                p if p > 0.0 => Some(Position::Long(candle.close)),
+                p if p < 0.0 => Some(Position::Short(candle.close)),
+                _ => None,
+            };
+
+            // Check if we need to close the existing position
+            if position.is_some() && position != new_position {
+                // Close the existing position
+                if let Some(ref pos) = position {
+                    inner.close_position(pos, candle, fee);
+                }
+
+                position = new_position;
+            } else if position.is_none() {
+                // Open a new position if we don't have one
+                position = new_position.clone();
+            }
+
+            // No position change; continue holding or staying out
+        }
+
+        // Close any remaining open position at the end
+        if let Some(ref pos) = position {
+            inner.close_position(pos, candles.last().unwrap(), fee);
+        }
+
+        let months = days as f64 / 30.44;
+        let total_trades = inner.correct + inner.incorrect;
+        let accuracy = if total_trades > 0 {
+            inner.correct as f64 / total_trades as f64
+        } else {
+            0.0
+        };
+        let monthly_return = if months > 0.0 {
+            (inner.cash / 1000.0).powf(1.0 / months) - 1.0
+        } else {
+            0.0
+        };
+
+        Ok(Self {
+            cash_history: inner.cash_history,
             accuracy,
             monthly_return,
-        }
+        })
     }
 }
 
 impl fmt::Display for TestData {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Accuracy: {:.2} | Monthly Return: {:.2}%",
+            "Accuracy: {:.2}% | Monthly Return: {:.2}%",
             self.accuracy * 100.0,
             self.monthly_return * 100.0
         )
@@ -64,66 +101,55 @@ impl fmt::Display for TestData {
 enum Position {
     Long(f64),
     Short(f64),
-    None,
 }
 
 impl Position {
-    fn get_return(&self, close: f64) -> f64 {
-        match self {
-            Position::Long(entry) => (close - entry) / entry,
-            Position::Short(entry) => (entry - close) / entry,
-            Position::None => 0.0,
-        }
-    }
-
-    fn from_f64(value: f64, open_price: f64) -> Self {
-        if value > 0.0 {
-            Position::Long(open_price)
-        } else if value < 0.0 {
-            Position::Short(open_price)
-        } else {
-            Position::None
-        }
-    }
-}
-
-impl fmt::Display for Position {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Position::Long(entry) => write!(f, "Long: ${}", entry),
-            Position::Short(entry) => write!(f, "Short: ${}", entry),
-            Position::None => write!(f, "None"),
-        }
-    }
-}
-
-impl PartialEq<Position> for f64 {
-    fn eq(&self, other: &Position) -> bool {
-        match other {
-            Position::Long(_) => self > &0.0,
-            Position::Short(_) => self < &0.0,
-            Position::None => self == &0.0,
-        }
-    }
-}
-
-impl PartialEq<f64> for Position {
-    fn eq(&self, other: &f64) -> bool {
-        match self {
-            Position::Long(_) => other > &0.0,
-            Position::Short(_) => other < &0.0,
-            Position::None => other == &0.0,
+    fn get_return(&self, close_price: f64) -> f64 {
+        match *self {
+            Position::Long(entry_price) => (close_price - entry_price) / entry_price,
+            Position::Short(entry_price) => (entry_price - close_price) / entry_price,
         }
     }
 }
 
 impl PartialEq for Position {
-    fn eq(&self, other: &Position) -> bool {
-        // Simply compare the type of the enum
-        match self {
-            Position::Long(_) => matches!(other, Position::Long(_)),
-            Position::Short(_) => matches!(other, Position::Short(_)),
-            Position::None => matches!(other, Position::None),
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Position::Long(_), Position::Long(_)) | (Position::Short(_), Position::Short(_))
+        )
+    }
+}
+
+struct InnerTestData {
+    cash: f64,
+    correct: u32,
+    incorrect: u32,
+    cash_history: Vec<f64>,
+}
+
+impl InnerTestData {
+    fn close_position(&mut self, position: &Position, candle: &Candlestick, fee: f64) {
+        let return_now = position.get_return(candle.close);
+        self.cash += self.cash * return_now;
+        self.cash -= self.cash * fee;
+        self.cash_history.push(self.cash);
+
+        if return_now > 0.0 {
+            self.correct += 1;
+        } else {
+            self.incorrect += 1;
+        }
+    }
+}
+
+impl Default for InnerTestData {
+    fn default() -> Self {
+        Self {
+            cash: STARTING_CASH,
+            correct: 0,
+            incorrect: 0,
+            cash_history: vec![STARTING_CASH],
         }
     }
 }

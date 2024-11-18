@@ -1,4 +1,4 @@
-use linfa::traits::Fit;
+use linfa::traits::{Fit, Predict as _};
 use linfa_pls::PlsRegression;
 use ndarray::Array2;
 
@@ -21,4 +21,11 @@ pub fn get_pls(
         .fit(&ds)
         .map_err(|e| KryptoError::FitError(e.to_string()))?;
     Ok(pls)
+}
+
+pub fn predict(pls: &PlsRegression<f64>, features: &[Vec<f64>]) -> Vec<f64> {
+    let flat_features: Vec<f64> = features.iter().flatten().cloned().collect();
+    let array_features = Array2::from_shape_vec((features.len(), features[0].len()), flat_features)
+        .expect("Failed to create feature array");
+    pls.predict(&array_features).as_slice().unwrap().to_vec()
 }

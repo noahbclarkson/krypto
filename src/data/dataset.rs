@@ -125,7 +125,7 @@ impl IntervalData {
             }
             records.push(record);
         }
-        records
+        records 
     }
 }
 
