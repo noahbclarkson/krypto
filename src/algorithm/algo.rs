@@ -2,6 +2,7 @@ use std::fmt;
 
 use linfa_pls::PlsRegression;
 use tracing::{debug, info, instrument};
+use rayon::prelude::*;
 
 use crate::{
     algorithm::{
@@ -38,24 +39,25 @@ impl Algorithm {
     }
 
     fn backtest(
-        dataset: &IntervalData,
-        settings: &AlgorithmSettings,
-        config: &KryptoConfig,
-    ) -> Result<AlgorithmResult, KryptoError> {
-        debug!("Running backtest");
+    dataset: &IntervalData,
+    settings: &AlgorithmSettings,
+    config: &KryptoConfig,
+) -> Result<AlgorithmResult, KryptoError> {
+    debug!("Running backtest");
 
-        let (features, labels, candles) = Self::prepare_dataset(dataset, settings);
-        let count = config.cross_validations;
-        let total_size = candles.len();
-        let test_data_size = total_size / count;
+    let (features, labels, candles) = Self::prepare_dataset(dataset, settings);
+    let count = config.cross_validations;
+    let total_size = candles.len();
+    let test_data_size = total_size / count;
 
-        let mut test_results = Vec::with_capacity(count);
-
-        for i in 0..count {
+    let test_results: Vec<TestData> = (0..count)
+        .into_par_iter()
+        .map(|i| -> Result<TestData, KryptoError> {
             let start = i * test_data_size;
-            let end = match i == count - 1 {
-                true => total_size,
-                false => (i + 1) * test_data_size,
+            let end = if i == count - 1 {
+                total_size
+            } else {
+                (i + 1) * test_data_size
             };
 
             let test_features = &features[start..end];
@@ -74,20 +76,26 @@ impl Algorithm {
                 end,
                 test_data
             );
-            test_results.push(test_data);
-        }
+            Ok(test_data)
+        })
+        .collect::<Result<Vec<_>, KryptoError>>()?;
 
-        let median_return = median(
-            &test_results
-                .iter()
-                .map(|d| d.monthly_return)
-                .collect::<Vec<_>>(),
-        );
-        let median_accuracy = median(&test_results.iter().map(|d| d.accuracy).collect::<Vec<_>>());
-        let result = AlgorithmResult::new(median_return, median_accuracy);
-        info!("Backtest result: {}", result);
-        Ok(result)
-    }
+    let median_return = median(
+        &test_results
+            .iter()
+            .map(|d| d.monthly_return)
+            .collect::<Vec<_>>(),
+    );
+    let median_accuracy = median(
+        &test_results
+            .iter()
+            .map(|d| d.accuracy)
+            .collect::<Vec<_>>(),
+    );
+    let result = AlgorithmResult::new(median_return, median_accuracy);
+    info!("Backtest result: {}", result);
+    Ok(result)
+}
 
     #[instrument(skip(dataset))]
     fn prepare_dataset(

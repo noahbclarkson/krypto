@@ -41,7 +41,7 @@ fn run() -> Result<(), KryptoError> {
         for symbol in interval_data.keys() {
             info!("Symbol: {}", symbol);
             for n in 1..50 {
-                for depth in 1..50 {
+                for depth in 1..75 {
                     if n >= depth * TECHNICAL_COUNT {
                         continue;
                     }
