@@ -68,18 +68,18 @@ PLS regression is a supervised learning technique that projects data into a lowe
 
 #### Training Procedure
 
-1. Normalize the feature matrix \( X \) (e.g., RSI, EMA, etc.) and target vector \( y \) (price direction).
-2. Perform the following iteratively for \( n \) components:
-   - Compute the weights \( w = X^T y / ||X^T y|| \).
-   - Extract scores \( t = Xw \).
-   - Deflate \( X \) and \( y \) by removing projections along \( t \).
+1. Normalize the feature matrix $X$ (e.g., RSI, EMA, etc.) and target vector $y$ (price direction).
+2. Perform the following iteratively for $n$ components:
+   - Compute the weights $w = X^T y / ||X^T y||$.
+   - Extract scores $t = Xw$.
+   - Deflate $X$ and $y$ by removing projections along $t$.
 3. Use the reduced dataset for linear regression.
 
 #### Key Equations
 
-- **Weight Vector**: \( w = \frac{X^T y}{||X^T y||} \)
-- **Scores**: \( t = Xw \)
-- **Deflation**: \( X_{new} = X - t t^T X \), \( y_{new} = y - t t^T y \)
+- **Weight Vector**: $w = \frac{X^T y}{||X^T y||}$
+- **Scores**: $t = Xw$
+- **Deflation**: $X_{new} = X - t t^T X$, $y_{new} = y - t t^T y$
 
 ---
 
