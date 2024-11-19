@@ -7,13 +7,13 @@ use krypto::{
     error::KryptoError,
     logging::setup_tracing,
 };
-use tracing::info;
+use tracing::{error, info};
 
 pub fn main() {
     let (_, file_guard) = setup_tracing(Some("logs")).expect("Failed to set up tracing");
     let result = run();
     if let Err(e) = result {
-        eprintln!("Error: {:?}", e);
+        error!("Error: {:?}", e);
     }
     drop(file_guard);
 }
@@ -41,7 +41,7 @@ fn run() -> Result<(), KryptoError> {
         for symbol in interval_data.keys() {
             info!("Symbol: {}", symbol);
             for n in 1..50 {
-                for depth in 1..75 {
+                for depth in 1..60 {
                     if n >= depth * TECHNICAL_COUNT {
                         continue;
                     }

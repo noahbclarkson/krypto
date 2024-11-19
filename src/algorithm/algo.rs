@@ -99,6 +99,32 @@ impl Algorithm {
         Ok(result)
     }
 
+    #[instrument(skip(dataset, config, self))]
+    pub fn backtest_on_all_seen_data(
+        &self,
+        dataset: &IntervalData,
+        config: &KryptoConfig,
+    ) -> Result<AlgorithmResult, KryptoError> {
+        debug!("Running backtest on all seen data");
+
+        // Prepare the dataset using existing settings
+        let (features, _, candles) = Self::prepare_dataset(dataset, &self.settings);
+
+        // Use the trained PLS model to make predictions on all features
+        let predictions = predict(&self.pls, &features);
+
+        // Create TestData with the predictions and candles
+        let test_data = TestData::new(predictions, candles.clone(), config)?;
+
+        // Evaluate performance metrics
+        let monthly_return = test_data.monthly_return;
+        let accuracy = test_data.accuracy;
+
+        let result = AlgorithmResult::new(monthly_return, accuracy);
+        info!("Backtest on all seen data result: {}", result);
+        Ok(result)
+    }
+
     #[instrument(skip(dataset))]
     fn prepare_dataset(
         dataset: &IntervalData,

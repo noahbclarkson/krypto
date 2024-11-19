@@ -33,3 +33,23 @@ fn test_algorithm() {
         }
     }
 }
+
+#[test]
+fn test_algo_on_all_data() {
+    let config = KryptoConfig {
+        start_date: "2019-01-01".to_string(),
+        symbols: vec!["BTCUSDT".to_string(), "ETHUSDT".to_string(), "BNBUSDT".to_string()],
+        intervals: vec![Interval::TwoHours],
+        ..Default::default()
+    };
+    let (dataset, _gaurds) = setup_default_data("algo_on_all_unseen_data", Some(config.clone()));
+    info!("Shape: {:?}", dataset.shape());
+    let interval = dataset.keys().next().unwrap();
+    let interval_data = dataset.get(interval).unwrap();
+    let symbol = interval_data.keys().next().unwrap();
+    let settings = AlgorithmSettings::new(10, 18, symbol);
+    let result = Algorithm::load(interval_data, settings, &config).unwrap();
+    info!("Algorithm Loaded Successfully");
+    let algo_result = result.backtest_on_all_seen_data(interval_data, &config).unwrap();
+    info!("Algorithm Result: {}", algo_result);
+}
