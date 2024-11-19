@@ -1,208 +1,185 @@
-# Krypto
+# Krypto: Predictive Trading Algorithm 📈🤖
 
-> Advanced Crypto-Futures Trading Algorithm
+Welcome to **Krypto**, an advanced trading algorithm designed to leverage machine learning and historical market data to predict asset movements and optimize trading strategies. Built with Rust and powered by the Linfa framework, this project implements Partial Least Squares (PLS) regression for forecasting and backtesting on cryptocurrency datasets from Binance.
 
-## Overview
+---
 
-Krypto is an innovative quantitative trading algorithm specifically designed for crypto-futures markets. It leverages the unique mass-correlation-relation algorithm to predict market movements and optimize returns. Krypto is equipped with functionalities for backtesting, live testing, and adjustable parameters for strategic trading.
+## 🚀 Features
 
-## Features
+- **PLS Regression**: Implements Partial Least Squares to extract key predictive components from technical indicators.
+- **Comprehensive Backtesting**: Evaluate strategies across multiple symbols and intervals with robust cross-validation.
+- **Integration with Binance**: Fetch real-time and historical data for various cryptocurrency trading pairs.
+- **Customizable Configuration**: Easily adjust symbols, intervals, fees, and other settings.
+- **Extensive Logging**: Track execution details and debugging information with structured logs.
 
-- **Mass-Correlation-Relation Algorithm**: Utilizes complex relationships between various market indicators to predict price movements.
-- **Comprehensive Data Analysis**: Integrates multiple technical indicators and normalizes data for accurate predictions.
-- **Backtesting & Live Testing**: Evaluate the performance of trading strategies against historical data and in real-time market conditions.
-- **Customizable Strategies**: Offers configurable parameters to tailor the algorithm according to specific trading preferences and market scenarios.
+---
 
-## Getting Started
+## ⚙️ How It Works
+
+Krypto processes historical market data, extracts technical indicators, and trains a PLS regression model. Predictions are backtested to evaluate their performance, focusing on accuracy and return metrics. Here's an overview:
+
+1. **Load Data**: Fetch candlestick data from Binance based on configured symbols and intervals.
+2. **Feature Engineering**: Compute technical indicators such as RSI, stochastic oscillators, and EMA-based metrics.
+3. **Model Training**: Train a PLS regression model using normalized feature sets.
+4. **Prediction**: Generate predictions for price movement direction (long/short/neutral).
+5. **Backtesting**: Evaluate trading decisions, computing monthly returns and accuracy metrics.
+
+---
+
+## 📋 Configuration
+
+### `config.yml`
+
+Define the configuration in YAML format:
+
+```yaml
+start-date: "2024-01-01"
+api-key: "your_binance_api_key"
+api-secret: "your_binance_secret"
+symbols:
+  - "BTCUSDT"
+  - "ETHUSDT"
+intervals:
+  - "1h"
+  - "4h"
+cross-validations: 10
+fee: 0.001
+```
+
+- **start-date**: Start date for historical data.
+- **symbols**: List of trading pairs to analyze.
+- **intervals**: Time intervals for candlestick data (e.g., `1h`, `4h`).
+- **cross-validations**: Number of cross-validation splits for backtesting.
+- **fee**: Trading fee percentage.
+
+---
+
+## 🔢 Mathematics Behind the Algorithm
+
+### Partial Least Squares (PLS) Regression 📊
+
+PLS regression is a supervised learning technique that projects data into a lower-dimensional space, focusing on maximizing the covariance between predictors and responses.
+
+#### Why PLS Works for Time-Series Prediction
+
+- **Dimensionality Reduction**: Handles high-dimensional data with many technical indicators.
+- **Noise Filtering**: Captures key predictive features while minimizing irrelevant variability.
+- **Multicollinearity**: Resolves correlations between predictors, a common issue in technical analysis.
+
+#### Training Procedure
+
+1. Normalize the feature matrix \( X \) (e.g., RSI, EMA, etc.) and target vector \( y \) (price direction).
+2. Perform the following iteratively for \( n \) components:
+   - Compute the weights \( w = X^T y / ||X^T y|| \).
+   - Extract scores \( t = Xw \).
+   - Deflate \( X \) and \( y \) by removing projections along \( t \).
+3. Use the reduced dataset for linear regression.
+
+#### Key Equations
+
+- **Weight Vector**: \( w = \frac{X^T y}{||X^T y||} \)
+- **Scores**: \( t = Xw \)
+- **Deflation**: \( X_{new} = X - t t^T X \), \( y_{new} = y - t t^T y \)
+
+---
+
+## 📜 Code Snippets
+
+### Model Training (`src/algorithm/pls.rs`)
+
+```rust
+pub fn get_pls(
+    predictors: Vec<Vec<f64>>,
+    target: Vec<f64>,
+    n: usize,
+) -> Result<PlsRegression<f64>, KryptoError> {
+    let predictors = Array2::from_shape_vec((predictors.len(), predictors[0].len()), predictors)?;
+    let target = Array2::from_shape_vec((target.len(), 1), target)?;
+    let dataset = linfa::dataset::Dataset::new(predictors, target);
+    PlsRegression::params(n).fit(&dataset).map_err(|e| KryptoError::FitError(e.to_string()))
+}
+```
+
+### Backtesting (`src/algorithm/algo.rs`)
+
+```rust
+fn backtest(
+    dataset: &IntervalData,
+    settings: &AlgorithmSettings,
+    config: &KryptoConfig,
+) -> Result<AlgorithmResult, KryptoError> {
+    let (features, labels, candles) = Self::prepare_dataset(dataset, settings);
+    for i in 0..config.cross_validations {
+        let test_features = &features[start..end];
+        let pls = get_pls(train_features, train_labels, settings.n)?;
+        let predictions = predict(&pls, test_features);
+        let test_data = TestData::new(predictions, test_candles.to_vec(), config)?;
+    }
+}
+```
+
+---
+
+## 🛠️ Running the Project
 
 ### Prerequisites
 
-- Rust (latest stable version)
-- Cargo (Rust's package manager)
-- Basic understanding of cryptocurrency markets and futures trading
+- **Rust**: Install Rust from [rustup.rs](https://rustup.rs).
+- **Binance API Key**: Create an account on Binance and generate API keys.
 
-### Installation
+### Steps
 
 1. Clone the repository:
+
    ```bash
-   git clone https://github.com/your-username/krypto.git
+   git clone https://github.com/yourusername/krypto.git
+   cd krypto
    ```
-2. Navigate to the project directory:
-    ```bash
-    cd krypto
-    ```
-3. Run the project using Cargo:
-    ```bash
-    cargo run --release
-    ```
 
-## Configuration
+2. Configure `config.yml` with your Binance API keys and desired parameters.
+3. Build the project:
 
-Modify the config.yml file to set your trading preferences, such as target tickers, trading intervals, and backtesting parameters.
+   ```bash
+   cargo build --release
+   ```
 
-## What is the mass-correlation-relation algorithm?
+4. Run the program:
 
-The mass-correlation-relation algorithm is a self-developed predictive-model that uses the human-unobservable relations between technicals and other data in an array of tickers to make future predictions about the price change in another ticker. This is how it works:
+   ```bash
+   cargo run --release
+   ```
 
-### Data collection, computation and normalization
+---
 
-The algorithm is adjusted based on past data and so we collect historical data for the tickers in the config. For each ticker we get the past `periods` data points for the defined `interval`. By default we get 2,000 periods at 15m intervals for `BTCBUSD` and `ETHBUSD`.
+## 📈 Example Output
 
-This data contains open, high, low, close, volume and other data. However, we will transform this data into a number of technical indicators that will be used to make predictions and "train" the algorithm. For each ticker, for each period, we currently compute 6 technical "indicators" and store them in the `Candlestick` struct along with the open, close, high, low, volume, percentage change, and close time:
+- **Accuracy**: 72.5%
+- **Monthly Return**: 12.3%
+- **Best Parameters**: Depth = 3, Components = 5
 
-```rust
-pub const TECHNICAL_COUNT: usize = 6;
+Log files are stored in the `logs/` directory, and results are exported to `results.csv`.
 
-#[derive(Debug, Getters, MutGetters, Setters)]
-#[getset(get = "pub")]
-pub struct Candlestick {
-    open: f32,
-    close: f32,
-    high: f32,
-    low: f32,
-    volume: f32,
-    #[getset(set = "pub")]
-    p_change: f32,
-    close_time: i64,
-    #[getset(get = "pub", get_mut = "pub")]
-    technicals: Box<[f32; TECHNICAL_COUNT]>,
-}
+---
+
+## 🧪 Testing
+
+Run tests with:
+
+```bash
+cargo test
 ```
 
-We store the technicals in an array of floats that can be indexed using the `TechnicalType` enum:
+---
 
-```rust
-#[derive(Debug, PartialEq)]
-pub enum TechnicalType {
-    PercentageChange,
-    CandlestickRatio,
-    StochasticOscillator,
-    RelativeStrengthIndex,
-    CommodityChannelIndex,
-    VolumeChange,
-}
-```
+## 👥 Contributors
 
-The technicals are computed and then normalized to their [t-statistic](https://en.wikipedia.org/wiki/T-statistic) using the formula below:
+- **Noah Clarkson** (<mrnoahclarkson@gmail.com>)
 
-$`t = \frac{{\bar{x} - \mu}}{{\frac{{s}}{{\sqrt{n}}}}}`$
+---
 
-In krypto the ```algorithm::normalize``` function performs this:
+## 🌟 Acknowledgements
 
-```rust
-fn normalize(
-    mut candles: Box<[TickerData]>,
-    means: [f32; TECHNICAL_COUNT],
-    stddevs: [f32; TECHNICAL_COUNT],
-) -> Box<[TickerData]> {
-    for ticker in candles.iter_mut() {
-        for candle in ticker.candles_mut().iter_mut() {
-            for (index, technical) in candle.technicals_mut().iter_mut().enumerate() {
-                *technical = (*technical - means[index]) / stddevs[index];
-                if technical.is_nan() || technical.is_infinite() {
-                    *technical = 0.0;
-                }
-            }
-        }
-    }
-    candles
-}
-```
+- [Linfa Machine Learning Framework](https://github.com/rust-ml/linfa)
+- [Binance API](https://github.com/wisespace-io/binance-rs)
 
-### Relationships
-
-Once we have calculated the normalized technicals for all the tickers at each data point we can start computing relationships. Given a target ticker $`T`$ and another ticker $`C`$, for every time period $`t`$, we compute the technical indicator for $`C`$ at $`t-d`$ (denoted as $`c_{t-d}`$) and the percentage change for $`T`$ at $`t`$ (denoted as $`pc(T_t)`$) for varying depths $`1..d`$. We then compute the product of these values for each depth and apply the hyperbolic tangent function to normalize the output. This can be represented mathematically as:
-
-$`
-R_{t}(T, C) = \tanh(c_{t-(1..d)} \cdot pc(T_t))
-`$
-
-where $`R_{t}(T, C)`$ is the computed relationship at time $`t`$ between the tickers $`T`$ and $`C`$, $`\tanh`$ is the hyperbolic tangent function, $`1..d`$ is all depths from 1 to d, and $`\cdot`$ represents multiplication.
-
-This process is done for all possible pairs of $`T`$ and $`C`$, effectively mapping out the relationships between the technicals at varying depths for each ticker and the subsequent price changes of the target ticker.
-
-We then average the relationships for each technical for each ticker for each depth to get an array of values of the size of the number of technicals multipled by the number of tickers multiplied by the depth.
-
-This is performed by the `algorithm::compute_relationships` function below:
-
-```rust
-pub async fn compute_relationships(candles: &[TickerData], config: &Config) -> Box<[Relationship]> {
-    let mut relationships = Vec::new();
-    for (target_index, target_candles) in candles.iter().enumerate() {
-        let tasks = candles
-            .iter()
-            .enumerate()
-            .map(|(predict_index, predict_candles)| {
-                compute_relationship(
-                    target_index,
-                    predict_index,
-                    &target_candles,
-                    predict_candles,
-                    *config.depth(),
-                )
-            });
-        futures::future::join_all(tasks)
-            .await
-            .into_iter()
-            .for_each(|mut new_relationships| relationships.append(&mut new_relationships));
-    }
-    Box::from(relationships)
-}
-
-async fn compute_relationship(
-    target_index: usize,
-    predict_index: usize,
-    target_candles: &TickerData,
-    predict_candles: &TickerData,
-    depth: usize,
-) -> Vec<Relationship> {
-    let mut results = vec![Vec::new(); TECHNICAL_COUNT * depth];
-    for i in depth + 1..predict_candles.candles().len() - 1 {
-        let target = &target_candles.candles()[i + 1].p_change().clone();
-        for d in 0..depth {
-            for (j, technical) in target_candles.candles()[i - d]
-                .technicals()
-                .iter()
-                .enumerate()
-            {
-                results[d * TECHNICAL_COUNT + j].push((technical * target).tanh());
-            }
-        }
-    }
-    let correlations = results
-        .iter()
-        .map(|v| v.iter().sum::<f32>() / v.len() as f32)
-        .collect::<Vec<f32>>();
-    let mut relationships = Vec::new();
-    for d in 0..depth {
-        for j in 0..TECHNICAL_COUNT {
-            let correlation = correlations[d * TECHNICAL_COUNT + j];
-            relationships.push(Relationship {
-                correlation,
-                depth: d + 1,
-                r_type: j,
-                target_index,
-                predict_index,
-            });
-        }
-
-    }
-    relationships
-}
-```
-
-## Contributing
-
-Contributions are what make the open-source community an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-1. Fork the Project
-2. Create your Feature Branch (git checkout -b feature/AmazingFeature)
-3. Commit your Changes (git commit -m 'Add some AmazingFeature')
-4. Push to the Branch (git push origin feature/AmazingFeature)
-5. Open a Pull Request
-
-## License
-
-Distributed under the MIT License. See LICENSE for more information
-
-
+Happy Trading! 🚀📊
