@@ -16,7 +16,7 @@ pub struct TestData {
 impl TestData {
     pub fn new(
         predictions: Vec<f64>,
-        candles: Vec<Candlestick>,
+        candles: &[Candlestick],
         config: &KryptoConfig,
     ) -> Result<Self, KryptoError> {
         if candles.is_empty() || predictions.is_empty() {

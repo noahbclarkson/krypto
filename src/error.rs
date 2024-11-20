@@ -30,6 +30,8 @@ pub enum KryptoError {
     UnequalCandlesAndPredictions,
     #[error("Shape Error: {0}")]
     ShapeError(#[from] ndarray::ShapeError),
+    #[error("Invalid Dataset")]
+    InvalidDataset,
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -1,8 +1,9 @@
 use std::path::Path;
-use krypto::{config::KryptoConfig, data::dataset::Dataset};
 use tracing::{info, subscriber::set_default};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::fmt;
+
+use crate::{config::KryptoConfig, data::dataset::Dataset};
 
 pub struct TracingGuards {
     _subscriber_guard: tracing::subscriber::DefaultGuard,

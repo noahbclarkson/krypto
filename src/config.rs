@@ -422,7 +422,7 @@ cross-validations: 25
         // Verify that deserialization fails because intervals is a required field
         assert!(matches!(
             config_result,
-            Err(KryptoError::IoError(_))
+            Err(KryptoError::SerdeYamlError(_))
         ));
     }
 

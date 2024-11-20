@@ -10,9 +10,9 @@ use crate::{
         test_data::TestData,
     },
     config::KryptoConfig,
-    data::{candlestick::Candlestick, dataset::IntervalData},
+    data::dataset::IntervalData,
     error::KryptoError,
-    util::{math_utils::median, matrix_utils::normalize_by_columns},
+    util::math_utils::median,
 };
 
 pub struct Algorithm {
@@ -22,15 +22,19 @@ pub struct Algorithm {
 }
 
 impl Algorithm {
-    #[instrument(skip(dataset, config))]
+    #[instrument(skip(interval_dataset, config))]
     pub fn load(
-        dataset: &IntervalData,
+        interval_dataset: &IntervalData,
         settings: AlgorithmSettings,
         config: &KryptoConfig,
     ) -> Result<Self, KryptoError> {
-        let result = Self::backtest(dataset, &settings, config)?;
-        let (features, labels, _) = Self::prepare_dataset(dataset, &settings);
-        let pls = get_pls(features, labels, settings.n)?;
+        let result = Self::backtest(interval_dataset, &settings, config)?;
+        let ds = interval_dataset.get_symbol_dataset(&settings);
+        let pls = get_pls(
+            ds.get_features().clone(),
+            ds.get_labels().clone(),
+            settings.n,
+        )?;
         Ok(Self {
             pls,
             settings,
@@ -39,15 +43,15 @@ impl Algorithm {
     }
 
     fn backtest(
-        dataset: &IntervalData,
+        interval_dataset: &IntervalData,
         settings: &AlgorithmSettings,
         config: &KryptoConfig,
     ) -> Result<AlgorithmResult, KryptoError> {
         debug!("Running backtest");
-        
-        let (features, labels, candles) = Self::prepare_dataset(dataset, settings);
+
+        let ds = interval_dataset.get_symbol_dataset(settings);
         let count = config.cross_validations;
-        let total_size = candles.len();
+        let total_size = ds.len()?;
         let test_data_size = total_size / count;
 
         let test_results: Vec<TestData> = (0..count)
@@ -58,7 +62,9 @@ impl Algorithm {
                     true => total_size,
                     false => (i + 1) * test_data_size,
                 };
-
+                let features = ds.get_features();
+                let labels = ds.get_labels();
+                let candles = ds.get_candles();
                 let test_features = &features[start..end];
                 let test_candles = &candles[start..end];
                 let train_features = [&features[..start], &features[end..]].concat();
@@ -67,7 +73,7 @@ impl Algorithm {
                 let pls = get_pls(train_features, train_labels, settings.n)?;
                 let predictions = predict(&pls, test_features)?;
 
-                let test_data = TestData::new(predictions, test_candles.to_vec(), config)?;
+                let test_data = TestData::new(predictions, test_candles, config)?;
                 debug!(
                     "Cross-validation {} ({}-{}): {}",
                     i + 1,
@@ -98,22 +104,16 @@ impl Algorithm {
         Ok(result)
     }
 
-    #[instrument(skip(dataset, config, self))]
+    #[instrument(skip(interval_dataset, config, self))]
     pub fn backtest_on_all_seen_data(
         &self,
-        dataset: &IntervalData,
+        interval_dataset: &IntervalData,
         config: &KryptoConfig,
     ) -> Result<AlgorithmResult, KryptoError> {
         debug!("Running backtest on all seen data");
-
-        // Prepare the dataset using existing settings
-        let (features, _, candles) = Self::prepare_dataset(dataset, &self.settings);
-
-        // Use the trained PLS model to make predictions on all features
-        let predictions = predict(&self.pls, &features)?;
-
-        // Create TestData with the predictions and candles
-        let test_data = TestData::new(predictions, candles.clone(), config)?;
+        let ds = interval_dataset.get_symbol_dataset(&self.settings);
+        let predictions = predict(&self.pls, ds.get_features())?;
+        let test_data = TestData::new(predictions, ds.get_candles(), config)?;
 
         // Evaluate performance metrics
         let monthly_return = test_data.monthly_return;
@@ -122,52 +122,6 @@ impl Algorithm {
         let result = AlgorithmResult::new(monthly_return, accuracy);
         info!("Backtest on all seen data result: {}", result);
         Ok(result)
-    }
-
-    #[instrument(skip(dataset))]
-    fn prepare_dataset(
-        dataset: &IntervalData,
-        settings: &AlgorithmSettings,
-    ) -> (Vec<Vec<f64>>, Vec<f64>, Vec<Candlestick>) {
-        let records = dataset.get_records();
-        let normalized_predictors = normalize_by_columns(records)
-            .into_iter()
-            .map(|row| {
-                row.into_iter()
-                    .map(|v| if v.is_nan() { 0.0 } else { v })
-                    .collect()
-            })
-            .collect::<Vec<Vec<f64>>>();
-
-        let features = normalized_predictors
-            .windows(settings.depth)
-            .map(|window| window.iter().flatten().cloned().collect())
-            .collect::<Vec<Vec<f64>>>();
-        let features = features[..features.len() - 1].to_vec();
-
-        let symbol_data = dataset
-            .get(&settings.symbol)
-            .expect("Symbol not found in dataset");
-
-        let labels: Vec<f64> = symbol_data
-            .get_labels()
-            .iter()
-            .skip(settings.depth)
-            .map(|&v| if v.is_nan() { 1.0 } else { v })
-            .collect();
-
-        let candles: Vec<Candlestick> = symbol_data
-            .get_candles()
-            .iter()
-            .skip(settings.depth)
-            .cloned()
-            .collect();
-
-        debug!("Features shape: {}x{}", features.len(), features[0].len());
-        debug!("Labels count: {}", labels.len());
-        debug!("Candles count: {}", candles.len());
-
-        (features, labels, candles)
     }
 
     pub fn get_symbol(&self) -> &str {

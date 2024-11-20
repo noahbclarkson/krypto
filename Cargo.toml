@@ -27,4 +27,3 @@ rayon = "1.10"
 
 [dev-dependencies]
 tempfile = "3.14"
-criterion = "0.5"
