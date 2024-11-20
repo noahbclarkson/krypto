@@ -44,7 +44,7 @@ impl Algorithm {
         config: &KryptoConfig,
     ) -> Result<AlgorithmResult, KryptoError> {
         debug!("Running backtest");
-
+        
         let (features, labels, candles) = Self::prepare_dataset(dataset, settings);
         let count = config.cross_validations;
         let total_size = candles.len();
@@ -54,10 +54,9 @@ impl Algorithm {
             .into_par_iter()
             .map(|i| -> Result<TestData, KryptoError> {
                 let start = i * test_data_size;
-                let end = if i == count - 1 {
-                    total_size
-                } else {
-                    (i + 1) * test_data_size
+                let end = match i == count - 1 {
+                    true => total_size,
+                    false => (i + 1) * test_data_size,
                 };
 
                 let test_features = &features[start..end];
@@ -66,7 +65,7 @@ impl Algorithm {
                 let train_labels = [&labels[..start], &labels[end..]].concat();
 
                 let pls = get_pls(train_features, train_labels, settings.n)?;
-                let predictions = predict(&pls, test_features);
+                let predictions = predict(&pls, test_features)?;
 
                 let test_data = TestData::new(predictions, test_candles.to_vec(), config)?;
                 debug!(
@@ -111,7 +110,7 @@ impl Algorithm {
         let (features, _, candles) = Self::prepare_dataset(dataset, &self.settings);
 
         // Use the trained PLS model to make predictions on all features
-        let predictions = predict(&self.pls, &features);
+        let predictions = predict(&self.pls, &features)?;
 
         // Create TestData with the predictions and candles
         let test_data = TestData::new(predictions, candles.clone(), config)?;
@@ -216,6 +215,17 @@ impl AlgorithmSettings {
             depth,
             symbol: symbol.to_string(),
         }
+    }
+
+    pub fn all(symbols: Vec<String>, max_n: usize, max_depth: usize) -> Vec<Self> {
+        symbols
+            .iter()
+            .flat_map(|symbol| {
+                (1..=max_n)
+                    .flat_map(|n| (1..=max_depth).map(move |depth| Self::new(n, depth, symbol)))
+                    .collect::<Vec<_>>()
+            })
+            .collect()
     }
 }
 

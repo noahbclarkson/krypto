@@ -127,6 +127,20 @@ impl IntervalData {
         }
         records 
     }
+
+    pub fn get_labels(&self, symbol: &str) -> &Vec<f64> {
+        self.get(symbol).unwrap().get_labels()
+    }
+
+    pub fn get_candles(&self, symbol: &str) -> &Vec<Candlestick> {
+        self.get(symbol).unwrap().get_candles()
+    }
+
+    pub fn get_technicals(&self, symbol: &str) -> &Vec<Technicals> {
+        self.get(symbol).unwrap().get_technicals()
+    }
+
+
 }
 
 pub struct SymbolData {

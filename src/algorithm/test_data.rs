@@ -67,10 +67,9 @@ impl TestData {
 
         let months = days as f64 / 30.44;
         let total_trades = inner.correct + inner.incorrect;
-        let accuracy = if total_trades > 0 {
-            inner.correct as f64 / total_trades as f64
-        } else {
-            0.5
+        let accuracy = match total_trades {
+            0 => 0.5,
+            _ => inner.correct as f64 / total_trades as f64,
         };
         let monthly_return = if months > 0.0 && inner.cash.is_finite() && inner.cash > 0.0 && inner.cash_history.len() > 1 {
             (inner.cash / 1000.0).powf(1.0 / months) - 1.0

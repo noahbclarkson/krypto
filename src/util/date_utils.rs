@@ -9,7 +9,7 @@ pub fn date_to_datetime(date: &NaiveDate) -> Result<DateTime<Utc>, KryptoError> 
     Ok(Utc.from_utc_datetime(
         &date
             .and_hms_opt(0, 0, 0)
-            .ok_or(KryptoError::ParseDateError(date.to_string()))?,
+            .ok_or(KryptoError::DateConversionError(date.to_string()))?,
     ))
 }
 

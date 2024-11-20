@@ -3,11 +3,14 @@ use core::f64;
 use krypto::{
     algorithm::algo::{Algorithm, AlgorithmSettings},
     config::KryptoConfig,
-    data::{dataset::Dataset, technicals::TECHNICAL_COUNT},
+    data::dataset::Dataset,
     error::KryptoError,
     logging::setup_tracing,
 };
 use tracing::{error, info};
+
+const MAX_N: usize = 50;
+const MAX_DEPTH: usize = 60;
 
 pub fn main() {
     let (_, file_guard) = setup_tracing(Some("logs")).expect("Failed to set up tracing");
@@ -20,13 +23,13 @@ pub fn main() {
 
 fn run() -> Result<(), KryptoError> {
     let config = KryptoConfig::read_config::<&str>(None)?;
-    let dataset = Dataset::load(&config).unwrap();
-    let mut algorithms = Vec::new();
+    let dataset = Dataset::load(&config)?;
+
     let mut best_return = f64::NEG_INFINITY;
-    let mut best_algorithm = None;
-    let mut i = 0;
-    let mut csv =
-        csv::Writer::from_path("results.csv").map_err(|e| KryptoError::CsvError(e.to_string()))?;
+    let mut best_algorithm: Option<Algorithm> = None;
+
+    let mut csv = csv::Writer::from_path("results.csv")?;
+
     csv.write_record([
         "n",
         "depth",
@@ -34,42 +37,37 @@ fn run() -> Result<(), KryptoError> {
         "monthly_return",
         "accuracy",
         "interval",
-    ])
-    .map_err(|e| KryptoError::CsvError(e.to_string()))?;
+    ])?;
+
     for (interval, interval_data) in dataset.get_map() {
         info!("Interval: {}", interval);
-        for symbol in interval_data.keys() {
-            info!("Symbol: {}", symbol);
-            for n in 1..50 {
-                for depth in 1..60 {
-                    if n >= depth * TECHNICAL_COUNT {
-                        continue;
-                    }
-                    let settings = AlgorithmSettings::new(n, depth, symbol);
-                    let algorithm = Algorithm::load(interval_data, settings, &config)?;
-                    if algorithm.get_monthly_return() > best_return {
-                        best_return = algorithm.get_monthly_return();
-                        best_algorithm = Some(i);
-                        info!("New best algorithm: {}", &algorithm);
-                    }
-                    csv.write_record(&[
-                        n.to_string(),
-                        depth.to_string(),
-                        symbol.to_string(),
-                        algorithm.get_monthly_return().to_string(),
-                        algorithm.get_accuracy().to_string(),
-                        interval.to_string(),
-                    ])
-                    .map_err(|e| KryptoError::CsvError(e.to_string()))?;
-                    csv.flush()
-                        .map_err(|e| KryptoError::CsvError(e.to_string()))?;
-                    i += 1;
-                    algorithms.push(algorithm);
-                }
+        let all_settings = AlgorithmSettings::all(config.symbols.clone(), MAX_N, MAX_DEPTH);
+        for settings in all_settings {
+            let algorithm = Algorithm::load(interval_data, settings.clone(), &config)?;
+            let monthly_return = algorithm.get_monthly_return();
+            csv.write_record(&[
+                settings.n.to_string(),
+                settings.depth.to_string(),
+                settings.symbol.to_string(),
+                monthly_return.to_string(),
+                algorithm.get_accuracy().to_string(),
+                interval.to_string(),
+            ])?;
+
+            if monthly_return > best_return {
+                best_return = monthly_return;
+                info!("New best algorithm: {}", &algorithm);
+                best_algorithm = Some(algorithm);
             }
+
+            csv.flush()?;
         }
     }
-    let best_algorithm = algorithms.get(best_algorithm.unwrap());
-    info!("Best Algorithm: {}", &best_algorithm.unwrap());
+
+    match best_algorithm {
+        Some(algorithm) => info!("Best Algorithm: {}", &algorithm),
+        None => info!("No algorithm found."),
+    }
+
     Ok(())
 }

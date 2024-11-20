@@ -196,13 +196,13 @@ mod tests {
         };
 
         let result = Candlestick::from_summary(summary);
-        assert_eq!(
+        assert!(matches!(
             result,
             Err(KryptoError::InvalidCandlestickDateTime {
                 when: When::Open,
                 timestamp: 16181856599999998
             })
-        );
+        ));
     }
 
     #[test]
@@ -222,13 +222,13 @@ mod tests {
         };
 
         let result = Candlestick::from_summary(summary);
-        assert_eq!(
+        assert!(matches!(
             result,
             Err(KryptoError::InvalidCandlestickDateTime {
                 when: When::Close,
                 timestamp: 16181856599999999
             })
-        );
+        ));
     }
 
     #[test]
@@ -248,12 +248,12 @@ mod tests {
         };
 
         let result = Candlestick::from_summary(summary);
-        assert_eq!(
+        assert!(matches!(
             result,
             Err(KryptoError::OpenTimeGreaterThanCloseTime {
                 open_time: 1618185659999,
                 close_time: 1618185600000
             })
-        );
+        ));
     }
 }

@@ -78,21 +78,16 @@ impl KryptoConfig {
                 "Config file does not exist. Creating default config at {}",
                 path.display()
             );
-            let mut file = File::create(&path).map_err(|e| {
-                KryptoError::IoError(format!("Failed to create config file: {}", e))
-            })?;
-            file.write_all(DEFAULT_DATA.as_bytes()).map_err(|e| {
-                KryptoError::IoError(format!("Failed to write default config file: {}", e))
-            })?;
+            let mut file = File::create(&path)?;
+            file.write_all(DEFAULT_DATA.as_bytes())?;
             debug!("Default configuration file created");
             return Ok(KryptoConfig::default());
         }
 
-        let file = File::open(&path)
-            .map_err(|e| KryptoError::IoError(format!("Failed to open config file: {}", e)))?;
+        let file = File::open(&path)?;
         let reader = BufReader::new(file);
         let config: Self =
-            from_reader(reader).map_err(|e| KryptoError::ConfigReadError(e.to_string()))?;
+            from_reader(reader)?;
         let account: Account = config.get_binance();
         if config.api_key.is_some() || config.api_secret.is_some() {
             let account_info = account.get_account().map_err(|e| {
@@ -124,8 +119,7 @@ impl KryptoConfig {
     ///
     /// Returns an error if the date cannot be parsed.
     pub fn start_date(&self) -> Result<NaiveDate, KryptoError> {
-        let date = NaiveDate::parse_from_str(&self.start_date, "%Y-%m-%d")
-            .map_err(|e| KryptoError::ParseDateError(e.to_string()))?;
+        let date = NaiveDate::parse_from_str(&self.start_date, "%Y-%m-%d")?;
         Ok(date)
     }
 
@@ -428,7 +422,7 @@ cross-validations: 25
         // Verify that deserialization fails because intervals is a required field
         assert!(matches!(
             config_result,
-            Err(KryptoError::ConfigReadError(_))
+            Err(KryptoError::IoError(_))
         ));
     }
 
