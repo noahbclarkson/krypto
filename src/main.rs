@@ -10,7 +10,7 @@ use krypto::{
 use tracing::{error, info};
 
 const MAX_N: usize = 50;
-const MAX_DEPTH: usize = 60;
+const MAX_DEPTH: usize = 50;
 
 pub fn main() {
     let (_, file_guard) = setup_tracing(Some("logs")).expect("Failed to set up tracing");

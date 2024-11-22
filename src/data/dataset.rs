@@ -18,6 +18,16 @@ pub struct Dataset {
 }
 
 impl Dataset {
+    /**
+    Load the dataset with the given configuration from the Binance API.
+    The dataset will contain all the data for the given intervals and symbols.
+
+    ## Arguments
+    * `config` - The configuration to use for loading the dataset.
+
+    ## Returns
+    The loaded dataset if successful, or a KryptoError if an error occurred.
+     */
     #[instrument(skip(config))]
     pub fn load(config: &KryptoConfig) -> Result<Self, KryptoError> {
         let mut interval_data_map = HashMap::new();
@@ -33,6 +43,10 @@ impl Dataset {
         Ok(Self { interval_data_map })
     }
 
+    /**
+    Get the shape of the dataset. This will return a tuple containing the number of intervals, the
+    number of symbols, and the number of candles for each symbol at each interval.
+     */
     pub fn shape(&self) -> (usize, usize, Vec<usize>) {
         let dim_1 = self.len();
         let dim_2 = self.values().next().map(|d| d.len()).unwrap_or(0);
@@ -69,8 +83,12 @@ impl Dataset {
     }
 }
 
+/**
+The dataset for a given interval. This contains all the data for all symbols at the given interval.
+ */
 pub struct IntervalData {
-    symbol_data_map: HashMap<String, SymbolData>,
+    symbol_data_map: HashMap<String, RawSymbolData>,
+    normalized_predictors: Vec<Vec<f64>>,
 }
 
 impl IntervalData {
@@ -85,43 +103,33 @@ impl IntervalData {
 
         for symbol in &config.symbols {
             let symbol = symbol.clone();
-            let symbol_data = SymbolData::load(interval, &symbol, end, config, market)?;
+            let symbol_data = RawSymbolData::load(interval, &symbol, end, config, market)?;
             info!("Loaded data for {}", &symbol);
             symbol_data_map.insert(symbol, symbol_data);
         }
+        let records = get_records(&symbol_data_map);
+        let normalized_predictors = get_normalized_predictors(records);
 
-        Ok(Self { symbol_data_map })
+        Ok(Self {
+            symbol_data_map,
+            normalized_predictors,
+        })
     }
 
     pub fn len(&self) -> usize {
         self.symbol_data_map.len()
     }
 
-    fn get(&self, symbol: &str) -> Option<&SymbolData> {
+    fn get(&self, symbol: &str) -> Option<&RawSymbolData> {
         self.symbol_data_map.get(symbol)
     }
 
-    fn values(&self) -> impl Iterator<Item = &SymbolData> {
+    fn values(&self) -> impl Iterator<Item = &RawSymbolData> {
         self.symbol_data_map.values()
     }
 
     pub fn is_empty(&self) -> bool {
         self.symbol_data_map.is_empty()
-    }
-
-    // Get all the technicals for all the symbols. Each row contains all the tecnhicals for each of
-    // the symbols at a given time.
-    fn get_records(&self) -> Vec<Vec<f64>> {
-        let mut records = Vec::new();
-        for i in 0..self.values().next().unwrap().len() {
-            let mut record = Vec::new();
-            for symbol_data in self.values() {
-                let technicals = symbol_data.get_technicals();
-                record.extend(technicals[i].as_array().to_vec());
-            }
-            records.push(record);
-        }
-        records
     }
 
     pub fn get_labels(&self, symbol: &str) -> &Vec<f64> {
@@ -136,19 +144,22 @@ impl IntervalData {
         self.get(symbol).unwrap().get_technicals()
     }
 
+    /**
+    Get the dataset for the given symbol. This will return a dataset containing the features, labels,
+    and candles for the given symbol. Each row in the features matrix will contain the normalised technical
+    indicators for all symbols for the given interval for the last `depth` candles. The labels will contain
+    the percentage change (signum) in the closing price for the given symbol for the next candle.
+
+    ## Arguments
+    * `settings` - The settings to use for the dataset.
+
+    ## Returns
+    The dataset for the given symbol.
+     */
     #[instrument(skip(settings, self))]
     pub fn get_symbol_dataset(&self, settings: &AlgorithmSettings) -> SymbolDataset {
-        let records = self.get_records();
-        let normalized_predictors = normalize_by_columns(records)
-            .into_iter()
-            .map(|row| {
-                row.into_iter()
-                    .map(|v| if v.is_nan() { 0.0 } else { v })
-                    .collect()
-            })
-            .collect::<Vec<Vec<f64>>>();
-
-        let features = normalized_predictors
+        let features = self
+            .normalized_predictors
             .windows(settings.depth)
             .map(|window| window.iter().flatten().cloned().collect())
             .collect::<Vec<Vec<f64>>>();
@@ -178,6 +189,30 @@ impl IntervalData {
 
         SymbolDataset::new(features, labels, candles)
     }
+}
+
+fn get_normalized_predictors(records: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    normalize_by_columns(records)
+        .into_iter()
+        .map(|row| {
+            row.into_iter()
+                .map(|v| if v.is_nan() { 0.0 } else { v })
+                .collect()
+        })
+        .collect::<Vec<Vec<f64>>>()
+}
+
+fn get_records(map: &HashMap<String, RawSymbolData>) -> Vec<Vec<f64>> {
+    let mut records = Vec::new();
+    for i in 0..map.values().next().unwrap().len() {
+        let mut record = Vec::new();
+        for symbol_data in map.values() {
+            let technicals = symbol_data.get_technicals();
+            record.extend(technicals[i].as_array().to_vec());
+        }
+        records.push(record);
+    }
+    records
 }
 
 pub struct SymbolDataset {
@@ -220,13 +255,13 @@ impl SymbolDataset {
     }
 }
 
-struct SymbolData {
+struct RawSymbolData {
     candles: Vec<Candlestick>,
     technicals: Vec<Technicals>,
     labels: Vec<f64>,
 }
 
-impl SymbolData {
+impl RawSymbolData {
     #[instrument(skip(interval, end, config, market))]
     fn load(
         interval: &Interval,
@@ -288,19 +323,19 @@ impl SymbolData {
         Ok(candlesticks)
     }
 
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.candles.len()
     }
 
-    pub fn get_candles(&self) -> &Vec<Candlestick> {
+    fn get_candles(&self) -> &Vec<Candlestick> {
         &self.candles
     }
 
-    pub fn get_technicals(&self) -> &Vec<Technicals> {
+    fn get_technicals(&self) -> &Vec<Technicals> {
         &self.technicals
     }
 
-    pub fn get_labels(&self) -> &Vec<f64> {
+    fn get_labels(&self) -> &Vec<f64> {
         &self.labels
     }
 }

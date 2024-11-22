@@ -10,10 +10,10 @@ use tracing::info;
 #[ignore]
 fn test_algorithm() {
     let config = KryptoConfig {
-        start_date: "2018-01-01".to_string(),
+        start_date: "2017-01-01".to_string(),
         symbols: vec!["BTCUSDT".to_string()],
-        intervals: vec![Interval::OneHour],
-        cross_validations: 25,
+        intervals: vec![Interval::OneDay],
+        cross_validations: 30,
         ..Default::default()
     };
     let (dataset, _gaurds) = setup_default_data("algorithm", Some(config.clone()));

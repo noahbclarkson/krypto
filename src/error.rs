@@ -32,6 +32,8 @@ pub enum KryptoError {
     ShapeError(#[from] ndarray::ShapeError),
     #[error("Invalid Dataset")]
     InvalidDataset,
+    #[error("PLS Fit Error: {0}")]
+    PlsError(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -1,3 +1,5 @@
+use std::panic;
+
 use linfa::traits::{Fit, Predict as _};
 use linfa_pls::PlsRegression;
 use ndarray::Array2;
@@ -14,8 +16,9 @@ pub fn get_pls(
     let predictors: Array2<f64> = Array2::from_shape_vec(shape, flattened_predictors)?;
     let target: Array2<f64> = Array2::from_shape_vec((target.len(), 1), target)?;
     let ds = linfa::dataset::Dataset::new(predictors, target);
-    let pls = PlsRegression::params(n).fit(&ds)?;
-    Ok(pls)
+    let pls = panic::catch_unwind(|| PlsRegression::params(n).fit(&ds))
+        .map_err(|e| KryptoError::PlsError(format!("{:?}", e)))?;
+    Ok(pls?)
 }
 
 pub fn predict(pls: &PlsRegression<f64>, features: &[Vec<f64>]) -> Result<Vec<f64>, KryptoError> {

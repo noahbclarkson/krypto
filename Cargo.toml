@@ -23,7 +23,6 @@ linfa = "0.7"
 linfa-pls = "0.7"
 ndarray = "0.15"
 derive_builder = "0.20"
-rayon = "1.10"
 
 [dev-dependencies]
 tempfile = "3.14"

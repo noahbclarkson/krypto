@@ -14,6 +14,18 @@ pub struct TestData {
 }
 
 impl TestData {
+    /**
+    Create a new test data instance from the given predictions and candles.
+    This will simulate trading based on the predictions and candles.
+
+    ## Arguments
+    * `predictions` - The predictions to use for trading.
+    * `candles` - The candles to use for trading.
+    * `config` - The configuration to use for trading.
+
+    ## Returns
+    A Result containing the test data if successful, or a KryptoError if an error occurred.
+    */
     pub fn new(
         predictions: Vec<f64>,
         candles: &[Candlestick],
@@ -71,7 +83,7 @@ impl TestData {
             0 => 0.5,
             _ => inner.correct as f64 / total_trades as f64,
         };
-        let monthly_return = if months > 0.0 && inner.cash.is_finite() && inner.cash > 0.0 && inner.cash_history.len() > 1 {
+        let monthly_return = if months > 0.0 && inner.cash.is_finite() && inner.cash > 0.0 {
             (inner.cash / 1000.0).powf(1.0 / months) - 1.0
         } else {
             0.0
@@ -82,6 +94,20 @@ impl TestData {
             accuracy,
             monthly_return,
         })
+    }
+
+    pub fn get_accuracies(data: &[Self]) -> Vec<f64> {
+        data.iter()
+            .map(|d| d.accuracy)
+            .filter(|&v| v.is_finite())
+            .collect()
+    }
+
+    pub fn get_monthly_returns(data: &[Self]) -> Vec<f64> {
+        data.iter()
+            .map(|d| d.monthly_return)
+            .filter(|&v| v.is_finite())
+            .collect()
     }
 }
 

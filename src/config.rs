@@ -86,8 +86,7 @@ impl KryptoConfig {
 
         let file = File::open(&path)?;
         let reader = BufReader::new(file);
-        let config: Self =
-            from_reader(reader)?;
+        let config: Self = from_reader(reader)?;
         let account: Account = config.get_binance();
         if config.api_key.is_some() || config.api_secret.is_some() {
             let account_info = account.get_account().map_err(|e| {
@@ -420,10 +419,7 @@ cross-validations: 25
         let config_result = KryptoConfig::read_config(Some(temp_file.path()));
 
         // Verify that deserialization fails because intervals is a required field
-        assert!(matches!(
-            config_result,
-            Err(KryptoError::SerdeYamlError(_))
-        ));
+        assert!(matches!(config_result, Err(KryptoError::SerdeYamlError(_))));
     }
 
     #[test]

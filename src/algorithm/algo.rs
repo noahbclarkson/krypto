@@ -1,7 +1,6 @@
 use std::fmt;
 
 use linfa_pls::PlsRegression;
-use rayon::prelude::*;
 use tracing::{debug, info, instrument};
 
 use crate::{
@@ -22,6 +21,17 @@ pub struct Algorithm {
 }
 
 impl Algorithm {
+    /**
+    Load the algorithm with the given settings and interval dataset.
+
+    ## Arguments
+    * `interval_dataset` - The interval dataset to use for training and testing the algorithm.
+    * `settings` - The settings to use for the algorithm.
+    * `config` - The configuration to use for the algorithm.
+
+    ## Returns
+    The loaded algorithm.
+    */
     #[instrument(skip(interval_dataset, config))]
     pub fn load(
         interval_dataset: &IntervalData,
@@ -42,6 +52,17 @@ impl Algorithm {
         })
     }
 
+    /**
+    Run a backtest on the given interval dataset with the given settings and configuration.
+
+    ## Arguments
+    * `interval_dataset` - The interval dataset to use for training and testing the algorithm.
+    * `settings` - The settings to use for the algorithm.
+    * `config` - The configuration to use for the algorithm.
+
+    ## Returns
+    The result of the backtest.
+    */
     fn backtest(
         interval_dataset: &IntervalData,
         settings: &AlgorithmSettings,
@@ -55,7 +76,6 @@ impl Algorithm {
         let test_data_size = total_size / count;
 
         let test_results: Vec<TestData> = (0..count)
-            .into_par_iter()
             .map(|i| -> Result<TestData, KryptoError> {
                 let start = i * test_data_size;
                 let end = match i == count - 1 {
@@ -85,25 +105,23 @@ impl Algorithm {
             })
             .collect::<Result<Vec<_>, KryptoError>>()?;
 
-        let median_return = median(
-            &test_results
-                .iter()
-                .map(|d| d.monthly_return)
-                .filter(|&v| v.is_finite())
-                .collect::<Vec<_>>(),
-        );
-        let median_accuracy = median(
-            &test_results
-                .iter()
-                .map(|d| d.accuracy)
-                .filter(|&v| v.is_finite())
-                .collect::<Vec<_>>(),
-        );
+        let median_return = median(&TestData::get_monthly_returns(&test_results));
+        let median_accuracy = median(&TestData::get_accuracies(&test_results));
         let result = AlgorithmResult::new(median_return, median_accuracy);
         info!("Backtest result: {}", result);
         Ok(result)
     }
 
+    /**
+    Run a backtest on all seen data.
+
+    ## Arguments
+    * `interval_dataset` - The interval dataset to use for training and testing the algorithm.
+    * `config` - The configuration to use for the algorithm.
+
+    ## Returns
+    The result of the backtest.
+    */
     #[instrument(skip(interval_dataset, config, self))]
     pub fn backtest_on_all_seen_data(
         &self,
@@ -171,6 +189,17 @@ impl AlgorithmSettings {
         }
     }
 
+    /**
+    Generate all possible algorithm settings for the given symbols, max_n, and max_depth.
+
+    ## Arguments
+    * `symbols` - The symbols to generate settings for.
+    * `max_n` - The maximum number of components to use.
+    * `max_depth` - The maximum depth to use.
+
+    ## Returns
+    A vector of all possible algorithm settings.
+     */
     pub fn all(symbols: Vec<String>, max_n: usize, max_depth: usize) -> Vec<Self> {
         symbols
             .iter()

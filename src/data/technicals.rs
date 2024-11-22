@@ -4,6 +4,7 @@ use ta::{indicators::*, Next};
 
 pub const TECHNICAL_COUNT: usize = 8;
 
+#[derive(Debug, Clone)]
 pub struct Technicals {
     rsi: f64,
     fast_stochastic: f64,

@@ -43,7 +43,10 @@ pub fn setup_test_tracing(test_name: &str) -> TracingGuards {
     }
 }
 
-pub fn setup_default_data(test_name: &str, config: Option<KryptoConfig>) -> (Dataset, TracingGuards) {
+pub fn setup_default_data(
+    test_name: &str,
+    config: Option<KryptoConfig>,
+) -> (Dataset, TracingGuards) {
     let guards = setup_test_tracing(test_name);
     info!("-----------------");
     info!("Test: {}", test_name);
