@@ -75,7 +75,7 @@ impl Algorithm {
         let total_size = ds.len()?;
         let test_data_size = total_size / count;
 
-        let test_results: Vec<TestData> = (0..count)
+        let test_results: Vec<TestData> = (1..count)
             .map(|i| -> Result<TestData, KryptoError> {
                 let start = i * test_data_size;
                 let end = match i == count - 1 {
@@ -83,12 +83,11 @@ impl Algorithm {
                     false => (i + 1) * test_data_size,
                 };
                 let features = ds.get_features();
-                let labels = ds.get_labels();
                 let candles = ds.get_candles();
                 let test_features = &features[start..end];
                 let test_candles = &candles[start..end];
-                let train_features = [&features[..start], &features[end..]].concat();
-                let train_labels = [&labels[..start], &labels[end..]].concat();
+                let train_features = features[..start].to_vec();
+                let train_labels = ds.get_labels()[..start].to_vec();
 
                 let pls = get_pls(train_features, train_labels, settings.n)?;
                 let predictions = predict(&pls, test_features)?;

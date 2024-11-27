@@ -183,9 +183,7 @@ impl IntervalData {
             .cloned()
             .collect();
 
-        debug!("Features shape: {}x{}", features.len(), features[0].len());
-        debug!("Labels count: {}", labels.len());
-        debug!("Candles count: {}", candles.len());
+        debug!("Features: {}x{} | Labels: {} | Candles: {}", features.len(), features[0].len(), labels.len(), candles.len());
 
         SymbolDataset::new(features, labels, candles)
     }
