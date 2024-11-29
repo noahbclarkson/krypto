@@ -187,6 +187,26 @@ impl IntervalData {
 
         SymbolDataset::new(features, labels, candles)
     }
+
+    pub fn get_specific_tickers(&self, tickers: &Vec<String>) -> Self {
+        // Create a new symbol_data_map with only the specified tickers
+        let mut new_symbol_data_map: HashMap<String, RawSymbolData> = HashMap::new();
+
+        for ticker in tickers {
+            if let Some(symbol_data) = self.symbol_data_map.get(ticker) {
+                new_symbol_data_map.insert(ticker.clone(), symbol_data.clone());
+            }
+        }
+
+        // Recompute the normalized predictors with the new symbol data
+        let records = get_records(&new_symbol_data_map);
+        let normalized_predictors = get_normalized_predictors(records);
+
+        Self {
+            symbol_data_map: new_symbol_data_map,
+            normalized_predictors,
+        }
+    }
 }
 
 fn get_normalized_predictors(records: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
@@ -253,6 +273,7 @@ impl SymbolDataset {
     }
 }
 
+#[derive(Debug, Clone)]
 struct RawSymbolData {
     candles: Vec<Candlestick>,
     technicals: Vec<Technicals>,

@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::error::ParseIntervalError;
 
 /// Represents various time intervals.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd)]
 pub enum Interval {
     OneMinute,
     ThreeMinutes,

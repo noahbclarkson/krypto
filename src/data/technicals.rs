@@ -2,7 +2,7 @@ use super::candlestick::Candlestick;
 
 use ta::{indicators::*, Next};
 
-pub const TECHNICAL_COUNT: usize = 8;
+pub const TECHNICAL_COUNT: usize = 10;
 
 #[derive(Debug, Clone)]
 pub struct Technicals {
@@ -14,6 +14,8 @@ pub struct Technicals {
     efficiency_ratio: f64,
     percentage_change_ema: f64,
     volume_percentage_change_ema: f64,
+    bb_pct: f64,
+    candlestick_ratio: f64,
 }
 
 impl Technicals {
@@ -26,10 +28,12 @@ impl Technicals {
         let mut efficiency_ratio = EfficiencyRatio::default();
         let mut pc_ema = PercentageChangeEMA::default();
         let mut volume_pc_ema = PercentageChangeEMA::default();
+        let mut bollinger_bands = BollingerBands::default();
 
         let mut result = Vec::new();
 
         for candle in data {
+            let bb = bollinger_bands.next(candle.close);
             let technicals = Self {
                 rsi: rsi.next(candle),
                 fast_stochastic: fast_stochastic.next(candle),
@@ -39,6 +43,8 @@ impl Technicals {
                 efficiency_ratio: efficiency_ratio.next(candle),
                 percentage_change_ema: pc_ema.next(candle.close),
                 volume_percentage_change_ema: volume_pc_ema.next(candle.volume),
+                bb_pct: (candle.close - bb.lower) / (bb.upper - bb.lower),
+                candlestick_ratio: candlestick_ratio(candle),
             };
             result.push(technicals);
         }
@@ -55,6 +61,8 @@ impl Technicals {
             self.efficiency_ratio,
             self.percentage_change_ema,
             self.volume_percentage_change_ema,
+            self.bb_pct,
+            self.candlestick_ratio,
         ]
     }
 }
@@ -99,4 +107,28 @@ impl PercentageChangeEMA {
             last: None,
         }
     }
+}
+
+/**
+Calculates the candlestick ratio for a given candlestick.
+
+The formula is: tanh((upper_wick / body) - (lower_wick / body))
+
+## Arguments
+   - `candle`: A Candlestick struct.
+
+## Returns
+The candlestick ratio.
+*/
+fn candlestick_ratio(candle: &Candlestick) -> f64 {
+    let top = candle.close.max(candle.open);
+    let bottom = candle.close.min(candle.open);
+    let upper_wick = candle.high - top;
+    let lower_wick = bottom - candle.low;
+    let body = top - bottom;
+    if body == 0.0 {
+        return 0.0;
+    }
+    let ratio = (upper_wick / body) - (lower_wick / body);
+    ratio.tanh()
 }
