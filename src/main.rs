@@ -19,9 +19,6 @@ use krypto::{
 };
 use tracing::{error, info};
 
-const MAX_N: usize = 50;
-const MAX_DEPTH: usize = 40;
-
 pub fn main() {
     let (_, file_guard) = setup_tracing(Some("logs")).expect("Failed to set up tracing");
     let result = run();
@@ -35,12 +32,9 @@ fn run() -> Result<(), KryptoError> {
     let config = KryptoConfig::read_config::<&str>(None)?;
     let dataset = Dataset::load(&config)?;
 
-    let population_size = 250;
     let selection_ratio = 0.7;
     let num_individuals_per_parents = 2;
-    let mutation_rate = 0.015;
     let reinsertion_ratio = 0.7;
-    let generation_limit = 100; // Adjust as needed
 
     let available_tickers = config.symbols.clone();
     let available_intervals = config.intervals.clone();
@@ -52,10 +46,10 @@ fn run() -> Result<(), KryptoError> {
         .with_genome_builder(TradingStrategyGenomeBuilder::new(
             available_tickers.clone(),
             available_intervals.clone(),
-            MAX_N,
-            MAX_DEPTH,
+            config.max_n,
+            config.max_depth,
         ))
-        .of_size(population_size)
+        .of_size(config.population_size)
         .uniform_at_random();
 
     let ga = genetic_algorithm()
@@ -69,14 +63,14 @@ fn run() -> Result<(), KryptoError> {
         ))
         .with_crossover(TradingStrategyCrossover)
         .with_mutation(TradingStrategyMutation::new(
-            mutation_rate,
+            config.mutation_rate,
             available_tickers.clone(),
             available_intervals.clone(),
-            MAX_N,
-            MAX_DEPTH,
+            config.max_n,
+            config.max_depth,
         ))
         .with_reinsertion(ElitistReinserter::new(
-            TradingStrategyFitnessFunction::new(config, dataset),
+            TradingStrategyFitnessFunction::new(config.clone(), dataset),
             true,
             reinsertion_ratio,
         ))
@@ -84,7 +78,7 @@ fn run() -> Result<(), KryptoError> {
         .build();
 
     let mut sim = simulate(ga)
-        .until(GenerationLimit::new(generation_limit))
+        .until(GenerationLimit::new(config.generation_limit))
         .build();
 
     info!("Starting Genetic Algorithm");
