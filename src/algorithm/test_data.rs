@@ -60,7 +60,7 @@ impl TestData {
             if position.is_some() && position != new_position {
                 // Close the existing position
                 if let Some(ref pos) = position {
-                    inner.close_position(pos, candle, fee);
+                    inner.close_position(pos, candle, fee, config.margin);
                 }
 
                 position = new_position;
@@ -74,7 +74,7 @@ impl TestData {
 
         // Close any remaining open position at the end
         if let Some(ref pos) = position {
-            inner.close_position(pos, candles.last().unwrap(), fee);
+            inner.close_position(pos, candles.last().unwrap(), fee, config.margin);
         }
 
         let months = days as f64 / 30.44;
@@ -154,10 +154,10 @@ struct InnerTestData {
 }
 
 impl InnerTestData {
-    fn close_position(&mut self, position: &Position, candle: &Candlestick, fee: f64) {
+    fn close_position(&mut self, position: &Position, candle: &Candlestick, fee: f64, margin: f64) {
         let return_now = position.get_return(candle.close);
-        self.cash += self.cash * return_now;
-        self.cash -= self.cash * fee;
+        self.cash += self.cash * return_now * margin;
+        self.cash -= self.cash * fee * margin;
         self.cash_history.push(self.cash);
 
         if return_now > 0.0 {

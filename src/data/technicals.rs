@@ -38,6 +38,10 @@ impl Technicals {
         for candle in data {
             let bb = bollinger_bands.next(candle.close);
             let bb_pct = (candle.close - bb.lower) / (bb.upper - bb.lower);
+            let bb_pct = match bb_pct.is_nan() || bb_pct.is_infinite() {
+                true => 0.0,
+                false => bb_pct,
+            };
             let rsi = rsi.next(candle);
             let fast_stochastic = fast_stochastic.next(candle);
             let slow_stochastic = slow_stochastic.next(candle);
@@ -186,5 +190,9 @@ fn candlestick_ratio(candle: &Candlestick) -> f64 {
         return 0.0;
     }
     let ratio = (upper_wick / body) - (lower_wick / body);
-    ratio.tanh()
+    let result = ratio.tanh();
+    match result.is_nan() || result.is_infinite() {
+        true => 0.0,
+        false => result,
+    }
 }

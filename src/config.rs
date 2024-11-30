@@ -32,6 +32,10 @@ const fn default_mutation_rate() -> f64 {
     0.015
 }
 
+const fn default_margin() -> f64 {
+    1.0
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct KryptoConfig {
     #[serde(rename = "start-date")]
@@ -56,6 +60,8 @@ pub struct KryptoConfig {
     #[serde(rename = "mutation-rate", default = "default_mutation_rate")]
     pub mutation_rate: f64,
     pub technicals: Vec<String>,
+    #[serde(default = "default_margin")]
+    pub margin: f64,
 }
 
 const DEFAULT_DATA: &str = r#"
@@ -93,6 +99,7 @@ impl Default for KryptoConfig {
             population_size: default_population_size(),
             mutation_rate: default_mutation_rate(),
             technicals: vec!["RSI".to_string(), "Fast Stochastic".to_string()],
+            margin: default_margin(),
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::{fmt, sync::Arc};
+use std::{fmt, panic, sync::Arc};
 
 use genevo::{
     genetic::{Children, Parents},
@@ -6,7 +6,7 @@ use genevo::{
     prelude::{FitnessFunction, GenomeBuilder, Genotype},
     random::{Rng, SliceRandom as _},
 };
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::{
     algorithm::algo::{Algorithm, AlgorithmSettings},
@@ -177,7 +177,7 @@ impl GenomeBuilder<TradingStrategyGenome> for TradingStrategyGenomeBuilder {
         let max_n = depth * tickers.len() * technical_count - 1;
         let n = rng.gen_range(1..=max_n.min(self.max_n));
         let interval = *self.available_intervals.choose(rng).unwrap();
-        
+
         TradingStrategyGenome {
             n,
             d: depth,
@@ -248,10 +248,24 @@ impl FitnessFunction<TradingStrategyGenome, i64> for TradingStrategyFitnessFunct
         let strategy = self.to_phenotype(a);
         debug!("Evaluating fitness of strategy: {}", strategy);
         let data = self.dataset.get(&a.interval).unwrap();
-        let data =
-            data.get_specific_tickers_and_technicals(&strategy.tickers, &strategy.technicals);
+        let data = panic::catch_unwind(|| {data.get_specific_tickers_and_technicals(&strategy.tickers, &strategy.technicals)});
+        let data = match data {
+            Ok(data) => data,
+            Err(e) => {
+                info!("Failed to get data: {} with error: {:?}", strategy, e);
+                return i64::MIN;
+            }
+        };
         let settings = AlgorithmSettings::from(strategy.clone());
-        let algorithm = Algorithm::load(&data, settings, &self.config).unwrap();
+        let algorithm = Algorithm::load(&data, settings, &self.config);
+        match algorithm {
+            Ok(_) => {}
+            Err(e) => {
+                info!("Failed to evaluate fitness: {} with error: {}", strategy, e);
+                return i64::MIN;
+            }
+        }
+        let algorithm = algorithm.unwrap();
         let monthly_return = algorithm.get_monthly_return();
         if monthly_return.is_nan() || monthly_return.is_infinite() {
             return i64::MIN;
