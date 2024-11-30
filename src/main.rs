@@ -13,7 +13,7 @@ use krypto::{
     error::KryptoError,
     logging::setup_tracing,
     optimisation::{
-        TradingStrategy, TradingStrategyCrossover, TradingStrategyFitnessFunction,
+        TradingStrategyCrossover, TradingStrategyFitnessFunction, TradingStrategyGenome,
         TradingStrategyGenomeBuilder, TradingStrategyMutation,
     },
 };
@@ -38,14 +38,16 @@ fn run() -> Result<(), KryptoError> {
 
     let available_tickers = config.symbols.clone();
     let available_intervals = config.intervals.clone();
+    let available_tecnicals = config.technicals.clone();
 
     let config = Arc::new(config);
     let dataset = Arc::new(dataset);
 
-    let initial_population: Population<TradingStrategy> = build_population()
+    let initial_population: Population<TradingStrategyGenome> = build_population()
         .with_genome_builder(TradingStrategyGenomeBuilder::new(
             available_tickers.clone(),
             available_intervals.clone(),
+            available_tecnicals.clone(),
             config.max_n,
             config.max_depth,
         ))
@@ -56,12 +58,16 @@ fn run() -> Result<(), KryptoError> {
         .with_evaluation(TradingStrategyFitnessFunction::new(
             config.clone(),
             dataset.clone(),
+            available_tickers.clone(),
+            available_tecnicals.clone(),
         ))
         .with_selection(MaximizeSelector::new(
             selection_ratio,
             num_individuals_per_parents,
         ))
-        .with_crossover(TradingStrategyCrossover)
+        .with_crossover(TradingStrategyCrossover {
+            available_tickers: available_tickers.clone(),
+        })
         .with_mutation(TradingStrategyMutation::new(
             config.mutation_rate,
             available_tickers.clone(),
@@ -70,7 +76,12 @@ fn run() -> Result<(), KryptoError> {
             config.max_depth,
         ))
         .with_reinsertion(ElitistReinserter::new(
-            TradingStrategyFitnessFunction::new(config.clone(), dataset),
+            TradingStrategyFitnessFunction::new(
+                config.clone(),
+                dataset,
+                available_tickers.clone(),
+                available_tecnicals.clone(),
+            ),
             true,
             reinsertion_ratio,
         ))
@@ -91,14 +102,20 @@ fn run() -> Result<(), KryptoError> {
         match sim.step() {
             Ok(SimResult::Intermediate(step)) => {
                 let best_solution = &step.result.best_solution;
+                let phenotype = best_solution
+                    .solution
+                    .genome
+                    .to_phenotype(&available_tickers, &available_tecnicals);
                 info!(
                     "Generation {}: Best fitness: {:.2}%, Strategy: {:?}",
-                    step.iteration, best_solution.solution.fitness as f64 / 100.0, best_solution.solution.genome
+                    step.iteration,
+                    best_solution.solution.fitness as f64 / 100.0,
+                    phenotype
                 );
                 csv.write_record([
                     step.iteration.to_string(),
                     (best_solution.solution.fitness as f64 / 100.0).to_string(),
-                    best_solution.solution.genome.to_string(),
+                    phenotype.to_string(),
                 ])?;
                 csv.flush()?;
             }
@@ -114,8 +131,12 @@ fn run() -> Result<(), KryptoError> {
                     best_solution.generation,
                     best_solution.solution.fitness as f64 / 100.0
                 );
+                let phenotype = best_solution
+                    .solution
+                    .genome
+                    .to_phenotype(&available_tickers, &available_tecnicals);
                 // Display the best trading strategy
-                info!("Best trading strategy: {}", best_solution.solution.genome);
+                info!("Best trading strategy: {}", phenotype);
                 break;
             }
             Err(error) => {

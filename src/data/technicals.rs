@@ -2,24 +2,27 @@ use super::candlestick::Candlestick;
 
 use ta::{indicators::*, Next};
 
-pub const TECHNICAL_COUNT: usize = 10;
-
 #[derive(Debug, Clone)]
 pub struct Technicals {
-    rsi: f64,
-    fast_stochastic: f64,
-    slow_stochastic: f64,
-    cci: f64,
-    mfi: f64,
-    efficiency_ratio: f64,
-    percentage_change_ema: f64,
-    volume_percentage_change_ema: f64,
-    bb_pct: f64,
-    candlestick_ratio: f64,
+    technicals: Vec<Technical>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Technical {
+    RSI(f64),
+    FastStochastic(f64),
+    SlowStochastic(f64),
+    CCI(f64),
+    MFI(f64),
+    EfficiencyRatio(f64),
+    PercentageChangeEMA(f64),
+    VolumePercentageChangeEMA(f64),
+    BollingerBands(f64),
+    CandlestickRatio(f64),
 }
 
 impl Technicals {
-    pub fn get_technicals(data: &[Candlestick]) -> Vec<Self> {
+    pub fn get_technicals(data: &[Candlestick], technical_names: Vec<String>) -> Vec<Self> {
         let mut rsi = RelativeStrengthIndex::default();
         let mut fast_stochastic = FastStochastic::default();
         let mut slow_stochastic = SlowStochastic::default();
@@ -34,38 +37,91 @@ impl Technicals {
 
         for candle in data {
             let bb = bollinger_bands.next(candle.close);
-            let technicals = Self {
-                rsi: rsi.next(candle),
-                fast_stochastic: fast_stochastic.next(candle),
-                slow_stochastic: slow_stochastic.next(candle),
-                cci: cci.next(candle),
-                mfi: mfi.next(candle),
-                efficiency_ratio: efficiency_ratio.next(candle),
-                percentage_change_ema: pc_ema.next(candle.close),
-                volume_percentage_change_ema: volume_pc_ema.next(candle.volume),
-                bb_pct: (candle.close - bb.lower) / (bb.upper - bb.lower),
-                candlestick_ratio: candlestick_ratio(candle),
-            };
-            result.push(technicals);
+            let bb_pct = (candle.close - bb.lower) / (bb.upper - bb.lower);
+            let rsi = rsi.next(candle);
+            let fast_stochastic = fast_stochastic.next(candle);
+            let slow_stochastic = slow_stochastic.next(candle);
+            let cci = cci.next(candle);
+            let mfi = mfi.next(candle);
+            let efficiency_ratio = efficiency_ratio.next(candle);
+            let percentage_change_ema = pc_ema.next(candle.close);
+            let volume_percentage_change_ema = volume_pc_ema.next(candle.volume);
+            let candlestick_ratio = candlestick_ratio(candle);
+            let mut technicals = Vec::new();
+            for name in &technical_names {
+                let technical = Technical::from_name(name, match name.as_str() {
+                    "RSI" => rsi,
+                    "Fast Stochastic" => fast_stochastic,
+                    "Slow Stochastic" => slow_stochastic,
+                    "CCI" => cci,
+                    "MFI" => mfi,
+                    "Efficiency Ratio" => efficiency_ratio,
+                    "Percentage Change EMA" => percentage_change_ema,
+                    "Volume Percentage Change EMA" => volume_percentage_change_ema,
+                    "Bollinger Bands" => bb_pct,
+                    "Candlestick Ratio" => candlestick_ratio,
+                    _ => panic!("Unknown technical name: {}", name),
+                });
+                technicals.push(technical);
+            }
+            result.push(Technicals { technicals });
         }
         result
     }
 
-    pub fn as_array(&self) -> [f64; TECHNICAL_COUNT] {
-        [
-            self.rsi,
-            self.fast_stochastic,
-            self.slow_stochastic,
-            self.cci,
-            self.mfi,
-            self.efficiency_ratio,
-            self.percentage_change_ema,
-            self.volume_percentage_change_ema,
-            self.bb_pct,
-            self.candlestick_ratio,
-        ]
+    pub fn as_array(&self) -> Vec<f64> {
+        self.technicals.iter().map(|t| t.value()).collect()
     }
 }
+
+impl Technical {
+    pub fn value(&self) -> f64 {
+        match self {
+            Technical::RSI(value) => *value,
+            Technical::FastStochastic(value) => *value,
+            Technical::SlowStochastic(value) => *value,
+            Technical::CCI(value) => *value,
+            Technical::MFI(value) => *value,
+            Technical::EfficiencyRatio(value) => *value,
+            Technical::PercentageChangeEMA(value) => *value,
+            Technical::VolumePercentageChangeEMA(value) => *value,
+            Technical::BollingerBands(value) => *value,
+            Technical::CandlestickRatio(value) => *value,
+        }
+    }
+
+    pub fn name(&self) -> String {
+        match self {
+            Technical::RSI(_) => "RSI".to_string(),
+            Technical::FastStochastic(_) => "Fast Stochastic".to_string(),
+            Technical::SlowStochastic(_) => "Slow Stochastic".to_string(),
+            Technical::CCI(_) => "CCI".to_string(),
+            Technical::MFI(_) => "MFI".to_string(),
+            Technical::EfficiencyRatio(_) => "Efficiency Ratio".to_string(),
+            Technical::PercentageChangeEMA(_) => "Percentage Change EMA".to_string(),
+            Technical::VolumePercentageChangeEMA(_) => "Volume Percentage Change EMA".to_string(),
+            Technical::BollingerBands(_) => "Bollinger Bands".to_string(),
+            Technical::CandlestickRatio(_) => "Candlestick Ratio".to_string(),
+        }
+    }
+
+    pub fn from_name(name: &str, value: f64) -> Self {
+        match name {
+            "RSI" => Technical::RSI(value),
+            "Fast Stochastic" => Technical::FastStochastic(value),
+            "Slow Stochastic" => Technical::SlowStochastic(value),
+            "CCI" => Technical::CCI(value),
+            "MFI" => Technical::MFI(value),
+            "Efficiency Ratio" => Technical::EfficiencyRatio(value),
+            "Percentage Change EMA" => Technical::PercentageChangeEMA(value),
+            "Volume Percentage Change EMA" => Technical::VolumePercentageChangeEMA(value),
+            "Bollinger Bands" => Technical::BollingerBands(value),
+            "Candlestick Ratio" => Technical::CandlestickRatio(value),
+            _ => panic!("Unknown technical name: {}", name),
+        }
+    }
+}
+
 
 pub struct PercentageChangeEMA {
     pub period: usize,

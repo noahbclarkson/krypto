@@ -188,13 +188,15 @@ impl IntervalData {
         SymbolDataset::new(features, labels, candles)
     }
 
-    pub fn get_specific_tickers(&self, tickers: &Vec<String>) -> Self {
+    pub fn get_specific_tickers_and_technicals(&self, tickers: &[String], new_technicals: &[String]) -> Self {
         // Create a new symbol_data_map with only the specified tickers
         let mut new_symbol_data_map: HashMap<String, RawSymbolData> = HashMap::new();
 
         for ticker in tickers {
             if let Some(symbol_data) = self.symbol_data_map.get(ticker) {
-                new_symbol_data_map.insert(ticker.clone(), symbol_data.clone());
+                let mut symbol_data = symbol_data.clone();
+                symbol_data.recompute_technicals(new_technicals.to_vec());
+                new_symbol_data_map.insert(ticker.clone(), symbol_data);
             }
         }
 
@@ -301,7 +303,7 @@ impl RawSymbolData {
         candles.sort_by_key(|c| c.open_time);
         candles.dedup_by_key(|c| c.open_time);
 
-        let technicals = Technicals::get_technicals(&candles);
+        let technicals = Technicals::get_technicals(&candles, config.technicals.clone());
         let mut labels = vec![0.0];
         for i in 1..candles.len() {
             let percentage_change =
@@ -356,6 +358,10 @@ impl RawSymbolData {
 
     fn get_labels(&self) -> &Vec<f64> {
         &self.labels
+    }
+
+    fn recompute_technicals(&mut self, technical_names: Vec<String>) {
+        self.technicals = Technicals::get_technicals(&self.candles, technical_names);
     }
 }
 

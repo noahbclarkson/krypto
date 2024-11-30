@@ -55,18 +55,26 @@ pub struct KryptoConfig {
     pub population_size: usize,
     #[serde(rename = "mutation-rate", default = "default_mutation_rate")]
     pub mutation_rate: f64,
+    pub technicals: Vec<String>,
 }
 
 const DEFAULT_DATA: &str = r#"
 start-date: "2024-01-01"
+api-key: null
+api-secret: null
 symbols:
-  - "BTCUSDT"
-  - "ETHUSDT"
+  - BTCUSDT
+  - ETHUSDT
 intervals:
-    - "2h"
-    - "4h"
+    - 2h
+    - 4h
 cross-validations: 25
-fee: 0.001
+fee: 0.002
+max-n: 25
+max-depth: 20
+technicals:
+  - RSI
+  - Fast Stochastic
 "#;
 
 impl Default for KryptoConfig {
@@ -84,6 +92,7 @@ impl Default for KryptoConfig {
             generation_limit: default_generation_limit(),
             population_size: default_population_size(),
             mutation_rate: default_mutation_rate(),
+            technicals: vec!["RSI".to_string(), "Fast Stochastic".to_string()],
         }
     }
 }
