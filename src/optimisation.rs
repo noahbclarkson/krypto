@@ -174,7 +174,8 @@ impl GenomeBuilder<TradingStrategyGenome> for TradingStrategyGenomeBuilder {
         let depth = rng.gen_range(1..=self.max_depth);
         let technicals = self.technicals(rng);
         let technical_count = technicals.iter().filter(|b| **b).count();
-        let max_n = depth * tickers.len() * technical_count - 1;
+        let tickers_count = tickers.iter().filter(|b| **b).count();
+        let max_n = depth * tickers_count * technical_count;
         let n = rng.gen_range(1..=max_n.min(self.max_n));
         let interval = *self.available_intervals.choose(rng).unwrap();
 
@@ -336,10 +337,11 @@ impl CrossoverOp<TradingStrategyGenome> for TradingStrategyCrossover {
         }
 
         let tech_count = child_technicals.iter().filter(|b| **b).count();
+        let tickers_count = child_tickers.iter().filter(|b| **b).count();
         let child_d = (parent1.d as f64 * 0.5 + parent2.d as f64 * 0.5) as usize;
         let mut child_n = (parent1.n as f64 * 0.5 + parent2.n as f64 * 0.5) as usize;
-        if child_n > child_d * child_tickers.len() * tech_count - 1 {
-            child_n = child_d * child_tickers.len() * tech_count - 1;
+        if child_n > child_d * tickers_count * tech_count {
+            child_n = child_d * tickers_count * tech_count;
         }
 
         let child_interval = if rng.gen_bool(0.5) {
@@ -448,8 +450,9 @@ impl MutationOp<TradingStrategyGenome> for TradingStrategyMutation {
         }
 
         let tech_count = new_genome.technicals.iter().filter(|b| **b).count();
+        let tickers_count = new_genome.tickers.iter().filter(|b| **b).count();
         if rng.gen_bool(self.mutation_rate) {
-            let max_n = new_genome.d * new_genome.tickers.len() * tech_count - 1;
+            let max_n = new_genome.d * tickers_count * tech_count - 1;
             new_genome.n = rng.gen_range(1..=max_n.min(self.max_n));
         }
 
