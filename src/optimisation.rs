@@ -1,4 +1,8 @@
-use std::{fmt, panic, sync::Arc};
+use std::{
+    collections::HashMap,
+    fmt, panic,
+    sync::{Arc, Mutex},
+};
 
 use genevo::{
     genetic::{Children, Parents},
@@ -14,7 +18,7 @@ use crate::{
     data::{dataset::Dataset, interval::Interval},
 };
 
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq)]
 pub struct TradingStrategyGenome {
     n: usize,
     d: usize,
@@ -137,12 +141,20 @@ impl TradingStrategyGenomeBuilder {
     where
         R: Rng + Sized,
     {
-        let n = self.available_tickers.len();
-        let mut tickers = Vec::new();
-        for _ in 0..n {
-            tickers.push(r.gen_bool(0.25));
+        let num_selected = r.gen_range(1..=self.available_tickers.len());
+        let mut tickers = vec![false; self.available_tickers.len()];
+        for _ in 0..num_selected {
+            let pos = r.gen_range(0..self.available_tickers.len());
+            tickers[pos] = true;
         }
+        // Ensure the symbol is included
         let symbol = self.available_tickers.choose(r).unwrap().clone();
+        let pos_of_symbol = self
+            .available_tickers
+            .iter()
+            .position(|s| s == &symbol)
+            .unwrap();
+        tickers[pos_of_symbol] = true;
         (tickers, symbol)
     }
 
@@ -150,10 +162,11 @@ impl TradingStrategyGenomeBuilder {
     where
         R: Rng + Sized,
     {
-        let n = self.available_technicals.len();
-        let mut technicals = Vec::new();
-        for _ in 0..n {
-            technicals.push(r.gen_bool(0.5));
+        let num_selected = r.gen_range(1..=self.available_technicals.len());
+        let mut technicals = vec![false; self.available_technicals.len()];
+        for _ in 0..num_selected {
+            let pos = r.gen_range(0..self.available_technicals.len());
+            technicals[pos] = true;
         }
         technicals
     }
@@ -164,13 +177,7 @@ impl GenomeBuilder<TradingStrategyGenome> for TradingStrategyGenomeBuilder {
     where
         R: Rng + Sized,
     {
-        let (mut tickers, symbol) = self.tickers(rng);
-        let pos_of_symbol = self
-            .available_tickers
-            .iter()
-            .position(|s| s == &symbol)
-            .unwrap();
-        tickers[pos_of_symbol] = true;
+        let (tickers, symbol) = self.tickers(rng);
         let depth = rng.gen_range(1..=self.max_depth);
         let technicals = self.technicals(rng);
         let technical_count = technicals.iter().filter(|b| **b).count();
@@ -178,7 +185,6 @@ impl GenomeBuilder<TradingStrategyGenome> for TradingStrategyGenomeBuilder {
         let max_n = depth * tickers_count * technical_count;
         let n = rng.gen_range(1..=max_n.min(self.max_n));
         let interval = *self.available_intervals.choose(rng).unwrap();
-
         TradingStrategyGenome {
             n,
             d: depth,
@@ -196,6 +202,7 @@ pub struct TradingStrategyFitnessFunction {
     dataset: Arc<Dataset>,
     available_tickers: Vec<String>,
     available_technicals: Vec<String>,
+    fitness_cache: Arc<Mutex<HashMap<TradingStrategyGenome, i64>>>,
 }
 
 impl fmt::Debug for TradingStrategyFitnessFunction {
@@ -211,45 +218,49 @@ impl TradingStrategyFitnessFunction {
         available_tickers: Vec<String>,
         available_technicals: Vec<String>,
     ) -> Self {
+        let fitness_cache = Arc::new(Mutex::new(HashMap::new()));
         Self {
             config,
             dataset,
             available_tickers,
             available_technicals,
+            fitness_cache,
         }
     }
 
-    pub fn to_phenotype(&self, genome: &TradingStrategyGenome) -> TradingStrategy {
-        let tickers = genome
-            .tickers
-            .iter()
-            .zip(self.available_tickers.iter())
-            .filter_map(|(b, s)| if *b { Some(s.clone()) } else { None })
-            .collect();
-        let technicals = genome
-            .technicals
-            .iter()
-            .zip(self.available_technicals.iter())
-            .filter_map(|(b, s)| if *b { Some(s.clone()) } else { None })
-            .collect();
-        TradingStrategy::new(
-            genome.n,
-            genome.d,
-            genome.interval,
-            tickers,
-            genome.symbol.clone(),
-            technicals,
-        )
+    pub fn clear_cache(&self) {
+        let mut cache = self.fitness_cache.lock().unwrap();
+        cache.clear();
+    }
+
+    pub fn get_cache(&self) -> std::sync::MutexGuard<HashMap<TradingStrategyGenome, i64>> {
+        self.fitness_cache.lock().unwrap()
+    }
+
+    pub fn cache(&self, genome: TradingStrategyGenome, fitness: i64) {
+        let mut cache = self.fitness_cache.lock().unwrap();
+        cache.insert(genome, fitness);
+    }
+
+    pub fn cache_contains(&self, genome: &TradingStrategyGenome) -> bool {
+        let cache = self.fitness_cache.lock().unwrap();
+        cache.contains_key(genome)
     }
 }
 
 impl FitnessFunction<TradingStrategyGenome, i64> for TradingStrategyFitnessFunction {
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self, a))]
     fn fitness_of(&self, a: &TradingStrategyGenome) -> i64 {
-        let strategy = self.to_phenotype(a);
+        if self.cache_contains(a) {
+            return *self.get_cache().get(a).unwrap();
+        }
+
+        let strategy = a.to_phenotype(&self.available_tickers, &self.available_technicals);
         debug!("Evaluating fitness of strategy: {}", strategy);
         let data = self.dataset.get(&a.interval).unwrap();
-        let data = panic::catch_unwind(|| {data.get_specific_tickers_and_technicals(&strategy.tickers, &strategy.technicals)});
+        let data = panic::catch_unwind(|| {
+            data.get_specific_tickers_and_technicals(&strategy.tickers, &strategy.technicals)
+        });
         let data = match data {
             Ok(data) => data,
             Err(e) => {
@@ -271,8 +282,14 @@ impl FitnessFunction<TradingStrategyGenome, i64> for TradingStrategyFitnessFunct
         if monthly_return.is_nan() || monthly_return.is_infinite() {
             return i64::MIN;
         }
-        debug!("Evaluated fitness: {:.2}%", monthly_return * 100.0);
-        (algorithm.get_monthly_return() * 10_000.0) as i64
+        debug!(
+            "Evaluated fitness of strategy {}: {:.2}%",
+            strategy,
+            monthly_return * 100.0
+        );
+        let fitness = (monthly_return * 10_000.0) as i64;
+        self.cache(a.clone(), fitness);
+        fitness
     }
 
     fn average(&self, a: &[i64]) -> i64 {
@@ -335,11 +352,15 @@ impl CrossoverOp<TradingStrategyGenome> for TradingStrategyCrossover {
                 child_technicals.push(*t2);
             }
         }
+        if child_technicals.iter().all(|&b| !b) {
+            let index = rng.gen_range(0..child_technicals.len());
+            child_technicals[index] = true;
+        }
 
         let tech_count = child_technicals.iter().filter(|b| **b).count();
         let tickers_count = child_tickers.iter().filter(|b| **b).count();
-        let child_d = (parent1.d as f64 * 0.5 + parent2.d as f64 * 0.5) as usize;
-        let mut child_n = (parent1.n as f64 * 0.5 + parent2.n as f64 * 0.5) as usize;
+        let child_d = (parent1.d + parent2.d) / 2;
+        let mut child_n = (parent1.n + parent2.n) / 2;
         if child_n > child_d * tickers_count * tech_count {
             child_n = child_d * tickers_count * tech_count;
         }
@@ -414,35 +435,26 @@ impl MutationOp<TradingStrategyGenome> for TradingStrategyMutation {
         R: Rng + Sized,
     {
         let mut new_genome = genome.clone();
-        if rng.gen_bool(self.mutation_rate) {
-            let (tickers, symbol) = TradingStrategyGenomeBuilder::new(
-                self.available_tickers.clone(),
-                self.available_intervals.clone(),
-                self.available_tickers.clone(),
-                self.max_depth,
-                self.max_n,
-            )
-            .tickers(rng);
-            new_genome.tickers = tickers;
-            new_genome.symbol = symbol;
-            let pos_of_symbol = self
-                .available_tickers
-                .iter()
-                .position(|s| s == &new_genome.symbol)
-                .unwrap();
-            new_genome.tickers[pos_of_symbol] = true;
+
+        for ticker in new_genome.tickers.iter_mut() {
+            if rng.gen_bool(self.mutation_rate) {
+                *ticker = !*ticker;
+            }
         }
 
-        if rng.gen_bool(self.mutation_rate) {
-            let technicals = TradingStrategyGenomeBuilder::new(
-                self.available_tickers.clone(),
-                self.available_intervals.clone(),
-                self.available_tickers.clone(),
-                self.max_depth,
-                self.max_n,
-            )
-            .technicals(rng);
-            new_genome.technicals = technicals;
+        // Ensure symbol is still included
+        let pos_of_symbol = self
+            .available_tickers
+            .iter()
+            .position(|s| s == &new_genome.symbol)
+            .unwrap();
+        new_genome.tickers[pos_of_symbol] = true;
+
+        // Mutate individual bits in technicals
+        for technical in new_genome.technicals.iter_mut() {
+            if rng.gen_bool(self.mutation_rate) {
+                *technical = !*technical;
+            }
         }
 
         if rng.gen_bool(self.mutation_rate) {

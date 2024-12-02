@@ -1,4 +1,5 @@
 use std::{
+    fmt,
     fs::File,
     io::{BufReader, Write as _},
     path::Path,
@@ -153,7 +154,7 @@ impl KryptoConfig {
                 }
             }
         }
-        info!("Configuration loaded successfully");
+        info!("Configuration loaded successfully: {}", config);
         Ok(config)
     }
 
@@ -190,5 +191,14 @@ impl KryptoConfig {
     pub fn get_binance<T: Binance>(&self) -> T {
         debug!("Creating Binance client");
         T::new(self.api_key.clone(), self.api_secret.clone())
+    }
+}
+
+impl fmt::Display for KryptoConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Start Date: {}\nSymbols: {:?}\nIntervals: {:?}\nCross Validations: {}\nFee: {:?}\nMax N: {}\nMax Depth: {}\nGeneration Limit: {}\nPopulation Size: {}\nMutation Rate: {}\nTechnicals: {:?}\nMargin: {}", self.start_date, self.symbols, self.intervals, self.cross_validations, self.fee, self.max_n, self.max_depth, self.generation_limit, self.population_size, self.mutation_rate, self.technicals, self.margin
+        )
     }
 }

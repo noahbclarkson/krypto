@@ -40,7 +40,7 @@ async fn run() -> Result<(), KryptoError> {
 
     let available_tickers = config.symbols.clone();
     let available_intervals = config.intervals.clone();
-    let available_tecnicals = config.technicals.clone();
+    let available_technicals = config.technicals.clone();
 
     let config = Arc::new(config);
     let dataset = Arc::new(dataset);
@@ -49,9 +49,9 @@ async fn run() -> Result<(), KryptoError> {
         .with_genome_builder(TradingStrategyGenomeBuilder::new(
             available_tickers.clone(),
             available_intervals.clone(),
-            available_tecnicals.clone(),
-            config.max_n,
+            available_technicals.clone(),
             config.max_depth,
+            config.max_n,
         ))
         .of_size(config.population_size)
         .uniform_at_random();
@@ -61,7 +61,7 @@ async fn run() -> Result<(), KryptoError> {
             config.clone(),
             dataset.clone(),
             available_tickers.clone(),
-            available_tecnicals.clone(),
+            available_technicals.clone(),
         ))
         .with_selection(MaximizeSelector::new(
             selection_ratio,
@@ -74,15 +74,15 @@ async fn run() -> Result<(), KryptoError> {
             config.mutation_rate,
             available_tickers.clone(),
             available_intervals.clone(),
-            config.max_n,
             config.max_depth,
+            config.max_n,
         ))
         .with_reinsertion(ElitistReinserter::new(
             TradingStrategyFitnessFunction::new(
                 config.clone(),
                 dataset,
                 available_tickers.clone(),
-                available_tecnicals.clone(),
+                available_technicals.clone(),
             ),
             true,
             reinsertion_ratio,
@@ -107,7 +107,7 @@ async fn run() -> Result<(), KryptoError> {
                 let phenotype = best_solution
                     .solution
                     .genome
-                    .to_phenotype(&available_tickers, &available_tecnicals);
+                    .to_phenotype(&available_tickers, &available_technicals);
                 info!(
                     "Generation {}: Best fitness: {:.2}%, Strategy: {:?}",
                     step.iteration,
@@ -136,7 +136,7 @@ async fn run() -> Result<(), KryptoError> {
                 let phenotype = best_solution
                     .solution
                     .genome
-                    .to_phenotype(&available_tickers, &available_tecnicals);
+                    .to_phenotype(&available_tickers, &available_technicals);
                 // Display the best trading strategy
                 info!("Best trading strategy: {}", phenotype);
                 break;
