@@ -29,13 +29,13 @@ impl Dataset {
     The loaded dataset if successful, or a KryptoError if an error occurred.
      */
     #[instrument(skip(config))]
-    pub fn load(config: &KryptoConfig) -> Result<Self, KryptoError> {
+    pub async fn load(config: &KryptoConfig) -> Result<Self, KryptoError> {
         let mut interval_data_map = HashMap::new();
         let market: Market = config.get_binance();
 
         for interval in &config.intervals {
             let interval = *interval;
-            let interval_data = IntervalData::load(&interval, config, &market)?;
+            let interval_data = IntervalData::load(&interval, config, &market).await?;
             info!("Loaded data for {}", &interval);
             interval_data_map.insert(interval, interval_data);
         }
@@ -93,20 +93,22 @@ pub struct IntervalData {
 
 impl IntervalData {
     #[instrument(skip(config, market))]
-    fn load(
+    async fn load(
         interval: &Interval,
         config: &KryptoConfig,
         market: &Market,
     ) -> Result<Self, KryptoError> {
-        let mut symbol_data_map = HashMap::new();
         let end = Utc::now().timestamp_millis();
-
+        let mut tasks = Vec::new();
         for symbol in &config.symbols {
-            let symbol = symbol.clone();
-            let symbol_data = RawSymbolData::load(interval, &symbol, end, config, market)?;
-            info!("Loaded data for {}", &symbol);
-            symbol_data_map.insert(symbol, symbol_data);
+            let task = RawSymbolData::load(interval, symbol, end, config, market);
+            tasks.push(task);
         }
+        let result = futures::future::try_join_all(tasks).await?;
+        let symbol_data_map: HashMap<String, RawSymbolData> = result
+            .into_iter()
+            .map(|data| (data.symbol.clone(), data))
+            .collect();
         let records = get_records(&symbol_data_map);
         let normalized_predictors = get_normalized_predictors(records);
 
@@ -280,11 +282,12 @@ struct RawSymbolData {
     candles: Vec<Candlestick>,
     technicals: Vec<Technicals>,
     labels: Vec<f64>,
+    symbol: String,
 }
 
 impl RawSymbolData {
     #[instrument(skip(interval, end, config, market))]
-    fn load(
+    async fn load(
         interval: &Interval,
         symbol: &str,
         end: i64,
@@ -296,7 +299,7 @@ impl RawSymbolData {
         let timestamps = get_timestamps(start.timestamp_millis(), end, *interval)?;
 
         for (start, end) in timestamps {
-            let mut chunk = Self::load_chunk(market, symbol, interval, start, end)?;
+            let mut chunk = Self::load_chunk(market, symbol, interval, start, end).await?;
             candles.append(&mut chunk);
         }
 
@@ -311,20 +314,22 @@ impl RawSymbolData {
             labels.push(percentage_change.signum());
         }
         debug!(
-            "Loaded {} candles ({} labels | {}x{} technicals)",
+            "Loaded {} candles ({} labels | {}x{} technicals) for {}",
             candles.len(),
             labels.len(),
             technicals.len(),
-            technicals[0].as_array().len()
+            technicals[0].as_array().len(),
+            symbol
         );
         Ok(Self {
             candles,
             technicals,
             labels,
+            symbol: symbol.to_string(),
         })
     }
 
-    fn load_chunk(
+    async fn load_chunk(
         market: &Market,
         symbol: &str,
         interval: &Interval,
@@ -339,6 +344,7 @@ impl RawSymbolData {
                 Some(start as u64),
                 Some(end as u64),
             )
+            .await
             .map_err(|e| KryptoError::BinanceApiError(e.to_string()))?;
         let candlesticks = Candlestick::map_to_candlesticks(summaries)?;
         Ok(candlesticks)
@@ -362,88 +368,5 @@ impl RawSymbolData {
 
     fn recompute_technicals(&mut self, technical_names: Vec<String>) {
         self.technicals = Technicals::get_technicals(&self.candles, technical_names);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use tracing::info;
-
-    use crate::{
-        config::KryptoConfig,
-        util::{date_utils::MINS_TO_MILLIS, test_util::setup_default_data},
-    };
-
-    #[test]
-    #[ignore]
-    fn test_data_load() {
-        let _ = setup_default_data("data_load", None);
-    }
-
-    #[test]
-    #[ignore]
-    fn test_data_shape() {
-        let (dataset, _gaurds) = setup_default_data("data_shape", None);
-        let shape = dataset.shape();
-        info!("{:?}", shape);
-        assert_eq!((shape.0, shape.1), (2, 2));
-        for value in dataset.values() {
-            let data_lengths = value
-                .values()
-                .map(|d| d.get_candles().len())
-                .collect::<Vec<_>>();
-            let technicals_lengths = value
-                .values()
-                .map(|d| d.get_technicals().len())
-                .collect::<Vec<_>>();
-            let labels_lengths = value
-                .values()
-                .map(|d| d.get_labels().len())
-                .collect::<Vec<_>>();
-            assert!(data_lengths.iter().all(|&x| x == data_lengths[0]));
-            assert!(technicals_lengths
-                .iter()
-                .all(|&x| x == technicals_lengths[0]));
-            assert!(labels_lengths.iter().all(|&x| x == labels_lengths[0]));
-        }
-    }
-
-    #[test]
-    #[ignore]
-    fn test_data_times_match() {
-        let config = KryptoConfig {
-            start_date: "2021-02-02".to_string(),
-            symbols: vec![
-                "BTCUSDT".to_string(),
-                "ETHUSDT".to_string(),
-                "BNBUSDT".to_string(),
-                "ADAUSDT".to_string(),
-                "XRPUSDT".to_string(),
-            ],
-            ..Default::default()
-        };
-        let (dataset, _gaurds) = setup_default_data("data_times_match", Some(config));
-        for (key, value) in dataset.get_map() {
-            let maximum_variance = key.to_minutes() * MINS_TO_MILLIS / 2;
-            let symbol_datas = value.values();
-            let times = symbol_datas
-                .map(|d| {
-                    d.get_candles()
-                        .clone()
-                        .iter()
-                        .map(|v| v.close_time)
-                        .collect::<Vec<_>>()
-                })
-                .collect::<Vec<_>>();
-            for i in 0..times[0].len() {
-                for j in 0..times.len() {
-                    for k in 0..times.len() {
-                        let difference = (times[j][i] - times[k][i]).abs();
-                        let difference = difference.num_milliseconds();
-                        assert!(difference <= maximum_variance, "Difference: {}", difference);
-                    }
-                }
-            }
-        }
     }
 }

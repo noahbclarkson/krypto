@@ -19,18 +19,20 @@ use krypto::{
 };
 use tracing::{error, info};
 
-pub fn main() {
+#[tokio::main]
+pub async fn main() {
     let (_, file_guard) = setup_tracing(Some("logs")).expect("Failed to set up tracing");
-    let result = run();
+    let result = run().await;
     if let Err(e) = result {
         error!("Error: {:?}", e);
     }
     drop(file_guard);
 }
 
-fn run() -> Result<(), KryptoError> {
-    let config = KryptoConfig::read_config::<&str>(None)?;
-    let dataset = Dataset::load(&config)?;
+
+async fn run() -> Result<(), KryptoError> {
+    let config = KryptoConfig::read_config::<&str>(None).await?;
+    let dataset = Dataset::load(&config).await?;
 
     let selection_ratio = 0.7;
     let num_individuals_per_parents = 2;

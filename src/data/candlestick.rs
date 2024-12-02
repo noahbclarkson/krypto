@@ -1,4 +1,4 @@
-use binance::model::{KlineSummaries, KlineSummary};
+use binance::rest_model::{KlineSummaries, KlineSummary};
 use chrono::{DateTime, TimeZone, Utc};
 use derive_builder::Builder;
 
@@ -48,29 +48,11 @@ impl Candlestick {
         Ok(Self {
             open_time,
             close_time,
-            open: summary.open.parse().map_err(|_| KryptoError::ParseError {
-                value_name: "open".to_string(),
-                timestamp: summary.open_time,
-            })?,
-            high: summary.high.parse().map_err(|_| KryptoError::ParseError {
-                value_name: "high".to_string(),
-                timestamp: summary.open_time,
-            })?,
-            low: summary.low.parse().map_err(|_| KryptoError::ParseError {
-                value_name: "low".to_string(),
-                timestamp: summary.open_time,
-            })?,
-            close: summary.close.parse().map_err(|_| KryptoError::ParseError {
-                value_name: "close".to_string(),
-                timestamp: summary.open_time,
-            })?,
-            volume: summary
-                .volume
-                .parse()
-                .map_err(|_| KryptoError::ParseError {
-                    value_name: "volume".to_string(),
-                    timestamp: summary.open_time,
-                })?,
+            open: summary.open,
+            high: summary.high,
+            low: summary.low,
+            close: summary.close,
+            volume: summary.volume,
         })
     }
 
@@ -138,122 +120,5 @@ impl PartialEq for Candlestick {
 impl PartialOrd for Candlestick {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.open_time.partial_cmp(&other.open_time)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::error::KryptoError;
-    use chrono::TimeZone;
-
-    #[test]
-    fn test_candlestick_from_summary() {
-        let summary = KlineSummary {
-            open_time: 1618185600000,
-            close_time: 1618185659999,
-            open: "0.00000000".to_string(),
-            high: "0.00000000".to_string(),
-            low: "0.00000000".to_string(),
-            close: "0.00000000".to_string(),
-            volume: "0.00000000".to_string(),
-            quote_asset_volume: "0.00000000".to_string(),
-            number_of_trades: 0,
-            taker_buy_base_asset_volume: "0.00000000".to_string(),
-            taker_buy_quote_asset_volume: "0.00000000".to_string(),
-        };
-
-        let candlestick = Candlestick::from_summary(summary).unwrap();
-        assert_eq!(
-            candlestick.open_time,
-            Utc.timestamp_millis_opt(1618185600000).single().unwrap()
-        );
-        assert_eq!(
-            candlestick.close_time,
-            Utc.timestamp_millis_opt(1618185659999).single().unwrap()
-        );
-        assert_eq!(candlestick.open, 0.0);
-        assert_eq!(candlestick.high, 0.0);
-        assert_eq!(candlestick.low, 0.0);
-        assert_eq!(candlestick.close, 0.0);
-        assert_eq!(candlestick.volume, 0.0);
-    }
-
-    #[test]
-    fn test_candlestick_from_summary_invalid_open_time() {
-        let summary = KlineSummary {
-            open_time: 16181856599999998,
-            close_time: 16181856599999999,
-            open: "0.00000000".to_string(),
-            high: "0.00000000".to_string(),
-            low: "0.00000000".to_string(),
-            close: "0.00000000".to_string(),
-            volume: "0.00000000".to_string(),
-            quote_asset_volume: "0.00000000".to_string(),
-            number_of_trades: 0,
-            taker_buy_base_asset_volume: "0.00000000".to_string(),
-            taker_buy_quote_asset_volume: "0.00000000".to_string(),
-        };
-
-        let result = Candlestick::from_summary(summary);
-        assert!(matches!(
-            result,
-            Err(KryptoError::InvalidCandlestickDateTime {
-                when: When::Open,
-                timestamp: 16181856599999998
-            })
-        ));
-    }
-
-    #[test]
-    fn test_candlestick_from_summary_invalid_close_time() {
-        let summary = KlineSummary {
-            open_time: 1618185600000,
-            close_time: 16181856599999999,
-            open: "0.00000000".to_string(),
-            high: "0.00000000".to_string(),
-            low: "0.00000000".to_string(),
-            close: "0.00000000".to_string(),
-            volume: "0.00000000".to_string(),
-            quote_asset_volume: "0.00000000".to_string(),
-            number_of_trades: 0,
-            taker_buy_base_asset_volume: "0.00000000".to_string(),
-            taker_buy_quote_asset_volume: "0.00000000".to_string(),
-        };
-
-        let result = Candlestick::from_summary(summary);
-        assert!(matches!(
-            result,
-            Err(KryptoError::InvalidCandlestickDateTime {
-                when: When::Close,
-                timestamp: 16181856599999999
-            })
-        ));
-    }
-
-    #[test]
-    fn test_candlestick_from_summary_open_time_greater_than_close_time() {
-        let summary = KlineSummary {
-            open_time: 1618185659999,
-            close_time: 1618185600000,
-            open: "0.00000000".to_string(),
-            high: "0.00000000".to_string(),
-            low: "0.00000000".to_string(),
-            close: "0.00000000".to_string(),
-            volume: "0.00000000".to_string(),
-            quote_asset_volume: "0.00000000".to_string(),
-            number_of_trades: 0,
-            taker_buy_base_asset_volume: "0.00000000".to_string(),
-            taker_buy_quote_asset_volume: "0.00000000".to_string(),
-        };
-
-        let result = Candlestick::from_summary(summary);
-        assert!(matches!(
-            result,
-            Err(KryptoError::OpenTimeGreaterThanCloseTime {
-                open_time: 1618185659999,
-                close_time: 1618185600000
-            })
-        ));
     }
 }

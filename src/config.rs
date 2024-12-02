@@ -117,7 +117,7 @@ impl KryptoConfig {
     ///
     /// A `Result` containing the `KryptoConfig` on success or an `Error` on failure.
     #[instrument(level = "info", skip(filename))]
-    pub fn read_config<P: AsRef<Path>>(filename: Option<P>) -> Result<Self, KryptoError> {
+    pub async fn read_config<P: AsRef<Path>>(filename: Option<P>) -> Result<Self, KryptoError> {
         let path = filename
             .map(|p| p.as_ref().to_path_buf())
             .unwrap_or_else(|| Path::new("config.yml").to_path_buf());
@@ -138,16 +138,14 @@ impl KryptoConfig {
         let file = File::open(&path)?;
         let reader = BufReader::new(file);
         let config: Self = from_reader(reader)?;
-        let account: Account = config.get_binance();
+        let account = config.get_binance::<Account>();
         if config.api_key.is_some() || config.api_secret.is_some() {
-            let account_info = account.get_account().map_err(|e| {
+            let account_info = account.get_account().await.map_err(|e| {
                 error!("Failed to get account info: {}", e);
                 KryptoError::BinanceApiError(e.to_string())
             })?;
             for asset in account_info.balances {
-                let free = asset.free.parse::<f64>().unwrap_or(0.0);
-                let locked = asset.locked.parse::<f64>().unwrap_or(0.0);
-                if free + locked > 0.0 {
+                if asset.free + asset.locked > 0.0 {
                     info!(
                         "Asset: {}, Free: {}, Locked: {}",
                         asset.asset, asset.free, asset.locked
