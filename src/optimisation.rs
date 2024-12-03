@@ -457,6 +457,11 @@ impl MutationOp<TradingStrategyGenome> for TradingStrategyMutation {
             }
         }
 
+        if new_genome.technicals.iter().all(|&b| !b) {
+            let index = rng.gen_range(0..new_genome.technicals.len());
+            new_genome.technicals[index] = true;
+        }
+
         if rng.gen_bool(self.mutation_rate) {
             new_genome.d = rng.gen_range(1..=self.max_depth);
         }
@@ -464,8 +469,12 @@ impl MutationOp<TradingStrategyGenome> for TradingStrategyMutation {
         let tech_count = new_genome.technicals.iter().filter(|b| **b).count();
         let tickers_count = new_genome.tickers.iter().filter(|b| **b).count();
         if rng.gen_bool(self.mutation_rate) {
-            let max_n = new_genome.d * tickers_count * tech_count - 1;
+            let max_n = new_genome.d * tickers_count * tech_count;
             new_genome.n = rng.gen_range(1..=max_n.min(self.max_n));
+        }
+
+        if new_genome.n > new_genome.d * tickers_count * tech_count {
+            new_genome.n = new_genome.d * tickers_count * tech_count;
         }
 
         if rng.gen_bool(self.mutation_rate) {
