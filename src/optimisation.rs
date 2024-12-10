@@ -14,8 +14,7 @@ use tracing::{debug, info};
 
 use crate::{
     algorithm::algo::{Algorithm, AlgorithmSettings},
-    config::KryptoConfig,
-    data::{dataset::Dataset, interval::Interval},
+    config::KryptoConfig, data::{dataset::overall_dataset::Dataset, interval::Interval},
 };
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq)]
@@ -278,7 +277,7 @@ impl FitnessFunction<TradingStrategyGenome, i64> for TradingStrategyFitnessFunct
             }
         }
         let algorithm = algorithm.unwrap();
-        let monthly_return = algorithm.get_monthly_return();
+        let monthly_return = algorithm.result.monthly_return;
         if monthly_return.is_nan() || monthly_return.is_infinite() {
             return i64::MIN;
         }
@@ -359,8 +358,8 @@ impl CrossoverOp<TradingStrategyGenome> for TradingStrategyCrossover {
 
         let tech_count = child_technicals.iter().filter(|b| **b).count();
         let tickers_count = child_tickers.iter().filter(|b| **b).count();
-        let child_d = (parent1.d + parent2.d) / 2;
-        let mut child_n = (parent1.n + parent2.n) / 2;
+        let child_d = 1.max((parent1.d + parent2.d) / 2);
+        let mut child_n = 1.max((parent1.n + parent2.n) / 2);
         if child_n > child_d * tickers_count * tech_count {
             child_n = child_d * tickers_count * tech_count;
         }

@@ -1,5 +1,7 @@
 use std::fmt;
 
+use binance::rest_model::OrderSide;
+
 use crate::{
     config::KryptoConfig, data::candlestick::Candlestick, error::KryptoError,
     util::date_utils::days_between,
@@ -8,9 +10,9 @@ use crate::{
 const STARTING_CASH: f64 = 1000.0;
 
 pub struct TestData {
-    pub cash_history: Vec<f64>,
     pub accuracy: f64,
     pub monthly_return: f64,
+    pub final_cash: f64,
 }
 
 impl TestData {
@@ -90,9 +92,9 @@ impl TestData {
         };
 
         Ok(Self {
-            cash_history: inner.cash_history,
             accuracy,
             monthly_return,
+            final_cash: inner.cash,
         })
     }
 
@@ -123,7 +125,7 @@ impl fmt::Display for TestData {
 }
 
 #[derive(Debug, Clone)]
-enum Position {
+pub enum Position {
     Long(f64),
     Short(f64),
 }
@@ -146,11 +148,16 @@ impl PartialEq for Position {
     }
 }
 
+impl PartialEq<OrderSide> for Position {
+    fn eq(&self, other: &OrderSide) -> bool {
+        matches!((self, other), (Position::Long(_), OrderSide::Sell) | (Position::Short(_), OrderSide::Buy))
+    }
+}
+
 struct InnerTestData {
     cash: f64,
     correct: u32,
     incorrect: u32,
-    cash_history: Vec<f64>,
 }
 
 impl InnerTestData {
@@ -158,7 +165,6 @@ impl InnerTestData {
         let return_now = position.get_return(candle.close);
         self.cash += self.cash * return_now * margin;
         self.cash -= self.cash * fee * margin;
-        self.cash_history.push(self.cash);
 
         if return_now > 0.0 {
             self.correct += 1;
@@ -174,7 +180,6 @@ impl Default for InnerTestData {
             cash: STARTING_CASH,
             correct: 0,
             incorrect: 0,
-            cash_history: vec![STARTING_CASH],
         }
     }
 }

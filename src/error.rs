@@ -5,21 +5,23 @@ pub enum KryptoError {
     #[error("Invalid candlestick date time on {when} occurred with time {timestamp}.")]
     InvalidCandlestickDateTime { when: When, timestamp: i64 },
     #[error("Failed to parse value {value_name} at time {timestamp}.")]
-    ParseError { value_name: String, timestamp: i64 },
+    CandlestickParseError { value_name: String, timestamp: i64 },
     #[error("Open time is greater than close time for candle. Open time: {open_time}, Close time: {close_time}.")]
     OpenTimeGreaterThanCloseTime { open_time: i64, close_time: i64 },
     #[error("Parse Interval Error: {0}")]
     ParseIntervalError(#[from] ParseIntervalError),
+    #[error("Failed to parse value error: {0}")]
+    ParseError(String),
     #[error("IO Error: {0}")]
     IoError(#[from] std::io::Error),
-    #[error("Failed to parse date: {0}")]
-    ParseDateError(#[from] chrono::ParseError),
-    #[error("Failed to convert date: {0}")]
-    DateConversionError(String),
+    #[error("Chrono Error: {0}")]
+    ChronoError(#[from] chrono::ParseError),
     #[error("Serde YAML Error: {0}")]
     SerdeYamlError(#[from] serde_yaml::Error),
     #[error("Binance API Error: {0}")]
     BinanceApiError(String),
+    #[error("Failed to convert date: {0}")]
+    DateConversionError(String),
     #[error("Failed to fit PLS model: {0}")]
     FitError(#[from] linfa_pls::PlsError),
     #[error("CSV Error: {0}")]
@@ -34,6 +36,10 @@ pub enum KryptoError {
     InvalidDataset,
     #[error("PLS Fit Error: {0}")]
     PlsError(String),
+    #[error("Symbol not found in exchange information")]
+    SymbolNotFound,
+    #[error("Interval not found: {0}")]
+    IntervalNotFound(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]

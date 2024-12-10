@@ -7,17 +7,13 @@ use crate::{
     algorithm::{
         pls::{get_pls, predict},
         test_data::TestData,
-    },
-    config::KryptoConfig,
-    data::dataset::IntervalData,
-    error::KryptoError,
-    util::math_utils::median,
+    }, config::KryptoConfig, data::dataset::interval_data::IntervalData, error::KryptoError, util::math_utils::median
 };
 
 pub struct Algorithm {
     pub pls: PlsRegression<f64>,
     settings: AlgorithmSettings,
-    result: AlgorithmResult,
+    pub result: AlgorithmResult,
 }
 
 impl Algorithm {
@@ -136,31 +132,13 @@ impl Algorithm {
         // Evaluate performance metrics
         let monthly_return = test_data.monthly_return;
         let accuracy = test_data.accuracy;
+        let overall_return = test_data.final_cash;
 
         let result = AlgorithmResult::new(monthly_return, accuracy);
-        info!("Backtest on all seen data result: {}", result);
+        info!("Backtest on all seen data result: {} with final return: ${:.2}", result, overall_return);
         Ok(result)
     }
 
-    pub fn get_symbol(&self) -> &str {
-        &self.settings.symbol
-    }
-
-    pub fn get_monthly_return(&self) -> f64 {
-        self.result.monthly_return
-    }
-
-    pub fn get_accuracy(&self) -> f64 {
-        self.result.accuracy
-    }
-
-    pub fn get_n_components(&self) -> usize {
-        self.settings.n
-    }
-
-    pub fn get_depth(&self) -> usize {
-        self.settings.depth
-    }
 }
 
 impl fmt::Display for Algorithm {
