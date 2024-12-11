@@ -233,6 +233,9 @@ async fn trade(config: &KryptoConfig) -> Result<(), KryptoError> {
     let pls = algorithm.pls;
     let mut position = None;
     let mut ka = KryptoAccount::new(config.clone(), symbol.clone()).await;
+    let isolated_details = ka.isolated_details().await?;
+    let isolated_details = &isolated_details.assets[0];
+    info!("Isolated margin account details: {:?}", isolated_details);
     loop {
         let dataset = Dataset::load(config).await?;
         let interval_ds = dataset
@@ -245,8 +248,9 @@ async fn trade(config: &KryptoConfig) -> Result<(), KryptoError> {
             last_candle.close_time.timestamp_millis() - Utc::now().timestamp_millis() - 180000;
         if time_until_close > 0 {
             info!(
-                "Waiting for {}s until next candle",
-                time_until_close as f64 / 1000.0
+                "Waiting for {}s until next candle which closes at {}",
+                time_until_close as f64 / 1000.0,
+                last_candle.close_time
             );
             tokio::time::sleep(tokio::time::Duration::from_millis(time_until_close as u64)).await;
         }
@@ -274,6 +278,7 @@ async fn trade(config: &KryptoConfig) -> Result<(), KryptoError> {
             print_trade_result(result);
             position = Some(side);
         }
+        tokio::time::sleep(tokio::time::Duration::from_secs(600)).await;
     }
 }
 

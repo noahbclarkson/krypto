@@ -4,8 +4,8 @@ use binance::{
     margin::Margin,
     market::Market,
     rest_model::{
-        ExchangeInformation, Filters, MarginOrder, MarginOrderResult, OrderSide,
-        OrderType, SideEffectType, Symbol,
+        ExchangeInformation, Filters, IsolatedMarginAccountDetails, MarginOrder, MarginOrderResult,
+        OrderSide, OrderType, SideEffectType, Symbol,
     },
 };
 use chrono::Utc;
@@ -106,16 +106,18 @@ impl KryptoAccount {
     }
 
     pub async fn base_asset_quantity(&self) -> Result<f64, KryptoError> {
-        let assets = self
-            .margin
+        let asset = &self.isolated_details().await?.assets[0];
+        let quantity = asset.base_asset.borrowed + asset.base_asset.free;
+        Ok(quantity)
+    }
+
+    pub async fn isolated_details(&self) -> Result<IsolatedMarginAccountDetails, KryptoError> {
+        self.margin
             .isolated_details(Some(vec![self.symbol.clone()]))
             .await
             .map_err(|e| {
-                KryptoError::BinanceApiError(format!("Failed to get base asset quantity: {}", e))
-            })?;
-        let asset = assets.assets[0].clone();
-        let quantity = asset.base_asset.borrowed + asset.base_asset.free;
-        Ok(quantity)
+                KryptoError::BinanceApiError(format!("Failed to get isolated details: {}", e))
+            })
     }
 
     pub async fn make_trade(
