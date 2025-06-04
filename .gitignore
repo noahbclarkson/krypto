@@ -13,3 +13,4 @@ Cargo.lock
 config.yml
 *.csv
 *.log
+krypto_report.md

@@ -1,11 +1,12 @@
 use std::{fmt, str::FromStr};
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 use crate::error::ParseIntervalError;
 
-/// Represents various time intervals.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd)]
+/// Represents various time intervals used by Binance.
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")] // Use custom conversion for string representation
 pub enum Interval {
     OneMinute,
     ThreeMinutes,
@@ -42,8 +43,13 @@ impl Interval {
             Interval::OneDay => 1440,
             Interval::ThreeDays => 4320,
             Interval::OneWeek => 10080,
-            Interval::OneMonth => 43200,
+            Interval::OneMonth => 43200, // Approximation
         }
+    }
+
+    /// Returns the duration in milliseconds.
+    pub fn to_milliseconds(&self) -> i64 {
+        self.to_minutes() * 60 * 1000
     }
 
     /// Creates an `Interval` from the number of minutes.
@@ -55,7 +61,7 @@ impl Interval {
     /// # Returns
     ///
     /// A `Result` containing the `Interval` on success or a `ParseIntervalError` on failure.
-    pub fn from_minutes(minutes: usize) -> Result<Self, ParseIntervalError> {
+    pub fn from_minutes(minutes: i64) -> Result<Self, ParseIntervalError> {
         match minutes {
             1 => Ok(Interval::OneMinute),
             3 => Ok(Interval::ThreeMinutes),
@@ -72,10 +78,12 @@ impl Interval {
             4320 => Ok(Interval::ThreeDays),
             10080 => Ok(Interval::OneWeek),
             43200 => Ok(Interval::OneMonth),
-            _ => Err(ParseIntervalError::ParseIntError(minutes)),
+            _ => Err(ParseIntervalError::ParseIntError(minutes as usize)), // Keep usize for error type consistency?
         }
     }
 }
+
+// --- String Conversion ---
 
 impl FromStr for Interval {
     type Err = ParseIntervalError;
@@ -97,7 +105,7 @@ impl FromStr for Interval {
             "3d" => Ok(Interval::ThreeDays),
             "1w" => Ok(Interval::OneWeek),
             "1M" => Ok(Interval::OneMonth),
-            _ => Err(ParseIntervalError::ParseError(s.to_string())),
+            _ => Err(ParseIntervalError::ParseStringError(s.to_string())),
         }
     }
 }
@@ -125,22 +133,19 @@ impl fmt::Display for Interval {
     }
 }
 
-impl Serialize for Interval {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&self.to_string())
+// --- Serde Integration ---
+
+impl From<Interval> for String {
+    fn from(interval: Interval) -> Self {
+        interval.to_string()
     }
 }
 
-impl<'de> Deserialize<'de> for Interval {
-    fn deserialize<D>(deserializer: D) -> Result<Interval, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Interval::from_str(&s).map_err(serde::de::Error::custom)
+impl TryFrom<String> for Interval {
+    type Error = ParseIntervalError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Interval::from_str(&value)
     }
 }
 
@@ -149,7 +154,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_to_str() {
+    fn test_to_string() {
+        // Renamed from test_to_str
         assert_eq!(Interval::OneMinute.to_string(), "1m");
         assert_eq!(Interval::ThreeMinutes.to_string(), "3m");
         assert_eq!(Interval::FiveMinutes.to_string(), "5m");
@@ -187,6 +193,13 @@ mod tests {
     }
 
     #[test]
+    fn test_to_milliseconds() {
+        assert_eq!(Interval::OneMinute.to_milliseconds(), 60_000);
+        assert_eq!(Interval::OneHour.to_milliseconds(), 3_600_000);
+        assert_eq!(Interval::OneDay.to_milliseconds(), 86_400_000);
+    }
+
+    #[test]
     fn test_from_minutes() {
         assert_eq!(Interval::from_minutes(1).unwrap(), Interval::OneMinute);
         assert_eq!(Interval::from_minutes(3).unwrap(), Interval::ThreeMinutes);
@@ -215,7 +228,7 @@ mod tests {
             let result = Interval::from_minutes(minutes);
             assert!(result.is_err());
             match result {
-                Err(ParseIntervalError::ParseIntError(m)) => assert_eq!(m, minutes),
+                Err(ParseIntervalError::ParseIntError(m)) => assert_eq!(m, minutes as usize),
                 _ => panic!("Expected ParseIntError"),
             }
         }
@@ -247,22 +260,41 @@ mod tests {
             let result = s.parse::<Interval>();
             assert!(result.is_err());
             match result {
-                Err(ParseIntervalError::ParseError(ref e)) => assert_eq!(e, s),
-                _ => panic!("Expected ParseError"),
+                Err(ParseIntervalError::ParseStringError(ref e)) => assert_eq!(e, s), // Changed error variant name
+                _ => panic!("Expected ParseStringError"),
             }
         }
     }
 
     #[test]
-    fn test_deserialize() {
-        let interval = serde_yaml::from_str::<Interval>("1m\n").unwrap();
-        assert_eq!(interval, Interval::OneMinute);
+    fn test_serde_serialization() {
+        let interval = Interval::FourHours;
+        let yaml = serde_yaml::to_string(&interval).unwrap();
+        assert_eq!(yaml.trim(), "4h"); // trim to remove potential newline
+
+        let json = serde_json::to_string(&interval).unwrap();
+        assert_eq!(json, "\"4h\"");
     }
 
     #[test]
-    fn test_serialize() {
-        let interval = Interval::OneMinute;
-        let result = serde_yaml::to_string(&interval).unwrap();
-        assert_eq!(result, "1m\n");
+    fn test_serde_deserialization() {
+        let yaml = "15m";
+        let interval: Interval = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(interval, Interval::FifteenMinutes);
+
+        let json = "\"1d\"";
+        let interval_json: Interval = serde_json::from_str(json).unwrap();
+        assert_eq!(interval_json, Interval::OneDay);
+
+        let invalid_yaml = "10x";
+        let result: Result<Interval, _> = serde_yaml::from_str(invalid_yaml);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ordering() {
+        assert!(Interval::OneMinute < Interval::OneHour);
+        assert!(Interval::OneDay > Interval::TwelveHours);
+        assert_eq!(Interval::FourHours, Interval::FourHours);
     }
 }
