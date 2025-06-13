@@ -22,7 +22,6 @@ use std::{
     hash::{Hash, Hasher},
     path::PathBuf,
 };
-use csv;
 use binance::rest_model::OrderSide;
 use std::sync::{Arc, Mutex};
 use tokio::task;
