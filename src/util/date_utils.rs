@@ -18,8 +18,7 @@ pub fn date_to_datetime(date: &NaiveDate) -> Result<DateTime<Utc>, KryptoError> 
     match date.and_hms_opt(0, 0, 0) {
         Some(naive_datetime) => Ok(Utc.from_utc_datetime(&naive_datetime)),
         None => Err(KryptoError::DateConversionError(format!(
-            "Failed to create naive datetime from date: {}",
-            date
+            "Failed to create naive datetime from date: {date}"
         ))),
     }
 }
@@ -49,8 +48,7 @@ pub fn get_timestamps(
     let interval_millis = interval.to_milliseconds();
     if interval_millis <= 0 {
         return Err(KryptoError::ConfigError(format!(
-            "Invalid interval duration: {} ms",
-            interval_millis
+            "Invalid interval duration: {interval_millis} ms"
         )));
     }
 

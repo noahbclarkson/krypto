@@ -129,7 +129,7 @@ impl fmt::Display for Interval {
             Interval::OneWeek => "1w",
             Interval::OneMonth => "1M",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 

@@ -46,34 +46,28 @@ async fn test_load_full_dataset() {
 
     // Add more assertions about dataset shape, content, etc.
     let shape = dataset.shape();
-    println!("Loaded dataset shape: {:?}", shape);
+    println!("Loaded dataset shape: {shape:?}");
     for interval in &config.intervals {
         assert!(
             dataset.get(interval).is_some(),
-            "Interval {} missing from dataset",
-            interval
+            "Interval {interval} missing from dataset"
         );
         let interval_data = dataset.get(interval).unwrap();
         assert_eq!(
             interval_data.len(),
             config.symbols.len(),
-            "Interval {} does not contain all configured symbols",
-            interval
+            "Interval {interval} does not contain all configured symbols"
         );
         // Check if symbol data is loaded
         for symbol in &config.symbols {
             assert!(
                 interval_data.get(symbol).is_some(),
-                "Symbol {} missing from interval {}",
-                symbol,
-                interval
+                "Symbol {symbol} missing from interval {interval}"
             );
             let symbol_data = interval_data.get(symbol).unwrap();
             assert!(
                 !symbol_data.is_empty(),
-                "Symbol data for {} on interval {} is empty",
-                symbol,
-                interval
+                "Symbol data for {symbol} on interval {interval} is empty"
             );
         }
     }

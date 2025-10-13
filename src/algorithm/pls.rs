@@ -64,8 +64,7 @@ pub fn get_pls(
         // n = max_components; // Adjust n or return error? Adjusting might hide issues. Let linfa handle it?
         // Let's return an error for clarity. The GA should ideally not generate invalid n.
         return Err(KryptoError::ConfigError(format!(
-            "Number of PLS components ({}) cannot exceed min(samples, features) ({})",
-            n, max_components
+            "Number of PLS components ({n}) cannot exceed min(samples, features) ({max_components})"
         )));
     }
 
@@ -151,5 +150,5 @@ pub fn predict(pls: &PlsRegression<f64>, features: &[Vec<f64>]) -> Result<Vec<f6
 
     // Predict and convert result
     let y_hat = pls.predict(&arr_features).as_targets().to_owned();
-    Ok(y_hat.into_raw_vec())
+    Ok(y_hat.into_raw_vec_and_offset().0)
 }

@@ -35,8 +35,7 @@ impl KryptoAccount {
                 .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
         {
             return Err(KryptoError::ConfigError(format!(
-                "Invalid symbol format: {}",
-                symbol
+                "Invalid symbol format: {symbol}"
             )));
         }
 
@@ -63,7 +62,7 @@ impl KryptoAccount {
     #[instrument(skip(self))]
     pub async fn exchange_info(&self) -> Result<ExchangeInformation, KryptoError> {
         self.general.exchange_info().await.map_err(|e| {
-            KryptoError::BinanceApiError(format!("Failed to get exchange information: {}", e))
+            KryptoError::BinanceApiError(format!("Failed to get exchange information: {e}"))
         })
     }
 
@@ -146,8 +145,7 @@ impl KryptoAccount {
             .await
             .map_err(|e| {
                 KryptoError::BinanceApiError(format!(
-                    "Failed to get max borrowable for {}: {}",
-                    base_asset, e
+                    "Failed to get max borrowable for {base_asset}: {e}"
                 ))
             })?;
         Ok(asset.amount)
@@ -242,8 +240,7 @@ impl KryptoAccount {
                 warn!("Reduce only order requested for side {:?}, but net position is {}. No trade placed.", side, net_position);
                 // Return a dummy result or a specific error? Let's return an error.
                 return Err(KryptoError::BinanceApiError(format!(
-                    "Reduce only order for {:?} invalid with net position {}",
-                    side, net_position
+                    "Reduce only order for {side:?} invalid with net position {net_position}"
                 )));
             }
             // Take absolute value and subtract a small amount to ensure it closes fully? Or rely on AutoRepay?
@@ -254,8 +251,7 @@ impl KryptoAccount {
             let percent = percentage_of_max_borrow.unwrap_or(config.trade_qty_percentage);
             if !(0.0..=1.0).contains(&percent) {
                 return Err(KryptoError::ConfigError(format!(
-                    "Trade quantity percentage ({}) must be between 0.0 and 1.0",
-                    percent
+                    "Trade quantity percentage ({percent}) must be between 0.0 and 1.0"
                 )));
             }
             let max_borrow = self.max_borrowable().await?;
@@ -265,8 +261,7 @@ impl KryptoAccount {
         // Ensure quantity is positive and non-zero after calculation
         if quantity <= 0.0 {
             return Err(KryptoError::BinanceApiError(format!(
-                "Calculated trade quantity ({}) is zero or negative.",
-                quantity
+                "Calculated trade quantity ({quantity}) is zero or negative."
             )));
         }
 
@@ -276,8 +271,7 @@ impl KryptoAccount {
         // Ensure formatted quantity is still positive after potential rounding
         if formatted_quantity <= 0.0 {
             return Err(KryptoError::BinanceApiError(format!(
-                "Formatted trade quantity ({}) is zero or negative after applying precision.",
-                formatted_quantity
+                "Formatted trade quantity ({formatted_quantity}) is zero or negative after applying precision."
             )));
         }
 
@@ -316,7 +310,7 @@ impl KryptoAccount {
 
         let order_result = self.margin.trade(margin_order).await.map_err(|e| {
             error!("Failed to place margin trade: {}", e); // Log error details
-            KryptoError::BinanceApiError(format!("Failed to place margin trade: {}", e))
+            KryptoError::BinanceApiError(format!("Failed to place margin trade: {e}"))
         })?;
 
         info!(result = ?order_result, "Trade successful");

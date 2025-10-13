@@ -25,8 +25,7 @@ fn get_cache_path(
 
     // Include version in filename to invalidate old caches automatically
     let filename = format!(
-        "{}_{}_{}.{}",
-        symbol, interval, CACHE_VERSION, CACHE_FILE_EXT
+        "{symbol}_{interval}_{CACHE_VERSION}.{CACHE_FILE_EXT}"
     );
     Ok(cache_dir.join(filename))
 }

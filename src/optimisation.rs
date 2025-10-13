@@ -16,20 +16,28 @@ use tracing::{debug, error, info, warn};
 
 use crate::{
     algorithm::{
-        algo::{Algorithm, AlgorithmResult, AlgorithmSettings}, // Import AlgorithmResult
-        pls::{get_pls, predict},                               // Add pls imports
-        test_data::{SimulationOutput, TestData},               // Import necessary items from test_data
+        algo::{Algorithm, AlgorithmResult, AlgorithmSettings},
+        pls::{get_pls, predict},
+        test_data::{SimulationOutput, TestData},
     },
     config::KryptoConfig,
-    data::{dataset::overall_dataset::Dataset, interval::Interval},
+    data::{dataset::interval_data::IntervalData, dataset::overall_dataset::Dataset, interval::Interval},
     error::KryptoError,
 };
-use binance::rest_model::OrderSide; // Import OrderSide
+use binance::rest_model::OrderSide;
 
 // --- Reporting Constants ---
 const REPORT_DIR: &str = "report";
 const TOP_FITNESS_DIR: &str = "top";
-const OPTIMIZATION_SUMMARY_FILE: &str = "optimization_summary.csv"; // Keep consistent name
+const OPTIMIZATION_SUMMARY_FILE: &str = "optimization_summary.csv";
+
+// --- Cache Key for Processed Data ---
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+struct ProcessedDataKey {
+    interval: Interval,
+    tickers: Vec<String>,
+    technicals: Vec<String>,
+}
 
 // --- Reporting Setup ---
 /// Creates the base report directory and clears/creates the top fitness subdirectory.
@@ -97,10 +105,10 @@ pub fn setup_report_dirs() -> Result<PathBuf, KryptoError> {
 }
 
 // --- Genotype ---
-#[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq)]
+#[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TradingStrategyGenome {
-    n: usize,
-    d: usize,
+    pub n: usize,
+    pub d: usize,
     interval: Interval,
     tickers: Vec<bool>,
     symbol: String,
@@ -367,13 +375,14 @@ pub struct TradingStrategyFitnessFunction {
     dataset: Arc<Dataset>,
     available_tickers: Arc<Vec<String>>,
     available_technicals: Arc<Vec<String>>,
-    // Cache fitness score AND the full result
     fitness_cache: Arc<Mutex<HashMap<TradingStrategyGenome, (i64, AlgorithmResult)>>>,
+    processed_data_cache: Arc<Mutex<HashMap<ProcessedDataKey, Arc<IntervalData>>>>,
 }
 
 impl fmt::Debug for TradingStrategyFitnessFunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let cache_size = self.fitness_cache.lock().map_or(0, |guard| guard.len());
+        let fitness_cache_size = self.fitness_cache.lock().map_or(0, |guard| guard.len());
+        let data_cache_size = self.processed_data_cache.lock().map_or(0, |guard| guard.len());
         f.debug_struct("TradingStrategyFitnessFunction")
             .field("config", &"Arc<KryptoConfig>")
             .field("dataset", &"Arc<Dataset>")
@@ -381,7 +390,11 @@ impl fmt::Debug for TradingStrategyFitnessFunction {
             .field("available_technicals", &self.available_technicals)
             .field(
                 "fitness_cache",
-                &format!("Arc<Mutex<HashMap<_, _>>> ({} entries)", cache_size),
+                &format!("Arc<Mutex<HashMap<_, _>>> ({fitness_cache_size} entries)"),
+            )
+            .field(
+                "processed_data_cache",
+                &format!("Arc<Mutex<HashMap<_, _>>> ({data_cache_size} entries)"),
             )
             .finish()
     }
@@ -400,41 +413,57 @@ impl TradingStrategyFitnessFunction {
             available_tickers: Arc::new(available_tickers),
             available_technicals: Arc::new(available_technicals),
             fitness_cache: Arc::new(Mutex::new(HashMap::new())),
+            processed_data_cache: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
-    // Helper to evaluate a single genome, handling errors and caching
-    // Returns Result<(fitness_score, full_metrics)>
     pub fn evaluate_genome(
         &self,
         genome: &TradingStrategyGenome,
     ) -> Result<(i64, AlgorithmResult), KryptoError> {
-        // 1. Check cache
-        // Use a block to ensure the lock is released after checking/inserting
         {
             let cache = self.fitness_cache.lock().unwrap();
             if let Some(cached_result) = cache.get(genome) {
                 debug!("Fitness cache hit for genome.");
-                return Ok(cached_result.clone()); // Clone the cached tuple
+                return Ok(cached_result.clone());
             }
-        } // Lock released here
+        }
 
-        // 2. Convert genome to phenotype (strategy)
         let strategy = genome.to_phenotype(&self.available_tickers, &self.available_technicals)?;
         debug!("Evaluating fitness of strategy: {}", strategy);
 
-        // 3. Get the base IntervalData for the strategy's interval
-        let base_interval_data = self
-            .dataset
-            .get(&strategy.interval)
-            .ok_or_else(|| KryptoError::IntervalNotFound(strategy.interval.to_string()))?;
+        let mut sorted_tickers = strategy.tickers.clone();
+        sorted_tickers.sort();
+        let mut sorted_technicals = strategy.technicals.clone();
+        sorted_technicals.sort();
 
-        // 4. Filter IntervalData (recomputes technicals and normalization)
-        // This step can be costly. Consider caching this result if phenotypes repeat often.
-        let specific_interval_data = base_interval_data
-            .get_specific_tickers_and_technicals(&strategy.tickers, &strategy.technicals)?;
+        let key = ProcessedDataKey {
+            interval: strategy.interval,
+            tickers: sorted_tickers,
+            technicals: sorted_technicals,
+        };
 
-        // 5. Get AlgorithmSettings
+        let specific_interval_data = {
+            let mut cache = self.processed_data_cache.lock().unwrap();
+            if let Some(data) = cache.get(&key) {
+                debug!("Processed data cache hit.");
+                data.clone()
+            } else {
+                debug!("Processed data cache miss. Processing and caching data.");
+                let base_interval_data = self
+                    .dataset
+                    .get(&strategy.interval)
+                    .ok_or_else(|| KryptoError::IntervalNotFound(strategy.interval.to_string()))?;
+
+                let processed_data = Arc::new(
+                    base_interval_data
+                        .get_specific_tickers_and_technicals(&strategy.tickers, &strategy.technicals)?,
+                );
+                cache.insert(key, processed_data.clone());
+                processed_data
+            }
+        };
+
         let settings = AlgorithmSettings::from(&strategy);
 
         // 6. Load the algorithm (performs walk-forward validation)
@@ -1005,7 +1034,7 @@ fn write_equity_curve_csv(
     // Apply clippy suggestion: remove &
     writer.write_record(["timestamp", "equity"])?;
     for (time, equity) in equity_curve {
-        writer.write_record(&[time.to_rfc3339(), format!("{:.2}", equity)])?;
+        writer.write_record(&[time.to_rfc3339(), format!("{equity:.2}")])?;
     }
     writer.flush()?;
     Ok(())

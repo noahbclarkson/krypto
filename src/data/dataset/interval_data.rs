@@ -61,7 +61,7 @@ impl IntervalData {
             return Err(KryptoError::InsufficientData {
                 got: 0,
                 required: 1,
-                context: format!("No symbol data could be loaded for interval {}", interval),
+                context: format!("No symbol data could be loaded for interval {interval}"),
             });
         }
         if symbol_data_map.values().any(|d| d.is_empty()) {

@@ -1,6 +1,6 @@
 use std::{
-    fs::File, // Keep File import
-    // path::PathBuf, // Remove unused import
+    fs::File,
+    path::PathBuf,
     sync::Arc,
     time::Duration,
 };
@@ -19,7 +19,7 @@ use krypto::{
         pls::predict,
     },
     config::{KryptoConfig, Mission},
-    data::{dataset::overall_dataset::Dataset, interval::Interval},
+    data::dataset::overall_dataset::Dataset,
     error::KryptoError,
     logging::setup_tracing,
     optimisation::{
@@ -30,6 +30,7 @@ use krypto::{
     },
     trading::krypto_account::KryptoAccount,
 };
+use indicatif::{ProgressBar, ProgressStyle};
 use tokio::signal;
 use tracing::{error, info, warn};
 
@@ -88,9 +89,38 @@ async fn run_mission(config: Arc<KryptoConfig>, mission: Mission) -> Result<(), 
     }
 }
 
-// --- Backtest Mission ---
 async fn backtest(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
     info!("Starting Backtest Mission...");
+
+    let best_genome_path = PathBuf::from("report/top/best_genome.bin");
+
+    if best_genome_path.exists() {
+        info!("Found optimized strategy file at '{}'. Running detailed backtest...", best_genome_path.display());
+
+        let mut file = File::open(&best_genome_path)?;
+        let bincode_config = bincode::config::standard();
+        let best_genome: TradingStrategyGenome = bincode::serde::decode_from_std_read(&mut file, bincode_config)
+            .map_err(|e| KryptoError::IoError(std::io::Error::other(format!("Bincode decode error: {e}"))))?;
+
+        let dataset = Arc::new(Dataset::load(&config).await?);
+        let available_tickers = config.symbols.clone();
+        let available_technicals = config.technicals.clone();
+
+        generate_trade_log_for_best(
+            &best_genome,
+            &PathBuf::from("report"),
+            &config,
+            &dataset,
+            &available_tickers,
+            &available_technicals,
+        )?;
+
+        info!("Detailed backtest report for the optimized strategy has been generated in 'report/top/'.");
+        info!("Backtest Mission Finished.");
+        return Ok(());
+    }
+
+    warn!("No optimized strategy file found. Running backtest based on config.yml settings.");
     let dataset = Dataset::load(&config).await?;
 
     if dataset.is_empty() {
@@ -183,17 +213,17 @@ async fn optimise(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
         }
     };
 
-    // Define the FULL header row for the summary CSV
     let headers = vec![
         "Generation".to_string(),
         "BestFitnessScore".to_string(),
+        "Best_n".to_string(),
+        "Best_d".to_string(),
         "BestMonthlyReturn".to_string(),
         "BestAccuracy".to_string(),
         "BestSharpeRatio".to_string(),
         "BestMaxDrawdown".to_string(),
         "BestTotalTrades".to_string(),
         "BestWinRate".to_string(),
-        // Add other best KPIs here if AlgorithmResult is expanded
         "AvgFitnessScore".to_string(),
         "AvgMonthlyReturn".to_string(),
         "AvgAccuracy".to_string(),
@@ -201,7 +231,6 @@ async fn optimise(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
         "AvgMaxDrawdown".to_string(),
         "AvgTotalTrades".to_string(),
         "AvgWinRate".to_string(),
-        // Add other avg KPIs here if AlgorithmResult is expanded
         "BestStrategyPhenotype".to_string(),
     ];
     summary_writer.write_record(&headers)?;
@@ -267,11 +296,16 @@ async fn optimise(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
         .until(GenerationLimit::new(config.generation_limit))
         .build();
 
-    // --- Simulation Loop ---
     info!("Starting Genetic Algorithm Simulation...");
 
-    // Track overall best strategy found across all generations
-    // Use the trait method via the fitness_function instance
+    let pb = ProgressBar::new(config.generation_limit);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] Gen {pos}/{len} (ETA: {eta}) | {msg}")
+            .unwrap()
+            .progress_chars("=> "),
+    );
+
     let mut overall_best_fitness: i64 = fitness_function.lowest_possible_fitness();
     let mut overall_best_genome: Option<TradingStrategyGenome> = None;
 
@@ -359,11 +393,17 @@ async fn optimise(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
                             "Gen {}: Could not convert best genome to phenotype for logging: {}",
                             current_gen, e
                         );
-                        format!("Error: {}", e)
+                        format!("Error: {e}")
                     }
                 };
 
-                // --- Log to Console ---
+                pb.inc(1);
+                pb.set_message(format!(
+                    "Best Sharpe: {:.2} | Avg Sharpe: {:.2}",
+                    best_result_metrics.sharpe_ratio,
+                    avg_metrics.sharpe_ratio
+                ));
+
                 info!(
                     "Generation {:>4}: Best Fitness: {:>10} (Sharpe: {:.2}) | Avg Fitness: {:>10} (Avg Sharpe: {:.2}) | Strategy: {}",
                     current_gen,
@@ -374,17 +414,17 @@ async fn optimise(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
                     phenotype_str
                 );
 
-                // --- Write Full Row to Summary CSV ---
                 let record = vec![
                     current_gen.to_string(),
                     best_fitness_score.to_string(),
+                    best_solution_genome.n.to_string(),
+                    best_solution_genome.d.to_string(),
                     format!("{:.6}", best_result_metrics.monthly_return),
                     format!("{:.4}", best_result_metrics.accuracy),
                     format!("{:.4}", best_result_metrics.sharpe_ratio),
                     format!("{:.4}", best_result_metrics.max_drawdown),
                     best_result_metrics.total_trades.to_string(),
                     format!("{:.4}", best_result_metrics.win_rate),
-                    // Add other best KPIs if needed
                     avg_fitness_score.to_string(),
                     format!("{:.6}", avg_metrics.monthly_return),
                     format!("{:.4}", avg_metrics.accuracy),
@@ -392,7 +432,6 @@ async fn optimise(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
                     format!("{:.4}", avg_metrics.max_drawdown),
                     avg_metrics.total_trades.to_string(),
                     format!("{:.4}", avg_metrics.win_rate),
-                    // Add other avg KPIs if needed
                     phenotype_str,
                 ];
 
@@ -466,14 +505,18 @@ async fn optimise(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
                             "Final: Could not convert best genome to phenotype for logging: {}",
                             e
                         );
-                        format!("Error: {}", e)
+                        format!("Error: {e}")
                     }
                 };
 
-                // --- Log Final Summary ---
+                pb.finish_with_message(format!(
+                    "Optimization finished! Best Sharpe: {:.2}",
+                    final_best_result_metrics.sharpe_ratio
+                ));
+
                 info!("--------------------------------------------------");
                 info!(
-                    "Optimisation Finished: Reason: {} | Total Time: {:.3}s", // Use .duration()
+                    "Optimisation Finished: Reason: {} | Total Time: {:.3}s",
                     stop_reason,
                     processing_time.duration().num_seconds()
                 );
@@ -486,25 +529,24 @@ async fn optimise(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
                 info!("Best strategy details: {}", phenotype_str);
                 info!("--------------------------------------------------");
 
-                // --- Write Final Row to Summary CSV ---
                 let final_record = vec![
                     final_gen.to_string(),
                     final_best_fitness_score.to_string(),
+                    best_solution_genome.n.to_string(),
+                    best_solution_genome.d.to_string(),
                     format!("{:.6}", final_best_result_metrics.monthly_return),
                     format!("{:.4}", final_best_result_metrics.accuracy),
                     format!("{:.4}", final_best_result_metrics.sharpe_ratio),
                     format!("{:.4}", final_best_result_metrics.max_drawdown),
                     final_best_result_metrics.total_trades.to_string(),
                     format!("{:.4}", final_best_result_metrics.win_rate),
-                    // Add other best KPIs if needed
                     avg_fitness_score.to_string(),
-                    "-".to_string(), // Placeholder for AvgMonthlyReturn
-                    "-".to_string(), // Placeholder for AvgAccuracy
-                    "-".to_string(), // Placeholder for AvgSharpeRatio
-                    "-".to_string(), // Placeholder for AvgMaxDrawdown
-                    "-".to_string(), // Placeholder for AvgTotalTrades
-                    "-".to_string(), // Placeholder for AvgWinRate
-                    // Add other avg KPI placeholders if needed
+                    "-".to_string(),
+                    "-".to_string(),
+                    "-".to_string(),
+                    "-".to_string(),
+                    "-".to_string(),
+                    "-".to_string(),
                     phenotype_str,
                 ];
                 if let Err(e) = summary_writer.write_record(&final_record) {
@@ -557,11 +599,11 @@ async fn optimise(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
                 break; // Exit loop
             }
             Err(error) => {
+                pb.abandon_with_message("Optimization failed!");
                 error!("Genetic algorithm simulation error: {}", error);
-                summary_writer.flush()?; // Flush CSV even on error
+                summary_writer.flush()?;
                 return Err(KryptoError::FitnessCalculationError(format!(
-                    "GA simulation failed: {}",
-                    error
+                    "GA simulation failed: {error}"
                 )));
             }
         }
@@ -569,11 +611,26 @@ async fn optimise(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
         // tokio::select! { ... }
     }
 
+    if let Some(best_genome) = &overall_best_genome {
+        info!("Saving best genome to file for later backtesting...");
+        let best_genome_path = report_path.join("top").join("best_genome.bin");
+        match File::create(&best_genome_path) {
+            Ok(mut file) => {
+                let config = bincode::config::standard();
+                if let Err(e) = bincode::serde::encode_into_std_write(best_genome, &mut file, config) {
+                    error!("Failed to serialize and save best genome: {}", e);
+                } else {
+                    info!("Best genome saved to {}", best_genome_path.display());
+                }
+            }
+            Err(e) => error!("Failed to create file for best genome: {}", e),
+        }
+    }
+
     info!("Optimisation Mission Finished.");
     Ok(())
 }
 
-// --- Trade Mission ---
 async fn trade(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
     info!("Starting Trade Mission...");
 
@@ -584,7 +641,6 @@ async fn trade(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
         ));
     }
 
-    // --- Initial Setup ---
     let trade_symbol = config
         .symbols
         .first()
@@ -601,90 +657,63 @@ async fn trade(config: Arc<KryptoConfig>) -> Result<(), KryptoError> {
 
     let mut krypto_account = KryptoAccount::new(&config, trade_symbol.clone()).await?;
     info!(
-        "Isolated margin account details fetched for {}", // Avoid logging sensitive details
+        "Isolated margin account details fetched for {}",
         krypto_account.symbol
-        // krypto_account.isolated_details().await? // Avoid logging sensitive details
     );
 
-    // TODO: Load best GA strategy from a file instead of default settings
-    // For now, use config defaults
+    info!("Performing initial historical data load and model training...");
+    let initial_dataset = Dataset::load(&config).await?;
+    let interval_ds = initial_dataset
+        .get(&trade_interval)
+        .ok_or_else(|| KryptoError::IntervalNotFound(trade_interval.to_string()))?;
+
     let settings = Arc::new(AlgorithmSettings::new(
         config.max_n,
         config.max_depth,
         &trade_symbol,
     ));
-    let mut algorithm: Option<Algorithm> = None; // Keep track of the loaded algorithm
 
-    // Function to load/update data and algorithm
-    async fn update_data_and_model(
-        cfg: &KryptoConfig,
-        interval: Interval,
-        settings: &AlgorithmSettings,
-    ) -> Result<Algorithm, KryptoError> {
-        // TODO: Implement incremental data loading for trading efficiency
-        // Currently reloads all data, which is slow for trading.
-        info!("Reloading full dataset for model update...");
-        let dataset = Dataset::load(cfg).await?;
-        let interval_ds = dataset
-            .get(&interval)
-            .ok_or_else(|| KryptoError::IntervalNotFound(interval.to_string()))?;
+    let mut algorithm = Algorithm::load(interval_ds, settings.as_ref().clone(), &config)?;
+    info!("Initial model trained. Validation Result: {}", algorithm.result);
 
-        // Load algorithm (trains on walk-forward, then final model on full data)
-        Algorithm::load(interval_ds, settings.clone(), cfg)
-    }
+    let mut last_retrain_time = chrono::Utc::now();
+    let retrain_interval = chrono::Duration::hours(24);
 
-    // --- Trading Loop State ---
-    let mut current_position: Option<(OrderSide, f64)> = None; // Store Option<(Side, EntryPrice)>
+    let mut current_position: Option<(OrderSide, f64)> = None;
 
-    // --- Main Trading Loop ---
     info!("Starting Trading Loop...");
     loop {
-        // 1. Update Data & Model (Periodically)
-        info!("Updating data and retraining model...");
-        match update_data_and_model(&config, trade_interval, &settings).await {
-            Ok(updated_algo) => {
-                info!("Model updated. Validation Result: {}", updated_algo.result);
-                algorithm = Some(updated_algo);
+        if chrono::Utc::now().signed_duration_since(last_retrain_time) > retrain_interval {
+            info!("Scheduled model retraining...");
+            match Dataset::load(&config).await.and_then(|ds| {
+                let ids = ds.get(&trade_interval).ok_or_else(|| KryptoError::IntervalNotFound(trade_interval.to_string()))?;
+                Algorithm::load(ids, settings.as_ref().clone(), &config)
+            }) {
+                Ok(new_algo) => {
+                    algorithm = new_algo;
+                    last_retrain_time = chrono::Utc::now();
+                    info!("Model retrained successfully. New validation: {}", algorithm.result);
+                },
+                Err(e) => error!("Scheduled model retraining failed: {}. Continuing with old model.", e),
             }
-            Err(e) => {
-                error!("Failed to update data/model: {}. Skipping this cycle.", e);
-                tokio::time::sleep(Duration::from_secs(60)).await; // Wait before retry
-                continue;
-            }
-        };
+        }
 
-        let current_algo = match algorithm {
-            Some(ref algo) => algo,
-            None => {
-                error!("Algorithm not loaded. Cannot proceed.");
-                tokio::time::sleep(Duration::from_secs(60)).await;
-                continue;
-            }
-        };
-
-        // 2. Get Latest Prediction
-        // This requires getting the *latest* features based on the *most recent* data.
-        // The current `update_data_and_model` reloads everything, so we need the latest slice.
         let prediction = {
-            // Inefficient: Reload dataset again just to get features
-            // Needs refactoring for efficient trading feature generation
             let dataset = Dataset::load(&config).await?;
             let interval_ds = dataset
                 .get(&trade_interval)
                 .ok_or_else(|| KryptoError::IntervalNotFound(trade_interval.to_string()))?;
-            let symbol_ds = interval_ds.get_symbol_dataset(&settings)?; // Gets features/labels/candles
+            let symbol_ds = interval_ds.get_symbol_dataset(&settings)?;
 
             if symbol_ds.is_empty() {
                 warn!("Symbol dataset is empty, cannot make prediction.");
                 None
             } else {
-                // Get the *last* feature vector to predict the *next* candle
                 let last_features = symbol_ds.get_features().last();
                 match last_features {
                     Some(features) => {
-                        // Predict requires a Vec<Vec<f64>>, so wrap the last features
-                        match predict(&current_algo.pls, &[features.clone()]) {
-                            Ok(predictions) => predictions.first().copied(), // Get the single prediction
+                        match predict(&algorithm.pls, &[features.clone()]) {
+                            Ok(predictions) => predictions.first().copied(),
                             Err(e) => {
                                 error!("Failed to get prediction: {}", e);
                                 None

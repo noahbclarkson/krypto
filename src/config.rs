@@ -311,8 +311,7 @@ impl KryptoConfig {
                     error!("Failed to verify Binance API keys: {}", e);
                     // Decide whether to error out or just warn
                     return Err(KryptoError::BinanceApiError(format!(
-                        "Failed to verify API keys: {}",
-                        e
+                        "Failed to verify API keys: {e}"
                     )));
                 }
             }

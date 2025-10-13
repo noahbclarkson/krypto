@@ -20,9 +20,9 @@ tracing-subscriber = { version = "0.3.19", features = [
     "time",
 ] }
 tracing-appender = "0.2"
-linfa = "0.7.1"
-linfa-pls = "0.7.1"
-ndarray = "0.15.6"
+linfa = "0.8.0"
+linfa-pls = "0.8.0"
+ndarray = "0.16"
 derive_builder = "0.20.2"
 genevo = "0.7"
 tokio = { version = "1.44.2", features = ["full"] }
@@ -30,6 +30,9 @@ futures = "0.3"
 rayon = "1.10" # For potential future parallelism
 directories = "6.0" # For finding cache/config directories
 clap = { version = "4.5.37", features = ["derive", "env"] }
+indicatif = { version = "0.18.0", features = ["tokio"] }
+linfa-trees = "0.8.0"
+linfa-ensemble = "0.8.0"
 
 [dev-dependencies]
 serde_json = "1.0.140" # For testing serialization/deserialization

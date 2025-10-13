@@ -1,18 +1,18 @@
 use std::fmt;
 
 use linfa_pls::PlsRegression;
-use tracing::{debug, error, info, instrument, warn};
+use rayon::prelude::*;
+use tracing::{debug, info, instrument, warn};
 
 use crate::{
     algorithm::{
         pls::{get_pls, predict},
-        // Import TestData for aggregation helpers, SimulationOutput is used internally in backtest funcs
         test_data::{SimulationOutput, TestData},
     },
     config::KryptoConfig,
     data::dataset::interval_data::IntervalData,
     error::KryptoError,
-    util::math_utils::median, // Keep median for aggregation
+    util::math_utils::median,
 };
 
 pub struct Algorithm {
@@ -135,8 +135,7 @@ impl Algorithm {
                 got: total_samples,
                 required: num_splits + 1,
                 context: format!(
-                    "Not enough samples ({}) for {} walk-forward splits.",
-                    total_samples, num_splits
+                    "Not enough samples ({total_samples}) for {num_splits} walk-forward splits."
                 ),
             });
         }
@@ -149,8 +148,7 @@ impl Algorithm {
                 got: remaining_samples,
                 required: num_splits, // Need at least num_splits samples for testing
                 context: format!(
-                    "Not enough remaining samples ({}) for {} walk-forward test splits.",
-                    remaining_samples, num_splits
+                    "Not enough remaining samples ({remaining_samples}) for {num_splits} walk-forward test splits."
                 ),
             });
         }
@@ -161,113 +159,69 @@ impl Algorithm {
                 got: initial_train_size.min(test_size_per_split), // Report the zero value
                 required: 1,
                 context: format!(
-                    "Initial training size ({}) or test size per split ({}) is zero.",
-                    initial_train_size, test_size_per_split
+                    "Initial training size ({initial_train_size}) or test size per split ({test_size_per_split}) is zero."
                 ),
             });
         }
 
-        let mut split_outputs: Vec<SimulationOutput> = Vec::with_capacity(num_splits); // Store full output
+        let split_indices: Vec<usize> = (0..num_splits).collect();
 
-        for i in 0..num_splits {
-            let train_end = initial_train_size + i * test_size_per_split;
-            let test_start = train_end;
-            // Ensure the last split includes all remaining data
-            let test_end = if i == num_splits - 1 {
-                total_samples
-            } else {
-                test_start + test_size_per_split
-            };
+        let split_results: Vec<Result<SimulationOutput, KryptoError>> = split_indices
+            .par_iter()
+            .map(|&i| {
+                let train_end = initial_train_size + i * test_size_per_split;
+                let test_start = train_end;
+                let test_end = if i == num_splits - 1 {
+                    total_samples
+                } else {
+                    test_start + test_size_per_split
+                };
 
-            // Additional check for valid range
-            if test_start >= test_end || train_end == 0 {
-                warn!(
-                    "Skipping invalid walk-forward split {}: Train End {}, Test Start {}, Test End {}",
-                    i + 1, train_end, test_start, test_end
+                if test_start >= test_end || train_end == 0 {
+                    warn!(
+                        "Skipping invalid walk-forward split {}: Train End {}, Test Start {}, Test End {}",
+                        i + 1, train_end, test_start, test_end
+                    );
+                    return Err(KryptoError::WalkForwardError(format!("Invalid split range for split {}", i + 1)));
+                }
+
+                debug!(
+                    "Walk-Forward Split {}/{}: Train [0..{}], Test [{}..{}]",
+                    i + 1, num_splits, train_end, test_start, test_end
                 );
-                continue;
-            }
 
-            debug!(
-                "Walk-Forward Split {}/{}: Train [0..{}], Test [{}..{}]",
-                i + 1, num_splits, train_end, test_start, test_end
-            );
+                let train_features = &full_symbol_dataset.get_features()[0..train_end];
+                let train_labels = &full_symbol_dataset.get_labels()[0..train_end];
+                let test_features = &full_symbol_dataset.get_features()[test_start..test_end];
+                let test_candles = &full_symbol_dataset.get_candles()[test_start..test_end];
 
-            let train_features = &full_symbol_dataset.get_features()[0..train_end];
-            let train_labels = &full_symbol_dataset.get_labels()[0..train_end];
-            let test_features = &full_symbol_dataset.get_features()[test_start..test_end];
-            let test_candles = &full_symbol_dataset.get_candles()[test_start..test_end];
-
-            if train_features.is_empty() || test_features.is_empty() {
-                warn!(
-                    "Skipping split {} due to empty train ({}) or test ({}) features.",
-                    i + 1,
-                    train_features.len(),
-                    test_features.len()
-                );
-                continue;
-            }
-
-            Self::validate_data(train_features, train_labels)?;
-
-            let pls = match get_pls(train_features, train_labels, settings.n) {
-                Ok(model) => model,
-                Err(e) => {
-                    error!(
-                        "Failed to train PLS for split {}: {}. Skipping split.",
+                if train_features.is_empty() || test_features.is_empty() {
+                    warn!(
+                        "Skipping split {} due to empty train ({}) or test ({}) features.",
                         i + 1,
-                        e
+                        train_features.len(),
+                        test_features.len()
                     );
-                    // Consider returning error vs. skipping split based on desired robustness
-                    return Err(KryptoError::WalkForwardError(format!(
-                        "PLS training failed in split {}: {}",
-                        i + 1,
-                        e
-                    )));
+                    return Err(KryptoError::WalkForwardError(format!("Empty features for split {}", i + 1)));
                 }
-            };
 
-            let predictions = match predict(&pls, test_features) {
-                Ok(preds) => preds,
-                Err(e) => {
-                    error!(
-                        "Failed to predict PLS for split {}: {}. Skipping split.",
-                        i + 1,
-                        e
-                    );
-                    return Err(KryptoError::WalkForwardError(format!(
-                        "PLS prediction failed in split {}: {}",
-                        i + 1,
-                        e
-                    )));
-                }
-            };
+                Self::validate_data(train_features, train_labels)?;
 
-            // Run backtest simulation on the test portion
-            let simulation_output = match TestData::run_simulation(
-                &settings.symbol, // Pass symbol
-                &predictions,
-                test_candles,
-                config,
-            ) {
-                Ok(output) => output, // Get the full SimulationOutput
-                Err(e) => {
-                    error!(
-                        "Failed to run backtest simulation for split {}: {}. Skipping split.",
-                        i + 1,
-                        e
-                    );
-                    return Err(KryptoError::WalkForwardError(format!(
-                        "Backtest simulation failed in split {}: {}",
-                        i + 1,
-                        e
-                    )));
-                }
-            };
+                let pls = get_pls(train_features, train_labels, settings.n)
+                    .map_err(|e| KryptoError::WalkForwardError(format!("PLS training failed in split {}: {}", i + 1, e)))?;
 
-            debug!("Split {} Result: {}", i + 1, simulation_output.metrics); // Log metrics
-            split_outputs.push(simulation_output); // Store full output
-        }
+                let predictions = predict(&pls, test_features)
+                    .map_err(|e| KryptoError::WalkForwardError(format!("PLS prediction failed in split {}: {}", i + 1, e)))?;
+
+                let simulation_output = TestData::run_simulation(&settings.symbol, &predictions, test_candles, config)
+                    .map_err(|e| KryptoError::WalkForwardError(format!("Backtest simulation failed in split {}: {}", i + 1, e)))?;
+
+                debug!("Split {} Result: {}", i + 1, simulation_output.metrics);
+                Ok(simulation_output)
+            })
+            .collect();
+
+        let split_outputs: Vec<SimulationOutput> = split_results.into_iter().collect::<Result<_,_>>()?;
 
         if split_outputs.is_empty() {
             return Err(KryptoError::WalkForwardError(

@@ -22,7 +22,7 @@ pub fn setup_tracing(
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
 
     // Set up file appender with non-blocking writer
-    let file_appender = tracing_appender::rolling::never(log_dir_str, format!("{}.log", timestamp));
+    let file_appender = tracing_appender::rolling::never(log_dir_str, format!("{timestamp}.log"));
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
     // Default directives: INFO globally, DEBUG for krypto crate

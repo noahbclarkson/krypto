@@ -238,7 +238,7 @@ impl PercentageChangeEMA {
         let ema = ExponentialMovingAverage::new(period).map_err(|e| {
             KryptoError::TechnicalIndicatorError {
                 indicator: "PercentageChangeEMA".to_string(),
-                reason: format!("Invalid period {} for EMA: {}", period, e),
+                reason: format!("Invalid period {period} for EMA: {e}"),
             }
         })?;
         Ok(PercentageChangeEMA {
@@ -383,16 +383,14 @@ mod tests {
             actual_ema_values.push(pc_ema.next(value));
         }
 
-        println!("Expected EMA: {:?}", expected_ema_values);
-        println!("Actual EMA: {:?}", actual_ema_values);
+        println!("Expected EMA: {expected_ema_values:?}");
+        println!("Actual EMA: {actual_ema_values:?}");
 
         assert_eq!(actual_ema_values.len(), expected_ema_values.len());
         for (actual, expected) in actual_ema_values.iter().zip(expected_ema_values.iter()) {
             assert!(
                 (actual - expected).abs() < 1e-9,
-                "Actual: {}, Expected: {}",
-                actual,
-                expected
+                "Actual: {actual}, Expected: {expected}"
             );
         }
     }

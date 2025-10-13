@@ -20,8 +20,7 @@ impl PrecisionData {
                 tick_size, step_size, ticker
             );
             return Err(KryptoError::ConfigError(format!(
-                "Invalid precision sizes for {}: tick={}, step={}",
-                ticker, tick_size, step_size
+                "Invalid precision sizes for {ticker}: tick={tick_size}, step={step_size}"
             )));
         }
 
@@ -50,7 +49,7 @@ impl PrecisionData {
         // If size = 10, log10 = 1. Precision = 0.
 
         // Let's use string formatting for robustness.
-        let s = format!("{:.16}", size); // Format with enough precision
+        let s = format!("{size:.16}"); // Format with enough precision
         s.find('.')
             .map(|dot_index| {
                 s.chars()
