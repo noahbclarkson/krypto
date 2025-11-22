@@ -3,9 +3,8 @@ use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use krypto::algo::optimization::{OptimizableStrategy, Optimizer};
 use krypto::algo::strategies::{
-    AdaptiveMaCrossover, AtrBreakout, BollingerReversion, DynamicTrend, LeadLagStrategy,
-    MacdTrend, ObvTrend, PriceMomentum, RelativeStrengthStrat, RsiMeanReversion,
-    VolatilitySqueeze,
+    AdaptiveMaCrossover, AtrBreakout, BollingerReversion, DynamicTrend, LeadLagStrategy, MacdTrend,
+    ObvTrend, PriceMomentum, RelativeStrengthStrat, RsiMeanReversion, VolatilitySqueeze,
 };
 use krypto::backtest::engine::Backtester;
 use krypto::data::loader::DataLoader;

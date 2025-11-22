@@ -2,13 +2,14 @@ use crate::algo::optimization::{OptimizableStrategy, StrategyParams};
 use crate::algo::SignalGenerator;
 use anyhow::Result;
 use polars::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DynamicTrend {
-    ema_fast: usize,
-    ema_slow: usize,
-    rsi_filter: f64,
+    pub ema_fast: usize,
+    pub ema_slow: usize,
+    pub rsi_filter: f64,
 }
 
 impl DynamicTrend {
@@ -96,10 +97,10 @@ impl OptimizableStrategy for DynamicTrend {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RelativeStrengthStrat {
-    rs_ema_period: usize,
-    rsi_entry: f64,
+    pub rs_ema_period: usize,
+    pub rsi_entry: f64,
 }
 
 impl RelativeStrengthStrat {
@@ -178,11 +179,11 @@ impl OptimizableStrategy for RelativeStrengthStrat {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BollingerReversion {
-    bb_period: usize,
-    bb_std: f64,
-    rsi_filter: f64,
+    pub bb_period: usize,
+    pub bb_std: f64,
+    pub rsi_filter: f64,
 }
 
 impl BollingerReversion {
@@ -279,11 +280,11 @@ impl OptimizableStrategy for BollingerReversion {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AtrBreakout {
-    atr_mult: f64,
-    rsi_filter: f64,
-    trend_ema: usize,
+    pub atr_mult: f64,
+    pub rsi_filter: f64,
+    pub trend_ema: usize,
 }
 
 impl AtrBreakout {
@@ -296,11 +297,11 @@ impl AtrBreakout {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VolatilitySqueeze {
-    bb_mult: f64,
-    kc_mult: f64,
-    period: usize,
+    pub bb_mult: f64,
+    pub kc_mult: f64,
+    pub period: usize,
 }
 
 impl VolatilitySqueeze {
@@ -406,11 +407,11 @@ impl OptimizableStrategy for VolatilitySqueeze {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LeadLagStrategy {
-    min_bench_move: f64,
-    max_self_move: f64,
-    decay: f64,
+    pub min_bench_move: f64,
+    pub max_self_move: f64,
+    pub decay: f64,
 }
 
 impl LeadLagStrategy {
@@ -597,10 +598,10 @@ impl OptimizableStrategy for AtrBreakout {
 // Logic: Calculate OBV, then apply Fast/Slow EMAs on the OBV line.
 // Signal: OBV_Fast > OBV_Slow -> Long, OBV_Fast < OBV_Slow -> Short.
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ObvTrend {
-    obv_fast: usize,
-    obv_slow: usize,
+    pub obv_fast: usize,
+    pub obv_slow: usize,
 }
 
 impl ObvTrend {
@@ -712,11 +713,11 @@ impl OptimizableStrategy for ObvTrend {
 // -----------------------------------------------------------------------------
 // Classic momentum strategy using MACD Histogram.
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MacdTrend {
-    fast: usize,
-    slow: usize,
-    signal: usize,
+    pub fast: usize,
+    pub slow: usize,
+    pub signal: usize,
 }
 
 impl MacdTrend {
@@ -814,10 +815,10 @@ impl OptimizableStrategy for MacdTrend {
 // -----------------------------------------------------------------------------
 // Contrarian strategy: Buy oversold, Sell overbought.
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RsiMeanReversion {
-    rsi_lower: f64,
-    rsi_upper: f64,
+    pub rsi_lower: f64,
+    pub rsi_upper: f64,
 }
 
 impl RsiMeanReversion {
@@ -881,10 +882,10 @@ impl OptimizableStrategy for RsiMeanReversion {
 // -----------------------------------------------------------------------------
 // Rate of Change (ROC) based strategy.
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PriceMomentum {
-    roc_period: usize,
-    threshold: f64,
+    pub roc_period: usize,
+    pub threshold: f64,
 }
 
 impl PriceMomentum {
@@ -914,7 +915,11 @@ impl SignalGenerator for PriceMomentum {
         let roc = df
             .clone()
             .lazy()
-            .with_column(col("close").pct_change(lit(self.roc_period as u64)).alias("roc"))
+            .with_column(
+                col("close")
+                    .pct_change(lit(self.roc_period as u64))
+                    .alias("roc"),
+            )
             .collect()?;
 
         let roc_vals = roc.column("roc")?.f64()?;
@@ -950,10 +955,10 @@ impl OptimizableStrategy for PriceMomentum {
 // -----------------------------------------------------------------------------
 // Two EMAs with optimizable periods.
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AdaptiveMaCrossover {
-    fast_period: usize,
-    slow_period: usize,
+    pub fast_period: usize,
+    pub slow_period: usize,
 }
 
 impl AdaptiveMaCrossover {
