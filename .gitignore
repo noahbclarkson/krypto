@@ -14,3 +14,11 @@ config.yml
 *.csv
 *.log
 krypto_report.md
+
+# Added by cargo
+
+/target
+
+/examples/cache
+
+backtest_results.png
