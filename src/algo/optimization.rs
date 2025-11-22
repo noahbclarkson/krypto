@@ -61,7 +61,7 @@ impl Optimizer {
         let mut best_result: Option<BacktestResult> = None;
         let mut rng = rand::thread_rng();
         let ranges = strategy.param_ranges();
-        let backtester = Backtester::new(10_000.0, 0.0, 0.0005);
+        let backtester = Backtester::new(10_000.0, 0.0, 0.001);
         let trailing = self.trailing_sl;
 
         // Grid-guided search: evaluate corner/mid points for each param

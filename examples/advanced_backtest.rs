@@ -3,7 +3,8 @@ use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use krypto::algo::optimization::{OptimizableStrategy, Optimizer};
 use krypto::algo::strategies::{
-    AtrBreakout, BollingerReversion, DynamicTrend, LeadLagStrategy, RelativeStrengthStrat,
+    AdaptiveMaCrossover, AtrBreakout, BollingerReversion, DynamicTrend, LeadLagStrategy,
+    MacdTrend, ObvTrend, PriceMomentum, RelativeStrengthStrat, RsiMeanReversion,
     VolatilitySqueeze,
 };
 use krypto::backtest::engine::Backtester;
@@ -255,7 +256,10 @@ fn draw_chart(cands: &[TradeCandidate]) -> Result<(), Box<dyn std::error::Error>
         .y_label_area_size(60)
         .build_cartesian_2d(x_spec, y_min..y_max)?;
 
-    chart.configure_mesh().draw()?;
+    chart
+        .configure_mesh()
+        .x_label_formatter(&|dt| dt.format("%Y-%m-%d").to_string())
+        .draw()?;
 
     let colors = [RED, BLUE, GREEN, MAGENTA, CYAN];
     for (i, cand) in cands.iter().take(5).enumerate() {
@@ -323,8 +327,8 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    let backtester = Backtester::new(10_000.0, 0.0, 0.0005);
-    let optimizer = Optimizer::new(80, 0.60);
+    let backtester = Backtester::new(10_000.0, 0.0, 0.001);
+    let optimizer = Optimizer::new(160, 0.60);
 
     let mut candidates = Vec::new();
 
@@ -346,6 +350,7 @@ async fn main() -> anyhow::Result<()> {
         let train_len = (len as f64 * 0.6) as usize;
         let test_df = df.slice(train_len as i64, len - train_len);
 
+        // 1. Dynamic Trend
         let mut strat_trend = DynamicTrend::new();
         evaluate_strategy(
             &optimizer,
@@ -358,6 +363,7 @@ async fn main() -> anyhow::Result<()> {
             &mut candidates,
         )?;
 
+        // 2. ATR Breakout
         let mut strat_atr = AtrBreakout::new();
         evaluate_strategy(
             &optimizer,
@@ -370,6 +376,7 @@ async fn main() -> anyhow::Result<()> {
             &mut candidates,
         )?;
 
+        // 3. Relative Strength (non-BTC)
         if !symbol.contains("BTC") {
             let mut strat_rs = RelativeStrengthStrat::new();
             evaluate_strategy(
@@ -384,6 +391,7 @@ async fn main() -> anyhow::Result<()> {
             )?;
         }
 
+        // 4. Bollinger Reversion
         let mut strat_bb = BollingerReversion::new();
         evaluate_strategy(
             &optimizer,
@@ -396,6 +404,7 @@ async fn main() -> anyhow::Result<()> {
             &mut candidates,
         )?;
 
+        // 5. Volatility Squeeze
         let mut strat_sq = VolatilitySqueeze::new();
         evaluate_strategy(
             &optimizer,
@@ -408,6 +417,7 @@ async fn main() -> anyhow::Result<()> {
             &mut candidates,
         )?;
 
+        // 6. Lead-Lag (non-BTC)
         if !symbol.contains("BTC") {
             let mut strat_lead = LeadLagStrategy::new();
             evaluate_strategy(
@@ -421,6 +431,73 @@ async fn main() -> anyhow::Result<()> {
                 &mut candidates,
             )?;
         }
+
+        // --- NEW STRATEGIES ---
+
+        // 7. OBV Trend (Volume Based)
+        let mut strat_obv = ObvTrend::new();
+        evaluate_strategy(
+            &optimizer,
+            &backtester,
+            &mut strat_obv,
+            &df,
+            &test_df,
+            symbol,
+            interval,
+            &mut candidates,
+        )?;
+
+        // 8. MACD Trend (Momentum)
+        let mut strat_macd = MacdTrend::new();
+        evaluate_strategy(
+            &optimizer,
+            &backtester,
+            &mut strat_macd,
+            &df,
+            &test_df,
+            symbol,
+            interval,
+            &mut candidates,
+        )?;
+
+        // 9. RSI Mean Reversion (Oscillator)
+        let mut strat_rsi_rev = RsiMeanReversion::new();
+        evaluate_strategy(
+            &optimizer,
+            &backtester,
+            &mut strat_rsi_rev,
+            &df,
+            &test_df,
+            symbol,
+            interval,
+            &mut candidates,
+        )?;
+
+        // 10. Price Momentum (ROC)
+        let mut strat_mom = PriceMomentum::new();
+        evaluate_strategy(
+            &optimizer,
+            &backtester,
+            &mut strat_mom,
+            &df,
+            &test_df,
+            symbol,
+            interval,
+            &mut candidates,
+        )?;
+
+        // 11. Adaptive MA Crossover
+        let mut strat_ma = AdaptiveMaCrossover::new();
+        evaluate_strategy(
+            &optimizer,
+            &backtester,
+            &mut strat_ma,
+            &df,
+            &test_df,
+            symbol,
+            interval,
+            &mut candidates,
+        )?;
     }
 
     candidates.retain(|c| c.test_pnl_abs > 0.0);

@@ -589,3 +589,447 @@ impl OptimizableStrategy for AtrBreakout {
         self.trend_ema = params.get("trend_ema", 50.0) as usize;
     }
 }
+
+// -----------------------------------------------------------------------------
+// NEW STRATEGY 1: On-Balance Volume Trend (ObvTrend)
+// -----------------------------------------------------------------------------
+// Uses volume flow to confirm trend direction.
+// Logic: Calculate OBV, then apply Fast/Slow EMAs on the OBV line.
+// Signal: OBV_Fast > OBV_Slow -> Long, OBV_Fast < OBV_Slow -> Short.
+
+#[derive(Clone)]
+pub struct ObvTrend {
+    obv_fast: usize,
+    obv_slow: usize,
+}
+
+impl ObvTrend {
+    pub fn new() -> Self {
+        Self {
+            obv_fast: 20,
+            obv_slow: 50,
+        }
+    }
+}
+
+impl Default for ObvTrend {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SignalGenerator for ObvTrend {
+    fn name(&self) -> &str {
+        "OBV_Trend"
+    }
+
+    fn train(&mut self, _: &DataFrame, _: &Series) -> Result<()> {
+        Ok(())
+    }
+
+    fn predict(&self, df: &DataFrame) -> Result<Series> {
+        // 1. Calculate OBV via cumulative signed volume
+        let close = df.column("close")?.f64()?;
+        let volume = df.column("volume")?.f64()?;
+        let mut obv_vals = vec![0.0; df.height()];
+
+        for i in 1..df.height() {
+            let prev_close = close.get(i - 1).unwrap_or(0.0);
+            let curr_close = close.get(i).unwrap_or(prev_close);
+            let vol = volume.get(i).unwrap_or(0.0);
+
+            obv_vals[i] = if curr_close > prev_close {
+                obv_vals[i - 1] + vol
+            } else if curr_close < prev_close {
+                obv_vals[i - 1] - vol
+            } else {
+                obv_vals[i - 1]
+            };
+        }
+
+        let obv_series = Series::new("obv", obv_vals);
+
+        // 2. Apply EMAs on OBV
+        // Note: We must convert Series to DataFrame to use existing ewm_mean nicely or use expressions
+        let fast_opt = EWMOptions {
+            alpha: 1.0 / self.obv_fast as f64,
+            adjust: true,
+            bias: false,
+            min_periods: self.obv_fast,
+            ignore_nulls: true,
+        };
+        let slow_opt = EWMOptions {
+            alpha: 1.0 / self.obv_slow as f64,
+            adjust: true,
+            bias: false,
+            min_periods: self.obv_slow,
+            ignore_nulls: true,
+        };
+
+        let ema_df = DataFrame::new(vec![obv_series.clone()])?
+            .lazy()
+            .with_columns(vec![
+                col("obv").ewm_mean(fast_opt).alias("obv_fast"),
+                col("obv").ewm_mean(slow_opt).alias("obv_slow"),
+            ])
+            .collect()?;
+
+        let fast = ema_df.column("obv_fast")?.f64()?;
+        let slow = ema_df.column("obv_slow")?.f64()?;
+
+        let mut signals = vec![0.0; df.height()];
+        for i in 0..df.height() {
+            let f = fast.get(i).unwrap_or(0.0);
+            let s = slow.get(i).unwrap_or(0.0);
+
+            if f > s {
+                signals[i] = 1.0;
+            } else if f < s {
+                signals[i] = -1.0;
+            }
+        }
+
+        Ok(Series::new("signal", signals))
+    }
+}
+
+impl OptimizableStrategy for ObvTrend {
+    fn param_ranges(&self) -> HashMap<String, (f64, f64)> {
+        let mut map = HashMap::new();
+        map.insert("obv_fast".to_string(), (5.0, 30.0));
+        map.insert("obv_slow".to_string(), (30.0, 100.0));
+        map
+    }
+
+    fn set_params(&mut self, params: &StrategyParams) {
+        self.obv_fast = params.get("obv_fast", 20.0) as usize;
+        self.obv_slow = params.get("obv_slow", 50.0) as usize;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// NEW STRATEGY 2: MACD Trend (MacdTrend)
+// -----------------------------------------------------------------------------
+// Classic momentum strategy using MACD Histogram.
+
+#[derive(Clone)]
+pub struct MacdTrend {
+    fast: usize,
+    slow: usize,
+    signal: usize,
+}
+
+impl MacdTrend {
+    pub fn new() -> Self {
+        Self {
+            fast: 12,
+            slow: 26,
+            signal: 9,
+        }
+    }
+}
+
+impl Default for MacdTrend {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SignalGenerator for MacdTrend {
+    fn name(&self) -> &str {
+        "MACD_Trend"
+    }
+    fn train(&mut self, _: &DataFrame, _: &Series) -> Result<()> {
+        Ok(())
+    }
+
+    fn predict(&self, df: &DataFrame) -> Result<Series> {
+        // Recalculate MACD based on dynamic params
+        let fast_opt = EWMOptions {
+            alpha: 1.0 / self.fast as f64,
+            adjust: true,
+            bias: false,
+            min_periods: self.fast,
+            ignore_nulls: true,
+        };
+        let slow_opt = EWMOptions {
+            alpha: 1.0 / self.slow as f64,
+            adjust: true,
+            bias: false,
+            min_periods: self.slow,
+            ignore_nulls: true,
+        };
+        let sig_opt = EWMOptions {
+            alpha: 1.0 / self.signal as f64,
+            adjust: true,
+            bias: false,
+            min_periods: self.signal,
+            ignore_nulls: true,
+        };
+
+        let temp = df
+            .clone()
+            .lazy()
+            .with_columns(vec![
+                col("close").ewm_mean(fast_opt).alias("ema_f"),
+                col("close").ewm_mean(slow_opt).alias("ema_s"),
+            ])
+            .with_column((col("ema_f") - col("ema_s")).alias("macd_line"))
+            .with_column(col("macd_line").ewm_mean(sig_opt).alias("macd_sig"))
+            .with_column((col("macd_line") - col("macd_sig")).alias("hist"))
+            .collect()?;
+
+        let hist = temp.column("hist")?.f64()?;
+        let mut signals = vec![0.0; df.height()];
+
+        for i in 0..df.height() {
+            let h = hist.get(i).unwrap_or(0.0);
+            if h > 0.0 {
+                signals[i] = 1.0;
+            } else if h < 0.0 {
+                signals[i] = -1.0;
+            }
+        }
+        Ok(Series::new("signal", signals))
+    }
+}
+
+impl OptimizableStrategy for MacdTrend {
+    fn param_ranges(&self) -> HashMap<String, (f64, f64)> {
+        let mut map = HashMap::new();
+        map.insert("fast".to_string(), (8.0, 20.0));
+        map.insert("slow".to_string(), (21.0, 40.0));
+        map.insert("signal".to_string(), (5.0, 15.0));
+        map
+    }
+    fn set_params(&mut self, params: &StrategyParams) {
+        self.fast = params.get("fast", 12.0) as usize;
+        self.slow = params.get("slow", 26.0) as usize;
+        self.signal = params.get("signal", 9.0) as usize;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// NEW STRATEGY 3: RSI Mean Reversion (RsiMeanReversion)
+// -----------------------------------------------------------------------------
+// Contrarian strategy: Buy oversold, Sell overbought.
+
+#[derive(Clone)]
+pub struct RsiMeanReversion {
+    rsi_lower: f64,
+    rsi_upper: f64,
+}
+
+impl RsiMeanReversion {
+    pub fn new() -> Self {
+        Self {
+            rsi_lower: 30.0,
+            rsi_upper: 70.0,
+        }
+    }
+}
+
+impl Default for RsiMeanReversion {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SignalGenerator for RsiMeanReversion {
+    fn name(&self) -> &str {
+        "RSI_Reversion"
+    }
+    fn train(&mut self, _: &DataFrame, _: &Series) -> Result<()> {
+        Ok(())
+    }
+
+    fn predict(&self, df: &DataFrame) -> Result<Series> {
+        let rsi = df.column("rsi")?.f64()?;
+        let mut signals = vec![0.0; df.height()];
+
+        // Simple state machine to hold position until opposite signal
+        let mut current_pos = 0.0;
+
+        for i in 0..df.height() {
+            let r = rsi.get(i).unwrap_or(50.0);
+            if r < self.rsi_lower {
+                current_pos = 1.0;
+            } else if r > self.rsi_upper {
+                current_pos = -1.0;
+            }
+            signals[i] = current_pos;
+        }
+        Ok(Series::new("signal", signals))
+    }
+}
+
+impl OptimizableStrategy for RsiMeanReversion {
+    fn param_ranges(&self) -> HashMap<String, (f64, f64)> {
+        let mut map = HashMap::new();
+        map.insert("rsi_lower".to_string(), (15.0, 40.0));
+        map.insert("rsi_upper".to_string(), (60.0, 85.0));
+        map
+    }
+    fn set_params(&mut self, params: &StrategyParams) {
+        self.rsi_lower = params.get("rsi_lower", 30.0);
+        self.rsi_upper = params.get("rsi_upper", 70.0);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// NEW STRATEGY 4: Price Momentum (PriceMomentum)
+// -----------------------------------------------------------------------------
+// Rate of Change (ROC) based strategy.
+
+#[derive(Clone)]
+pub struct PriceMomentum {
+    roc_period: usize,
+    threshold: f64,
+}
+
+impl PriceMomentum {
+    pub fn new() -> Self {
+        Self {
+            roc_period: 14,
+            threshold: 0.0,
+        }
+    }
+}
+
+impl Default for PriceMomentum {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SignalGenerator for PriceMomentum {
+    fn name(&self) -> &str {
+        "Price_Momentum"
+    }
+    fn train(&mut self, _: &DataFrame, _: &Series) -> Result<()> {
+        Ok(())
+    }
+
+    fn predict(&self, df: &DataFrame) -> Result<Series> {
+        let roc = df
+            .clone()
+            .lazy()
+            .with_column(col("close").pct_change(lit(self.roc_period as u64)).alias("roc"))
+            .collect()?;
+
+        let roc_vals = roc.column("roc")?.f64()?;
+        let mut signals = vec![0.0; df.height()];
+
+        for i in 0..df.height() {
+            let val = roc_vals.get(i).unwrap_or(0.0);
+            if val > self.threshold {
+                signals[i] = 1.0;
+            } else if val < -self.threshold {
+                signals[i] = -1.0;
+            }
+        }
+        Ok(Series::new("signal", signals))
+    }
+}
+
+impl OptimizableStrategy for PriceMomentum {
+    fn param_ranges(&self) -> HashMap<String, (f64, f64)> {
+        let mut map = HashMap::new();
+        map.insert("roc_period".to_string(), (5.0, 50.0));
+        map.insert("threshold".to_string(), (0.0, 0.05));
+        map
+    }
+    fn set_params(&mut self, params: &StrategyParams) {
+        self.roc_period = params.get("roc_period", 14.0) as usize;
+        self.threshold = params.get("threshold", 0.0);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// NEW STRATEGY 5: Adaptive MA Crossover (AdaptiveMaCrossover)
+// -----------------------------------------------------------------------------
+// Two EMAs with optimizable periods.
+
+#[derive(Clone)]
+pub struct AdaptiveMaCrossover {
+    fast_period: usize,
+    slow_period: usize,
+}
+
+impl AdaptiveMaCrossover {
+    pub fn new() -> Self {
+        Self {
+            fast_period: 20,
+            slow_period: 50,
+        }
+    }
+}
+
+impl Default for AdaptiveMaCrossover {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SignalGenerator for AdaptiveMaCrossover {
+    fn name(&self) -> &str {
+        "Adaptive_MA_Cross"
+    }
+    fn train(&mut self, _: &DataFrame, _: &Series) -> Result<()> {
+        Ok(())
+    }
+
+    fn predict(&self, df: &DataFrame) -> Result<Series> {
+        let fast_opt = EWMOptions {
+            alpha: 1.0 / self.fast_period as f64,
+            adjust: true,
+            bias: false,
+            min_periods: self.fast_period,
+            ignore_nulls: true,
+        };
+        let slow_opt = EWMOptions {
+            alpha: 1.0 / self.slow_period as f64,
+            adjust: true,
+            bias: false,
+            min_periods: self.slow_period,
+            ignore_nulls: true,
+        };
+
+        let temp = df
+            .clone()
+            .lazy()
+            .with_columns(vec![
+                col("close").ewm_mean(fast_opt).alias("ema_f"),
+                col("close").ewm_mean(slow_opt).alias("ema_s"),
+            ])
+            .collect()?;
+
+        let f = temp.column("ema_f")?;
+        let s = temp.column("ema_s")?;
+
+        let mask = f.gt(s)?;
+        let mut signals = vec![0.0; df.height()];
+
+        for i in 0..df.height() {
+            if mask.get(i).unwrap_or(false) {
+                signals[i] = 1.0;
+            } else {
+                signals[i] = -1.0;
+            }
+        }
+        Ok(Series::new("signal", signals))
+    }
+}
+
+impl OptimizableStrategy for AdaptiveMaCrossover {
+    fn param_ranges(&self) -> HashMap<String, (f64, f64)> {
+        let mut map = HashMap::new();
+        map.insert("fast_period".to_string(), (5.0, 50.0));
+        map.insert("slow_period".to_string(), (51.0, 200.0));
+        map
+    }
+    fn set_params(&mut self, params: &StrategyParams) {
+        self.fast_period = params.get("fast_period", 20.0) as usize;
+        self.slow_period = params.get("slow_period", 50.0) as usize;
+    }
+}
