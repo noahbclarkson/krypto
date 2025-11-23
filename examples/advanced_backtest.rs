@@ -50,7 +50,7 @@ struct TradeCandidate {
 }
 
 fn cache_path(symbol: &str, interval: &str, limit: u16) -> PathBuf {
-    let filename = format!("{}_{}_{}.bin", symbol, interval, limit);
+    let filename = format!("{symbol}_{interval}_{limit}.bin");
     Path::new(CACHE_DIR).join(filename)
 }
 
@@ -271,11 +271,11 @@ fn draw_chart(cands: &[TradeCandidate]) -> Result<(), Box<dyn std::error::Error>
 
     chart
         .configure_series_labels()
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
-    println!("Generated performance chart: {}", PLOT_OUTPUT);
+    println!("Generated performance chart: {PLOT_OUTPUT}");
     Ok(())
 }
 
@@ -289,7 +289,7 @@ async fn main() -> anyhow::Result<()> {
         "{}",
         "--- KRYPTO V6: INSTITUTIONAL ENGINE ---".green().bold()
     );
-    println!("Fetching Deep History ({} candles/pair)...", limit);
+    println!("Fetching Deep History ({limit} candles/pair)...");
 
     let loader = DataLoader::new(None, None);
     let total_jobs = (symbols.len() * intervals.len()) as u64;
@@ -543,12 +543,10 @@ async fn main() -> anyhow::Result<()> {
 
     println!("{}", "-".repeat(110));
     println!(
-        "Total Portfolio PnL (Risk Adjusted): ${:.2}",
-        total_weighted_pnl
+        "Total Portfolio PnL (Risk Adjusted): ${total_weighted_pnl:.2}"
     );
     println!(
-        "Allocated Capital (Kelly-weighted, nominal): ${:.2}",
-        allocated_capital
+        "Allocated Capital (Kelly-weighted, nominal): ${allocated_capital:.2}"
     );
     println!(
         "Cache hits: {}/{}",

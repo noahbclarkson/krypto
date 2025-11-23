@@ -79,6 +79,61 @@ impl SignalGenerator for DynamicTrend {
         }
         Ok(Series::new("signal", signals))
     }
+
+    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+        let fast_opt = EWMOptions {
+            alpha: 1.0 / self.ema_fast as f64,
+            adjust: true,
+            bias: false,
+            min_periods: self.ema_fast,
+            ignore_nulls: true,
+        };
+        let slow_opt = EWMOptions {
+            alpha: 1.0 / self.ema_slow as f64,
+            adjust: true,
+            bias: false,
+            min_periods: self.ema_slow,
+            ignore_nulls: true,
+        };
+
+        let temp_df = df
+            .clone()
+            .lazy()
+            .with_columns(vec![
+                col("close").ewm_mean(fast_opt).alias("ema_fast_dyn"),
+                col("close").ewm_mean(slow_opt).alias("ema_slow_dyn"),
+            ])
+            .collect()?;
+
+        let ema_f = temp_df.column("ema_fast_dyn")?.f64()?;
+        let ema_s = temp_df.column("ema_slow_dyn")?.f64()?;
+        let rsi = temp_df.column("rsi")?.f64()?;
+
+        let mut reasons = Vec::with_capacity(df.height());
+
+        for i in 0..df.height() {
+            let f = ema_f.get(i).unwrap_or(0.0);
+            let s = ema_s.get(i).unwrap_or(0.0);
+            let r = rsi.get(i).unwrap_or(50.0);
+
+            if f > s && r > self.rsi_filter {
+                reasons.push(format!(
+                    "LONG: EMA_Fast({:.2}) > EMA_Slow({:.2}) AND RSI({:.1}) > {:.1}",
+                    f, s, r, self.rsi_filter
+                ));
+            } else if f < s {
+                reasons.push(format!(
+                    "SHORT: EMA_Fast({f:.2}) < EMA_Slow({s:.2})"
+                ));
+            } else {
+                reasons.push(format!(
+                    "FLAT: EMA_Fast({:.2}) > EMA_Slow({:.2}) but RSI({:.1}) <= {:.1}",
+                    f, s, r, self.rsi_filter
+                ));
+            }
+        }
+        Ok(reasons)
+    }
 }
 
 impl OptimizableStrategy for DynamicTrend {
@@ -162,6 +217,10 @@ impl SignalGenerator for RelativeStrengthStrat {
             }
         }
         Ok(Series::new("signal", signals))
+    }
+
+    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+        Ok(vec!["RelativeStrength strategy signal".to_string(); df.height()])
     }
 }
 
@@ -261,6 +320,10 @@ impl SignalGenerator for BollingerReversion {
         }
 
         Ok(Series::new("signal", signals))
+    }
+
+    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+        Ok(vec!["BollingerReversion strategy signal".to_string(); df.height()])
     }
 }
 
@@ -390,6 +453,10 @@ impl SignalGenerator for VolatilitySqueeze {
 
         Ok(Series::new("signal", signals))
     }
+
+    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+        Ok(vec!["VolatilitySqueeze strategy signal".to_string(); df.height()])
+    }
 }
 
 impl OptimizableStrategy for VolatilitySqueeze {
@@ -496,6 +563,10 @@ impl SignalGenerator for LeadLagStrategy {
 
         Ok(Series::new("signal", signals))
     }
+
+    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+        Ok(vec!["LeadLag strategy signal".to_string(); df.height()])
+    }
 }
 
 impl OptimizableStrategy for LeadLagStrategy {
@@ -572,6 +643,10 @@ impl SignalGenerator for AtrBreakout {
         }
 
         Ok(Series::new("signal", signals))
+    }
+
+    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+        Ok(vec!["AtrBreakout strategy signal".to_string(); df.height()])
     }
 }
 
@@ -692,6 +767,10 @@ impl SignalGenerator for ObvTrend {
 
         Ok(Series::new("signal", signals))
     }
+
+    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+        Ok(vec!["ObvTrend strategy signal".to_string(); df.height()])
+    }
 }
 
 impl OptimizableStrategy for ObvTrend {
@@ -793,6 +872,10 @@ impl SignalGenerator for MacdTrend {
         }
         Ok(Series::new("signal", signals))
     }
+
+    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+        Ok(vec!["MacdTrend strategy signal".to_string(); df.height()])
+    }
 }
 
 impl OptimizableStrategy for MacdTrend {
@@ -861,6 +944,49 @@ impl SignalGenerator for RsiMeanReversion {
             signals[i] = current_pos;
         }
         Ok(Series::new("signal", signals))
+    }
+
+    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+        let rsi = df.column("rsi")?.f64()?;
+        let mut reasons = Vec::with_capacity(df.height());
+
+        let mut current_pos = 0.0;
+
+        for i in 0..df.height() {
+            let r = rsi.get(i).unwrap_or(50.0);
+
+            let prev_pos = current_pos;
+
+            if r < self.rsi_lower {
+                current_pos = 1.0;
+                reasons.push(format!(
+                    "LONG SIGNAL: RSI ({:.2}) crossed below lower band ({:.2})",
+                    r, self.rsi_lower
+                ));
+            } else if r > self.rsi_upper {
+                current_pos = -1.0;
+                reasons.push(format!(
+                    "SHORT SIGNAL: RSI ({:.2}) crossed above upper band ({:.2})",
+                    r, self.rsi_upper
+                ));
+            } else if prev_pos > 0.0 {
+                reasons.push(format!(
+                    "HOLD LONG: RSI ({:.2}) has not reached upper target ({:.2})",
+                    r, self.rsi_upper
+                ));
+            } else if prev_pos < 0.0 {
+                reasons.push(format!(
+                    "HOLD SHORT: RSI ({:.2}) has not reached lower target ({:.2})",
+                    r, self.rsi_lower
+                ));
+            } else {
+                reasons.push(format!(
+                    "WAIT: RSI ({:.2}) is in neutral zone ({:.2}-{:.2})",
+                    r, self.rsi_lower, self.rsi_upper
+                ));
+            }
+        }
+        Ok(reasons)
     }
 }
 
@@ -934,6 +1060,10 @@ impl SignalGenerator for PriceMomentum {
             }
         }
         Ok(Series::new("signal", signals))
+    }
+
+    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+        Ok(vec!["PriceMomentum strategy signal".to_string(); df.height()])
     }
 }
 
@@ -1023,6 +1153,10 @@ impl SignalGenerator for AdaptiveMaCrossover {
             }
         }
         Ok(Series::new("signal", signals))
+    }
+
+    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+        Ok(vec!["AdaptiveMaCrossover strategy signal".to_string(); df.height()])
     }
 }
 

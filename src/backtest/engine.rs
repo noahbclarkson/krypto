@@ -163,30 +163,39 @@ impl Backtester {
         } else {
             0.0
         };
-        let profit_factor = if gross_loss > 0.0 {
+
+        let profit_factor = if gross_loss.abs() > f64::EPSILON {
             gross_profit / gross_loss
+        } else if gross_profit > 0.0 {
+            100.0
         } else {
             0.0
         };
+
         let total_return = (equity - self.initial_capital) / self.initial_capital;
 
-        // Kelly fraction based on win rate and payoff ratio
         let avg_win = if wins > 0 {
             gross_profit / wins as f64
         } else {
             0.0
         };
+
         let avg_loss = if losses > 0 {
             gross_loss / losses as f64
+        } else if total_trades > 0 { 1.0 } else { 0.0 };
+
+        let payoff_ratio = if avg_loss.abs() > f64::EPSILON {
+            avg_win / avg_loss
         } else {
-            1.0
+            0.0
         };
-        let payoff_ratio = avg_win / avg_loss;
+
         let kelly = if payoff_ratio > 0.0 {
             win_rate - ((1.0 - win_rate) / payoff_ratio)
         } else {
             0.0
         };
+
         let kelly_fraction = (kelly * 0.5).clamp(0.0, 0.2);
 
         let sharpe = if max_drawdown > 0.0 {
