@@ -19,5 +19,5 @@ pub trait SignalGenerator: Send + Sync {
 
     /// Returns a text explanation for the signal at every step.
     /// Useful for UI transparency ("Why did we buy?").
-    fn explain(&self, features: &DataFrame) -> Result<Vec<String>>;
+    fn explain(&self, features: &DataFrame) -> Result<Series>;
 }

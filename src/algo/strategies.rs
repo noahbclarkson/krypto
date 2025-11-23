@@ -80,7 +80,7 @@ impl SignalGenerator for DynamicTrend {
         Ok(Series::new("signal", signals))
     }
 
-    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
         let fast_opt = EWMOptions {
             alpha: 1.0 / self.ema_fast as f64,
             adjust: true,
@@ -132,7 +132,7 @@ impl SignalGenerator for DynamicTrend {
                 ));
             }
         }
-        Ok(reasons)
+        Ok(Series::new("explanation", reasons))
     }
 }
 
@@ -219,8 +219,8 @@ impl SignalGenerator for RelativeStrengthStrat {
         Ok(Series::new("signal", signals))
     }
 
-    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
-        Ok(vec!["RelativeStrength strategy signal".to_string(); df.height()])
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation", vec!["RelativeStrength strategy signal"; df.height()]))
     }
 }
 
@@ -322,8 +322,8 @@ impl SignalGenerator for BollingerReversion {
         Ok(Series::new("signal", signals))
     }
 
-    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
-        Ok(vec!["BollingerReversion strategy signal".to_string(); df.height()])
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation", vec!["BollingerReversion strategy signal"; df.height()]))
     }
 }
 
@@ -454,8 +454,8 @@ impl SignalGenerator for VolatilitySqueeze {
         Ok(Series::new("signal", signals))
     }
 
-    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
-        Ok(vec!["VolatilitySqueeze strategy signal".to_string(); df.height()])
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation", vec!["VolatilitySqueeze strategy signal"; df.height()]))
     }
 }
 
@@ -564,8 +564,8 @@ impl SignalGenerator for LeadLagStrategy {
         Ok(Series::new("signal", signals))
     }
 
-    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
-        Ok(vec!["LeadLag strategy signal".to_string(); df.height()])
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation", vec!["LeadLag strategy signal"; df.height()]))
     }
 }
 
@@ -645,8 +645,8 @@ impl SignalGenerator for AtrBreakout {
         Ok(Series::new("signal", signals))
     }
 
-    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
-        Ok(vec!["AtrBreakout strategy signal".to_string(); df.height()])
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation", vec!["AtrBreakout strategy signal"; df.height()]))
     }
 }
 
@@ -768,8 +768,8 @@ impl SignalGenerator for ObvTrend {
         Ok(Series::new("signal", signals))
     }
 
-    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
-        Ok(vec!["ObvTrend strategy signal".to_string(); df.height()])
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation", vec!["ObvTrend strategy signal"; df.height()]))
     }
 }
 
@@ -873,8 +873,8 @@ impl SignalGenerator for MacdTrend {
         Ok(Series::new("signal", signals))
     }
 
-    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
-        Ok(vec!["MacdTrend strategy signal".to_string(); df.height()])
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation", vec!["MacdTrend strategy signal"; df.height()]))
     }
 }
 
@@ -946,7 +946,7 @@ impl SignalGenerator for RsiMeanReversion {
         Ok(Series::new("signal", signals))
     }
 
-    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
         let rsi = df.column("rsi")?.f64()?;
         let mut reasons = Vec::with_capacity(df.height());
 
@@ -986,7 +986,7 @@ impl SignalGenerator for RsiMeanReversion {
                 ));
             }
         }
-        Ok(reasons)
+        Ok(Series::new("explanation", reasons))
     }
 }
 
@@ -1062,8 +1062,8 @@ impl SignalGenerator for PriceMomentum {
         Ok(Series::new("signal", signals))
     }
 
-    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
-        Ok(vec!["PriceMomentum strategy signal".to_string(); df.height()])
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation", vec!["PriceMomentum strategy signal"; df.height()]))
     }
 }
 
@@ -1155,8 +1155,8 @@ impl SignalGenerator for AdaptiveMaCrossover {
         Ok(Series::new("signal", signals))
     }
 
-    fn explain(&self, df: &DataFrame) -> Result<Vec<String>> {
-        Ok(vec!["AdaptiveMaCrossover strategy signal".to_string(); df.height()])
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation", vec!["AdaptiveMaCrossover strategy signal"; df.height()]))
     }
 }
 
