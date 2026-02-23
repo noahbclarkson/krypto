@@ -12,21 +12,35 @@ pub struct BacktestResult {
     pub sharpe_ratio: f64,
     pub kelly_fraction: f64,
     pub equity_curve: Vec<f64>,
+    pub total_fees_paid: f64,
 }
 
 pub struct Backtester {
     initial_capital: f64,
     fee_pct: f64,
-    slippage_pct: f64,
+    /// Slippage in basis points (bps). Default: 5 bps = 0.05%.
+    /// Applied to the fill price: buys pay more, sells receive less.
+    slippage_bps: f64,
 }
 
 impl Backtester {
-    pub fn new(initial_capital: f64, fee_pct: f64, slippage_pct: f64) -> Self {
+    pub fn new(initial_capital: f64, fee_pct: f64, slippage_bps: f64) -> Self {
         Self {
             initial_capital,
             fee_pct,
-            slippage_pct,
+            slippage_bps,
         }
+    }
+
+    /// Create a backtester with sensible defaults (5 bps slippage).
+    pub fn with_defaults(initial_capital: f64) -> Self {
+        Self::new(initial_capital, 0.001, 5.0)
+    }
+
+    /// Convert slippage_bps to a multiplier factor (e.g. 5 bps → 0.0005).
+    #[inline]
+    fn slippage_factor(&self) -> f64 {
+        self.slippage_bps / 10_000.0
     }
 
     pub fn run(&self, df: &DataFrame, signal: &Series, trailing_sl: f64) -> Result<BacktestResult> {
@@ -34,6 +48,8 @@ impl Backtester {
         let highs = df.column("high")?.f64()?;
         let lows = df.column("low")?.f64()?;
         let signals = signal.f64()?;
+
+        let slip = self.slippage_factor();
 
         let mut equity = self.initial_capital;
         let mut position = 0.0;
@@ -45,6 +61,7 @@ impl Backtester {
         let mut losses = 0;
         let mut gross_profit = 0.0;
         let mut gross_loss = 0.0;
+        let mut total_fees_paid = 0.0;
         let mut _returns_list: Vec<f64> = Vec::new();
 
         let mut peak_equity = equity;
@@ -58,16 +75,23 @@ impl Backtester {
             let low = lows.get(i).unwrap_or(price);
             let sig = signals.get(i).unwrap_or(0.0);
 
-            // Trailing stop logic
+            // ── Trailing stop logic ────────────────────────────────────────
+            // We check the bar's LOW for longs and HIGH for shorts — stops
+            // trigger intra-bar, not just at the close price.
             if position > 0.0 {
                 if high > highest_price_in_trade {
                     highest_price_in_trade = high;
                 }
                 let stop_price = highest_price_in_trade * (1.0 - trailing_sl);
-                if price < stop_price {
+                if low < stop_price {
+                    // Stop triggered: fill at the stop price (not close)
+                    let notional = equity;
+                    let fee = notional * self.fee_pct * 2.0; // entry + exit legs
                     let pnl_pct = (stop_price - entry_price) / entry_price;
-                    let pnl_amount = equity * pnl_pct - (equity * self.fee_pct * 2.0);
+                    let pnl_amount = notional * pnl_pct - fee;
+
                     equity += pnl_amount;
+                    total_fees_paid += fee;
 
                     if pnl_amount > 0.0 {
                         wins += 1;
@@ -83,10 +107,15 @@ impl Backtester {
                     lowest_price_in_trade = low;
                 }
                 let stop_price = lowest_price_in_trade * (1.0 + trailing_sl);
-                if price > stop_price {
+                if high > stop_price {
+                    // Stop triggered: fill at the stop price (not close)
+                    let notional = equity;
+                    let fee = notional * self.fee_pct * 2.0;
                     let pnl_pct = (entry_price - stop_price) / entry_price;
-                    let pnl_amount = equity * pnl_pct - (equity * self.fee_pct * 2.0);
+                    let pnl_amount = notional * pnl_pct - fee;
+
                     equity += pnl_amount;
+                    total_fees_paid += fee;
 
                     if pnl_amount > 0.0 {
                         wins += 1;
@@ -99,11 +128,13 @@ impl Backtester {
                 }
             }
 
+            // ── Signal-driven entry / exit ─────────────────────────────────
             if (sig - position).abs() > 0.01 {
+                // Apply slippage: buys fill higher, sells fill lower
                 let exec_price = if sig > position {
-                    price * (1.0 + self.slippage_pct)
+                    price * (1.0 + slip) // buy: worse fill
                 } else {
-                    price * (1.0 - self.slippage_pct)
+                    price * (1.0 - slip) // sell: worse fill
                 };
 
                 if position.abs() > 0.01 {
@@ -113,10 +144,14 @@ impl Backtester {
                         (entry_price - exec_price) / entry_price
                     };
 
+                    // Fee applied to notional value of the trade
+                    let notional = equity;
+                    let fee = notional * self.fee_pct * 2.0;
                     let net_pnl_pct = raw_pnl_pct - (self.fee_pct * 2.0);
-                    let pnl_amount = equity * net_pnl_pct;
+                    let pnl_amount = notional * net_pnl_pct;
 
                     equity += pnl_amount;
+                    total_fees_paid += fee;
                     _returns_list.push(net_pnl_pct);
 
                     if pnl_amount > 0.0 {
@@ -136,6 +171,7 @@ impl Backtester {
                 position = sig;
             }
 
+            // ── Drawdown tracking ──────────────────────────────────────────
             if equity > peak_equity {
                 peak_equity = equity;
             }
@@ -144,6 +180,7 @@ impl Backtester {
                 max_drawdown = dd;
             }
 
+            // ── Mark-to-market equity curve ────────────────────────────────
             let mtm_equity = if position.abs() > 0.01 {
                 let current_pnl_pct = if position > 0.0 {
                     (price - entry_price) / entry_price
@@ -182,7 +219,11 @@ impl Backtester {
 
         let avg_loss = if losses > 0 {
             gross_loss / losses as f64
-        } else if total_trades > 0 { 1.0 } else { 0.0 };
+        } else if total_trades > 0 {
+            1.0
+        } else {
+            0.0
+        };
 
         let payoff_ratio = if avg_loss.abs() > f64::EPSILON {
             avg_win / avg_loss
@@ -214,6 +255,7 @@ impl Backtester {
             sharpe_ratio: sharpe,
             kelly_fraction,
             equity_curve,
+            total_fees_paid,
         })
     }
 }
