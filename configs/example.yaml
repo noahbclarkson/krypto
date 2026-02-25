@@ -1,0 +1,125 @@
+# Krypto Experiment Configuration Example
+# ========================================
+# This configuration defines a reproducible backtest experiment.
+# Every run with this config produces comparable, auditable results.
+
+name: btc_trend_following
+description: "Basic trend following strategy on BTC/USDT using EMA crossover with RSI filter"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DATA SOURCE
+# ─────────────────────────────────────────────────────────────────────────────
+data:
+  source: binance
+  symbols:
+    - BTCUSDT
+  interval: 1h
+  start_date: "2024-01-01"
+  # end_date: "2024-12-31"  # Optional: defaults to now
+  lookback_candles: 5000   # Alternative to date range
+  cache_dir: ./data/cache
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TRANSACTION COSTS
+# ─────────────────────────────────────────────────────────────────────────────
+# Be conservative here - optimistic costs lead to false positives.
+costs:
+  fee_pct: 0.001           # 0.1% (Binance spot fee)
+  slippage_bps: 5          # 5 basis points (0.05%) - conservative estimate
+  include_funding: false   # For margin/futures: include funding rates
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POSITION SIZING
+# ─────────────────────────────────────────────────────────────────────────────
+sizing:
+  initial_capital: 10000
+  kelly_fraction: 0.0      # 0 = fixed sizing, 1 = full Kelly (dangerous)
+  position_fraction: 1.0   # 100% of equity per trade (if kelly = 0)
+  max_position_fraction: 1.0
+  trailing_stop_pct: 0.05  # 5% trailing stop
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VALIDATION METHOD
+# ─────────────────────────────────────────────────────────────────────────────
+# Critical for avoiding overfitting. Choose based on your data size:
+# - simple_split: Fast, but single test set may be unrepresentative
+# - walk_forward: Better, trains on expanding window
+# - cpcv: Best for regime-robust validation (requires more data)
+validation:
+  method: simple_split     # Options: simple_split, walk_forward, cpcv
+  train_ratio: 0.6         # 60% train
+  test_ratio: 0.4          # 40% test
+  n_windows: 5             # For walk_forward/cpcv
+  purge_gap: 24            # Purge 24 candles between train/test to prevent leakage
+  embargo: 0               # Embargo period after test set
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EVALUATION METRICS
+# ─────────────────────────────────────────────────────────────────────────────
+# Define what "good" means for your strategy.
+metrics:
+  primary_metric: sharpe_ratio
+  
+  thresholds:
+    min_sharpe: 0.5        # Minimum Sharpe ratio
+    min_profit_factor: 1.2 # Profit factor > 1.2
+    min_win_rate: 40       # Win rate > 40%
+    max_drawdown: 25       # Max DD < 25%
+    min_trades: 20         # At least 20 trades
+    min_robustness: 0.4    # Test sharpe / train sharpe > 0.4
+
+  additional:
+    - win_rate
+    - profit_factor
+    - max_drawdown
+    - total_return
+    - kelly_fraction
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STRATEGY CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────────────
+strategy:
+  strategy_type: dynamic_trend
+  
+  params:
+    ema_fast: 20
+    ema_slow: 50
+    rsi_period: 14
+    rsi_oversold: 30
+    rsi_overbought: 70
+  
+  # Optional: parameter optimization
+  optimization:
+    n_iterations: 50
+    method: random         # Options: random, grid, bayesian
+    
+    param_ranges:
+      ema_fast:
+        type: int
+        min: 10
+        max: 30
+      
+      ema_slow:
+        type: int
+        min: 40
+        max: 100
+      
+      rsi_oversold:
+        type: float
+        min: 20
+        max: 35
+      
+      rsi_overbought:
+        type: float
+        min: 65
+        max: 80
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OUTPUT CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────────────
+output:
+  base_dir: ./experiments
+  save_equity_curve: true
+  save_trades: true
+  generate_plots: false
+  verbose: true

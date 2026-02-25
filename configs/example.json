@@ -1,0 +1,71 @@
+{
+  "name": "btc_trend_following",
+  "description": "Basic trend following strategy on BTC/USDT using EMA crossover with RSI filter",
+  "data": {
+    "source": "binance",
+    "symbols": ["BTCUSDT"],
+    "interval": "1h",
+    "start_date": "2024-01-01",
+    "lookback_candles": 5000,
+    "cache_dir": "./data/cache"
+  },
+  "costs": {
+    "fee_pct": 0.001,
+    "slippage_bps": 5,
+    "include_funding": false
+  },
+  "sizing": {
+    "initial_capital": 10000,
+    "kelly_fraction": 0,
+    "position_fraction": 1.0,
+    "max_position_fraction": 1.0,
+    "trailing_stop_pct": 0.05
+  },
+  "validation": {
+    "method": "simple_split",
+    "train_ratio": 0.6,
+    "test_ratio": 0.4,
+    "n_windows": 5,
+    "purge_gap": 24,
+    "embargo": 0
+  },
+  "metrics": {
+    "primary_metric": "sharpe_ratio",
+    "thresholds": {
+      "min_sharpe": 0.5,
+      "min_profit_factor": 1.2,
+      "min_win_rate": 40,
+      "max_drawdown": 25,
+      "min_trades": 20,
+      "min_robustness": 0.4
+    },
+    "additional": ["win_rate", "profit_factor", "max_drawdown", "total_return", "kelly_fraction"]
+  },
+  "strategy": {
+    "strategy_type": "dynamic_trend",
+    "params": {
+      "ema_fast": 20,
+      "ema_slow": 50,
+      "rsi_period": 14,
+      "rsi_oversold": 30,
+      "rsi_overbought": 70
+    },
+    "optimization": {
+      "n_iterations": 50,
+      "method": "random",
+      "param_ranges": {
+        "ema_fast": {"type": "int", "min": 10, "max": 30},
+        "ema_slow": {"type": "int", "min": 40, "max": 100},
+        "rsi_oversold": {"type": "float", "min": 20, "max": 35},
+        "rsi_overbought": {"type": "float", "min": 65, "max": 80}
+      }
+    }
+  },
+  "output": {
+    "base_dir": "./experiments",
+    "save_equity_curve": true,
+    "save_trades": true,
+    "generate_plots": false,
+    "verbose": true
+  }
+}
