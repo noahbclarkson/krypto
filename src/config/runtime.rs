@@ -160,13 +160,14 @@ mod tests {
         let config = ValidationConfig {
             method: "walk_forward".to_string(),
             n_windows: 5,
+            purge_gap: 10, // Add purge gap so train/test don't touch
             ..Default::default()
         };
         
         let splits = compute_splits(&config, 1000).unwrap();
         assert_eq!(splits.len(), 5);
         
-        // First window: train on first ~166 candles, test on next ~166
+        // First window: train ends before test starts (due to purge gap)
         assert!(splits[0].train_range.1 < splits[0].test_range.0);
     }
 }

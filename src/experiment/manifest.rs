@@ -308,8 +308,8 @@ pub struct BacktestMetrics {
     pub total_fees_paid: f64,
 }
 
-impl From<crate::backtest::BacktestResult> for BacktestMetrics {
-    fn from(result: crate::backtest::BacktestResult) -> Self {
+impl From<crate::backtest::engine::BacktestResult> for BacktestMetrics {
+    fn from(result: crate::backtest::engine::BacktestResult) -> Self {
         Self {
             total_trades: result.total_trades,
             win_rate: result.win_rate,
@@ -415,9 +415,8 @@ fn get_hostname() -> String {
         unsafe {
             let result = libc::gethostname(buf.as_mut_ptr() as *mut c_char, buf.len());
             if result == 0 {
-                if let Ok(cstr) = CStr::from_ptr(buf.as_ptr() as *const c_char) {
-                    return cstr.to_string_lossy().to_string();
-                }
+                let cstr = CStr::from_ptr(buf.as_ptr() as *const c_char);
+                return cstr.to_string_lossy().to_string();
             }
         }
     }

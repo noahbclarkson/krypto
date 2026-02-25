@@ -10,11 +10,12 @@
 
 use anyhow::{Result, Context, bail};
 use std::path::PathBuf;
-use tracing::{info, warn, debug};
+use tracing::{info, warn};
 
 use crate::config::{ExperimentConfig, RuntimeConfig, DataSplit};
-use crate::backtest::{Backtester, BacktestResult};
-use crate::experiment::{RunManifest, RunStatus, ResultsSummary, BacktestMetrics, OutputFile, OutputFileType};
+use crate::backtest::engine::{Backtester, BacktestResult};
+use crate::experiment::{RunManifest, ResultsSummary, BacktestMetrics};
+use crate::experiment::manifest::{OutputFile, OutputFileType};
 
 /// Experiment runner orchestrates the full backtest workflow.
 pub struct ExperimentRunner {
@@ -111,7 +112,7 @@ impl ExperimentRunner {
               split.test_range.0, split.test_range.1);
         
         // Create backtester with config
-        let backtester = Backtester::new(
+        let _backtester = Backtester::new(
             self.config.sizing.initial_capital,
             self.config.costs.fee_pct,
             self.config.costs.slippage_bps,
@@ -196,8 +197,8 @@ impl ExperimentRunner {
         let worst = BacktestMetrics::from(test_results[worst_idx].clone());
         
         // Compute robustness
-        let train_sharpe = train_results.get(best_idx).map(|r| r.sharpe_ratio).unwrap_or(0.0);
-        let test_sharpe = test_results.get(best_idx).map(|r| r.sharpe_ratio).unwrap_or(0.0);
+        let train_sharpe = train_results.get(best_idx).map(|r: &BacktestResult| r.sharpe_ratio).unwrap_or(0.0);
+        let test_sharpe = test_results.get(best_idx).map(|r: &BacktestResult| r.sharpe_ratio).unwrap_or(0.0);
         let robustness = if train_sharpe > 0.0 {
             Some(test_sharpe / train_sharpe)
         } else {
@@ -210,8 +211,8 @@ impl ExperimentRunner {
             worst,
             combinations_tested: train_results.len(),
             combinations_passed: train_results.iter().filter(|r| r.sharpe_ratio > 0.0).count(),
-            train_metrics: train_results.get(best_idx).map(|r| BacktestMetrics::from(r.clone())),
-            test_metrics: test_results.get(best_idx).map(|r| BacktestMetrics::from(r.clone())),
+            train_metrics: train_results.get(best_idx).map(|r: &BacktestResult| BacktestMetrics::from(r.clone())),
+            test_metrics: test_results.get(best_idx).map(|r: &BacktestResult| BacktestMetrics::from(r.clone())),
             robustness,
         })
     }
@@ -283,11 +284,8 @@ impl ExperimentRunner {
 
 /// Run an experiment from a config file.
 pub fn run_from_config(path: &PathBuf) -> Result<ResultsSummary> {
-    let config = if path.extension().map(|e| e == "yaml" || e == "yml").unwrap_or(false) {
-        ExperimentConfig::from_yaml(path)?
-    } else {
-        ExperimentConfig::from_json(path)?
-    };
+    // Note: YAML support not yet implemented - use JSON
+    let config = ExperimentConfig::from_json(path)?;
     
     let mut runner = ExperimentRunner::new(config)?;
     runner.run()

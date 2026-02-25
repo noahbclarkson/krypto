@@ -8,5 +8,5 @@
 pub mod manifest;
 pub mod runner;
 
-pub use manifest::{RunManifest, RunStatus, ResultsSummary, BacktestMetrics};
+pub use manifest::{RunManifest, RunStatus, ResultsSummary, BacktestMetrics, OutputFile, OutputFileType};
 pub use runner::{ExperimentRunner, list_runs, compare_runs};
