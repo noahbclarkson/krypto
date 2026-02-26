@@ -57,34 +57,52 @@ impl ExperimentRunner {
         info!("Starting experiment: {}", self.config.name);
         info!("Output directory: {:?}", self.output_dir);
 
-        // Phase 1: Load and prepare data
-        let data = self.load_data().context("Failed to load data")?;
-
-        // Phase 2: Compute runtime config (splits)
-        let total_candles = data.len();
-        self.runtime = Some(RuntimeConfig::from_experiment(
-            self.config.clone(),
-            total_candles,
-        )?);
-        let runtime = self.runtime.as_ref().unwrap();
-
+        let symbols = self.config.data.symbols.clone();
         info!(
-            "Loaded {} candles, {} validation splits",
-            total_candles,
-            runtime.splits.len()
+            "Running experiment for {} symbol(s): {:?}",
+            symbols.len(),
+            symbols
         );
 
-        // Phase 3: Run backtests across all splits
+        // Collect results across all symbols
         let mut all_train_results = Vec::new();
         let mut all_test_results = Vec::new();
 
-        for split in &runtime.splits {
-            let (train_result, test_result) = self.run_split(&data, split)?;
-            all_train_results.push(train_result);
-            all_test_results.push(test_result);
+        // Iterate over ALL configured symbols
+        for symbol in &symbols {
+            info!("Processing symbol: {}", symbol);
+
+            // Phase 1: Load and prepare data for this symbol
+            let data = self
+                .load_data_for_symbol(symbol)
+                .with_context(|| format!("Failed to load data for symbol {}", symbol))?;
+
+            // Phase 2: Compute runtime config (splits) based on this symbol's data
+            let total_candles = data.len();
+            let runtime = RuntimeConfig::from_experiment(self.config.clone(), total_candles)?;
+
+            info!(
+                "Loaded {} candles for {}, {} validation splits",
+                total_candles,
+                symbol,
+                runtime.splits.len()
+            );
+
+            // Phase 3: Run backtests across all splits for this symbol
+            for split in &runtime.splits {
+                let (train_result, test_result) = self.run_split(&data, split)?;
+                all_train_results.push(train_result);
+                all_test_results.push(test_result);
+            }
         }
 
-        // Phase 4: Aggregate and evaluate results
+        // Store runtime for later use (use last symbol's runtime for reference)
+        self.runtime = Some(RuntimeConfig::from_experiment(
+            self.config.clone(),
+            all_train_results.len(),
+        )?);
+
+        // Phase 4: Aggregate and evaluate results across all symbols
         let summary = self.aggregate_results(&all_train_results, &all_test_results)?;
 
         // Phase 5: Save outputs
@@ -94,15 +112,18 @@ impl ExperimentRunner {
         self.manifest.complete(summary.clone());
         self.save_manifest()?;
 
-        info!("Experiment completed successfully");
+        info!(
+            "Experiment completed successfully across {} symbol(s)",
+            symbols.len()
+        );
         Ok(summary)
     }
 
-    /// Load data for the experiment.
-    fn load_data(&self) -> Result<Vec<f64>> {
+    /// Load data for a specific symbol.
+    fn load_data_for_symbol(&self, symbol: &str) -> Result<Vec<f64>> {
         info!(
-            "Loading data from {} for symbols: {:?}",
-            self.config.data.source, self.config.data.symbols
+            "Loading data from {} for symbol: {}",
+            self.config.data.source, symbol
         );
 
         let source = self.config.data.source.to_lowercase();
@@ -113,14 +134,6 @@ impl ExperimentRunner {
             );
         }
 
-        let symbol = self
-            .config
-            .data
-            .symbols
-            .first()
-            .ok_or_else(|| anyhow::anyhow!("No symbols configured"))?
-            .clone();
-
         let total_candles = self.resolve_lookback_candles()?;
         info!(
             "Fetching {} {} candles for {} from Binance",
@@ -128,7 +141,7 @@ impl ExperimentRunner {
         );
 
         let closes =
-            self.fetch_binance_closes(&symbol, &self.config.data.interval, total_candles)?;
+            self.fetch_binance_closes(symbol, &self.config.data.interval, total_candles)?;
 
         if closes.is_empty() {
             bail!("Data loader returned no close prices for {}", symbol);
