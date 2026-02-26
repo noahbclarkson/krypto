@@ -16,7 +16,10 @@ use krypto::config::ExperimentConfig;
 use krypto::experiment::{list_runs, ExperimentRunner};
 
 fn print_usage() {
-    println!("krypto v{} - Config-driven crypto backtesting", env!("CARGO_PKG_VERSION"));
+    println!(
+        "krypto v{} - Config-driven crypto backtesting",
+        env!("CARGO_PKG_VERSION")
+    );
     println!();
     println!("Usage:");
     println!("  krypto run <config.json>       Run an experiment");
@@ -34,16 +37,16 @@ fn print_usage() {
 async fn main() -> Result<()> {
     // Initialize logging
     tracing_subscriber::fmt::init();
-    
+
     let args: Vec<String> = std::env::args().collect();
-    
+
     if args.len() < 2 {
         print_usage();
         std::process::exit(1);
     }
-    
+
     let command = &args[1];
-    
+
     match command.as_str() {
         "run" => {
             if args.len() < 3 {
@@ -52,13 +55,13 @@ async fn main() -> Result<()> {
                 print_usage();
                 std::process::exit(1);
             }
-            
+
             let config_path = PathBuf::from(&args[2]);
             println!("🚀 Running experiment from: {:?}", config_path);
-            
+
             let config = ExperimentConfig::from_json(&config_path)?;
             let mut runner = ExperimentRunner::new(config)?;
-            
+
             match runner.run() {
                 Ok(summary) => {
                     println!("\n✅ Experiment completed successfully!\n");
@@ -70,14 +73,15 @@ async fn main() -> Result<()> {
                 }
             }
         }
-        
+
         "list" => {
-            let dir = args.get(3)
+            let dir = args
+                .get(3)
                 .map(PathBuf::from)
                 .unwrap_or_else(|| PathBuf::from("./experiments"));
-            
+
             println!("📋 Listing experiment runs in {:?}...\n", dir);
-            
+
             match list_runs(&dir) {
                 Ok(runs) => {
                     if runs.is_empty() {
@@ -86,10 +90,12 @@ async fn main() -> Result<()> {
                         for (i, run) in runs.iter().enumerate() {
                             println!("{}. {} [{}]", i + 1, run.run_id, run.status_text());
                             if let Some(ref results) = run.results {
-                                println!("   Sharpe: {:.2}, Return: {:.1}%, DD: {:.1}%",
+                                println!(
+                                    "   Sharpe: {:.2}, Return: {:.1}%, DD: {:.1}%",
                                     results.best.sharpe_ratio,
                                     results.best.total_return_pct,
-                                    results.best.max_drawdown_pct);
+                                    results.best.max_drawdown_pct
+                                );
                             }
                             println!();
                         }
@@ -101,37 +107,38 @@ async fn main() -> Result<()> {
                 }
             }
         }
-        
+
         "example" => {
-            let output = args.get(3)
+            let output = args
+                .get(3)
                 .map(PathBuf::from)
                 .unwrap_or_else(|| PathBuf::from("experiment.example.json"));
-            
+
             let example = ExperimentConfig::example();
             example.to_json(&output)?;
             println!("✅ Example config written to: {:?}", output);
         }
-        
+
         "validate" => {
             if args.len() < 3 {
                 eprintln!("Error: Missing config file path");
                 std::process::exit(1);
             }
-            
+
             let config_path = PathBuf::from(&args[2]);
             let config = ExperimentConfig::from_json(&config_path)?;
             config.validate()?;
-            
+
             println!("✅ Configuration is valid!");
             println!("   Name: {}", config.name);
             println!("   Symbols: {:?}", config.data.symbols);
             println!("   Validation: {}", config.validation.method);
         }
-        
+
         "help" | "--help" | "-h" => {
             print_usage();
         }
-        
+
         other => {
             eprintln!("Unknown command: {}", other);
             println!();
@@ -139,7 +146,7 @@ async fn main() -> Result<()> {
             std::process::exit(1);
         }
     }
-    
+
     Ok(())
 }
 
@@ -148,7 +155,7 @@ fn print_results(summary: &krypto::experiment::ResultsSummary) {
     println!("📊 Results Summary");
     println!("{}", "=".repeat(50));
     println!();
-    
+
     println!("Best Result:");
     println!("  Trades:     {}", summary.best.total_trades);
     println!("  Win Rate:   {:.1}%", summary.best.win_rate);
@@ -157,11 +164,11 @@ fn print_results(summary: &krypto::experiment::ResultsSummary) {
     println!("  Max DD:     {:.1}%", summary.best.max_drawdown_pct);
     println!("  Kelly:      {:.1}%", summary.best.kelly_fraction * 100.0);
     println!();
-    
+
     if let Some(ref robustness) = summary.robustness {
         println!("Robustness (test/train): {:.1}%", robustness * 100.0);
     }
-    
+
     println!();
     println!("Combinations tested: {}", summary.combinations_tested);
     println!("Combinations passed: {}", summary.combinations_passed);

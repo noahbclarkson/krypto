@@ -122,9 +122,7 @@ impl SignalGenerator for DynamicTrend {
                     f, s, r, self.rsi_filter
                 ));
             } else if f < s {
-                reasons.push(format!(
-                    "SHORT: EMA_Fast({f:.2}) < EMA_Slow({s:.2})"
-                ));
+                reasons.push(format!("SHORT: EMA_Fast({f:.2}) < EMA_Slow({s:.2})"));
             } else {
                 reasons.push(format!(
                     "FLAT: EMA_Fast({:.2}) > EMA_Slow({:.2}) but RSI({:.1}) <= {:.1}",
@@ -220,7 +218,10 @@ impl SignalGenerator for RelativeStrengthStrat {
     }
 
     fn explain(&self, df: &DataFrame) -> Result<Series> {
-        Ok(Series::new("explanation", vec!["RelativeStrength strategy signal"; df.height()]))
+        Ok(Series::new(
+            "explanation",
+            vec!["RelativeStrength strategy signal"; df.height()],
+        ))
     }
 }
 
@@ -323,7 +324,10 @@ impl SignalGenerator for BollingerReversion {
     }
 
     fn explain(&self, df: &DataFrame) -> Result<Series> {
-        Ok(Series::new("explanation", vec!["BollingerReversion strategy signal"; df.height()]))
+        Ok(Series::new(
+            "explanation",
+            vec!["BollingerReversion strategy signal"; df.height()],
+        ))
     }
 }
 
@@ -455,7 +459,10 @@ impl SignalGenerator for VolatilitySqueeze {
     }
 
     fn explain(&self, df: &DataFrame) -> Result<Series> {
-        Ok(Series::new("explanation", vec!["VolatilitySqueeze strategy signal"; df.height()]))
+        Ok(Series::new(
+            "explanation",
+            vec!["VolatilitySqueeze strategy signal"; df.height()],
+        ))
     }
 }
 
@@ -565,7 +572,10 @@ impl SignalGenerator for LeadLagStrategy {
     }
 
     fn explain(&self, df: &DataFrame) -> Result<Series> {
-        Ok(Series::new("explanation", vec!["LeadLag strategy signal"; df.height()]))
+        Ok(Series::new(
+            "explanation",
+            vec!["LeadLag strategy signal"; df.height()],
+        ))
     }
 }
 
@@ -646,7 +656,10 @@ impl SignalGenerator for AtrBreakout {
     }
 
     fn explain(&self, df: &DataFrame) -> Result<Series> {
-        Ok(Series::new("explanation", vec!["AtrBreakout strategy signal"; df.height()]))
+        Ok(Series::new(
+            "explanation",
+            vec!["AtrBreakout strategy signal"; df.height()],
+        ))
     }
 }
 
@@ -769,7 +782,10 @@ impl SignalGenerator for ObvTrend {
     }
 
     fn explain(&self, df: &DataFrame) -> Result<Series> {
-        Ok(Series::new("explanation", vec!["ObvTrend strategy signal"; df.height()]))
+        Ok(Series::new(
+            "explanation",
+            vec!["ObvTrend strategy signal"; df.height()],
+        ))
     }
 }
 
@@ -874,7 +890,10 @@ impl SignalGenerator for MacdTrend {
     }
 
     fn explain(&self, df: &DataFrame) -> Result<Series> {
-        Ok(Series::new("explanation", vec!["MacdTrend strategy signal"; df.height()]))
+        Ok(Series::new(
+            "explanation",
+            vec!["MacdTrend strategy signal"; df.height()],
+        ))
     }
 }
 
@@ -1063,7 +1082,10 @@ impl SignalGenerator for PriceMomentum {
     }
 
     fn explain(&self, df: &DataFrame) -> Result<Series> {
-        Ok(Series::new("explanation", vec!["PriceMomentum strategy signal"; df.height()]))
+        Ok(Series::new(
+            "explanation",
+            vec!["PriceMomentum strategy signal"; df.height()],
+        ))
     }
 }
 
@@ -1156,7 +1178,10 @@ impl SignalGenerator for AdaptiveMaCrossover {
     }
 
     fn explain(&self, df: &DataFrame) -> Result<Series> {
-        Ok(Series::new("explanation", vec!["AdaptiveMaCrossover strategy signal"; df.height()]))
+        Ok(Series::new(
+            "explanation",
+            vec!["AdaptiveMaCrossover strategy signal"; df.height()],
+        ))
     }
 }
 

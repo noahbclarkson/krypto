@@ -542,12 +542,8 @@ async fn main() -> anyhow::Result<()> {
     }
 
     println!("{}", "-".repeat(110));
-    println!(
-        "Total Portfolio PnL (Risk Adjusted): ${total_weighted_pnl:.2}"
-    );
-    println!(
-        "Allocated Capital (Kelly-weighted, nominal): ${allocated_capital:.2}"
-    );
+    println!("Total Portfolio PnL (Risk Adjusted): ${total_weighted_pnl:.2}");
+    println!("Allocated Capital (Kelly-weighted, nominal): ${allocated_capital:.2}");
     println!(
         "Cache hits: {}/{}",
         cache_hits,

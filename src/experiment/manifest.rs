@@ -19,34 +19,34 @@ use std::path::PathBuf;
 pub struct RunManifest {
     /// Unique run identifier
     pub run_id: String,
-    
+
     /// Timestamp when run started
     pub started_at: DateTime<Utc>,
-    
+
     /// Timestamp when run completed
     pub completed_at: Option<DateTime<Utc>>,
-    
+
     /// Run status
     pub status: RunStatus,
-    
+
     /// Configuration used (full experiment config)
     pub config: serde_json::Value,
-    
+
     /// Git information
     pub git: GitInfo,
-    
+
     /// Environment information
     pub environment: EnvironmentInfo,
-    
+
     /// Data checksums for reproducibility
     pub data: DataInfo,
-    
+
     /// Results summary
     pub results: Option<ResultsSummary>,
-    
+
     /// Output files generated
     pub outputs: Vec<OutputFile>,
-    
+
     /// Error message if failed
     pub error: Option<String>,
 }
@@ -68,40 +68,40 @@ impl RunManifest {
             error: None,
         }
     }
-    
+
     /// Mark run as completed successfully.
     pub fn complete(&mut self, results: ResultsSummary) {
         self.status = RunStatus::Completed;
         self.completed_at = Some(Utc::now());
         self.results = Some(results);
     }
-    
+
     /// Mark run as failed.
     pub fn fail(&mut self, error: String) {
         self.status = RunStatus::Failed;
         self.completed_at = Some(Utc::now());
         self.error = Some(error);
     }
-    
+
     /// Add an output file to the manifest.
     pub fn add_output(&mut self, file: OutputFile) {
         self.outputs.push(file);
     }
-    
+
     /// Save manifest to JSON file.
     pub fn save(&self, path: &PathBuf) -> Result<()> {
         let content = serde_json::to_string_pretty(self)?;
         std::fs::write(path, content)?;
         Ok(())
     }
-    
+
     /// Load manifest from JSON file.
     pub fn load(path: &PathBuf) -> Result<Self> {
         let content = std::fs::read_to_string(path)?;
         let manifest: Self = serde_json::from_str(&content)?;
         Ok(manifest)
     }
-    
+
     /// Get duration of the run.
     pub fn duration(&self) -> Option<chrono::Duration> {
         self.completed_at.map(|end| end - self.started_at)
@@ -145,13 +145,13 @@ impl RunManifest {
 pub struct GitInfo {
     /// Current commit hash
     pub commit_hash: String,
-    
+
     /// Current branch name
     pub branch: String,
-    
+
     /// Whether there are uncommitted changes
     pub dirty: bool,
-    
+
     /// Remote URL (if available)
     pub remote: Option<String>,
 }
@@ -166,7 +166,7 @@ impl GitInfo {
             .and_then(|o| String::from_utf8(o.stdout).ok())
             .map(|s| s.trim().to_string())
             .unwrap_or_else(|| "unknown".to_string());
-        
+
         let branch = std::process::Command::new("git")
             .args(["rev-parse", "--abbrev-ref", "HEAD"])
             .output()
@@ -174,7 +174,7 @@ impl GitInfo {
             .and_then(|o| String::from_utf8(o.stdout).ok())
             .map(|s| s.trim().to_string())
             .unwrap_or_else(|| "unknown".to_string());
-        
+
         let dirty = std::process::Command::new("git")
             .args(["status", "--porcelain"])
             .output()
@@ -182,14 +182,14 @@ impl GitInfo {
             .and_then(|o| String::from_utf8(o.stdout).ok())
             .map(|s| !s.trim().is_empty())
             .unwrap_or(false);
-        
+
         let remote = std::process::Command::new("git")
             .args(["remote", "get-url", "origin"])
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
             .map(|s| s.trim().to_string());
-        
+
         Self {
             commit_hash,
             branch,
@@ -210,13 +210,13 @@ impl Default for GitInfo {
 pub struct EnvironmentInfo {
     /// Operating system
     pub os: String,
-    
+
     /// Rust version
     pub rust_version: String,
-    
+
     /// Hostname
     pub hostname: String,
-    
+
     /// Timestamp
     pub captured_at: DateTime<Utc>,
 }
@@ -225,7 +225,7 @@ impl EnvironmentInfo {
     /// Capture current environment information.
     pub fn capture() -> Self {
         let os = std::env::consts::OS.to_string();
-        
+
         let rust_version = std::process::Command::new("rustc")
             .args(["--version"])
             .output()
@@ -233,9 +233,9 @@ impl EnvironmentInfo {
             .and_then(|o| String::from_utf8(o.stdout).ok())
             .map(|s| s.trim().to_string())
             .unwrap_or_else(|| "unknown".to_string());
-        
+
         let hostname = get_hostname();
-        
+
         Self {
             os,
             rust_version,
@@ -256,13 +256,13 @@ impl Default for EnvironmentInfo {
 pub struct DataInfo {
     /// Symbols used
     pub symbols: Vec<String>,
-    
+
     /// Total candles per symbol
     pub candles_per_symbol: std::collections::HashMap<String, usize>,
-    
+
     /// Date range
     pub date_range: Option<(String, String)>,
-    
+
     /// Data checksums (for cache validation)
     pub checksums: std::collections::HashMap<String, String>,
 }
@@ -272,25 +272,25 @@ pub struct DataInfo {
 pub struct ResultsSummary {
     /// Best result across all splits/optimizations
     pub best: BacktestMetrics,
-    
+
     /// Average result across splits
     pub average: BacktestMetrics,
-    
+
     /// Worst result (for risk assessment)
     pub worst: BacktestMetrics,
-    
+
     /// Number of parameter combinations tested
     pub combinations_tested: usize,
-    
+
     /// Number of combinations passing thresholds
     pub combinations_passed: usize,
-    
+
     /// Train metrics (for overfitting detection)
     pub train_metrics: Option<BacktestMetrics>,
-    
+
     /// Test metrics
     pub test_metrics: Option<BacktestMetrics>,
-    
+
     /// Robustness score (test/train ratio for primary metric)
     pub robustness: Option<f64>,
 }
@@ -328,13 +328,13 @@ impl From<crate::backtest::engine::BacktestResult> for BacktestMetrics {
 pub struct OutputFile {
     /// File type
     pub file_type: OutputFileType,
-    
+
     /// Relative path from experiment output directory
     pub path: PathBuf,
-    
+
     /// File size in bytes
     pub size_bytes: u64,
-    
+
     /// Description
     pub description: String,
 }
@@ -360,7 +360,7 @@ impl RunManifest {
     pub fn compare(&self, other: &RunManifest) -> RunComparison {
         let self_results = self.results.as_ref();
         let other_results = other.results.as_ref();
-        
+
         RunComparison {
             run_a: self.run_id.clone(),
             run_b: other.run_id.clone(),
@@ -392,15 +392,20 @@ pub struct RunComparison {
 /// Find differences between two configs (simplified).
 fn diff_configs(a: &serde_json::Value, b: &serde_json::Value) -> Vec<String> {
     let mut diffs = Vec::new();
-    
+
     if let (Some(a_obj), Some(b_obj)) = (a.as_object(), b.as_object()) {
         for key in a_obj.keys() {
             if a_obj.get(key) != b_obj.get(key) {
-                diffs.push(format!("{}: {:?} -> {:?}", key, a_obj.get(key), b_obj.get(key)));
+                diffs.push(format!(
+                    "{}: {:?} -> {:?}",
+                    key,
+                    a_obj.get(key),
+                    b_obj.get(key)
+                ));
             }
         }
     }
-    
+
     diffs
 }
 
@@ -410,7 +415,7 @@ fn get_hostname() -> String {
     {
         use std::ffi::CStr;
         use std::os::raw::c_char;
-        
+
         let mut buf = [0u8; 256];
         unsafe {
             let result = libc::gethostname(buf.as_mut_ptr() as *mut c_char, buf.len());
@@ -420,7 +425,7 @@ fn get_hostname() -> String {
             }
         }
     }
-    
+
     // Fallback for non-Unix or if the above fails
     "unknown".to_string()
 }

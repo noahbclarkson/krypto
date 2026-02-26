@@ -12,16 +12,16 @@ use chrono::{DateTime, Utc};
 pub struct RuntimeConfig {
     /// Original experiment config
     pub experiment: ExperimentConfig,
-    
+
     /// Resolved start datetime
     pub start_time: DateTime<Utc>,
-    
+
     /// Resolved end datetime
     pub end_time: DateTime<Utc>,
-    
+
     /// Computed train/test split indices
     pub splits: Vec<DataSplit>,
-    
+
     /// Run timestamp
     pub run_timestamp: DateTime<Utc>,
 }
@@ -31,13 +31,13 @@ pub struct RuntimeConfig {
 pub struct DataSplit {
     /// Split index (0-based)
     pub index: usize,
-    
+
     /// Train range: (start_idx, end_idx) exclusive
     pub train_range: (usize, usize),
-    
+
     /// Test range: (start_idx, end_idx) exclusive
     pub test_range: (usize, usize),
-    
+
     /// Purge gap indices (excluded from both)
     pub purge_range: Option<(usize, usize)>,
 }
@@ -46,7 +46,7 @@ impl RuntimeConfig {
     /// Build runtime config from experiment config.
     pub fn from_experiment(config: ExperimentConfig, total_candles: usize) -> Result<Self> {
         let splits = compute_splits(&config.validation, total_candles)?;
-        
+
         Ok(Self {
             start_time: chrono::Utc::now(),
             end_time: chrono::Utc::now(),
@@ -63,7 +63,7 @@ fn compute_splits(config: &ValidationConfig, total_candles: usize) -> Result<Vec
         "simple_split" => {
             let train_end = (total_candles as f64 * config.train_ratio) as usize;
             let test_start = train_end + config.purge_gap;
-            
+
             Ok(vec![DataSplit {
                 index: 0,
                 train_range: (0, train_end),
@@ -75,18 +75,18 @@ fn compute_splits(config: &ValidationConfig, total_candles: usize) -> Result<Vec
                 },
             }])
         }
-        
+
         "walk_forward" => {
             // Walk-forward: rolling windows where train set grows
             let n = config.n_windows;
             let window_size = total_candles / (n + 1);
             let mut splits = Vec::with_capacity(n);
-            
+
             for i in 0..n {
                 let train_end = window_size * (i + 1);
                 let test_start = train_end + config.purge_gap;
                 let test_end = std::cmp::min(test_start + window_size, total_candles);
-                
+
                 splits.push(DataSplit {
                     index: i,
                     train_range: (0, train_end),
@@ -98,40 +98,37 @@ fn compute_splits(config: &ValidationConfig, total_candles: usize) -> Result<Vec
                     },
                 });
             }
-            
+
             Ok(splits)
         }
-        
+
         "cpcv" => {
             // Combinatorial Purged Cross-Validation
             // For now, fall back to walk-forward (to be enhanced)
             let n = config.n_windows.max(5);
             let window_size = total_candles / n;
             let mut splits = Vec::with_capacity(n);
-            
+
             for i in 0..n {
                 // In CPCV, each split uses all data except one test window
                 let test_start = i * window_size;
                 let test_end = std::cmp::min((i + 1) * window_size, total_candles);
-                
+
                 splits.push(DataSplit {
                     index: i,
                     train_range: (0, test_start), // Simplified: before test
                     test_range: (test_start, test_end),
                     purge_range: if config.purge_gap > 0 {
-                        Some((
-                            test_start.saturating_sub(config.purge_gap),
-                            test_start,
-                        ))
+                        Some((test_start.saturating_sub(config.purge_gap), test_start))
                     } else {
                         None
                     },
                 });
             }
-            
+
             Ok(splits)
         }
-        
+
         other => anyhow::bail!("Unknown validation method: {}", other),
     }
 }
@@ -139,7 +136,7 @@ fn compute_splits(config: &ValidationConfig, total_candles: usize) -> Result<Vec
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_simple_split() {
         let config = ValidationConfig {
@@ -148,13 +145,13 @@ mod tests {
             test_ratio: 0.4,
             ..Default::default()
         };
-        
+
         let splits = compute_splits(&config, 1000).unwrap();
         assert_eq!(splits.len(), 1);
         assert_eq!(splits[0].train_range, (0, 600));
         assert_eq!(splits[0].test_range, (600, 1000));
     }
-    
+
     #[test]
     fn test_walk_forward() {
         let config = ValidationConfig {
@@ -163,10 +160,10 @@ mod tests {
             purge_gap: 10, // Add purge gap so train/test don't touch
             ..Default::default()
         };
-        
+
         let splits = compute_splits(&config, 1000).unwrap();
         assert_eq!(splits.len(), 5);
-        
+
         // First window: train ends before test starts (due to purge gap)
         assert!(splits[0].train_range.1 < splits[0].test_range.0);
     }
