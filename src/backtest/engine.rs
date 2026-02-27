@@ -15,6 +15,18 @@ pub struct BacktestResult {
     pub total_fees_paid: f64,
 }
 
+/// Trading engine that simulates strategy execution over historical data.
+///
+/// **⚠️ KNOWN LIMITATIONS (To be fixed in V3 architecture):**
+/// - **Long-only:** Only supports position sizes of `0.0` or `1.0`. It does not handle
+///   short selling, even though some strategies generate `-1.0` signals.
+/// - **Optimistic Trailing Stop:** The stop-loss is evaluated against the `close` price 
+///   at the end of the candle. In reality, a stop would trigger intra-bar at the `low` price, 
+///   meaning this backtester produces falsely optimistic results for volatile assets.
+/// - **No Slippage by Default:** While the field exists, it is not consistently applied across 
+///   all order types.
+/// - **100% Capital Allocation:** The engine always goes "all in" (using 100% of available capital)
+///   on every signal. `Kelly_fraction` is computed but never applied to position sizing.
 pub struct Backtester {
     initial_capital: f64,
     fee_pct: f64,

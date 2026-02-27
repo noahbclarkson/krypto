@@ -9,7 +9,7 @@
 //! 6. Persisting outputs and manifest
 
 use anyhow::{bail, Context, Result};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use std::path::PathBuf;
 use tracing::{info, warn};
 
@@ -166,11 +166,8 @@ impl ExperimentRunner {
         let start = DateTime::parse_from_rfc3339(&self.config.data.start_date)
             .map(|dt| dt.with_timezone(&Utc))
             .or_else(|_| {
-                DateTime::parse_from_str(
-                    &format!("{}T00:00:00Z", self.config.data.start_date),
-                    "%Y-%m-%dT%H:%M:%SZ",
-                )
-                .map(|dt| dt.with_timezone(&Utc))
+                NaiveDate::parse_from_str(&self.config.data.start_date, "%Y-%m-%d")
+                    .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc())
             })
             .with_context(|| {
                 format!(
@@ -183,11 +180,8 @@ impl ExperimentRunner {
             Some(end_str) => DateTime::parse_from_rfc3339(end_str)
                 .map(|dt| dt.with_timezone(&Utc))
                 .or_else(|_| {
-                    DateTime::parse_from_str(
-                        &format!("{}T00:00:00Z", end_str),
-                        "%Y-%m-%dT%H:%M:%SZ",
-                    )
-                    .map(|dt| dt.with_timezone(&Utc))
+                    NaiveDate::parse_from_str(end_str, "%Y-%m-%d")
+                        .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc())
                 })
                 .with_context(|| {
                     format!("Invalid end_date '{}'. Use RFC3339 or YYYY-MM-DD", end_str)
