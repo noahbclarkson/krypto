@@ -10,14 +10,22 @@
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, NaiveDate, Utc};
+use polars::prelude::*;
 use std::path::PathBuf;
 use tracing::{info, warn};
 
+use crate::algo::optimization::{OptimizableStrategy, StrategyParams};
+use crate::algo::strategies::{
+    AdaptiveMaCrossover, BollingerReversion, DynamicTrend, LeadLagStrategy, MacdTrend, ObvTrend,
+    PriceMomentum, RelativeStrengthStrat, RsiMeanReversion, VolatilitySqueeze,
+};
+use crate::algo::SignalGenerator;
 use crate::backtest::engine::{BacktestResult, Backtester};
 use crate::config::{DataSplit, ExperimentConfig, RuntimeConfig};
 use crate::data::loader::DataLoader;
 use crate::experiment::manifest::{OutputFile, OutputFileType};
 use crate::experiment::{BacktestMetrics, ResultsSummary, RunManifest};
+use crate::features::indicators::FeatureEngine;
 
 /// Experiment runner orchestrates the full backtest workflow.
 pub struct ExperimentRunner {
@@ -73,12 +81,17 @@ impl ExperimentRunner {
             info!("Processing symbol: {}", symbol);
 
             // Phase 1: Load and prepare data for this symbol
-            let data = self
+            let raw_data = self
                 .load_data_for_symbol(symbol)
                 .with_context(|| format!("Failed to load data for symbol {}", symbol))?;
 
-            // Phase 2: Compute runtime config (splits) based on this symbol's data
-            let total_candles = data.len();
+            // Phase 2: Compute features
+            info!("Computing technical features for {}", symbol);
+            let data = FeatureEngine::add_technicals(&raw_data, None)
+                .with_context(|| format!("Failed to compute features for symbol {}", symbol))?;
+
+            // Phase 3: Compute runtime config (splits) based on this symbol's data
+            let total_candles = data.height();
             let runtime = RuntimeConfig::from_experiment(self.config.clone(), total_candles)?;
 
             info!(
@@ -88,7 +101,7 @@ impl ExperimentRunner {
                 runtime.splits.len()
             );
 
-            // Phase 3: Run backtests across all splits for this symbol
+            // Phase 4: Run backtests across all splits for this symbol
             for split in &runtime.splits {
                 let (train_result, test_result) = self.run_split(&data, split)?;
                 all_train_results.push(train_result);
@@ -102,13 +115,13 @@ impl ExperimentRunner {
             all_train_results.len(),
         )?);
 
-        // Phase 4: Aggregate and evaluate results across all symbols
+        // Phase 5: Aggregate and evaluate results across all symbols
         let summary = self.aggregate_results(&all_train_results, &all_test_results)?;
 
-        // Phase 5: Save outputs
+        // Phase 6: Save outputs
         self.save_outputs(&summary)?;
 
-        // Phase 6: Complete manifest
+        // Phase 7: Complete manifest
         self.manifest.complete(summary.clone());
         self.save_manifest()?;
 
@@ -120,7 +133,7 @@ impl ExperimentRunner {
     }
 
     /// Load data for a specific symbol.
-    fn load_data_for_symbol(&self, symbol: &str) -> Result<Vec<f64>> {
+    fn load_data_for_symbol(&self, symbol: &str) -> Result<DataFrame> {
         info!(
             "Loading data from {} for symbol: {}",
             self.config.data.source, symbol
@@ -140,14 +153,13 @@ impl ExperimentRunner {
             total_candles, self.config.data.interval, symbol
         );
 
-        let closes =
-            self.fetch_binance_closes(symbol, &self.config.data.interval, total_candles)?;
+        let df = self.fetch_binance_data(symbol, &self.config.data.interval, total_candles)?;
 
-        if closes.is_empty() {
-            bail!("Data loader returned no close prices for {}", symbol);
+        if df.height() == 0 {
+            bail!("Data loader returned no data for {}", symbol);
         }
 
-        Ok(closes)
+        Ok(df)
     }
 
     fn resolve_lookback_candles(&self) -> Result<u16> {
@@ -212,24 +224,15 @@ impl ExperimentRunner {
         Ok(bounded)
     }
 
-    fn fetch_binance_closes(
+    fn fetch_binance_data(
         &self,
         symbol: &str,
         interval: &str,
         total_candles: u16,
-    ) -> Result<Vec<f64>> {
+    ) -> Result<DataFrame> {
         let loader = DataLoader::new(None, None);
 
-        let fut = async move {
-            let df = loader.fetch_data(symbol, interval, total_candles).await?;
-            let closes = df
-                .column("close")?
-                .f64()?
-                .into_iter()
-                .flatten()
-                .collect::<Vec<f64>>();
-            Ok::<Vec<f64>, anyhow::Error>(closes)
-        };
+        let fut = async move { loader.fetch_data(symbol, interval, total_candles).await };
 
         match tokio::runtime::Handle::try_current() {
             Ok(handle) => tokio::task::block_in_place(|| handle.block_on(fut)),
@@ -243,7 +246,7 @@ impl ExperimentRunner {
     /// Run backtest for a single train/test split.
     fn run_split(
         &self,
-        _data: &[f64],
+        data: &DataFrame,
         split: &DataSplit,
     ) -> Result<(BacktestResult, BacktestResult)> {
         info!(
@@ -256,31 +259,235 @@ impl ExperimentRunner {
         );
 
         // Create backtester with config
-        let _backtester = Backtester::new(
+        let backtester = Backtester::new(
             self.config.sizing.initial_capital,
             self.config.costs.fee_pct,
             self.config.costs.slippage_bps,
         );
 
-        // TODO: Get actual DataFrame and signals from strategy
-        // For now, return placeholder results
+        // Slice data for train and test
+        let train_df = data.slice(split.train_range.0 as i64, split.train_range.1 - split.train_range.0);
+        let test_df = data.slice(split.test_range.0 as i64, split.test_range.1 - split.test_range.0);
 
-        let train_result = BacktestResult {
-            total_trades: 0,
-            win_rate: 0.0,
-            profit_factor: 0.0,
-            final_equity: self.config.sizing.initial_capital,
-            total_return_pct: 0.0,
-            max_drawdown_pct: 0.0,
-            sharpe_ratio: 0.0,
-            kelly_fraction: 0.0,
-            equity_curve: vec![],
-            total_fees_paid: 0.0,
-        };
+        // Get trailing stop from config
+        let trailing_stop = self.config.sizing.trailing_stop_pct;
 
-        let test_result = train_result.clone();
+        // Run strategy-specific backtest
+        let (train_result, test_result) = self.run_strategy_backtest(
+            &backtester,
+            &train_df,
+            &test_df,
+            trailing_stop,
+        )?;
+
+        info!(
+            "Split {} results - Train: {} trades, {:.2}% return, {:.2} Sharpe",
+            split.index,
+            train_result.total_trades,
+            train_result.total_return_pct,
+            train_result.sharpe_ratio
+        );
+
+        info!(
+            "Split {} results - Test: {} trades, {:.2}% return, {:.2} Sharpe",
+            split.index,
+            test_result.total_trades,
+            test_result.total_return_pct,
+            test_result.sharpe_ratio
+        );
 
         Ok((train_result, test_result))
+    }
+
+    /// Run backtest with the configured strategy.
+    fn run_strategy_backtest(
+        &self,
+        backtester: &Backtester,
+        train_df: &DataFrame,
+        test_df: &DataFrame,
+        trailing_stop: f64,
+    ) -> Result<(BacktestResult, BacktestResult)> {
+        let strategy_type = self.config.strategy.strategy_type.to_lowercase();
+        let params = self.parse_strategy_params()?;
+
+        info!("Running strategy: {} with {} params", strategy_type, params.params.len());
+
+        // Match on strategy type and create/configure/run strategy
+        // Using concrete types to allow for OptimizableStrategy trait usage
+        match strategy_type.as_str() {
+            "dynamic_trend" | "dynamictrend" => {
+                let mut strategy = DynamicTrend::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(&params);
+                }
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+            }
+            "relative_strength" | "relativestrength" => {
+                let mut strategy = RelativeStrengthStrat::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(&params);
+                }
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+            }
+            "bollinger_reversion" | "bollingerreversion" => {
+                let mut strategy = BollingerReversion::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(&params);
+                }
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+            }
+            "atr_breakout" | "atrbreakout" => {
+                let mut strategy = crate::algo::strategies::AtrBreakout::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(&params);
+                }
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+            }
+            "volatility_squeeze" | "volatilitysqueeze" => {
+                let mut strategy = VolatilitySqueeze::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(&params);
+                }
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+            }
+            "lead_lag" | "leadlag" | "lead_lag_arb" => {
+                let mut strategy = LeadLagStrategy::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(&params);
+                }
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+            }
+            "obv_trend" | "obvtrend" => {
+                let mut strategy = ObvTrend::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(&params);
+                }
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+            }
+            "macd_trend" | "macdtrend" => {
+                let mut strategy = MacdTrend::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(&params);
+                }
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+            }
+            "rsi_reversion" | "rsireversion" => {
+                let mut strategy = RsiMeanReversion::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(&params);
+                }
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+            }
+            "price_momentum" | "pricemomentum" => {
+                let mut strategy = PriceMomentum::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(&params);
+                }
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+            }
+            "adaptive_ma_cross" | "adaptivemacross" | "adaptive_ma_crossover" => {
+                let mut strategy = AdaptiveMaCrossover::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(&params);
+                }
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+            }
+            _ => bail!(
+                "Unknown strategy type '{}'. Supported: dynamic_trend, relative_strength, bollinger_reversion, atr_breakout, volatility_squeeze, lead_lag, obv_trend, macd_trend, rsi_reversion, price_momentum, adaptive_ma_cross",
+                self.config.strategy.strategy_type
+            ),
+        }
+    }
+
+    /// Execute backtest with a strategy that implements SignalGenerator.
+    fn execute_backtest<S: SignalGenerator>(
+        &self,
+        backtester: &Backtester,
+        train_df: &DataFrame,
+        test_df: &DataFrame,
+        trailing_stop: f64,
+        strategy: &S,
+    ) -> Result<(BacktestResult, BacktestResult)> {
+        // Validate features
+        self.validate_features(train_df, strategy.name())?;
+        self.validate_features(test_df, strategy.name())?;
+
+        // Generate signals
+        let train_signals = strategy.predict(train_df)
+            .with_context(|| format!("Failed to generate signals for strategy {} on train data", strategy.name()))?;
+
+        let test_signals = strategy.predict(test_df)
+            .with_context(|| format!("Failed to generate signals for strategy {} on test data", strategy.name()))?;
+
+        // Run backtests
+        let train_result = backtester.run(train_df, &train_signals, trailing_stop)
+            .with_context(|| "Train backtest failed")?;
+
+        let test_result = backtester.run(test_df, &test_signals, trailing_stop)
+            .with_context(|| "Test backtest failed")?;
+
+        Ok((train_result, test_result))
+    }
+
+    /// Parse strategy params from config JSON into StrategyParams.
+    fn parse_strategy_params(&self) -> Result<StrategyParams> {
+        let params_json = &self.config.strategy.params;
+        let mut params = StrategyParams::new();
+
+        if params_json.is_null() {
+            return Ok(params);
+        }
+
+        if let Some(obj) = params_json.as_object() {
+            for (key, value) in obj {
+                let param_value = if let Some(n) = value.as_f64() {
+                    n
+                } else if let Some(n) = value.as_i64() {
+                    n as f64
+                } else if let Some(n) = value.as_u64() {
+                    n as f64
+                } else {
+                    warn!(
+                        "Skipping param '{}' with non-numeric value: {:?}",
+                        key, value
+                    );
+                    continue;
+                };
+                params.params.insert(key.clone(), param_value);
+            }
+        }
+
+        Ok(params)
+    }
+
+    /// Validate that required features exist in the DataFrame.
+    fn validate_features(&self, df: &DataFrame, strategy_name: &str) -> Result<()> {
+        // Common required columns
+        let required = vec!["open", "high", "low", "close", "volume"];
+
+        for col in &required {
+            if df.column(col).is_err() {
+                bail!(
+                    "Required column '{}' missing from DataFrame for strategy '{}'",
+                    col,
+                    strategy_name
+                );
+            }
+        }
+
+        // Check for commonly-used technical indicators
+        let optional_indicators = vec!["rsi", "atr", "macd", "ema_20", "ema_50"];
+
+        for col in &optional_indicators {
+            if df.column(col).is_err() {
+                warn!(
+                    "Optional indicator '{}' not available for strategy '{}'. Some strategies may not function optimally.",
+                    col, strategy_name
+                );
+            }
+        }
+
+        Ok(())
     }
 
     /// Aggregate results across all splits.
@@ -550,5 +757,146 @@ mod tests {
         config2.data.end_date = Some("2024-01-02".to_string());
         let runner2 = ExperimentRunner::new(config2).expect("runner should build");
         assert_eq!(runner2.resolve_lookback_candles().unwrap(), 24);
+    }
+
+    /// Integration test: verify data flow from DataFrame -> features -> strategy -> backtest
+    #[test]
+    fn test_data_flow_integration() {
+        // Create a mock OHLCV DataFrame with 100 candles
+        let n = 100;
+        let base_price = 100.0;
+        let mut closes = Vec::with_capacity(n);
+        let mut opens = Vec::with_capacity(n);
+        let mut highs = Vec::with_capacity(n);
+        let mut lows = Vec::with_capacity(n);
+        let mut volumes = Vec::with_capacity(n);
+        let mut times = Vec::with_capacity(n);
+
+        for i in 0..n {
+            let price = base_price + (i as f64 * 0.5);
+            let variation = (i as f64 % 10.0) * 0.1;
+            closes.push(price);
+            opens.push(price - variation);
+            highs.push(price + variation + 0.5);
+            lows.push(price - variation - 0.5);
+            volumes.push(1000.0 + (i as f64 * 10.0));
+            times.push(chrono::NaiveDate::from_ymd_opt(2024, 1, 1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap() + chrono::Duration::hours(i as i64));
+        }
+
+        let raw_df = df!(
+            "time" => times,
+            "open" => opens.clone(),
+            "high" => highs.clone(),
+            "low" => lows.clone(),
+            "close" => closes.clone(),
+            "volume" => volumes.clone()
+        ).expect("Failed to create test DataFrame");
+
+        // Step 1: Add technical features
+        let df_with_features = FeatureEngine::add_technicals(&raw_df, None)
+            .expect("Failed to compute features");
+
+        // Verify features were added
+        assert!(df_with_features.column("rsi").is_ok(), "RSI should be computed");
+        assert!(df_with_features.column("atr").is_ok(), "ATR should be computed");
+        assert!(df_with_features.column("macd").is_ok(), "MACD should be computed");
+
+        // Step 2: Create a simple strategy
+        let strategy = DynamicTrend::new();
+
+        // Step 3: Generate signals
+        let signals = strategy.predict(&df_with_features)
+            .expect("Failed to generate signals");
+
+        // Verify signals were generated
+        assert_eq!(signals.len(), n, "Should have signal for each candle");
+
+        // Step 4: Run backtest
+        let backtester = Backtester::new(10_000.0, 0.001, 5.0);
+        let result = backtester.run(&df_with_features, &signals, 0.05)
+            .expect("Backtest should run successfully");
+
+        // Verify backtest result structure
+        assert!(result.final_equity > 0.0, "Final equity should be positive");
+        assert!(result.equity_curve.len() == n, "Equity curve should match data length");
+    }
+
+    /// Test that strategy params are correctly parsed from config
+    #[test]
+    fn test_strategy_params_parsing() {
+        let mut config = ExperimentConfig::example();
+        config.strategy.strategy_type = "dynamic_trend".to_string();
+        config.strategy.params = serde_json::json!({
+            "ema_fast": 30,
+            "ema_slow": 100,
+            "rsi_filter": 45.0
+        });
+
+        let runner = ExperimentRunner::new(config).expect("Runner should build");
+        let params = runner.parse_strategy_params().expect("Should parse params");
+
+        assert_eq!(params.get("ema_fast", 0.0), 30.0);
+        assert_eq!(params.get("ema_slow", 0.0), 100.0);
+        assert_eq!(params.get("rsi_filter", 0.0), 45.0);
+    }
+
+    /// Test that feature validation catches missing columns
+    #[test]
+    fn test_feature_validation_missing_columns() {
+        // Create DataFrame missing required columns
+        let df = df!(
+            "time" => &[chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()],
+            "close" => &[100.0_f64]
+        ).expect("Failed to create test DataFrame");
+
+        let config = ExperimentConfig::example();
+        let runner = ExperimentRunner::new(config).expect("Runner should build");
+
+        let result = runner.validate_features(&df, "test_strategy");
+        assert!(result.is_err(), "Should fail with missing columns");
+
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("open"), "Error should mention missing 'open' column");
+    }
+
+    /// Test that split data slicing works correctly
+    #[test]
+    fn test_data_split_slicing() {
+        let n = 100;
+        let closes: Vec<f64> = (0..n).map(|i| i as f64).collect();
+        let times: Vec<chrono::NaiveDateTime> = (0..n)
+            .map(|i| {
+                chrono::NaiveDate::from_ymd_opt(2024, 1, 1)
+                    .unwrap()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap()
+                    + chrono::Duration::hours(i as i64)
+            })
+            .collect();
+
+        let df = df!(
+            "time" => times,
+            "close" => closes
+        ).expect("Failed to create test DataFrame");
+
+        let split = DataSplit {
+            index: 0,
+            train_range: (0, 60),
+            test_range: (60, 100),
+            purge_range: None,
+        };
+
+        let train_df = df.slice(split.train_range.0 as i64, split.train_range.1 - split.train_range.0);
+        let test_df = df.slice(split.test_range.0 as i64, split.test_range.1 - split.test_range.0);
+
+        assert_eq!(train_df.height(), 60, "Train split should have 60 rows");
+        assert_eq!(test_df.height(), 40, "Test split should have 40 rows");
+
+        let train_close = train_df.column("close").unwrap().f64().unwrap();
+        assert_eq!(train_close.get(0).unwrap(), 0.0, "Train should start at index 0");
+        assert_eq!(train_close.get(59).unwrap(), 59.0, "Train should end at index 59");
     }
 }

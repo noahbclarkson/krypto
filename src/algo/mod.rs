@@ -1,7 +1,10 @@
 pub mod ensemble;
 pub mod optimization;
 pub mod regime;
+pub mod registry;
 pub mod strategies;
+
+pub use registry::{StrategyFactory, StrategyRegistry};
 
 use anyhow::Result;
 use polars::prelude::*;
