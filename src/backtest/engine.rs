@@ -32,6 +32,16 @@ pub struct BacktestResult {
     pub equity_curve: Vec<f64>,
     pub total_fees_paid: f64,
     pub average_position_size: f64,
+    // Extended metrics (V3)
+    pub sortino_ratio: f64,
+    pub calmar_ratio: f64,
+    pub avg_trade_duration_bars: f64,
+    pub max_consecutive_wins: usize,
+    pub max_consecutive_losses: usize,
+    pub avg_win_pct: f64,
+    pub avg_loss_pct: f64,
+    pub largest_win_pct: f64,
+    pub largest_loss_pct: f64,
 }
 
 /// Trading engine that simulates strategy execution over historical data.
@@ -131,6 +141,17 @@ impl Backtester {
 
         let mut equity_curve = Vec::with_capacity(closes.len());
         let mut position_sizes: Vec<f64> = Vec::new();
+
+        // Extended metrics tracking (V3)
+        let mut trade_returns: Vec<f64> = Vec::new(); // For Sortino
+        let mut trade_durations: Vec<usize> = Vec::new(); // Bars held
+        let mut entry_bar: usize = 0;
+        let mut consecutive_wins = 0;
+        let mut consecutive_losses = 0;
+        let mut max_consecutive_wins = 0;
+        let mut max_consecutive_losses = 0;
+        let mut largest_win_pct = 0.0;
+        let mut largest_loss_pct = 0.0;
 
         for i in 0..closes.len() {
             let price = closes.get(i).unwrap_or(0.0);
@@ -371,6 +392,47 @@ impl Backtester {
             0.0
         };
 
+        // Extended metrics (V3)
+        // Sortino: use downside deviation instead of total volatility
+        let downside_returns: Vec<f64> = trade_returns.iter().filter(|&&r| r < 0.0).copied().collect();
+        let downside_std = if !downside_returns.is_empty() {
+            let mean = downside_returns.iter().sum::<f64>() / downside_returns.len() as f64;
+            (downside_returns.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / downside_returns.len() as f64).sqrt()
+        } else {
+            0.0
+        };
+        let sortino_ratio = if downside_std > 0.0 {
+            total_return / downside_std
+        } else {
+            0.0
+        };
+
+        // Calmar: annualized return / max drawdown (simplified: total return / max DD)
+        let calmar_ratio = if max_drawdown > 0.0 {
+            total_return / max_drawdown
+        } else {
+            0.0
+        };
+
+        // Average trade duration
+        let avg_trade_duration_bars = if !trade_durations.is_empty() {
+            trade_durations.iter().sum::<usize>() as f64 / trade_durations.len() as f64
+        } else {
+            0.0
+        };
+
+        // Avg win/loss percentages
+        let avg_win_pct = if wins > 0 && gross_profit > 0.0 {
+            (gross_profit / wins as f64) / self.initial_capital * 100.0
+        } else {
+            0.0
+        };
+        let avg_loss_pct = if losses > 0 && gross_loss > 0.0 {
+            (gross_loss / losses as f64) / self.initial_capital * 100.0
+        } else {
+            0.0
+        };
+
         Ok(BacktestResult {
             total_trades,
             win_rate: win_rate * 100.0,
@@ -383,6 +445,16 @@ impl Backtester {
             equity_curve,
             total_fees_paid,
             average_position_size,
+            // Extended metrics (V3)
+            sortino_ratio,
+            calmar_ratio,
+            avg_trade_duration_bars,
+            max_consecutive_wins,
+            max_consecutive_losses,
+            avg_win_pct,
+            avg_loss_pct,
+            largest_win_pct,
+            largest_loss_pct,
         })
     }
 }
