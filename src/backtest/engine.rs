@@ -36,14 +36,17 @@ pub struct BacktestResult {
 
 /// Trading engine that simulates strategy execution over historical data.
 ///
-/// **⚠️ KNOWN LIMITATIONS (To be fixed in V3 architecture):**
-/// - **Long-only:** Only supports position sizes of `0.0` or `1.0`. It does not handle
-///   short selling, even though some strategies generate `-1.0` signals.
+/// **✅ SUPPORTS:**
+/// - **Long & Short Positions:** Fully supports signals from `-1.0` (short) to `1.0` (long).
+///   Short positions profit when price drops and are correctly tracked in PnL calculations.
+/// - **Position Sizing:** Multiple strategies including full equity, fixed fraction, and risk-based sizing.
+/// - **Trailing Stops:** Dynamic stop-loss that follows price movements for both longs and shorts.
+/// - **Fees & Slippage:** Realistic cost modeling with configurable fee percentages and slippage.
+///
+/// **⚠️ KNOWN LIMITATIONS:**
 /// - **Optimistic Trailing Stop:** The stop-loss is evaluated against the `close` price 
 ///   at the end of the candle. In reality, a stop would trigger intra-bar at the `low` price, 
 ///   meaning this backtester produces falsely optimistic results for volatile assets.
-/// - **No Slippage by Default:** While the field exists, it is not consistently applied across 
-///   all order types.
 pub struct Backtester {
     initial_capital: f64,
     fee_pct: f64,
@@ -101,7 +104,7 @@ impl Backtester {
         }
     }
 
-    pub fn run(&self, df: &DataFrame, signal: &Series, trailing_sl: f64) -> Result<BacktestResult> {
+    pub fn run(&self, df: &DataFrame, signal: &Series, trailing_sl: f64, take_profit: f64) -> Result<BacktestResult> {
         let closes = df.column("close")?.f64()?;
         let highs = df.column("high")?.f64()?;
         let lows = df.column("low")?.f64()?;
@@ -364,7 +367,7 @@ mod tests {
         let backtester = Backtester::with_defaults(10_000.0)
             .with_position_sizing(PositionSizing::Full);
         
-        let result = backtester.run(&df, &signal, 0.05).unwrap();
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
         
         // Full position sizing should use 100% of equity
         assert_eq!(result.average_position_size, 1.0);
@@ -379,7 +382,7 @@ mod tests {
         let backtester = Backtester::with_defaults(10_000.0)
             .with_position_sizing(PositionSizing::FixedFraction(0.5));
         
-        let result = backtester.run(&df, &signal, 0.05).unwrap();
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
         
         // Fixed fraction 0.5 should use 50% of equity
         assert_eq!(result.average_position_size, 0.5);
@@ -389,7 +392,7 @@ mod tests {
         // With 50% position sizing, we should have less volatility but similar returns
         let full_backtester = Backtester::with_defaults(10_000.0)
             .with_position_sizing(PositionSizing::Full);
-        let full_result = full_backtester.run(&df, &signal, 0.05).unwrap();
+        let full_result = full_backtester.run(&df, &signal, 0.05, 0.0).unwrap();
         
         // Lower position size should result in smaller absolute returns but also smaller drawdowns
         assert!(result.final_equity < full_result.final_equity);
@@ -405,7 +408,7 @@ mod tests {
         let backtester = Backtester::with_defaults(10_000.0)
             .with_position_sizing(PositionSizing::RiskPerTrade(0.02));
         
-        let result = backtester.run(&df, &signal, 0.05).unwrap();
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
         
         // With 2% risk and 5% stop loss, position size should be 0.4 (40%)
         // position_size = (0.02 * equity) / (price * 0.05) = 0.4
@@ -423,7 +426,7 @@ mod tests {
         // Test with tighter stop (2%)
         let backtester_tight = Backtester::with_defaults(10_000.0)
             .with_position_sizing(PositionSizing::RiskPerTrade(0.02));
-        let result_tight = backtester_tight.run(&df, &signal, 0.02).unwrap();
+        let result_tight = backtester_tight.run(&df, &signal, 0.02, 0.0).unwrap();
         
         // With tighter stop, position size should be larger to maintain same risk
         // position_size = (0.02 * equity) / (price * 0.02) = 1.0
@@ -432,7 +435,7 @@ mod tests {
         // Test with wider stop (10%)
         let backtester_wide = Backtester::with_defaults(10_000.0)
             .with_position_sizing(PositionSizing::RiskPerTrade(0.02));
-        let result_wide = backtester_wide.run(&df, &signal, 0.10).unwrap();
+        let result_wide = backtester_wide.run(&df, &signal, 0.10, 0.0).unwrap();
         
         // With wider stop, position size should be smaller
         // position_size = (0.02 * equity) / (price * 0.10) = 0.2
@@ -449,12 +452,12 @@ mod tests {
         
         // Old API (without position sizing) should default to Full
         let old_backtester = Backtester::new(10_000.0, 0.001, 5.0);
-        let old_result = old_backtester.run(&df, &signal, 0.05).unwrap();
+        let old_result = old_backtester.run(&df, &signal, 0.05, 0.0).unwrap();
         
         // New API with explicit Full should match
         let new_backtester = Backtester::with_defaults(10_000.0)
             .with_position_sizing(PositionSizing::Full);
-        let new_result = new_backtester.run(&df, &signal, 0.05).unwrap();
+        let new_result = new_backtester.run(&df, &signal, 0.05, 0.0).unwrap();
         
         assert_eq!(old_result.average_position_size, new_result.average_position_size);
         assert_eq!(old_result.final_equity, new_result.final_equity);
@@ -471,7 +474,7 @@ mod tests {
         let backtester = Backtester::with_defaults(10_000.0)
             .with_position_sizing(PositionSizing::FixedFraction(0.5));
         
-        let result = backtester.run(&df, &signal, 0.05).unwrap();
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
         
         assert_eq!(result.total_trades, 0);
         assert_eq!(result.average_position_size, 0.0);
@@ -487,13 +490,185 @@ mod tests {
         // Fraction > 1.0 should be clamped to 1.0
         let backtester = Backtester::with_defaults(10_000.0)
             .with_position_sizing(PositionSizing::FixedFraction(1.5));
-        let result = backtester.run(&df, &signal, 0.05).unwrap();
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
         assert_eq!(result.average_position_size, 1.0);
         
         // Fraction < 0.0 should be clamped to 0.0
         let backtester = Backtester::with_defaults(10_000.0)
             .with_position_sizing(PositionSizing::FixedFraction(-0.5));
-        let result = backtester.run(&df, &signal, 0.05).unwrap();
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
         assert_eq!(result.average_position_size, 0.0);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SHORT SELLING TESTS
+    // Verify that -1.0 signals enter real short positions with correct PnL.
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    fn create_bearish_dataframe() -> DataFrame {
+        // Price declines steadily from 100 to 90
+        let closes  = vec![100.0, 99.0, 98.0, 97.0, 96.0, 95.0, 94.0, 93.0, 92.0, 90.0];
+        let highs   = vec![101.0, 100.0, 99.0, 98.0, 97.0, 96.0, 95.0, 94.0, 93.0, 91.0];
+        let lows    = vec![ 99.0,  98.0, 97.0, 96.0, 95.0, 94.0, 93.0, 92.0, 91.0, 89.0];
+        let volumes = vec![1000.0f64; 10];
+        df!(
+            "close"  => closes,
+            "high"   => highs,
+            "low"    => lows,
+            "volume" => volumes
+        ).unwrap()
+    }
+
+    fn create_short_signal() -> Series {
+        // Flat on bar 0, short bars 1-8, exit on bar 9
+        Series::new("signal".into(),
+            vec![0.0f64, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 0.0])
+    }
+
+    /// A -1.0 signal on a falling market must produce positive PnL.
+    #[test]
+    fn test_short_selling_profitable_when_price_drops() {
+        let df = create_bearish_dataframe();
+        let signal = create_short_signal();
+
+        // No fees, no slippage — makes manual verification straightforward.
+        let bt = Backtester::new(10_000.0, 0.0, 0.0);
+        let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        println!("Short sell — final: ${:.2}, return: {:.2}%",
+                 result.final_equity, result.total_return_pct);
+
+        assert!(
+            result.final_equity > 10_000.0,
+            "Short position should be profitable when price drops (got ${:.2})",
+            result.final_equity
+        );
+        assert!(result.total_trades >= 1, "Should record at least one closed trade");
+    }
+
+    /// Shorts must outperform longs in a bearish trend.
+    #[test]
+    fn test_short_vs_long_on_bearish_trend() {
+        let df = create_bearish_dataframe();
+        let short_sig = create_short_signal();
+        let long_sig  = Series::new("signal".into(),
+            vec![0.0f64, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]);
+
+        let bt = Backtester::new(10_000.0, 0.0, 0.0);
+        let short_r = bt.run(&df, &short_sig, 0.05, 0.0).unwrap();
+        let long_r  = bt.run(&df, &long_sig,  0.05, 0.0).unwrap();
+
+        println!("Short: ${:.2} ({:.2}%)", short_r.final_equity, short_r.total_return_pct);
+        println!("Long:  ${:.2} ({:.2}%)", long_r.final_equity,  long_r.total_return_pct);
+
+        assert!(short_r.total_return_pct > 0.0, "Short should profit in bear market");
+        assert!(long_r.total_return_pct  < 0.0, "Long should lose in bear market");
+        assert!(short_r.final_equity > long_r.final_equity,
+                "Short equity should exceed long equity in a bearish trend");
+    }
+
+    /// Signal-driven short entry then signal exit must record exactly one trade.
+    #[test]
+    fn test_short_entry_and_signal_exit() {
+        let df = create_bearish_dataframe();
+        // Short bars 1-2, back to flat from bar 3
+        let signal = Series::new("signal".into(),
+            vec![0.0f64, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+
+        let bt = Backtester::new(10_000.0, 0.0, 0.0);
+        // Use wide trailing stop (50%) so it never triggers during this short test
+        let result = bt.run(&df, &signal, 0.50, 0.0).unwrap();
+
+        println!("Short entry/exit — trades: {}, final: ${:.2}",
+                 result.total_trades, result.final_equity);
+
+        assert_eq!(result.total_trades, 1,
+                   "Should record exactly one completed short trade");
+        // Entry at bar 1 close = 99, exit at bar 3 close = 97 → ~2% profit
+        assert!(result.final_equity > 10_000.0, "Brief short should profit");
+    }
+
+    /// Fees must be deducted from short trades.
+    #[test]
+    fn test_short_selling_fees_reduce_profit() {
+        let df = create_bearish_dataframe();
+        let signal = create_short_signal();
+
+        let bt_free = Backtester::new(10_000.0, 0.0,   0.0);
+        let bt_fee  = Backtester::new(10_000.0, 0.001, 0.0);
+
+        let r_free = bt_free.run(&df, &signal, 0.05, 0.0).unwrap();
+        let r_fee  = bt_fee .run(&df, &signal, 0.05, 0.0).unwrap();
+
+        println!("No fees: ${:.2}", r_free.final_equity);
+        println!("Fees:    ${:.2} (paid ${:.2})", r_fee.final_equity, r_fee.total_fees_paid);
+
+        assert!(r_fee.total_fees_paid > 0.0, "Fees should be non-zero for short trades");
+        assert!(r_fee.final_equity < r_free.final_equity,
+                "Fees must reduce profitability of short trades");
+    }
+
+    /// Slippage must reduce short-trade profitability (worse fill on entry & exit).
+    #[test]
+    fn test_short_selling_slippage_reduces_profit() {
+        let df = create_bearish_dataframe();
+        let signal = create_short_signal();
+
+        let bt_clean = Backtester::new(10_000.0, 0.0,  0.0);
+        let bt_slip  = Backtester::new(10_000.0, 0.0, 10.0); // 10 bps
+
+        let r_clean = bt_clean.run(&df, &signal, 0.05, 0.0).unwrap();
+        let r_slip  = bt_slip .run(&df, &signal, 0.05, 0.0).unwrap();
+
+        println!("No slip: ${:.2}", r_clean.final_equity);
+        println!("Slip:    ${:.2}", r_slip.final_equity);
+
+        assert!(r_slip.final_equity < r_clean.final_equity,
+                "Slippage should reduce profitability of short trades");
+    }
+
+    /// Position sizing must apply correctly to short trades.
+    #[test]
+    fn test_short_position_sizing_works() {
+        let df = create_bearish_dataframe();
+        let signal = create_short_signal();
+
+        let bt_full = Backtester::with_defaults(10_000.0)
+            .with_position_sizing(PositionSizing::Full);
+        let bt_half = Backtester::with_defaults(10_000.0)
+            .with_position_sizing(PositionSizing::FixedFraction(0.5));
+
+        let r_full = bt_full.run(&df, &signal, 0.05, 0.0).unwrap();
+        let r_half = bt_half.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        println!("Full short: ${:.2}", r_full.final_equity);
+        println!("Half short: ${:.2}", r_half.final_equity);
+
+        assert!(r_full.final_equity > 10_000.0, "Full short should profit");
+        assert!(r_half.final_equity > 10_000.0, "Half short should profit");
+        assert!(r_full.final_equity > r_half.final_equity,
+                "Full position should yield larger absolute profit than half position");
+        assert_eq!(r_full.average_position_size, 1.0);
+        assert_eq!(r_half.average_position_size, 0.5);
+    }
+
+    /// The mark-to-market equity curve must rise while holding a profitable short.
+    #[test]
+    fn test_short_equity_curve_rises_as_price_falls() {
+        let df = create_bearish_dataframe();
+        let signal = create_short_signal();
+
+        let bt = Backtester::new(10_000.0, 0.0, 0.0);
+        let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
+        let curve = &result.equity_curve;
+
+        // Bar 1 we just entered at ~99; bar 5 price has fallen to ~95.
+        let eq_entry    = curve[1];
+        let eq_mid      = curve[5];
+
+        println!("MTM — entry bar: ${:.2}, mid-trade: ${:.2}", eq_entry, eq_mid);
+
+        assert!(eq_mid > eq_entry,
+                "MTM equity should increase as the short position gains value (price falls)");
     }
 }
