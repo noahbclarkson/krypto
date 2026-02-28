@@ -118,7 +118,7 @@ impl DataLoader {
 
         df.clone()
             .lazy()
-            .sink_parquet(path, Default::default())
+            .sink_parquet(path.to_path_buf(), Default::default())
             .context("Failed to write cache file")?;
 
         tracing::info!("Saved {} candles to cache: {:?}", df.height(), path);
@@ -134,7 +134,7 @@ impl DataLoader {
 
         df.clone()
             .lazy()
-            .sink_parquet(path, Default::default())
+            .sink_parquet(path.to_path_buf(), Default::default())
             .context("Failed to write Parquet file")?;
 
         tracing::info!("Saved {} candles to {:?}", df.height(), path);
@@ -153,7 +153,7 @@ impl DataLoader {
 
         CsvWriter::new(&mut file)
             .include_header(true)
-            .finish(df)
+            .finish(&mut df.clone())
             .context("Failed to write CSV file")?;
 
         tracing::info!("Saved {} candles to {:?}", df.height(), path);
@@ -169,7 +169,8 @@ impl DataLoader {
 
     /// Load DataFrame from a CSV file.
     pub fn load_csv(path: &Path) -> Result<DataFrame> {
-        LazyFrame::scan_csv(path, Default::default())?
+        LazyCsvReader::new(path)
+            .finish()?
             .collect()
             .context("Failed to read CSV file")
     }
