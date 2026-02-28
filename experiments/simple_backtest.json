@@ -1,0 +1,59 @@
+{
+  "name": "simple_dynamictrend_backtest",
+  "description": "Simple backtest of DynamicTrend strategy on BTC/USDT with minimal configuration",
+  "data": {
+    "source": "binance",
+    "symbols": ["BTCUSDT"],
+    "interval": "1h",
+    "start_date": "2024-01-01",
+    "lookback_candles": 500,
+    "cache_dir": "./examples/cache"
+  },
+  "costs": {
+    "fee_pct": 0.001,
+    "slippage_bps": 5,
+    "include_funding": false
+  },
+  "sizing": {
+    "initial_capital": 10000,
+    "kelly_fraction": 0,
+    "position_fraction": 1.0,
+    "max_position_fraction": 1.0,
+    "trailing_stop_pct": 0.05
+  },
+  "validation": {
+    "method": "simple_split",
+    "train_ratio": 0.7,
+    "test_ratio": 0.3,
+    "n_windows": 1,
+    "purge_gap": 0,
+    "embargo": 0
+  },
+  "metrics": {
+    "primary_metric": "sharpe_ratio",
+    "thresholds": {
+      "min_sharpe": 0.0,
+      "min_profit_factor": 0.0,
+      "min_win_rate": 0,
+      "max_drawdown": 100,
+      "min_trades": 1,
+      "min_robustness": 0.0
+    },
+    "additional": ["win_rate", "profit_factor", "max_drawdown", "total_return"]
+  },
+  "strategy": {
+    "strategy_type": "dynamic_trend",
+    "params": {
+      "ema_fast": 50,
+      "ema_slow": 200,
+      "rsi_filter": 50.0
+    }
+  },
+  "output": {
+    "base_dir": "./experiments",
+    "save_equity_curve": true,
+    "save_trades": false,
+    "generate_plots": false,
+    "verbose": true
+  }
+}
