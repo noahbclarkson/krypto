@@ -122,7 +122,7 @@ impl Optimizer {
             test_strat.set_params(&current_params);
 
             if let Ok(signals) = test_strat.predict(&train_df) {
-                if let Ok(result) = backtester.run(&train_df, &signals, trailing) {
+                if let Ok(result) = backtester.run(&train_df, &signals, trailing, 0.0) {
                     if result.total_return_pct > 0.0 && result.total_trades > 5 {
                         let score = result.sharpe_ratio * result.profit_factor.min(3.0);
                         if score > best_score {

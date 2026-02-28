@@ -269,8 +269,9 @@ impl ExperimentRunner {
         let train_df = data.slice(split.train_range.0 as i64, split.train_range.1 - split.train_range.0);
         let test_df = data.slice(split.test_range.0 as i64, split.test_range.1 - split.test_range.0);
 
-        // Get trailing stop from config
+        // Get trailing stop and take profit from config
         let trailing_stop = self.config.sizing.trailing_stop_pct;
+        let take_profit = self.config.sizing.take_profit_pct;
 
         // Run strategy-specific backtest
         let (train_result, test_result) = self.run_strategy_backtest(
@@ -278,6 +279,7 @@ impl ExperimentRunner {
             &train_df,
             &test_df,
             trailing_stop,
+            take_profit,
         )?;
 
         info!(
@@ -306,6 +308,7 @@ impl ExperimentRunner {
         train_df: &DataFrame,
         test_df: &DataFrame,
         trailing_stop: f64,
+        take_profit: f64,
     ) -> Result<(BacktestResult, BacktestResult)> {
         let strategy_type = self.config.strategy.strategy_type.to_lowercase();
         let params = self.parse_strategy_params()?;
@@ -320,77 +323,77 @@ impl ExperimentRunner {
                 if !params.params.is_empty() {
                     strategy.set_params(&params);
                 }
-                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, take_profit, &strategy)
             }
             "relative_strength" | "relativestrength" => {
                 let mut strategy = RelativeStrengthStrat::new();
                 if !params.params.is_empty() {
                     strategy.set_params(&params);
                 }
-                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, take_profit, &strategy)
             }
             "bollinger_reversion" | "bollingerreversion" => {
                 let mut strategy = BollingerReversion::new();
                 if !params.params.is_empty() {
                     strategy.set_params(&params);
                 }
-                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, take_profit, &strategy)
             }
             "atr_breakout" | "atrbreakout" => {
                 let mut strategy = crate::algo::strategies::AtrBreakout::new();
                 if !params.params.is_empty() {
                     strategy.set_params(&params);
                 }
-                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, take_profit, &strategy)
             }
             "volatility_squeeze" | "volatilitysqueeze" => {
                 let mut strategy = VolatilitySqueeze::new();
                 if !params.params.is_empty() {
                     strategy.set_params(&params);
                 }
-                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, take_profit, &strategy)
             }
             "lead_lag" | "leadlag" | "lead_lag_arb" => {
                 let mut strategy = LeadLagStrategy::new();
                 if !params.params.is_empty() {
                     strategy.set_params(&params);
                 }
-                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, take_profit, &strategy)
             }
             "obv_trend" | "obvtrend" => {
                 let mut strategy = ObvTrend::new();
                 if !params.params.is_empty() {
                     strategy.set_params(&params);
                 }
-                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, take_profit, &strategy)
             }
             "macd_trend" | "macdtrend" => {
                 let mut strategy = MacdTrend::new();
                 if !params.params.is_empty() {
                     strategy.set_params(&params);
                 }
-                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, take_profit, &strategy)
             }
             "rsi_reversion" | "rsireversion" => {
                 let mut strategy = RsiMeanReversion::new();
                 if !params.params.is_empty() {
                     strategy.set_params(&params);
                 }
-                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, take_profit, &strategy)
             }
             "price_momentum" | "pricemomentum" => {
                 let mut strategy = PriceMomentum::new();
                 if !params.params.is_empty() {
                     strategy.set_params(&params);
                 }
-                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, take_profit, &strategy)
             }
             "adaptive_ma_cross" | "adaptivemacross" | "adaptive_ma_crossover" => {
                 let mut strategy = AdaptiveMaCrossover::new();
                 if !params.params.is_empty() {
                     strategy.set_params(&params);
                 }
-                self.execute_backtest(backtester, train_df, test_df, trailing_stop, &strategy)
+                self.execute_backtest(backtester, train_df, test_df, trailing_stop, take_profit, &strategy)
             }
             _ => bail!(
                 "Unknown strategy type '{}'. Supported: dynamic_trend, relative_strength, bollinger_reversion, atr_breakout, volatility_squeeze, lead_lag, obv_trend, macd_trend, rsi_reversion, price_momentum, adaptive_ma_cross",
@@ -406,6 +409,7 @@ impl ExperimentRunner {
         train_df: &DataFrame,
         test_df: &DataFrame,
         trailing_stop: f64,
+        take_profit: f64,
         strategy: &S,
     ) -> Result<(BacktestResult, BacktestResult)> {
         // Validate features
@@ -420,10 +424,10 @@ impl ExperimentRunner {
             .with_context(|| format!("Failed to generate signals for strategy {} on test data", strategy.name()))?;
 
         // Run backtests
-        let train_result = backtester.run(train_df, &train_signals, trailing_stop)
+        let train_result = backtester.run(train_df, &train_signals, trailing_stop, take_profit)
             .with_context(|| "Train backtest failed")?;
 
-        let test_result = backtester.run(test_df, &test_signals, trailing_stop)
+        let test_result = backtester.run(test_df, &test_signals, trailing_stop, take_profit)
             .with_context(|| "Test backtest failed")?;
 
         Ok((train_result, test_result))
@@ -816,7 +820,7 @@ mod tests {
 
         // Step 4: Run backtest
         let backtester = Backtester::new(10_000.0, 0.001, 5.0);
-        let result = backtester.run(&df_with_features, &signals, 0.05)
+        let result = backtester.run(&df_with_features, &signals, 0.05, 0.0)
             .expect("Backtest should run successfully");
 
         // Verify backtest result structure

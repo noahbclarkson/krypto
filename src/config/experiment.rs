@@ -186,6 +186,10 @@ pub struct SizingConfig {
     /// Trailing stop percentage (e.g., 0.05 = 5%)
     #[serde(default = "default_trailing_stop")]
     pub trailing_stop_pct: f64,
+
+    /// Take profit percentage (e.g., 0.10 = 10%)
+    #[serde(default)]
+    pub take_profit_pct: f64,
 }
 
 impl Default for SizingConfig {
@@ -196,6 +200,7 @@ impl Default for SizingConfig {
             position_fraction: default_position_fraction(),
             max_position_fraction: default_max_position(),
             trailing_stop_pct: default_trailing_stop(),
+            take_profit_pct: 0.0,
         }
     }
 }

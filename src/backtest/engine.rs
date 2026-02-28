@@ -193,6 +193,56 @@ impl Backtester {
                 }
             }
 
+            // ── Take profit logic ──────────────────────────────────────────
+            // Check if take profit was hit (only if TP > 0)
+            if take_profit > 0.0 {
+                if position > 0.0 {
+                    let tp_price = entry_price * (1.0 + take_profit);
+                    if high >= tp_price {
+                        // TP hit: fill at TP price
+                        let notional = equity * position_size;
+                        let fee = notional * self.fee_pct * 2.0;
+                        let pnl_pct = (tp_price - entry_price) / entry_price;
+                        let pnl_amount = notional * pnl_pct - fee;
+
+                        equity += pnl_amount;
+                        total_fees_paid += fee;
+
+                        if pnl_amount > 0.0 {
+                            wins += 1;
+                            gross_profit += pnl_amount;
+                        } else {
+                            losses += 1;
+                            gross_loss += pnl_amount.abs();
+                        }
+                        position = 0.0;
+                        position_size = 0.0;
+                    }
+                } else if position < 0.0 {
+                    let tp_price = entry_price * (1.0 - take_profit);
+                    if low <= tp_price {
+                        // TP hit: fill at TP price
+                        let notional = equity * position_size;
+                        let fee = notional * self.fee_pct * 2.0;
+                        let pnl_pct = (entry_price - tp_price) / entry_price;
+                        let pnl_amount = notional * pnl_pct - fee;
+
+                        equity += pnl_amount;
+                        total_fees_paid += fee;
+
+                        if pnl_amount > 0.0 {
+                            wins += 1;
+                            gross_profit += pnl_amount;
+                        } else {
+                            losses += 1;
+                            gross_loss += pnl_amount.abs();
+                        }
+                        position = 0.0;
+                        position_size = 0.0;
+                    }
+                }
+            }
+
             // ── Signal-driven entry / exit ─────────────────────────────────
             if (sig - position).abs() > 0.01 {
                 // Apply slippage: buys fill higher, sells fill lower
