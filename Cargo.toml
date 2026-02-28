@@ -17,7 +17,7 @@ home = "=0.5.5"
 libc = "0.2"
 ndarray = "0.15"
 ndarray-stats = "0.6.0"
-polars = { version = "0.37", features = ["lazy", "ndarray", "temporal", "serde", "dynamic_group_by", "abs", "diff", "pct_change", "rolling_window", "ewma", "round_series", "cross_join"] }
+polars = { version = "0.37", features = ["lazy", "ndarray", "temporal", "serde", "dynamic_group_by", "abs", "diff", "pct_change", "rolling_window", "ewma", "round_series", "cross_join", "parquet", "csv"] }
 rayon = "1.11.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
