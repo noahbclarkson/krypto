@@ -23,9 +23,18 @@ use crate::algo::SignalGenerator;
 use crate::backtest::engine::{BacktestResult, Backtester};
 use crate::config::{DataSplit, ExperimentConfig, RuntimeConfig};
 use crate::data::loader::DataLoader;
-use crate::experiment::manifest::{OutputFile, OutputFileType};
+use crate::experiment::manifest::{OutputFile, OutputFileType, SplitResult};
 use crate::experiment::{BacktestMetrics, ResultsSummary, RunManifest};
 use crate::features::indicators::FeatureEngine;
+
+/// Internal struct to track split information during experiment runs.
+#[derive(Debug, Clone)]
+struct SplitInfo {
+    split_index: usize,
+    symbol: String,
+    train_range: (usize, usize),
+    test_range: (usize, usize),
+}
 
 /// Experiment runner orchestrates the full backtest workflow.
 pub struct ExperimentRunner {
@@ -33,6 +42,8 @@ pub struct ExperimentRunner {
     runtime: Option<RuntimeConfig>,
     manifest: RunManifest,
     output_dir: PathBuf,
+    /// Loaded data for backtesting (populated after load_data() or run())
+    data: Option<DataFrame>,
 }
 
 impl ExperimentRunner {
@@ -57,6 +68,7 @@ impl ExperimentRunner {
             runtime: None,
             manifest,
             output_dir,
+            data: None,
         })
     }
 
@@ -75,6 +87,7 @@ impl ExperimentRunner {
         // Collect results across all symbols
         let mut all_train_results = Vec::new();
         let mut all_test_results = Vec::new();
+        let mut split_infos = Vec::new();
 
         // Iterate over ALL configured symbols
         for symbol in &symbols {
@@ -106,6 +119,12 @@ impl ExperimentRunner {
                 let (train_result, test_result) = self.run_split(&data, split)?;
                 all_train_results.push(train_result);
                 all_test_results.push(test_result);
+                split_infos.push(SplitInfo {
+                    split_index: split.index,
+                    symbol: symbol.clone(),
+                    train_range: split.train_range,
+                    test_range: split.test_range,
+                });
             }
         }
 
@@ -116,7 +135,7 @@ impl ExperimentRunner {
         )?);
 
         // Phase 5: Aggregate and evaluate results across all symbols
-        let summary = self.aggregate_results(&all_train_results, &all_test_results)?;
+        let summary = self.aggregate_results(&all_train_results, &all_test_results, &split_infos)?;
 
         // Phase 6: Save outputs
         self.save_outputs(&summary)?;
@@ -130,6 +149,231 @@ impl ExperimentRunner {
             symbols.len()
         );
         Ok(summary)
+    }
+
+    /// Run a backtest on already-loaded data.
+    ///
+    /// This method allows running backtests without going through the full
+    /// experiment pipeline (data loading, feature computation, etc.).
+    /// The input DataFrame should already have technical features computed.
+    ///
+    /// # Arguments
+    /// * `data` - DataFrame with OHLCV data and technical features
+    /// * `train_range` - (start, end) indices for training period
+    /// * `test_range` - (start, end) indices for testing period
+    ///
+    /// # Returns
+    /// A tuple of (train_result, test_result) BacktestResult structs
+    pub fn run_backtest(
+        &self,
+        data: &DataFrame,
+        train_range: (usize, usize),
+        test_range: (usize, usize),
+    ) -> Result<(BacktestResult, BacktestResult)> {
+        // Create backtester with config
+        let backtester = Backtester::new(
+            self.config.sizing.initial_capital,
+            self.config.costs.fee_pct,
+            self.config.costs.slippage_bps,
+        );
+
+        // Slice data for train and test
+        let train_df = data.slice(train_range.0 as i64, train_range.1 - train_range.0);
+        let test_df = data.slice(test_range.0 as i64, test_range.1 - test_range.0);
+
+        // Get trailing stop and take profit from config
+        let trailing_stop = self.config.sizing.trailing_stop_pct;
+        let take_profit = self.config.sizing.take_profit_pct;
+
+        // Run strategy-specific backtest
+        self.run_strategy_backtest(&backtester, &train_df, &test_df, trailing_stop, take_profit)
+    }
+
+    /// Run a backtest on a single DataFrame using the configured strategy.
+    ///
+    /// This is a convenience method for running a single backtest without
+    /// train/test splits.
+    ///
+    /// # Arguments
+    /// * `data` - DataFrame with OHLCV data and technical features
+    ///
+    /// # Returns
+    /// BacktestResult with full metrics
+    pub fn run_single_backtest(&self, data: &DataFrame) -> Result<BacktestResult> {
+        // Create backtester with config
+        let backtester = Backtester::new(
+            self.config.sizing.initial_capital,
+            self.config.costs.fee_pct,
+            self.config.costs.slippage_bps,
+        );
+
+        let trailing_stop = self.config.sizing.trailing_stop_pct;
+        let take_profit = self.config.sizing.take_profit_pct;
+
+        // Get strategy and generate signals
+        let strategy_type = self.config.strategy.strategy_type.to_lowercase();
+        let params = self.parse_strategy_params()?;
+
+        // Generate signals based on strategy type
+        let signals = self.generate_signals(&strategy_type, &params, data)?;
+
+        // Run backtest
+        backtester
+            .run(data, &signals, trailing_stop, take_profit)
+            .with_context(|| "Backtest failed")
+    }
+
+    /// Run a backtest using stored data with a specified strategy.
+    ///
+    /// This is a convenience method that runs a backtest on previously loaded data
+    /// (via `load_data()` or after `run()`) using the specified strategy name.
+    ///
+    /// # Arguments
+    /// * `strategy_name` - Name of the strategy to use (e.g., "dynamic_trend", "rsi_reversion")
+    ///
+    /// # Returns
+    /// BacktestResult with full metrics
+    pub fn run_backtest(&mut self, strategy_name: &str) -> Result<BacktestResult> {
+        // Get loaded data or return error
+        let data = self.data.as_ref()
+            .context("No data loaded. Call load_data() or run() first.")?;
+
+        // Create backtester with default settings from config
+        let backtester = Backtester::with_defaults(self.config.sizing.initial_capital);
+
+        let trailing_stop = self.config.sizing.trailing_stop_pct;
+        let take_profit = self.config.sizing.take_profit_pct;
+
+        // Parse strategy params from config
+        let params = self.parse_strategy_params()?;
+
+        // Generate signals for the specified strategy
+        let signals = self.generate_signals(strategy_name, &params, data)?;
+
+        // Run and return the backtest result
+        backtester
+            .run(data, &signals, trailing_stop, take_profit)
+            .with_context(|| format!("Backtest failed for strategy '{}'", strategy_name))
+    }
+
+    /// Load data for backtesting without running the full experiment pipeline.
+    ///
+    /// This method loads and prepares data (computes features) for subsequent
+    /// backtests via `run_backtest()`.
+    ///
+    /// # Arguments
+    /// * `symbol` - Trading symbol to load (e.g., "BTCUSDT")
+    ///
+    /// # Returns
+    /// Reference to the loaded DataFrame
+    pub fn load_data(&mut self, symbol: &str) -> Result<&DataFrame> {
+        info!("Loading data for symbol: {}", symbol);
+
+        // Load raw data
+        let raw_data = self.load_data_for_symbol(symbol)?;
+
+        // Compute features
+        info!("Computing technical features for {}", symbol);
+        let data = FeatureEngine::add_technicals(&raw_data, None)
+            .with_context(|| format!("Failed to compute features for symbol {}", symbol))?;
+
+        // Store for later use
+        self.data = Some(data);
+
+        Ok(self.data.as_ref().unwrap())
+    }
+
+    /// Generate signals for a given strategy and data.
+    fn generate_signals(
+        &self,
+        strategy_type: &str,
+        params: &StrategyParams,
+        data: &DataFrame,
+    ) -> Result<Series> {
+        match strategy_type {
+            "dynamic_trend" | "dynamictrend" => {
+                let mut strategy = DynamicTrend::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(params);
+                }
+                strategy.predict(data)
+            }
+            "relative_strength" | "relativestrength" => {
+                let mut strategy = RelativeStrengthStrat::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(params);
+                }
+                strategy.predict(data)
+            }
+            "bollinger_reversion" | "bollingerreversion" => {
+                let mut strategy = BollingerReversion::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(params);
+                }
+                strategy.predict(data)
+            }
+            "atr_breakout" | "atrbreakout" => {
+                let mut strategy = crate::algo::strategies::AtrBreakout::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(params);
+                }
+                strategy.predict(data)
+            }
+            "volatility_squeeze" | "volatilitysqueeze" => {
+                let mut strategy = VolatilitySqueeze::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(params);
+                }
+                strategy.predict(data)
+            }
+            "lead_lag" | "leadlag" | "lead_lag_arb" => {
+                let mut strategy = LeadLagStrategy::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(params);
+                }
+                strategy.predict(data)
+            }
+            "obv_trend" | "obvtrend" => {
+                let mut strategy = ObvTrend::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(params);
+                }
+                strategy.predict(data)
+            }
+            "macd_trend" | "macdtrend" => {
+                let mut strategy = MacdTrend::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(params);
+                }
+                strategy.predict(data)
+            }
+            "rsi_reversion" | "rsireversion" => {
+                let mut strategy = RsiMeanReversion::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(params);
+                }
+                strategy.predict(data)
+            }
+            "price_momentum" | "pricemomentum" => {
+                let mut strategy = PriceMomentum::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(params);
+                }
+                strategy.predict(data)
+            }
+            "adaptive_ma_cross" | "adaptivemacross" | "adaptive_ma_crossover" => {
+                let mut strategy = AdaptiveMaCrossover::new();
+                if !params.params.is_empty() {
+                    strategy.set_params(params);
+                }
+                strategy.predict(data)
+            }
+            _ => bail!(
+                "Unknown strategy type '{}'. Supported: dynamic_trend, relative_strength, bollinger_reversion, atr_breakout, volatility_squeeze, lead_lag, obv_trend, macd_trend, rsi_reversion, price_momentum, adaptive_ma_cross",
+                strategy_type
+            ),
+        }
+        .with_context(|| format!("Failed to generate signals for strategy {}", strategy_type))
     }
 
     /// Load data for a specific symbol.
@@ -499,6 +743,7 @@ impl ExperimentRunner {
         &self,
         train_results: &[BacktestResult],
         test_results: &[BacktestResult],
+        split_infos: &[SplitInfo],
     ) -> Result<ResultsSummary> {
         if train_results.is_empty() {
             bail!("No results to aggregate");
@@ -538,6 +783,16 @@ impl ExperimentRunner {
             sharpe_ratio: avg_sharpe,
             kelly_fraction: 0.0,
             total_fees_paid: 0.0,
+            // V3 extended metrics - compute averages
+            sortino_ratio: test_results.iter().map(|r| r.sortino_ratio).sum::<f64>() / test_results.len() as f64,
+            calmar_ratio: test_results.iter().map(|r| r.calmar_ratio).sum::<f64>() / test_results.len() as f64,
+            avg_trade_duration_bars: test_results.iter().map(|r| r.avg_trade_duration_bars).sum::<f64>() / test_results.len() as f64,
+            max_consecutive_wins: test_results.iter().map(|r| r.max_consecutive_wins).max().unwrap_or(0),
+            max_consecutive_losses: test_results.iter().map(|r| r.max_consecutive_losses).max().unwrap_or(0),
+            avg_win_pct: test_results.iter().map(|r| r.avg_win_pct).sum::<f64>() / test_results.len() as f64,
+            avg_loss_pct: test_results.iter().map(|r| r.avg_loss_pct).sum::<f64>() / test_results.len() as f64,
+            largest_win_pct: test_results.iter().map(|r| r.largest_win_pct).sum::<f64>() / test_results.len() as f64,
+            largest_loss_pct: test_results.iter().map(|r| r.largest_loss_pct).sum::<f64>() / test_results.len() as f64,
         };
 
         // Find worst (by drawdown)
@@ -565,6 +820,21 @@ impl ExperimentRunner {
             None
         };
 
+        // Build split results
+        let split_results: Vec<SplitResult> = train_results
+            .iter()
+            .zip(test_results.iter())
+            .zip(split_infos.iter())
+            .map(|((train, test), info)| SplitResult {
+                split_index: info.split_index,
+                symbol: info.symbol.clone(),
+                train_metrics: BacktestMetrics::from(train.clone()),
+                test_metrics: BacktestMetrics::from(test.clone()),
+                train_range: info.train_range,
+                test_range: info.test_range,
+            })
+            .collect();
+
         Ok(ResultsSummary {
             best,
             average,
@@ -581,6 +851,7 @@ impl ExperimentRunner {
                 .get(best_idx)
                 .map(|r: &BacktestResult| BacktestMetrics::from(r.clone())),
             robustness,
+            split_results,
         })
     }
 
@@ -902,5 +1173,189 @@ mod tests {
         let train_close = train_df.column("close").unwrap().f64().unwrap();
         assert_eq!(train_close.get(0).unwrap(), 0.0, "Train should start at index 0");
         assert_eq!(train_close.get(59).unwrap(), 59.0, "Train should end at index 59");
+    }
+
+    /// Integration test: verify run_backtest method works with loaded data
+    #[test]
+    fn test_run_backtest_on_loaded_data() {
+        // Create a mock OHLCV DataFrame with 100 candles
+        let n = 100;
+        let base_price = 100.0;
+        let mut closes = Vec::with_capacity(n);
+        let mut opens = Vec::with_capacity(n);
+        let mut highs = Vec::with_capacity(n);
+        let mut lows = Vec::with_capacity(n);
+        let mut volumes = Vec::with_capacity(n);
+        let mut times = Vec::with_capacity(n);
+
+        for i in 0..n {
+            let price = base_price + (i as f64 * 0.5);
+            let variation = (i as f64 % 10.0) * 0.1;
+            closes.push(price);
+            opens.push(price - variation);
+            highs.push(price + variation + 0.5);
+            lows.push(price - variation - 0.5);
+            volumes.push(1000.0 + (i as f64 * 10.0));
+            times.push(chrono::NaiveDate::from_ymd_opt(2024, 1, 1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap() + chrono::Duration::hours(i as i64));
+        }
+
+        let raw_df = df!(
+            "time" => times,
+            "open" => opens,
+            "high" => highs,
+            "low" => lows,
+            "close" => closes,
+            "volume" => volumes
+        ).expect("Failed to create test DataFrame");
+
+        // Add technical features
+        let df_with_features = FeatureEngine::add_technicals(&raw_df, None)
+            .expect("Failed to compute features");
+
+        // Create experiment runner
+        let mut config = ExperimentConfig::example();
+        config.strategy.strategy_type = "dynamic_trend".to_string();
+        config.sizing.initial_capital = 10_000.0;
+        config.sizing.trailing_stop_pct = 0.05;
+        config.sizing.take_profit_pct = 0.10;
+
+        let runner = ExperimentRunner::new(config).expect("Runner should build");
+
+        // Run backtest using the new method
+        let (train_result, test_result) = runner
+            .run_backtest(&df_with_features, (0, 70), (70, 100))
+            .expect("Backtest should run successfully");
+
+        // Verify train result
+        assert!(train_result.final_equity > 0.0, "Train equity should be positive");
+        assert!(train_result.equity_curve.len() == 70, "Train equity curve length should match");
+        assert!(train_result.sharpe_ratio.is_finite(), "Sharpe ratio should be finite");
+
+        // Verify test result
+        assert!(test_result.final_equity > 0.0, "Test equity should be positive");
+        assert!(test_result.equity_curve.len() == 30, "Test equity curve length should match");
+
+        // Verify V3 extended metrics are populated
+        assert!(train_result.sortino_ratio.is_finite(), "Sortino ratio should be finite");
+        assert!(train_result.calmar_ratio.is_finite(), "Calmar ratio should be finite");
+        assert!(train_result.avg_trade_duration_bars >= 0.0, "Avg duration should be non-negative");
+
+        println!("Train result: {} trades, {:.2}% return, {:.2} Sharpe, {:.2} Sortino",
+                 train_result.total_trades, train_result.total_return_pct, 
+                 train_result.sharpe_ratio, train_result.sortino_ratio);
+        println!("Test result: {} trades, {:.2}% return, {:.2} Sharpe, {:.2} Sortino",
+                 test_result.total_trades, test_result.total_return_pct,
+                 test_result.sharpe_ratio, test_result.sortino_ratio);
+    }
+
+    /// Integration test: verify run_single_backtest method works
+    #[test]
+    fn test_run_single_backtest() {
+        // Create a mock OHLCV DataFrame
+        let n = 50;
+        let closes: Vec<f64> = (0..n).map(|i| 100.0 + i as f64).collect();
+        let opens: Vec<f64> = closes.iter().map(|&c| c - 0.5).collect();
+        let highs: Vec<f64> = closes.iter().map(|&c| c + 0.5).collect();
+        let lows: Vec<f64> = closes.iter().map(|&c| c - 1.0).collect();
+        let volumes: Vec<f64> = vec![1000.0; n];
+        let times: Vec<chrono::NaiveDateTime> = (0..n)
+            .map(|i| {
+                chrono::NaiveDate::from_ymd_opt(2024, 1, 1)
+                    .unwrap()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap()
+                    + chrono::Duration::hours(i as i64)
+            })
+            .collect();
+
+        let raw_df = df!(
+            "time" => times,
+            "open" => opens,
+            "high" => highs,
+            "low" => lows,
+            "close" => closes,
+            "volume" => volumes
+        ).expect("Failed to create test DataFrame");
+
+        // Add features
+        let df_with_features = FeatureEngine::add_technicals(&raw_df, None)
+            .expect("Failed to compute features");
+
+        // Create runner
+        let mut config = ExperimentConfig::example();
+        config.strategy.strategy_type = "price_momentum".to_string();
+        config.sizing.initial_capital = 5_000.0;
+
+        let runner = ExperimentRunner::new(config).expect("Runner should build");
+
+        // Run single backtest
+        let result = runner
+            .run_single_backtest(&df_with_features)
+            .expect("Single backtest should run");
+
+        // Verify result
+        assert!(result.final_equity > 0.0, "Final equity should be positive");
+        assert_eq!(result.equity_curve.len(), n, "Equity curve should match data length");
+
+        // Verify V3 metrics are present
+        assert!(result.sortino_ratio.is_finite() || result.sortino_ratio == 0.0);
+        assert!(result.calmar_ratio.is_finite() || result.calmar_ratio == 0.0);
+        assert!(result.max_consecutive_wins >= 0);
+        assert!(result.max_consecutive_losses >= 0);
+
+        println!("Single backtest: {} trades, {:.2}% return, equity ${:.2}",
+                 result.total_trades, result.total_return_pct, result.final_equity);
+    }
+
+    /// Test that BacktestMetrics correctly captures V3 extended metrics
+    #[test]
+    fn test_backtest_metrics_v3_capture() {
+        // Create a mock BacktestResult with V3 metrics
+        let result = BacktestResult {
+            total_trades: 10,
+            win_rate: 60.0,
+            profit_factor: 1.5,
+            final_equity: 11_000.0,
+            total_return_pct: 10.0,
+            max_drawdown_pct: 5.0,
+            sharpe_ratio: 1.2,
+            kelly_fraction: 0.08,
+            equity_curve: vec![10_000.0, 10_500.0, 11_000.0],
+            total_fees_paid: 50.0,
+            average_position_size: 1.0,
+            // V3 extended metrics
+            sortino_ratio: 1.8,
+            calmar_ratio: 2.0,
+            avg_trade_duration_bars: 5.5,
+            max_consecutive_wins: 4,
+            max_consecutive_losses: 2,
+            avg_win_pct: 2.0,
+            avg_loss_pct: 1.0,
+            largest_win_pct: 3.5,
+            largest_loss_pct: 1.5,
+        };
+
+        // Convert to BacktestMetrics
+        let metrics = BacktestMetrics::from(result);
+
+        // Verify core metrics
+        assert_eq!(metrics.total_trades, 10);
+        assert_eq!(metrics.win_rate, 60.0);
+        assert_eq!(metrics.total_return_pct, 10.0);
+        assert_eq!(metrics.sharpe_ratio, 1.2);
+
+        // Verify V3 extended metrics are captured
+        assert!((metrics.sortino_ratio - 1.8).abs() < 0.001);
+        assert!((metrics.calmar_ratio - 2.0).abs() < 0.001);
+        assert!((metrics.avg_trade_duration_bars - 5.5).abs() < 0.001);
+        assert_eq!(metrics.max_consecutive_wins, 4);
+        assert_eq!(metrics.max_consecutive_losses, 2);
+        assert!((metrics.avg_win_pct - 2.0).abs() < 0.001);
+        assert!((metrics.avg_loss_pct - 1.0).abs() < 0.001);
+        assert!((metrics.largest_win_pct - 3.5).abs() < 0.001);
+        assert!((metrics.largest_loss_pct - 1.5).abs() < 0.001);
     }
 }

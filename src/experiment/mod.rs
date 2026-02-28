@@ -10,5 +10,6 @@ pub mod runner;
 
 pub use manifest::{
     BacktestMetrics, OutputFile, OutputFileType, ResultsSummary, RunManifest, RunStatus,
+    SplitResult,
 };
 pub use runner::{compare_runs, list_runs, ExperimentRunner};

@@ -293,11 +293,39 @@ pub struct ResultsSummary {
 
     /// Robustness score (test/train ratio for primary metric)
     pub robustness: Option<f64>,
+
+    /// Individual split results (train/test pairs)
+    pub split_results: Vec<SplitResult>,
+}
+
+/// Result from a single train/test split.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SplitResult {
+    /// Split index
+    pub split_index: usize,
+
+    /// Symbol this split was run on
+    pub symbol: String,
+
+    /// Train period metrics
+    pub train_metrics: BacktestMetrics,
+
+    /// Test period metrics
+    pub test_metrics: BacktestMetrics,
+
+    /// Train period range (start, end) as bar indices
+    pub train_range: (usize, usize),
+
+    /// Test period range (start, end) as bar indices
+    pub test_range: (usize, usize),
 }
 
 /// Backtest metrics snapshot.
+///
+/// Captures both core metrics and V3 extended metrics from the backtester.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BacktestMetrics {
+    // Core metrics
     pub total_trades: usize,
     pub win_rate: f64,
     pub profit_factor: f64,
@@ -306,11 +334,23 @@ pub struct BacktestMetrics {
     pub sharpe_ratio: f64,
     pub kelly_fraction: f64,
     pub total_fees_paid: f64,
+
+    // V3 extended metrics
+    pub sortino_ratio: f64,
+    pub calmar_ratio: f64,
+    pub avg_trade_duration_bars: f64,
+    pub max_consecutive_wins: usize,
+    pub max_consecutive_losses: usize,
+    pub avg_win_pct: f64,
+    pub avg_loss_pct: f64,
+    pub largest_win_pct: f64,
+    pub largest_loss_pct: f64,
 }
 
 impl From<crate::backtest::engine::BacktestResult> for BacktestMetrics {
     fn from(result: crate::backtest::engine::BacktestResult) -> Self {
         Self {
+            // Core metrics
             total_trades: result.total_trades,
             win_rate: result.win_rate,
             profit_factor: result.profit_factor,
@@ -319,6 +359,17 @@ impl From<crate::backtest::engine::BacktestResult> for BacktestMetrics {
             sharpe_ratio: result.sharpe_ratio,
             kelly_fraction: result.kelly_fraction,
             total_fees_paid: result.total_fees_paid,
+
+            // V3 extended metrics
+            sortino_ratio: result.sortino_ratio,
+            calmar_ratio: result.calmar_ratio,
+            avg_trade_duration_bars: result.avg_trade_duration_bars,
+            max_consecutive_wins: result.max_consecutive_wins,
+            max_consecutive_losses: result.max_consecutive_losses,
+            avg_win_pct: result.avg_win_pct,
+            avg_loss_pct: result.avg_loss_pct,
+            largest_win_pct: result.largest_win_pct,
+            largest_loss_pct: result.largest_loss_pct,
         }
     }
 }
