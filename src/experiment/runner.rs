@@ -233,7 +233,7 @@ impl ExperimentRunner {
     ///
     /// # Returns
     /// BacktestResult with full metrics
-    pub fn run_backtest(&mut self, strategy_name: &str) -> Result<BacktestResult> {
+    pub fn run_backtest_with_strategy(&mut self, strategy_name: &str) -> Result<BacktestResult> {
         // Get loaded data or return error
         let data = self.data.as_ref()
             .context("No data loaded. Call load_data() or run() first.")?;
