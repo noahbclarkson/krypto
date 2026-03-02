@@ -23,6 +23,7 @@ use std::path::{Path, PathBuf};
 const PLOT_OUTPUT: &str = "backtest_results.png";
 const CACHE_DIR: &str = "examples/cache";
 const TRAILING_SL: f64 = 0.05;
+const TAKE_PROFIT: f64 = 0.10;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct CandleCache {
@@ -160,7 +161,7 @@ fn evaluate_strategy<S: OptimizableStrategy + Clone>(
     if let Some(res) = train_result {
         if res.sharpe_ratio > 0.05 && res.profit_factor > 1.2 && res.total_trades > 20 {
             if let Ok(signals) = strat.predict(test_df) {
-                if let Ok(test_res) = backtester.run(test_df, &signals, TRAILING_SL) {
+                if let Ok(test_res) = backtester.run(test_df, &signals, TRAILING_SL, TAKE_PROFIT) {
                     let times_ca = test_df.column("time")?.datetime()?;
 
                     let mut equity_curve = Vec::with_capacity(test_res.equity_curve.len());
