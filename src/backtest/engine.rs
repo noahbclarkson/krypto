@@ -143,15 +143,15 @@ impl Backtester {
         let mut position_sizes: Vec<f64> = Vec::new();
 
         // Extended metrics tracking (V3)
-        let mut trade_returns: Vec<f64> = Vec::new(); // For Sortino
-        let mut trade_durations: Vec<usize> = Vec::new(); // Bars held
-        let mut entry_bar: usize = 0;
-        let mut consecutive_wins = 0;
-        let mut consecutive_losses = 0;
-        let mut max_consecutive_wins = 0;
-        let mut max_consecutive_losses = 0;
-        let mut largest_win_pct = 0.0;
-        let mut largest_loss_pct = 0.0;
+        let trade_returns: Vec<f64> = Vec::new(); // For Sortino
+        let trade_durations: Vec<usize> = Vec::new(); // Bars held
+        let _entry_bar: usize = 0; // TODO: track entry bar for trade duration
+        let _consecutive_wins = 0; // TODO: implement streak tracking
+        let _consecutive_losses = 0;
+        let max_consecutive_wins = 0;
+        let max_consecutive_losses = 0;
+        let largest_win_pct = 0.0;
+        let largest_loss_pct = 0.0;
 
         for i in 0..closes.len() {
             let price = closes.get(i).unwrap_or(0.0);

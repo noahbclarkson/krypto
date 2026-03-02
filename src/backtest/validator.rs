@@ -5,6 +5,9 @@
 //! provides validation by fetching lower-interval data (e.g., 5m) to check
 //! intra-bar price action.
 //!
+//! NOTE: This module is experimental and not yet fully implemented.
+//! Methods contain `todo!()` and are marked with `#[allow(dead_code)]`.
+//!
 //! # Problem
 //!
 //! Consider a 1h candle with:
@@ -147,6 +150,7 @@ pub enum MissingDataBehavior {
 ///     Ok(())
 /// }
 /// ```
+#[allow(dead_code)]
 pub struct LowerIntervalValidator {
     /// Data loader for fetching lower-interval candles.
     loader: crate::data::DataLoader,
@@ -199,11 +203,11 @@ impl LowerIntervalValidator {
     /// TODO: Implement this method
     pub async fn validate_candle(
         &self,
-        symbol: &str,
-        candle_start_time: i64,
-        direction: PositionDirection,
-        stop_price: Option<f64>,
-        take_profit_price: Option<f64>,
+        _symbol: &str,
+        _candle_start_time: i64,
+        _direction: PositionDirection,
+        _stop_price: Option<f64>,
+        _take_profit_price: Option<f64>,
     ) -> Result<ValidationResult> {
         // TODO: Implementation steps:
         // 1. Calculate the time range for the higher-timeframe candle
@@ -233,8 +237,8 @@ impl LowerIntervalValidator {
     /// TODO: Implement this method
     pub async fn validate_candles(
         &self,
-        symbol: &str,
-        candles: &[(i64, PositionDirection, Option<f64>, Option<f64>)],
+        _symbol: &str,
+        _candles: &[(i64, PositionDirection, Option<f64>, Option<f64>)],
     ) -> Result<Vec<ValidationResult>> {
         // TODO: Implementation steps:
         // 1. Calculate the overall time range needed
@@ -270,6 +274,7 @@ impl LowerIntervalValidator {
     ///   hits first (conservative for backtesting). Future: could use tick data.
     ///
     /// TODO: Implement this method
+    #[allow(dead_code)]
     fn check_candle_trigger(
         &self,
         open: f64,
@@ -305,6 +310,7 @@ impl LowerIntervalValidator {
     /// DataFrame with lower-interval OHLCV data.
     ///
     /// TODO: Implement this method
+    #[allow(dead_code)]
     async fn fetch_lower_interval_data(
         &self,
         symbol: &str,
@@ -341,6 +347,7 @@ impl LowerIntervalValidator {
 /// - User-configurable bias
 ///
 /// TODO: Consider making this configurable in ValidatorConfig
+#[allow(dead_code)]
 fn determine_first_trigger(
     _open: f64,
     _high: f64,
@@ -359,6 +366,7 @@ fn determine_first_trigger(
 /// due to slippage. This function estimates that fill.
 ///
 /// TODO: Integrate with the slippage model from the main Backtester
+#[allow(dead_code)]
 fn estimate_fill_price(
     trigger_level: ExitLevel,
     _candle_data: (f64, f64, f64, f64), // (open, high, low, close)
