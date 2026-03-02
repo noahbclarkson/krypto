@@ -114,6 +114,52 @@ impl Backtester {
         }
     }
 
+    /// Update extended metrics when a trade is closed
+    #[inline]
+    fn update_trade_metrics(
+        pnl_pct: f64,
+        current_bar: usize,
+        entry_bar: usize,
+        trade_returns: &mut Vec<f64>,
+        trade_durations: &mut Vec<usize>,
+        consecutive_wins: &mut usize,
+        consecutive_losses: &mut usize,
+        max_consecutive_wins: &mut usize,
+        max_consecutive_losses: &mut usize,
+        largest_win_pct: &mut f64,
+        largest_loss_pct: &mut f64,
+    ) {
+        // Track return percentage
+        trade_returns.push(pnl_pct);
+        
+        // Track trade duration
+        let duration = current_bar.saturating_sub(entry_bar);
+        trade_durations.push(duration);
+        
+        // Track consecutive wins/losses and largest win/loss
+        if pnl_pct > 0.0 {
+            *consecutive_wins += 1;
+            *consecutive_losses = 0;
+            *max_consecutive_wins = (*max_consecutive_wins).max(*consecutive_wins);
+            
+            // Track largest win
+            let win_pct = pnl_pct * 100.0;
+            if win_pct > *largest_win_pct {
+                *largest_win_pct = win_pct;
+            }
+        } else {
+            *consecutive_losses += 1;
+            *consecutive_wins = 0;
+            *max_consecutive_losses = (*max_consecutive_losses).max(*consecutive_losses);
+            
+            // Track largest loss (most negative)
+            let loss_pct = pnl_pct.abs() * 100.0;
+            if loss_pct > *largest_loss_pct {
+                *largest_loss_pct = loss_pct;
+            }
+        }
+    }
+
     pub fn run(&self, df: &DataFrame, signal: &Series, trailing_sl: f64, take_profit: f64) -> Result<BacktestResult> {
         let closes = df.column("close")?.f64()?;
         let highs = df.column("high")?.f64()?;
@@ -143,15 +189,15 @@ impl Backtester {
         let mut position_sizes: Vec<f64> = Vec::new();
 
         // Extended metrics tracking (V3)
-        let trade_returns: Vec<f64> = Vec::new(); // For Sortino
-        let trade_durations: Vec<usize> = Vec::new(); // Bars held
-        let _entry_bar: usize = 0; // TODO: track entry bar for trade duration
-        let _consecutive_wins = 0; // TODO: implement streak tracking
-        let _consecutive_losses = 0;
-        let max_consecutive_wins = 0;
-        let max_consecutive_losses = 0;
-        let largest_win_pct = 0.0;
-        let largest_loss_pct = 0.0;
+        let mut trade_returns: Vec<f64> = Vec::new(); // For Sortino
+        let mut trade_durations: Vec<usize> = Vec::new(); // Bars held
+        let mut entry_bar: usize = 0; // Track entry bar for trade duration
+        let mut consecutive_wins = 0; // Track consecutive wins
+        let mut consecutive_losses = 0; // Track consecutive losses
+        let mut max_consecutive_wins = 0;
+        let mut max_consecutive_losses = 0;
+        let mut largest_win_pct = 0.0;
+        let mut largest_loss_pct = 0.0;
 
         for i in 0..closes.len() {
             let price = closes.get(i).unwrap_or(0.0);
@@ -184,6 +230,22 @@ impl Backtester {
                         losses += 1;
                         gross_loss += pnl_amount.abs();
                     }
+                    
+                    // Update extended metrics
+                    Self::update_trade_metrics(
+                        pnl_pct,
+                        i,
+                        entry_bar,
+                        &mut trade_returns,
+                        &mut trade_durations,
+                        &mut consecutive_wins,
+                        &mut consecutive_losses,
+                        &mut max_consecutive_wins,
+                        &mut max_consecutive_losses,
+                        &mut largest_win_pct,
+                        &mut largest_loss_pct,
+                    );
+                    
                     position = 0.0;
                     position_size = 0.0;
                 }
@@ -209,6 +271,22 @@ impl Backtester {
                         losses += 1;
                         gross_loss += pnl_amount.abs();
                     }
+                    
+                    // Update extended metrics
+                    Self::update_trade_metrics(
+                        pnl_pct,
+                        i,
+                        entry_bar,
+                        &mut trade_returns,
+                        &mut trade_durations,
+                        &mut consecutive_wins,
+                        &mut consecutive_losses,
+                        &mut max_consecutive_wins,
+                        &mut max_consecutive_losses,
+                        &mut largest_win_pct,
+                        &mut largest_loss_pct,
+                    );
+                    
                     position = 0.0;
                     position_size = 0.0;
                 }
@@ -236,6 +314,22 @@ impl Backtester {
                             losses += 1;
                             gross_loss += pnl_amount.abs();
                         }
+                        
+                        // Update extended metrics
+                        Self::update_trade_metrics(
+                            pnl_pct,
+                            i,
+                            entry_bar,
+                            &mut trade_returns,
+                            &mut trade_durations,
+                            &mut consecutive_wins,
+                            &mut consecutive_losses,
+                            &mut max_consecutive_wins,
+                            &mut max_consecutive_losses,
+                            &mut largest_win_pct,
+                            &mut largest_loss_pct,
+                        );
+                        
                         position = 0.0;
                         position_size = 0.0;
                     }
@@ -258,6 +352,22 @@ impl Backtester {
                             losses += 1;
                             gross_loss += pnl_amount.abs();
                         }
+                        
+                        // Update extended metrics
+                        Self::update_trade_metrics(
+                            pnl_pct,
+                            i,
+                            entry_bar,
+                            &mut trade_returns,
+                            &mut trade_durations,
+                            &mut consecutive_wins,
+                            &mut consecutive_losses,
+                            &mut max_consecutive_wins,
+                            &mut max_consecutive_losses,
+                            &mut largest_win_pct,
+                            &mut largest_loss_pct,
+                        );
+                        
                         position = 0.0;
                         position_size = 0.0;
                     }
@@ -297,6 +407,21 @@ impl Backtester {
                         losses += 1;
                         gross_loss += pnl_amount.abs();
                     }
+                    
+                    // Update extended metrics
+                    Self::update_trade_metrics(
+                        net_pnl_pct,
+                        i,
+                        entry_bar,
+                        &mut trade_returns,
+                        &mut trade_durations,
+                        &mut consecutive_wins,
+                        &mut consecutive_losses,
+                        &mut max_consecutive_wins,
+                        &mut max_consecutive_losses,
+                        &mut largest_win_pct,
+                        &mut largest_loss_pct,
+                    );
                 }
 
                 if sig.abs() > 0.01 {
@@ -306,6 +431,7 @@ impl Backtester {
                     entry_price = exec_price;
                     highest_price_in_trade = price;
                     lowest_price_in_trade = price;
+                    entry_bar = i; // Track entry bar for duration calculation
                 } else {
                     position_size = 0.0;
                 }
