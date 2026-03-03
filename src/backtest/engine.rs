@@ -100,13 +100,13 @@ impl Backtester {
             PositionSizing::Full => 1.0,
             PositionSizing::FixedFraction(fraction) => fraction.clamp(0.0, 1.0),
             PositionSizing::RiskPerTrade(risk_pct) => {
-                // Risk per trade = position_size * entry_price * trailing_sl
-                // We want: risk_pct * equity = position_size * entry_price * trailing_sl
-                // So: position_size = (risk_pct * equity) / (entry_price * trailing_sl)
-                if trailing_sl > 0.0 && entry_price > 0.0 {
-                    let position_size = (risk_pct * equity) / (entry_price * trailing_sl);
-                    // Cap at 1.0 to avoid over-leveraging
-                    position_size.min(1.0)
+                // Risk per trade as a fraction of equity:
+                // risk_amount = risk_pct * equity
+                // units = risk_amount / (entry_price * trailing_sl)
+                // fraction = units * entry_price / equity = risk_pct / trailing_sl
+                // So position_size (fraction) = risk_pct / trailing_sl, capped at 1.0
+                if trailing_sl > 0.0 {
+                    (risk_pct / trailing_sl).clamp(0.0, 1.0)
                 } else {
                     1.0
                 }
@@ -642,9 +642,14 @@ mod tests {
             .with_position_sizing(PositionSizing::Full);
         let full_result = full_backtester.run(&df, &signal, 0.05, 0.0).unwrap();
         
-        // Lower position size should result in smaller absolute returns but also smaller drawdowns
-        assert!(result.final_equity < full_result.final_equity);
+        // With 50% sizing, both PnL and drawdown are scaled down vs full sizing.
+        // The equity difference may go either direction depending on strategy sign,
+        // but the drawdown should always be <= full sizing's drawdown.
         assert!(result.max_drawdown_pct <= full_result.max_drawdown_pct);
+        // The difference in final equity should be smaller than with full sizing
+        let half_diff = (result.final_equity - 10_000.0).abs();
+        let full_diff = (full_result.final_equity - 10_000.0).abs();
+        assert!(half_diff <= full_diff, "Half-sized diff {half_diff:.2} should be <= full diff {full_diff:.2}");
     }
 
     #[test]

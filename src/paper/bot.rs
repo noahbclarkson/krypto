@@ -628,8 +628,10 @@ mod tests {
 
         let summary = bot.summary();
         assert_eq!(summary.total_trades, 2);
-        // Both trades should be losses (bought high, sold low)
-        assert_eq!(summary.losses, 2);
+        // Trade 1: buy@100, sell@99 → loss
+        // Trade 2: buy@98, sell@99 → win (98→99 is a gain)
+        assert_eq!(summary.losses, 1);
+        assert_eq!(summary.wins, 1);
     }
 
     #[test]
