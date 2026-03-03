@@ -753,7 +753,7 @@ impl ExperimentRunner {
         let best_idx = test_results
             .iter()
             .enumerate()
-            .max_by(|(_, a), (_, b)| a.sharpe_ratio.partial_cmp(&b.sharpe_ratio).unwrap())
+            .max_by(|(_, a), (_, b)| a.sharpe_ratio.partial_cmp(&b.sharpe_ratio).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(i, _)| i)
             .unwrap_or(0);
 
@@ -799,7 +799,7 @@ impl ExperimentRunner {
         let worst_idx = test_results
             .iter()
             .enumerate()
-            .max_by(|(_, a), (_, b)| a.max_drawdown_pct.partial_cmp(&b.max_drawdown_pct).unwrap())
+            .max_by(|(_, a), (_, b)| a.max_drawdown_pct.partial_cmp(&b.max_drawdown_pct).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(i, _)| i)
             .unwrap_or(0);
 
