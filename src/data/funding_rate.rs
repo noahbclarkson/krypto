@@ -284,57 +284,76 @@ pub fn compute_funding_features(df: &DataFrame, window: usize) -> Result<DataFra
 /// Align funding rate data to an OHLCV DataFrame's timestamps.
 ///
 /// Funding rates are published every 8 hours, but OHLCV data may be 1h or 4h.
-/// This function forward-fills funding rates onto each OHLCV bar's timestamp,
-/// then computes rolling z-score features.
+///
+/// **Important:** z-scores are computed on the raw funding data (in funding-period space,
+/// not OHLCV bar space) to avoid the repeated-value problem from forward-filling.
+/// With z_window=90 funding periods = ~30 days of rolling baseline.
 ///
 /// The resulting DataFrame has all original OHLCV columns plus:
-/// - `funding_rate`: most recent funding rate at that bar
-/// - `funding_rate_z`: rolling z-score
-/// - `funding_rate_ma`: rolling mean
-/// - `funding_rate_std`: rolling std
+/// - `funding_rate`: most recent funding rate at that bar (forward-filled)
+/// - `funding_rate_z`: rolling z-score (computed on raw 8h data, then aligned)
+/// - `funding_rate_ma`: rolling mean on raw funding data
+/// - `funding_rate_std`: rolling std on raw funding data
 /// - `funding_extreme`: -1.0, 0.0, or 1.0 classification
 ///
 /// # Parameters
 /// - `ohlcv_df`: the OHLCV DataFrame (must have `time` column as Datetime milliseconds)
 /// - `funding_df`: output from `FundingRateLoader::fetch()`
-/// - `z_window`: number of funding periods for rolling z-score (default: 90 = ~30 days)
+/// - `z_window`: number of **funding periods** (8h each) for rolling z-score. Default: 90 (~30 days)
 pub fn align_to_ohlcv(
     ohlcv_df: &DataFrame,
     funding_df: &DataFrame,
     z_window: usize,
 ) -> Result<DataFrame> {
-    // Extract timestamps from both DataFrames
+    // Step 1: compute z-score features on raw funding data (8h intervals)
+    let funding_with_features = compute_funding_features(funding_df, z_window)?;
+
+    // Extract all feature columns from funding data
+    let fund_times = funding_with_features.column("time")?.cast(&DataType::Int64)?;
+    let fund_ts: Vec<i64> = fund_times.i64()?.into_iter().map(|v| v.unwrap_or(0)).collect();
+
+    let fund_rate: Vec<f64> = funding_with_features.column("funding_rate")?.f64()?.into_iter().map(|v| v.unwrap_or(0.0)).collect();
+    let fund_z: Vec<f64> = funding_with_features.column("funding_rate_z")?.f64()?.into_iter().map(|v| v.unwrap_or(0.0)).collect();
+    let fund_ma: Vec<f64> = funding_with_features.column("funding_rate_ma")?.f64()?.into_iter().map(|v| v.unwrap_or(0.0)).collect();
+    let fund_std: Vec<f64> = funding_with_features.column("funding_rate_std")?.f64()?.into_iter().map(|v| v.unwrap_or(0.0)).collect();
+    let fund_extreme: Vec<f64> = funding_with_features.column("funding_extreme")?.f64()?.into_iter().map(|v| v.unwrap_or(0.0)).collect();
+
+    // Step 2: forward-fill all features onto OHLCV timestamps
     let ohlcv_times = ohlcv_df.column("time")?.cast(&DataType::Int64)?;
-    let funding_times = funding_df.column("time")?.cast(&DataType::Int64)?;
-    let funding_rates = funding_df.column("funding_rate")?.f64()?;
-
     let ohlcv_ts: Vec<i64> = ohlcv_times.i64()?.into_iter().map(|v| v.unwrap_or(0)).collect();
-    let fund_ts: Vec<i64> = funding_times.i64()?.into_iter().map(|v| v.unwrap_or(0)).collect();
-    let fund_rates: Vec<f64> = funding_rates.into_iter().map(|v| v.unwrap_or(0.0)).collect();
 
-    // Forward-fill: for each OHLCV bar, find the most recent funding rate at or before it
-    let mut aligned_rates: Vec<f64> = Vec::with_capacity(ohlcv_ts.len());
+    let n_ohlcv = ohlcv_ts.len();
+    let mut aligned_rate = vec![0.0f64; n_ohlcv];
+    let mut aligned_z = vec![0.0f64; n_ohlcv];
+    let mut aligned_ma = vec![0.0f64; n_ohlcv];
+    let mut aligned_std = vec![0.0f64; n_ohlcv];
+    let mut aligned_extreme = vec![0.0f64; n_ohlcv];
+
     let mut fund_idx = 0usize;
-
-    for &ots in &ohlcv_ts {
-        // Advance fund_idx to the last funding record <= ohlcv timestamp
+    for (i, &ots) in ohlcv_ts.iter().enumerate() {
+        // Advance to most recent funding record at or before this bar
         while fund_idx + 1 < fund_ts.len() && fund_ts[fund_idx + 1] <= ots {
             fund_idx += 1;
         }
-        if fund_ts[fund_idx] <= ots {
-            aligned_rates.push(fund_rates[fund_idx]);
-        } else {
-            // Before first funding record — use 0 (neutral)
-            aligned_rates.push(0.0);
+        if !fund_ts.is_empty() && fund_ts[fund_idx] <= ots {
+            aligned_rate[i] = fund_rate[fund_idx];
+            aligned_z[i] = fund_z[fund_idx];
+            aligned_ma[i] = fund_ma[fund_idx];
+            aligned_std[i] = fund_std[fund_idx];
+            aligned_extreme[i] = fund_extreme[fund_idx];
         }
+        // else: before first funding record — leave as 0 (neutral)
     }
 
-    // Attach funding_rate column to ohlcv
+    // Step 3: attach to OHLCV DataFrame
     let mut result = ohlcv_df.clone();
-    result.with_column(Series::new("funding_rate".into(), aligned_rates))?;
+    result.with_column(Series::new("funding_rate".into(), aligned_rate))?;
+    result.with_column(Series::new("funding_rate_z".into(), aligned_z))?;
+    result.with_column(Series::new("funding_rate_ma".into(), aligned_ma))?;
+    result.with_column(Series::new("funding_rate_std".into(), aligned_std))?;
+    result.with_column(Series::new("funding_extreme".into(), aligned_extreme))?;
 
-    // Compute rolling features
-    compute_funding_features(&result, z_window)
+    Ok(result)
 }
 
 #[cfg(test)]
