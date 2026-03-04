@@ -1,3 +1,4 @@
+#![allow(clippy::needless_range_loop)]
 use crate::algo::optimization::{OptimizableStrategy, StrategyParams};
 use crate::algo::SignalGenerator;
 use anyhow::Result;
@@ -532,9 +533,7 @@ impl SignalGenerator for LeadLagStrategy {
             };
         }
         let mut self_ret_shifted = vec![0.0; df.height()];
-        for i in 1..df.height() {
-            self_ret_shifted[i] = self_ret[i - 1];
-        }
+        self_ret_shifted[1..].copy_from_slice(&self_ret[..self_ret.len() - 1]);
 
         let mut signals = vec![0.0; df.height()];
         let mut holding_period = 0;

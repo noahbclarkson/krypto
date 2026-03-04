@@ -1,3 +1,4 @@
+#![allow(clippy::needless_range_loop)]
 use super::{
     optimization::{OptimizableStrategy, StrategyParams},
     regime::{MarketRegime, RegimeDetector},
@@ -190,7 +191,7 @@ impl ConfirmedStrategy {
             // else: suppress signal — volume too low
         }
 
-        Ok(Series::new(raw_signal.name().clone(), output))
+        Ok(Series::new(raw_signal.name(), output))
     }
 }
 

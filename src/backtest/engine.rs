@@ -3,8 +3,10 @@ use polars::prelude::*;
 
 /// Position sizing strategy for backtesting.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Default)]
 pub enum PositionSizing {
     /// Use 100% of available equity on every trade (default, backwards compatible)
+    #[default]
     Full,
     /// Use a fixed fraction of equity per trade (e.g., 0.5 = 50%)
     FixedFraction(f64),
@@ -13,11 +15,6 @@ pub enum PositionSizing {
     RiskPerTrade(f64),
 }
 
-impl Default for PositionSizing {
-    fn default() -> Self {
-        PositionSizing::Full
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct BacktestResult {
@@ -95,7 +92,7 @@ impl Backtester {
     }
 
     /// Calculate position size based on the sizing strategy
-    fn calculate_position_size(&self, equity: f64, entry_price: f64, trailing_sl: f64) -> f64 {
+    fn calculate_position_size(&self, _equity: f64, _entry_price: f64, trailing_sl: f64) -> f64 {
         match self.position_sizing {
             PositionSizing::Full => 1.0,
             PositionSizing::FixedFraction(fraction) => fraction.clamp(0.0, 1.0),
@@ -115,7 +112,7 @@ impl Backtester {
     }
 
     /// Update extended metrics when a trade is closed
-    #[inline]
+    #[allow(clippy::too_many_arguments)]
     fn update_trade_metrics(
         pnl_pct: f64,
         current_bar: usize,

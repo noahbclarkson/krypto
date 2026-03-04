@@ -73,7 +73,7 @@ pub fn compute_cs_features(
 
     // For each asset, determine its length (may differ)
     let lengths: HashMap<&String, usize> = dfs.iter().map(|(s, df)| (s, df.height())).collect();
-    let max_len = *lengths.values().max().unwrap_or(&0);
+    let _max_len = *lengths.values().max().unwrap_or(&0);
 
     // Build rank arrays per asset (indexed at the end of each asset's timeline)
     // Strategy: for each bar position in the longest series, compute cross-sectional ranks
@@ -177,9 +177,9 @@ pub fn compute_cs_features(
             .collect();
 
         let mut enriched = df.clone();
-        enriched.with_column(Series::new("cs_momentum_rank".into(), mom_padded))?;
-        enriched.with_column(Series::new("cs_vol_rank".into(), vol_padded))?;
-        enriched.with_column(Series::new("cs_trend_score".into(), trend_score))?;
+        enriched.with_column(Series::new("cs_momentum_rank", mom_padded))?;
+        enriched.with_column(Series::new("cs_vol_rank", vol_padded))?;
+        enriched.with_column(Series::new("cs_trend_score", trend_score))?;
 
         result.insert((*sym).clone(), enriched);
     }

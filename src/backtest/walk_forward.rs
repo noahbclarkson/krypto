@@ -20,7 +20,7 @@
 //! ```
 
 use crate::algo::optimization::{OptimizableStrategy, Optimizer};
-use crate::algo::SignalGenerator;
+
 use crate::backtest::engine::{BacktestResult, Backtester, PositionSizing};
 use anyhow::{bail, Result};
 use polars::prelude::*;
@@ -180,8 +180,8 @@ impl WalkForwardResult {
         println!("  ROBUST: {}", if self.is_robust { "✅ YES" } else { "❌ NO" });
         println!();
         println!(
-            "  {:<6} {:>8} {:>8} {:>10} {:>10} {:>8} {:>8} {}",
-            "Win#", "TrainSh", "TestSh", "TestRet%", "TestTrade", "Rob", "MC_p", "Pass?"
+            "  {:<6} {:>8} {:>8} {:>10} {:>10} {:>8} {:>8} Pass?",
+            "Win#", "TrainSh", "TestSh", "TestRet%", "TestTrade", "Rob", "MC_p"
         );
         println!("  {}", "-".repeat(72));
         for w in &self.windows {

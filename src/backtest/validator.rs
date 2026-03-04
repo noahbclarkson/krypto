@@ -274,6 +274,7 @@ impl LowerIntervalValidator {
     ///   hits first (conservative for backtesting). Future: could use tick data.
     ///
     /// TODO: Implement this method
+    #[allow(clippy::too_many_arguments)]
     #[allow(dead_code)]
     fn check_candle_trigger(
         &self,

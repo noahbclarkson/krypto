@@ -190,10 +190,10 @@ impl FundingRateLoader {
         }
 
         let df = DataFrame::new(vec![
-            Series::new("time".into(), times)
+            Series::new("time", times)
                 .cast(&DataType::Datetime(TimeUnit::Milliseconds, None))?,
-            Series::new("funding_rate".into(), rates),
-            Series::new("mark_price".into(), marks),
+            Series::new("funding_rate", rates),
+            Series::new("mark_price", marks),
         ])?;
 
         Ok(df)
@@ -273,10 +273,10 @@ pub fn compute_funding_features(df: &DataFrame, window: usize) -> Result<DataFra
     }
 
     let mut result = df.clone();
-    result.with_column(Series::new("funding_rate_z".into(), z_scores))?;
-    result.with_column(Series::new("funding_rate_ma".into(), rolling_ma))?;
-    result.with_column(Series::new("funding_rate_std".into(), rolling_std))?;
-    result.with_column(Series::new("funding_extreme".into(), extremes))?;
+    result.with_column(Series::new("funding_rate_z", z_scores))?;
+    result.with_column(Series::new("funding_rate_ma", rolling_ma))?;
+    result.with_column(Series::new("funding_rate_std", rolling_std))?;
+    result.with_column(Series::new("funding_extreme", extremes))?;
 
     Ok(result)
 }
@@ -347,11 +347,11 @@ pub fn align_to_ohlcv(
 
     // Step 3: attach to OHLCV DataFrame
     let mut result = ohlcv_df.clone();
-    result.with_column(Series::new("funding_rate".into(), aligned_rate))?;
-    result.with_column(Series::new("funding_rate_z".into(), aligned_z))?;
-    result.with_column(Series::new("funding_rate_ma".into(), aligned_ma))?;
-    result.with_column(Series::new("funding_rate_std".into(), aligned_std))?;
-    result.with_column(Series::new("funding_extreme".into(), aligned_extreme))?;
+    result.with_column(Series::new("funding_rate", aligned_rate))?;
+    result.with_column(Series::new("funding_rate_z", aligned_z))?;
+    result.with_column(Series::new("funding_rate_ma", aligned_ma))?;
+    result.with_column(Series::new("funding_rate_std", aligned_std))?;
+    result.with_column(Series::new("funding_extreme", aligned_extreme))?;
 
     Ok(result)
 }
