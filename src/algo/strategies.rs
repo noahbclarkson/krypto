@@ -1197,3 +1197,152 @@ impl OptimizableStrategy for AdaptiveMaCrossover {
         self.slow_period = params.get("slow_period", 50.0) as usize;
     }
 }
+
+// -----------------------------------------------------------------------------
+// NEW STRATEGY 6: Funding Rate Mean Reversion (FundingRateReversion)
+// -----------------------------------------------------------------------------
+// Uses perpetual futures funding rate as a contrarian signal:
+//   - Extreme positive funding → market is overheated long → SHORT
+//   - Extreme negative funding → market is overheated short → LONG
+//
+// The funding_rate_z column (z-score vs rolling 30-period mean/std) must
+// be present in the DataFrame. Use FundingRateLoader::align_to_ohlcv() first.
+//
+// Parameters:
+//   entry_z: z-score threshold to enter (default: 1.5 — 1.5 std devs from mean)
+//   exit_z:  z-score level at which to exit (default: 0.5 — near normal)
+//   confirm_rsi: RSI filter to avoid fighting strong trends (default: 40/60)
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FundingRateReversion {
+    /// Enter when |funding_rate_z| > entry_z
+    pub entry_z: f64,
+    /// Exit when |funding_rate_z| < exit_z (funding reverted to normal)
+    pub exit_z: f64,
+    /// RSI threshold: only go long when RSI > confirm_rsi_low (avoid catching falling knife)
+    pub confirm_rsi_low: f64,
+    /// RSI threshold: only go short when RSI < confirm_rsi_high
+    pub confirm_rsi_high: f64,
+}
+
+impl FundingRateReversion {
+    pub fn new() -> Self {
+        Self {
+            entry_z: 1.5,
+            exit_z: 0.5,
+            confirm_rsi_low: 30.0,
+            confirm_rsi_high: 70.0,
+        }
+    }
+}
+
+impl Default for FundingRateReversion {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SignalGenerator for FundingRateReversion {
+    fn name(&self) -> &str {
+        "FundingRate_Reversion"
+    }
+
+    fn train(&mut self, _: &DataFrame, _: &Series) -> Result<()> {
+        Ok(())
+    }
+
+    fn predict(&self, df: &DataFrame) -> Result<Series> {
+        // Try to get funding_rate_z; fall back to funding_rate if z not present
+        let has_z = df.column("funding_rate_z").is_ok();
+        let has_fr = df.column("funding_rate").is_ok();
+
+        if !has_z && !has_fr {
+            // No funding data at all — return neutral
+            return Ok(Series::new("signal", vec![0.0f64; df.height()]));
+        }
+
+        let fr_z: Vec<f64> = if has_z {
+            df.column("funding_rate_z")?
+                .f64()?
+                .into_iter()
+                .map(|v| v.unwrap_or(0.0))
+                .collect()
+        } else {
+            // Compute simple z-score on the fly from raw funding rate
+            let raw: Vec<f64> = df.column("funding_rate")?
+                .f64()?
+                .into_iter()
+                .map(|v| v.unwrap_or(0.0))
+                .collect();
+            let n = raw.len();
+            let window = 30usize;
+            let mut z = vec![0.0f64; n];
+            for i in 0..n {
+                let start = if i >= window { i - window + 1 } else { 0 };
+                let slice = &raw[start..=i];
+                let mean = slice.iter().sum::<f64>() / slice.len() as f64;
+                let std = (slice.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / slice.len() as f64).sqrt();
+                z[i] = if std > f64::EPSILON { (raw[i] - mean) / std } else { 0.0 };
+            }
+            z
+        };
+
+        let rsi_opt: Option<Vec<f64>> = df.column("rsi").ok().and_then(|s| {
+            Some(s.f64().ok()?.into_iter().map(|v| v.unwrap_or(50.0)).collect())
+        });
+
+        let n = df.height();
+        let mut signals = vec![0.0f64; n];
+        let mut position = 0.0f64; // track current position for exit logic
+
+        for i in 0..n {
+            let z = fr_z[i];
+            let rsi = rsi_opt.as_ref().map(|r| r[i]).unwrap_or(50.0);
+
+            // Check exit condition first
+            if position != 0.0 && z.abs() < self.exit_z {
+                position = 0.0;
+            }
+
+            // Entry conditions
+            if position == 0.0 {
+                if z > self.entry_z && rsi < self.confirm_rsi_high {
+                    // Extreme positive funding → overheated longs → SHORT
+                    position = -1.0;
+                } else if z < -self.entry_z && rsi > self.confirm_rsi_low {
+                    // Extreme negative funding → overheated shorts → LONG
+                    position = 1.0;
+                }
+            }
+
+            signals[i] = position;
+        }
+
+        Ok(Series::new("signal", signals))
+    }
+
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new(
+            "explanation",
+            vec!["FundingRateReversion: contrarian entry on extreme funding rates"; df.height()],
+        ))
+    }
+}
+
+impl OptimizableStrategy for FundingRateReversion {
+    fn param_ranges(&self) -> HashMap<String, (f64, f64)> {
+        let mut map = HashMap::new();
+        map.insert("entry_z".to_string(), (1.0, 3.0));
+        map.insert("exit_z".to_string(), (0.2, 1.0));
+        map.insert("confirm_rsi_low".to_string(), (20.0, 45.0));
+        map.insert("confirm_rsi_high".to_string(), (55.0, 80.0));
+        map
+    }
+
+    fn set_params(&mut self, params: &StrategyParams) {
+        self.entry_z = params.get("entry_z", 1.5);
+        self.exit_z = params.get("exit_z", 0.5);
+        self.confirm_rsi_low = params.get("confirm_rsi_low", 30.0);
+        self.confirm_rsi_high = params.get("confirm_rsi_high", 70.0);
+    }
+}
