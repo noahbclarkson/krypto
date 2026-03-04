@@ -1346,3 +1346,133 @@ impl OptimizableStrategy for FundingRateReversion {
         self.confirm_rsi_high = params.get("confirm_rsi_high", 70.0);
     }
 }
+
+#[cfg(test)]
+mod funding_rate_tests {
+    use super::*;
+    use polars::prelude::*;
+
+    fn make_df_with_funding(fr_z: Vec<f64>, rsi: Vec<f64>) -> DataFrame {
+        let n = fr_z.len();
+        DataFrame::new(vec![
+            Series::new("funding_rate_z".into(), fr_z),
+            Series::new("rsi".into(), rsi),
+            Series::new("close".into(), vec![100.0f64; n]),
+        ])
+        .unwrap()
+    }
+
+    #[test]
+    fn test_no_funding_data_returns_neutral() {
+        let strat = FundingRateReversion::default();
+        let df = DataFrame::new(vec![
+            Series::new("close".into(), vec![100.0f64; 5]),
+        ])
+        .unwrap();
+        let signals = strat.predict(&df).unwrap();
+        let vals: Vec<f64> = signals.f64().unwrap().into_iter().flatten().collect();
+        assert!(vals.iter().all(|&v| v == 0.0), "Should be all neutral without funding data");
+    }
+
+    #[test]
+    fn test_extreme_positive_funding_goes_short() {
+        let strat = FundingRateReversion {
+            entry_z: 1.5,
+            exit_z: 0.5,
+            confirm_rsi_low: 30.0,
+            confirm_rsi_high: 70.0,
+        };
+        // fr_z = 2.0 (extreme positive) → short; rsi = 60 (below 70 → confirms short)
+        let fr_z = vec![0.0, 0.0, 2.0, 2.0, 2.0];
+        let rsi  = vec![50.0, 50.0, 60.0, 60.0, 60.0];
+        let df = make_df_with_funding(fr_z, rsi);
+        let signals = strat.predict(&df).unwrap();
+        let vals: Vec<f64> = signals.f64().unwrap().into_iter().flatten().collect();
+        assert_eq!(vals[2], -1.0, "Extreme positive funding + RSI<70 should short");
+        assert_eq!(vals[3], -1.0, "Should hold short");
+    }
+
+    #[test]
+    fn test_extreme_negative_funding_goes_long() {
+        let strat = FundingRateReversion::default();
+        // fr_z = -2.0 (extreme negative) → long; rsi = 40 (above 30 → confirms long)
+        let fr_z = vec![0.0, 0.0, -2.0, -2.0, -2.0];
+        let rsi  = vec![50.0, 50.0, 40.0, 40.0, 40.0];
+        let df = make_df_with_funding(fr_z, rsi);
+        let signals = strat.predict(&df).unwrap();
+        let vals: Vec<f64> = signals.f64().unwrap().into_iter().flatten().collect();
+        assert_eq!(vals[2], 1.0, "Extreme negative funding + RSI>30 should go long");
+    }
+
+    #[test]
+    fn test_rsi_filter_blocks_short_in_strong_uptrend() {
+        let strat = FundingRateReversion {
+            confirm_rsi_high: 70.0,
+            ..Default::default()
+        };
+        // Strong uptrend (RSI=85 > 70) should block the short even with extreme funding
+        let fr_z = vec![2.5, 2.5, 2.5];
+        let rsi  = vec![85.0, 85.0, 85.0];
+        let df = make_df_with_funding(fr_z, rsi);
+        let signals = strat.predict(&df).unwrap();
+        let vals: Vec<f64> = signals.f64().unwrap().into_iter().flatten().collect();
+        assert!(vals.iter().all(|&v| v == 0.0), "RSI filter should block short in strong uptrend");
+    }
+
+    #[test]
+    fn test_rsi_filter_blocks_long_in_strong_downtrend() {
+        let strat = FundingRateReversion {
+            confirm_rsi_low: 30.0,
+            ..Default::default()
+        };
+        // Strong downtrend (RSI=15 < 30) should block the long
+        let fr_z = vec![-2.5, -2.5, -2.5];
+        let rsi  = vec![15.0, 15.0, 15.0];
+        let df = make_df_with_funding(fr_z, rsi);
+        let signals = strat.predict(&df).unwrap();
+        let vals: Vec<f64> = signals.f64().unwrap().into_iter().flatten().collect();
+        assert!(vals.iter().all(|&v| v == 0.0), "RSI filter should block long in strong downtrend");
+    }
+
+    #[test]
+    fn test_exit_when_funding_normalises() {
+        let strat = FundingRateReversion {
+            entry_z: 1.5,
+            exit_z: 0.5,
+            ..Default::default()
+        };
+        // Enter short at bar 1 (z=2.0), funding normalises at bar 3 (z=0.3 < 0.5)
+        let fr_z = vec![0.0, 2.0, 1.8, 0.3, 0.2];
+        let rsi  = vec![50.0, 60.0, 60.0, 55.0, 55.0];
+        let df = make_df_with_funding(fr_z, rsi);
+        let signals = strat.predict(&df).unwrap();
+        let vals: Vec<f64> = signals.f64().unwrap().into_iter().flatten().collect();
+        assert_eq!(vals[1], -1.0, "Should be short at bar 1");
+        assert_eq!(vals[2], -1.0, "Should hold short at bar 2 (z=1.8 > exit_z=0.5)");
+        assert_eq!(vals[3],  0.0, "Should exit at bar 3 (z=0.3 < exit_z=0.5)");
+        assert_eq!(vals[4],  0.0, "Should stay flat at bar 4");
+    }
+
+    #[test]
+    fn test_optimizable_param_ranges() {
+        let strat = FundingRateReversion::default();
+        let ranges = strat.param_ranges();
+        assert!(ranges.contains_key("entry_z"));
+        assert!(ranges.contains_key("exit_z"));
+        let (min, max) = ranges["entry_z"];
+        assert!(min < max, "entry_z range must be valid");
+        assert!(min > 0.0, "entry_z must be positive");
+    }
+
+    #[test]
+    fn test_set_params_updates_fields() {
+        use crate::algo::optimization::StrategyParams;
+        let mut strat = FundingRateReversion::default();
+        let mut p = StrategyParams::new();
+        p.params.insert("entry_z".to_string(), 2.5);
+        p.params.insert("exit_z".to_string(), 0.8);
+        strat.set_params(&p);
+        assert_eq!(strat.entry_z, 2.5);
+        assert_eq!(strat.exit_z, 0.8);
+    }
+}

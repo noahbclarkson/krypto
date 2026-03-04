@@ -1,9 +1,10 @@
-//! Funding Rate Mean-Reversion Backtest
+//! Funding Rate Mean Reversion — Walk-Forward Validation
 //!
-//! Fetches real Binance perpetual funding rate history + spot OHLCV,
-//! aligns them, then runs walk-forward validation on FundingRateReversion.
+//! Tests FundingRateReversion on BTC/ETH/SOL perpetual futures (BTCUSDT etc.)
+//! using real funding rate data from Binance.
 //!
-//! Usage: cargo run --example funding_rate_backtest --release
+//! The strategy shorts when funding is extreme-positive (longs are squeezed)
+//! and goes long when funding is extreme-negative (shorts are squeezed).
 
 use colored::*;
 use krypto::algo::strategies::FundingRateReversion;
@@ -11,119 +12,146 @@ use krypto::backtest::walk_forward::{WalkForwardBacktester, WalkForwardConfig};
 use krypto::data::funding_rate::FundingRateLoader;
 use krypto::data::loader::DataLoader;
 use krypto::features::indicators::FeatureEngine;
-use std::path::PathBuf;
 
-const CACHE_DIR: &str = "examples/cache";
+const CACHE_DIR: &str = "examples/cache/funding";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    println!("{}", "═══ FUNDING RATE MEAN-REVERSION BACKTEST ═══".cyan().bold());
-    println!("Fetching Binance perpetual funding rates + 1h OHLCV...");
+    println!("{}", "═══ FUNDING RATE MEAN REVERSION BACKTEST ═══".cyan().bold());
+    println!("Strategy: short on extreme positive funding, long on extreme negative");
+    println!("Data: Binance perpetual futures (fapi) — 8h funding intervals");
     println!();
 
-    let symbols = vec![
-        ("BTCUSDT", "BTCFDUSD"),
-        ("ETHUSDT", "ETHFDUSD"),
-        ("SOLUSDT", "SOLFDUSD"),
-    ];
+    std::fs::create_dir_all(CACHE_DIR)?;
+
+    // Note: perpetual futures use BTCUSDT (not BTCFDUSD) — same price, different market
+    let symbols = vec!["BTCUSDT", "ETHUSDT", "SOLUSDT"];
+    // 4h bars: funding updates every 8h = every 2 bars — good alignment
+    let interval = "4h";
+    let limit: u16 = 5000; // ~2.3 years of 4h data
 
     let price_loader = DataLoader::new(None, None);
-    let fr_loader = FundingRateLoader::with_cache(PathBuf::from(CACHE_DIR));
+    let fr_loader = FundingRateLoader::with_cache(CACHE_DIR);
 
-    for (futures_sym, spot_sym) in &symbols {
-        println!("{}", format!("── {} ──", futures_sym).yellow().bold());
+    // Walk-forward config: 1000-bar train (~170 days), 400-bar test (~67 days)
+    let wf_config = WalkForwardConfig {
+        train_bars: 1000,
+        test_bars: 400,
+        optimizer_iterations: 300,
+        monte_carlo_n: 300,
+        min_train_trades: 15, // funding events are rarer than price crossovers
+        min_test_trades: 5,
+        ..Default::default()
+    };
 
-        // Fetch funding rate history (paginated, cached after first fetch)
-        print!("  Fetching funding rates for {}...", futures_sym);
-        let rates = match fr_loader.fetch_all(futures_sym).await {
-            Ok(r) => {
-                println!(" {} records", r.len());
-                r
-            }
-            Err(e) => {
-                println!(" ERROR: {}", e);
-                continue;
-            }
-        };
+    let mut any_robust = false;
 
-        let stats = FundingRateLoader::compute_stats(&rates);
-        println!(
-            "  Funding stats: mean={:.4}%  std={:.4}%  p5={:.4}%  p95={:.4}%",
-            stats.mean * 100.0,
-            stats.std * 100.0,
-            stats.p5 * 100.0,
-            stats.p95 * 100.0
-        );
+    for symbol in &symbols {
+        println!("{}", format!("── {} ──", symbol).yellow().bold());
 
-        // Fetch price OHLCV (1h, max history)
-        print!("  Fetching 1h OHLCV for {}...", spot_sym);
-        let price_df = match price_loader.fetch_data(spot_sym, "1h", 10_000).await {
-            Ok(df) => {
-                println!(" {} bars", df.height());
-                df
-            }
-            Err(e) => {
-                println!(" ERROR: {}", e);
-                continue;
-            }
-        };
-
-        // Add technical indicators
-        let df_tech = FeatureEngine::add_technicals(&price_df, None)?;
-
-        // Align funding rates to price data
-        let df_with_funding = match fr_loader.align_to_ohlcv(&rates, &df_tech, "1h") {
+        // Load OHLCV from perpetual futures endpoint
+        let price_df = match price_loader.fetch_data(symbol, interval, limit).await {
             Ok(df) => df,
             Err(e) => {
-                println!("  Failed to align funding rates: {}", e);
+                println!("  ❌ Failed to fetch price data: {}", e);
+                continue;
+            }
+        };
+        println!("  Loaded {} price bars", price_df.height());
+
+        // Load full funding rate history
+        let funding_records = match fr_loader.fetch_all(symbol).await {
+            Ok(r) => r,
+            Err(e) => {
+                println!("  ❌ Failed to fetch funding rates: {}", e);
+                continue;
+            }
+        };
+        println!("  Loaded {} funding rate records", funding_records.len());
+
+        if funding_records.is_empty() {
+            println!("  ⚠️ No funding data — skipping");
+            continue;
+        }
+
+        // Print funding rate stats
+        let stats = FundingRateLoader::compute_stats(&funding_records);
+        println!(
+            "  Funding stats: mean={:.4}%  std={:.4}%  min={:.4}%  max={:.4}%",
+            stats.mean * 100.0,
+            stats.std * 100.0,
+            stats.min * 100.0,
+            stats.max * 100.0
+        );
+
+        // Align funding rates to price bars
+        let df_with_funding = match fr_loader.align_to_ohlcv(&funding_records, &price_df, interval) {
+            Ok(df) => df,
+            Err(e) => {
+                println!("  ❌ Failed to align funding rates: {}", e);
                 continue;
             }
         };
 
-        println!(
-            "  DataFrame: {} rows with funding_rate, funding_rate_z, funding_rate_ma8",
-            df_with_funding.height()
-        );
-
-        // Run walk-forward validation
-        let config = WalkForwardConfig {
-            train_bars: 4000,  // ~6 months of 1h data
-            test_bars: 1500,   // ~2 months
-            optimizer_iterations: 300,
-            monte_carlo_n: 300,
-            ..Default::default()
+        // Add technical features (RSI needed for confirm filter)
+        let df_tech = match FeatureEngine::add_technicals(&df_with_funding, None) {
+            Ok(df) => df,
+            Err(e) => {
+                println!("  ❌ Failed to compute features: {}", e);
+                continue;
+            }
         };
 
+        // Run walk-forward
+        let wf = WalkForwardBacktester::new(wf_config.clone());
         let mut strategy = FundingRateReversion::default();
-        let wf = WalkForwardBacktester::new(config);
 
-        println!("  Running walk-forward validation...");
-        match wf.run(&mut strategy, &df_with_funding) {
+        match wf.run(&mut strategy, &df_tech) {
             Ok(result) => {
-                let status = if result.is_robust {
-                    "✅ ROBUST".green().bold()
-                } else {
-                    "❌ not robust".red()
-                };
-                println!("  Result: {}", status);
                 result.print_summary();
 
-                // Save equity curve
-                if !result.equity_curve.is_empty() {
-                    let csv: String = std::iter::once("equity".to_string())
-                        .chain(result.equity_curve.iter().map(|e| format!("{:.6}", e)))
-                        .collect::<Vec<_>>()
-                        .join("\n");
-                    let path = format!("funding_equity_{}.csv", futures_sym.to_lowercase());
-                    std::fs::write(&path, csv)?;
-                    println!("  Equity curve saved to {}", path);
+                if result.is_robust {
+                    any_robust = true;
+                    println!(
+                        "{}",
+                        format!(
+                            "✅ {} PASSED — OOS return: {:.1}% | Sharpe: {:.3} | MC_p: {:.3}",
+                            symbol,
+                            result.combined_total_return_pct,
+                            result.combined_sharpe,
+                            result.avg_monte_carlo_p.unwrap_or(f64::NAN)
+                        )
+                        .green()
+                        .bold()
+                    );
+                } else {
+                    println!(
+                        "{}",
+                        format!(
+                            "❌ {} failed — OOS return: {:.1}% | Sharpe: {:.3} | wins: {}/{}",
+                            symbol,
+                            result.combined_total_return_pct,
+                            result.combined_sharpe,
+                            result.windows_passed,
+                            result.windows_total
+                        )
+                        .red()
+                    );
                 }
             }
-            Err(e) => {
-                println!("  Walk-forward error: {}", e);
-            }
+            Err(e) => println!("  ❌ Walk-forward failed: {}", e),
         }
+
         println!();
+    }
+
+    if !any_robust {
+        println!(
+            "{}",
+            "No symbols passed. Funding rate mean-reversion may need further refinement \
+             or a different entry threshold for current market conditions."
+                .yellow()
+        );
     }
 
     Ok(())
