@@ -1347,6 +1347,328 @@ impl OptimizableStrategy for FundingRateReversion {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// STRATEGY 7: Volatility-Adjusted Momentum
+// -----------------------------------------------------------------------------
+// Pure momentum with volatility normalization:
+//   - Compute N-bar return, divide by ATR to normalize for volatility
+//   - Rank by vol-adjusted momentum within the bar's own history
+//   - Long when recent momentum is top-decile, short when bottom-decile
+//   - Add a trend filter: only take signals aligned with the medium-term trend
+//
+// Unlike cross-sectional momentum (which requires multi-asset data at runtime),
+// this works on a single asset — volume-adjusted momentum that only fires
+// when momentum is extreme relative to this asset's own history.
+//
+// Parameters:
+//   mom_period: look-back bars for return (default: 20)
+//   vol_period: ATR look-back (default: 14)
+//   rank_threshold: fractile threshold to enter (default: 0.8 = top/bottom 20%)
+//   trend_period: medium-term EMA period for trend filter (default: 50)
+// ─────────────────────────────────────────────────────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct VolAdjustedMomentum {
+    pub mom_period: usize,
+    pub vol_period: usize,
+    pub rank_threshold: f64,
+    pub trend_period: usize,
+}
+
+impl VolAdjustedMomentum {
+    pub fn new() -> Self {
+        Self {
+            mom_period: 20,
+            vol_period: 14,
+            rank_threshold: 0.8,
+            trend_period: 50,
+        }
+    }
+}
+
+impl Default for VolAdjustedMomentum {
+    fn default() -> Self { Self::new() }
+}
+
+impl SignalGenerator for VolAdjustedMomentum {
+    fn name(&self) -> &str { "VolAdjMomentum" }
+    fn train(&mut self, _: &DataFrame, _: &Series) -> Result<()> { Ok(()) }
+
+    fn predict(&self, df: &DataFrame) -> Result<Series> {
+        let closes: Vec<f64> = df.column("close")?.f64()?.into_iter()
+            .map(|v| v.unwrap_or(0.0)).collect();
+        let n = closes.len();
+        let mp = self.mom_period;
+        let vp = self.vol_period;
+        let tp = self.trend_period;
+
+        // Compute N-bar return
+        let mut returns = vec![0.0f64; n];
+        for i in mp..n {
+            if closes[i - mp] > 0.0 {
+                returns[i] = (closes[i] - closes[i - mp]) / closes[i - mp];
+            }
+        }
+
+        // Compute ATR (approximation using high/low if available, else price std)
+        let atr: Vec<f64> = if df.column("high").is_ok() && df.column("low").is_ok() {
+            let highs: Vec<f64> = df.column("high")?.f64()?.into_iter()
+                .map(|v| v.unwrap_or(0.0)).collect();
+            let lows: Vec<f64> = df.column("low")?.f64()?.into_iter()
+                .map(|v| v.unwrap_or(0.0)).collect();
+            let mut atr_vals = vec![0.0f64; n];
+            for i in 1..n {
+                let tr = (highs[i] - lows[i])
+                    .max((highs[i] - closes[i - 1]).abs())
+                    .max((lows[i] - closes[i - 1]).abs());
+                let start = if i >= vp { i - vp + 1 } else { 1 };
+                // Simple rolling mean of TR
+                let slice_len = (i - start + 1) as f64;
+                atr_vals[i] = atr_vals[i - 1] * (slice_len - 1.0) / slice_len + tr / slice_len;
+            }
+            atr_vals
+        } else {
+            // Fallback: rolling std of returns
+            let mut atr_vals = vec![0.01f64; n];
+            for i in vp..n {
+                let slice = &returns[(i - vp)..i];
+                let mean = slice.iter().sum::<f64>() / slice.len() as f64;
+                let var = slice.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / slice.len() as f64;
+                atr_vals[i] = var.sqrt().max(1e-8);
+            }
+            atr_vals
+        };
+
+        // Vol-adjusted momentum
+        let mut mom_adj = vec![0.0f64; n];
+        for i in 0..n {
+            let a = if closes[i] > 0.0 { atr[i] / closes[i] } else { 0.0 };
+            mom_adj[i] = if a > 1e-8 { returns[i] / a } else { 0.0 };
+        }
+
+        // Compute EMA for trend filter
+        let alpha = 2.0 / (tp as f64 + 1.0);
+        let mut ema = vec![closes[0]; n];
+        for i in 1..n {
+            ema[i] = closes[i] * alpha + ema[i - 1] * (1.0 - alpha);
+        }
+
+        // Rolling rank of mom_adj over look-back window (same as mom_period)
+        let rank_window = (mp * 3).max(60);
+        let mut signals = vec![0.0f64; n];
+
+        for i in rank_window..n {
+            let start = i - rank_window + 1;
+            let window: Vec<f64> = mom_adj[start..=i].to_vec();
+            let current = mom_adj[i];
+
+            // Rank: what fraction of window values is current value above?
+            let rank = window.iter().filter(|&&v| v < current).count() as f64
+                / window.len() as f64;
+
+            let uptrend = closes[i] > ema[i];
+
+            if rank >= self.rank_threshold && uptrend {
+                signals[i] = 1.0; // strong momentum + uptrend → long
+            } else if rank <= (1.0 - self.rank_threshold) && !uptrend {
+                signals[i] = -1.0; // weak momentum + downtrend → short
+            }
+        }
+
+        Ok(Series::new("signal", signals))
+    }
+
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation",
+            vec!["VolAdjMomentum: long on top-decile vol-adjusted momentum + uptrend"; df.height()]))
+    }
+}
+
+impl OptimizableStrategy for VolAdjustedMomentum {
+    fn param_ranges(&self) -> HashMap<String, (f64, f64)> {
+        let mut m = HashMap::new();
+        m.insert("mom_period".to_string(),    (10.0, 50.0));
+        m.insert("vol_period".to_string(),    (7.0, 28.0));
+        m.insert("rank_threshold".to_string(),(0.70, 0.92));
+        m.insert("trend_period".to_string(),  (20.0, 100.0));
+        m
+    }
+
+    fn set_params(&mut self, p: &StrategyParams) {
+        self.mom_period    = p.get("mom_period",    20.0) as usize;
+        self.vol_period    = p.get("vol_period",    14.0) as usize;
+        self.rank_threshold= p.get("rank_threshold", 0.8);
+        self.trend_period  = p.get("trend_period",  50.0) as usize;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STRATEGY 8: Regime-Filtered Trend Following
+// -----------------------------------------------------------------------------
+// Detects the current market regime (trending vs ranging) using ATR percentile
+// and applies different logic in each:
+//   - Trending regime: follow EMA crossover with momentum confirmation
+//   - Ranging regime: mean-revert using Bollinger Band z-score
+//
+// This is an adaptive strategy — it doesn't try to force one style in all markets.
+//
+// Parameters:
+//   atr_lookback: bars to compute ATR percentile (default: 100)
+//   atr_trend_pct: percentile above which ATR = trending (default: 0.6)
+//   ema_fast, ema_slow: for trend-following leg (default: 10, 30)
+//   bb_period, bb_std: for mean-reversion leg (default: 20, 2.0)
+// ─────────────────────────────────────────────────────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RegimeAdaptive {
+    pub atr_lookback: usize,
+    pub atr_trend_pct: f64,
+    pub ema_fast: usize,
+    pub ema_slow: usize,
+    pub bb_period: usize,
+    pub bb_std: f64,
+}
+
+impl RegimeAdaptive {
+    pub fn new() -> Self {
+        Self {
+            atr_lookback: 100,
+            atr_trend_pct: 0.60,
+            ema_fast: 10,
+            ema_slow: 30,
+            bb_period: 20,
+            bb_std: 2.0,
+        }
+    }
+}
+
+impl Default for RegimeAdaptive {
+    fn default() -> Self { Self::new() }
+}
+
+impl SignalGenerator for RegimeAdaptive {
+    fn name(&self) -> &str { "RegimeAdaptive" }
+    fn train(&mut self, _: &DataFrame, _: &Series) -> Result<()> { Ok(()) }
+
+    fn predict(&self, df: &DataFrame) -> Result<Series> {
+        let closes: Vec<f64> = df.column("close")?.f64()?.into_iter()
+            .map(|v| v.unwrap_or(0.0)).collect();
+        let n = closes.len();
+
+        // ATR (true range approximation)
+        let atr_raw: Vec<f64> = if df.column("high").is_ok() && df.column("low").is_ok() {
+            let highs: Vec<f64> = df.column("high")?.f64()?.into_iter()
+                .map(|v| v.unwrap_or(0.0)).collect();
+            let lows: Vec<f64> = df.column("low")?.f64()?.into_iter()
+                .map(|v| v.unwrap_or(0.0)).collect();
+            let mut v = vec![0.0f64; n];
+            for i in 1..n {
+                v[i] = (highs[i] - lows[i])
+                    .max((highs[i] - closes[i-1]).abs())
+                    .max((lows[i] - closes[i-1]).abs());
+            }
+            v
+        } else {
+            // Use candle body as proxy
+            (0..n).map(|i| if i == 0 { 0.0 } else { (closes[i] - closes[i-1]).abs() }).collect()
+        };
+
+        // Normalize ATR by close price
+        let atr_pct: Vec<f64> = atr_raw.iter().enumerate()
+            .map(|(i, &a)| if closes[i] > 0.0 { a / closes[i] } else { 0.0 })
+            .collect();
+
+        // EMA helper
+        let ema = |period: usize| -> Vec<f64> {
+            let alpha = 2.0 / (period as f64 + 1.0);
+            let mut e = vec![closes[0]; n];
+            for i in 1..n { e[i] = closes[i] * alpha + e[i-1] * (1.0 - alpha); }
+            e
+        };
+
+        let ema_f = ema(self.ema_fast);
+        let ema_s = ema(self.ema_slow);
+
+        // Bollinger bands
+        let bb_mean: Vec<f64> = (0..n).map(|i| {
+            let s = if i >= self.bb_period { i - self.bb_period + 1 } else { 0 };
+            closes[s..=i].iter().sum::<f64>() / (i - s + 1) as f64
+        }).collect();
+        let bb_std_v: Vec<f64> = (0..n).map(|i| {
+            let s = if i >= self.bb_period { i - self.bb_period + 1 } else { 0 };
+            let m = bb_mean[i];
+            let var = closes[s..=i].iter().map(|c| (c-m).powi(2)).sum::<f64>() / (i-s+1) as f64;
+            var.sqrt()
+        }).collect();
+
+        let mut signals = vec![0.0f64; n];
+        let lb = self.atr_lookback;
+
+        for i in lb.max(self.ema_slow)..n {
+            // Determine regime: is current ATR in top X% of last N bars?
+            let window = &atr_pct[(i - lb)..=i];
+            let rank = window.iter().filter(|&&a| a < atr_pct[i]).count() as f64
+                / window.len() as f64;
+            let is_trending = rank >= self.atr_trend_pct;
+
+            if is_trending {
+                // Trend-following: EMA crossover
+                if ema_f[i] > ema_s[i] && ema_f[i-1] <= ema_s[i-1] {
+                    signals[i] = 1.0;
+                } else if ema_f[i] < ema_s[i] && ema_f[i-1] >= ema_s[i-1] {
+                    signals[i] = -1.0;
+                } else {
+                    signals[i] = signals[i-1]; // hold
+                }
+            } else {
+                // Ranging regime: Bollinger Band mean-reversion
+                let bbs = bb_std_v[i];
+                if bbs < 1e-8 {
+                    signals[i] = 0.0;
+                    continue;
+                }
+                let z = (closes[i] - bb_mean[i]) / (bbs * self.bb_std);
+                if z < -1.0 {
+                    signals[i] = 1.0;  // below lower band → long
+                } else if z > 1.0 {
+                    signals[i] = -1.0; // above upper band → short
+                } else {
+                    signals[i] = 0.0;  // inside bands → flat
+                }
+            }
+        }
+
+        Ok(Series::new("signal", signals))
+    }
+
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation",
+            vec!["RegimeAdaptive: trend-follow in high-ATR, mean-revert in low-ATR"; df.height()]))
+    }
+}
+
+impl OptimizableStrategy for RegimeAdaptive {
+    fn param_ranges(&self) -> HashMap<String, (f64, f64)> {
+        let mut m = HashMap::new();
+        m.insert("atr_lookback".to_string(),  (50.0, 200.0));
+        m.insert("atr_trend_pct".to_string(), (0.50, 0.75));
+        m.insert("ema_fast".to_string(),       (5.0, 20.0));
+        m.insert("ema_slow".to_string(),       (20.0, 60.0));
+        m.insert("bb_period".to_string(),      (10.0, 30.0));
+        m.insert("bb_std".to_string(),         (1.5, 3.0));
+        m
+    }
+
+    fn set_params(&mut self, p: &StrategyParams) {
+        self.atr_lookback  = p.get("atr_lookback",  100.0) as usize;
+        self.atr_trend_pct = p.get("atr_trend_pct",   0.6);
+        self.ema_fast      = p.get("ema_fast",        10.0) as usize;
+        self.ema_slow      = p.get("ema_slow",        30.0) as usize;
+        self.bb_period     = p.get("bb_period",       20.0) as usize;
+        self.bb_std        = p.get("bb_std",           2.0);
+    }
+}
+
 #[cfg(test)]
 mod funding_rate_tests {
     use super::*;

@@ -10,7 +10,7 @@ use colored::*;
 use krypto::algo::optimization::OptimizableStrategy;
 use krypto::algo::strategies::{
     AdaptiveMaCrossover, AtrBreakout, BollingerReversion, DynamicTrend, MacdTrend, ObvTrend,
-    PriceMomentum, RsiMeanReversion, VolatilitySqueeze,
+    PriceMomentum, RegimeAdaptive, RsiMeanReversion, VolAdjustedMomentum, VolatilitySqueeze,
 };
 use krypto::backtest::walk_forward::{WalkForwardBacktester, WalkForwardConfig, WalkForwardResult};
 use krypto::data::loader::DataLoader;
@@ -279,6 +279,8 @@ async fn main() -> anyhow::Result<()> {
             run_strategy!("PriceMomentum", PriceMomentum::default(), &df_tech, cfg, symbol, interval, all_records);
             run_strategy!("VolatilitySqueeze", VolatilitySqueeze::default(), &df_tech, cfg, symbol, interval, all_records);
             run_strategy!("AdaptiveMaCrossover", AdaptiveMaCrossover::default(), &df_tech, cfg, symbol, interval, all_records);
+            run_strategy!("VolAdjMomentum", VolAdjustedMomentum::default(), &df_tech, cfg, symbol, interval, all_records);
+            run_strategy!("RegimeAdaptive", RegimeAdaptive::default(), &df_tech, cfg, symbol, interval, all_records);
 
             println!();
         }
