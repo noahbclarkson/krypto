@@ -323,3 +323,4 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
+// Note: ConfirmedDynamicTrend is added separately in a dedicated run
