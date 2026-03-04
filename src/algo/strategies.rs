@@ -1798,3 +1798,158 @@ mod funding_rate_tests {
         assert_eq!(strat.exit_z, 0.8);
     }
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STRATEGY 10: Cross-Sectional Momentum
+// -----------------------------------------------------------------------------
+// Uses pre-computed cross-sectional rank features to trade relative strength.
+// Requires cs_momentum_rank and cs_trend_score columns (from compute_cs_features).
+//
+// Logic:
+//   LONG  when cs_momentum_rank >= long_threshold  (top performers)
+//   SHORT when cs_momentum_rank <= short_threshold (bottom performers)
+//   Flat  otherwise
+//
+// Parameters:
+//   long_threshold:  rank threshold to go long  (default: 0.75 = top 25%)
+//   short_threshold: rank threshold to go short (default: 0.25 = bottom 25%)
+//   use_trend_score: if >0, uses cs_trend_score instead of raw rank (default: 1.0 = yes)
+// ─────────────────────────────────────────────────────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CrossSectionalMomentum {
+    /// Enter long when rank >= this value (0.0–1.0)
+    pub long_threshold: f64,
+    /// Enter short when rank <= this value (0.0–1.0)
+    pub short_threshold: f64,
+    /// If 1.0, use cs_trend_score (momentum - vol penalized). If 0.0, use raw cs_momentum_rank.
+    pub use_trend_score: f64,
+}
+
+impl CrossSectionalMomentum {
+    pub fn new() -> Self {
+        Self {
+            long_threshold: 0.75,
+            short_threshold: 0.25,
+            use_trend_score: 1.0,
+        }
+    }
+}
+
+impl Default for CrossSectionalMomentum {
+    fn default() -> Self { Self::new() }
+}
+
+impl SignalGenerator for CrossSectionalMomentum {
+    fn name(&self) -> &str { "CrossSectional_Momentum" }
+
+    fn train(&mut self, _: &DataFrame, _: &Series) -> Result<()> { Ok(()) }
+
+    fn predict(&self, df: &DataFrame) -> Result<Series> {
+        // Prefer cs_trend_score if requested and available; fall back to cs_momentum_rank
+        let signal_col = if self.use_trend_score > 0.5 && df.column("cs_trend_score").is_ok() {
+            "cs_trend_score"
+        } else if df.column("cs_momentum_rank").is_ok() {
+            "cs_momentum_rank"
+        } else {
+            // No cross-sectional features present — return neutral
+            return Ok(Series::new("signal", vec![0.0f64; df.height()]));
+        };
+
+        let scores: Vec<f64> = df
+            .column(signal_col)?
+            .f64()?
+            .into_iter()
+            .map(|v| v.unwrap_or(0.0))
+            .collect();
+
+        // When using trend_score (unbounded), convert to rank-equivalent using tanh
+        // When using momentum_rank (0–1), use thresholds directly
+        let is_rank_col = signal_col == "cs_momentum_rank";
+
+        let signals: Vec<f64> = scores
+            .iter()
+            .map(|&s| {
+                if is_rank_col {
+                    if s >= self.long_threshold {
+                        1.0
+                    } else if s <= self.short_threshold {
+                        -1.0
+                    } else {
+                        0.0
+                    }
+                } else {
+                    // trend_score: centered around 0; use thresholds relative to 0
+                    let thresh = self.long_threshold - 0.5; // e.g. 0.75 → 0.25 above center
+                    if s >= thresh {
+                        1.0
+                    } else if s <= -thresh {
+                        -1.0
+                    } else {
+                        0.0
+                    }
+                }
+            })
+            .collect();
+
+        Ok(Series::new("signal", signals))
+    }
+
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation",
+            vec!["CrossSectionalMomentum: long top-ranked assets, short bottom-ranked"; df.height()]))
+    }
+}
+
+impl OptimizableStrategy for CrossSectionalMomentum {
+    fn param_ranges(&self) -> HashMap<String, (f64, f64)> {
+        let mut m = HashMap::new();
+        m.insert("long_threshold".to_string(),  (0.60, 0.90));
+        m.insert("short_threshold".to_string(), (0.10, 0.40));
+        m.insert("use_trend_score".to_string(), (0.0, 1.0));
+        m
+    }
+
+    fn set_params(&mut self, p: &StrategyParams) {
+        self.long_threshold  = p.get("long_threshold",  0.75);
+        self.short_threshold = p.get("short_threshold", 0.25);
+        self.use_trend_score = p.get("use_trend_score", 1.0);
+    }
+}
+
+#[cfg(test)]
+mod cs_momentum_tests {
+    use super::*;
+    use polars::prelude::*;
+
+    fn make_df_with_ranks(ranks: Vec<f64>) -> DataFrame {
+        let n = ranks.len();
+        DataFrame::new(vec![
+            Series::new("cs_momentum_rank".into(), ranks),
+            Series::new("close".into(), vec![100.0f64; n]),
+        ]).unwrap()
+    }
+
+    #[test]
+    fn test_cs_momentum_long_signal() {
+        let df = make_df_with_ranks(vec![0.9, 0.8, 0.5, 0.2, 0.1]);
+        let strat = CrossSectionalMomentum { long_threshold: 0.75, short_threshold: 0.25, use_trend_score: 0.0 };
+        let signals = strat.predict(&df).unwrap();
+        let s: Vec<f64> = signals.f64().unwrap().into_iter().map(|v| v.unwrap()).collect();
+        assert_eq!(s[0], 1.0);  // 0.9 >= 0.75 → long
+        assert_eq!(s[1], 1.0);  // 0.8 >= 0.75 → long
+        assert_eq!(s[2], 0.0);  // 0.5 → flat
+        assert_eq!(s[3], -1.0); // 0.2 <= 0.25 → short
+        assert_eq!(s[4], -1.0); // 0.1 <= 0.25 → short
+    }
+
+    #[test]
+    fn test_cs_momentum_no_features_neutral() {
+        let df = DataFrame::new(vec![Series::new("close".into(), vec![100.0f64; 5])]).unwrap();
+        let strat = CrossSectionalMomentum::default();
+        let signals = strat.predict(&df).unwrap();
+        let s: Vec<f64> = signals.f64().unwrap().into_iter().map(|v| v.unwrap()).collect();
+        assert!(s.iter().all(|&v| v == 0.0), "Should be all neutral without cs features");
+    }
+}
