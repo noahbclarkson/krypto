@@ -30,7 +30,7 @@ use std::collections::HashMap;
 /// Injects the following columns into each asset's DataFrame:
 /// - `cs_momentum_rank` (f64, 0.0–1.0): rank by N-period return (1.0 = strongest momentum)
 /// - `cs_vol_rank` (f64, 0.0–1.0): rank by N-period volatility (1.0 = most volatile)
-/// - `cs_trend_score` (f64, -1.0–1.0): combined momentum minus volatility signal
+/// - `cs_trend_score` (f64, ~-0.65–0.65): combined momentum minus volatility signal
 ///
 /// # Parameters
 /// - `dfs`: map from symbol name to DataFrame (must all have `close` column)
@@ -73,7 +73,7 @@ pub fn compute_cs_features(
 
     // For each asset, determine its length (may differ)
     let lengths: HashMap<&String, usize> = dfs.iter().map(|(s, df)| (s, df.height())).collect();
-    let _max_len = *lengths.values().max().unwrap_or(&0);
+    // Note: max_len is not used since we crop all assets to min_len for fair cross-sectional ranking
 
     // Build rank arrays per asset (indexed at the end of each asset's timeline)
     // Strategy: for each bar position in the longest series, compute cross-sectional ranks

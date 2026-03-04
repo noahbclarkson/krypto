@@ -178,8 +178,8 @@ pub fn compute_cross_sectional_features(
         r_padded.resize(df.height(), 0.5);
         vr_padded.resize(df.height(), 0.5);
 
-        let _ = df.with_column(Series::new("cs_momentum_rank".into(), r_padded));
-        let _ = df.with_column(Series::new("cs_trend_score".into(), vr_padded));
+        df.with_column(Series::new("cs_momentum_rank", r_padded))?;
+        df.with_column(Series::new("cs_trend_score", vr_padded))?;
     }
 
     Ok(())
