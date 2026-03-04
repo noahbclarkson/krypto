@@ -59,7 +59,7 @@ struct FundingCache {
 }
 
 fn cache_path(base_dir: &Path, symbol: &str) -> PathBuf {
-    base_dir.join(format!("funding_{}. bincode", symbol.to_lowercase()))
+    base_dir.join(format!("funding_{}.bincode", symbol.to_lowercase()))
 }
 
 fn load_cache(path: &Path) -> Option<FundingCache> {
@@ -129,8 +129,10 @@ impl FundingRateLoader {
             }
         }
 
-        // Full fetch from inception
-        let records = self.fetch_paginated(symbol, None, None).await?;
+        // Full fetch from inception (Binance perpetuals launched ~Sept 2019)
+        // Start from 2019-09-01 00:00:00 UTC in milliseconds
+        let inception_ms: u64 = 1_567_296_000_000;
+        let records = self.fetch_paginated(symbol, Some(inception_ms), None).await?;
 
         if let Some(ref dir) = self.cache_dir {
             let path = cache_path(dir, symbol);

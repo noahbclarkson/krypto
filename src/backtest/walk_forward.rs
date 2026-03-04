@@ -369,9 +369,9 @@ fn monte_carlo_p_value(
 
     for _ in 0..n {
         shuffled.shuffle(&mut rng);
-        let shuffled_series = Series::new(signals.name().clone(), shuffled.clone())
+        let shuffled_series = Series::new(signals.name(), shuffled.clone())
             .cast(&DataType::Float64)
-            .unwrap_or_else(|_| Series::new(signals.name().clone(), vec![0.0f64; shuffled.len()]));
+            .unwrap_or_else(|_| Series::new(signals.name(), vec![0.0f64; shuffled.len()]));
 
         if let Ok(result) = backtester.run(df, &shuffled_series, trailing_sl, take_profit) {
             if result.sharpe_ratio > real_sharpe {
