@@ -1,137 +1,99 @@
 //! Cross-Sectional Momentum — Walk-Forward Backtest
 //!
-//! Ranks assets by N-period return each bar. Long top performers, short bottom performers.
-//! This is academically documented cross-sectional momentum — less prone to overfitting than
-//! time-series strategies because it's adaptive (signal is always relative, not absolute).
+//! Evaluates the CrossSectionalMomentum strategy across a basket of assets.
+//! Instead of trading an asset based on its own history alone, it compares
+//! performance across BTC, ETH, SOL, DOGE, and XRP, going long the leaders
+//! and short the laggards.
 
 use colored::*;
-use krypto::algo::strategies::{CrossSectionalMomentum, CrossSectionalMeanReversion};
+use krypto::algo::strategies::CrossSectionalMomentum;
 use krypto::backtest::walk_forward::{WalkForwardBacktester, WalkForwardConfig};
-use krypto::data::loader::DataLoader;
-use krypto::features::cross_sectional::compute_cs_features;
+use krypto::data::universe::{compute_cross_sectional_features, Universe};
 use krypto::features::indicators::FeatureEngine;
 use std::collections::HashMap;
 
 const SYMBOLS: &[&str] = &["BTCFDUSD", "ETHFDUSD", "SOLFDUSD", "DOGEFDUSD", "XRPFDUSD"];
-const INTERVALS: &[&str] = &["1h", "4h"];
+const INTERVALS: &[&str] = &["4h", "1h"];
 const LIMIT: u16 = 10_000;
-/// Momentum lookback period (bars). 20 = 20 bars of the given interval.
-const MOMENTUM_PERIODS: &[usize] = &[12, 24, 48, 96]; // 12h, 24h, 48h, 96h (at 1h bars)
+const CS_LOOKBACK: usize = 42; // e.g. 7 days of 4h data
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     println!("{}", "═══ CROSS-SECTIONAL MOMENTUM — WALK-FORWARD ═══".cyan().bold());
-    println!("Ranking {} assets by N-period return, long top/short bottom", SYMBOLS.len());
-    println!();
+    println!("Strategy: CrossSectionalMomentum (long top quartile, short bottom quartile)");
+    println!("Gates: train_sharpe>0.05, pf>1.2, train_trades>20, OOS_trades>10, robustness>0.4\n");
 
-    let loader = DataLoader::new(None, None);
-
-    // Load all data upfront
-    let mut raw_data: HashMap<String, HashMap<String, polars::frame::DataFrame>> = HashMap::new();
+    let universe = Universe::new();
 
     for interval in INTERVALS {
-        let mut interval_data: HashMap<String, polars::frame::DataFrame> = HashMap::new();
-        for sym in SYMBOLS {
-            let df = loader.fetch_data(sym, interval, LIMIT).await?;
-            let df_tech = FeatureEngine::add_technicals(&df, None)?;
-            interval_data.insert(sym.to_string(), df_tech);
+        println!("{}", format!("── {} ──", interval).yellow().bold());
+        
+        println!("  Fetching universe data...");
+        let mut data_map = universe.fetch_universe(SYMBOLS, &[*interval], LIMIT).await?;
+        
+        // Add single-asset technicals (though not strictly needed for this strategy, keeps pipeline standard)
+        for (_, df) in data_map.iter_mut() {
+            *df = FeatureEngine::add_technicals(df, None)?;
         }
-        raw_data.insert(interval.to_string(), interval_data);
-    }
+        
+        // Compute cross-sectional ranks across the basket
+        println!("  Computing cross-sectional features (lookback={})...", CS_LOOKBACK);
+        compute_cross_sectional_features(&mut data_map, CS_LOOKBACK)?;
+        
+        let cfg = match *interval {
+            "1h" => WalkForwardConfig {
+                train_bars: 4000,
+                test_bars: 1500,
+                optimizer_iterations: 150,
+                monte_carlo_n: 100,
+                ..Default::default()
+            },
+            "4h" => WalkForwardConfig {
+                train_bars: 1500,
+                test_bars: 500,
+                optimizer_iterations: 150,
+                monte_carlo_n: 100,
+                ..Default::default()
+            },
+            _ => WalkForwardConfig::default(),
+        };
 
-    let mut any_robust = false;
+        let wf = WalkForwardBacktester::new(cfg);
 
-    for interval in INTERVALS {
-        println!("{}", format!("── Interval: {} ──", interval).yellow().bold());
-        let interval_data = &raw_data[*interval];
-
-        for &mom_period in MOMENTUM_PERIODS {
-            // Compute cross-sectional features across all assets
-            let enriched = match compute_cs_features(interval_data, mom_period) {
-                Ok(e) => e,
-                Err(e) => {
-                    println!("  mom={} ERROR: {}", mom_period, e);
-                    continue;
-                }
-            };
-
-            // Run walk-forward on each asset individually (it reads cs_momentum_rank from the df)
-            let cfg = match *interval {
-                "1h" => WalkForwardConfig {
-                    train_bars: 4000,
-                    test_bars: 1500,
-                    optimizer_iterations: 150,
-                    monte_carlo_n: 200,
-                    ..Default::default()
-                },
-                _ => WalkForwardConfig {
-                    train_bars: 1500,
-                    test_bars: 500,
-                    optimizer_iterations: 150,
-                    monte_carlo_n: 200,
-                    ..Default::default()
-                },
-            };
-
-            // Test both momentum and mean-reversion variants
-            for (strat_name, is_reversion) in &[("Momentum", false), ("MeanReversion", true)] {
-                let mut sym_results = Vec::new();
-                for sym in SYMBOLS {
-                    let df = match enriched.get(*sym) {
-                        Some(d) => d,
-                        None => continue,
-                    };
-                    let wf = WalkForwardBacktester::new(cfg.clone());
-                    let result = if *is_reversion {
-                        let mut strat = CrossSectionalMeanReversion::default();
-                        wf.run(&mut strat, df)
-                    } else {
-                        let mut strat = CrossSectionalMomentum::default();
-                        wf.run(&mut strat, df)
-                    };
-                    if let Ok(r) = result {
-                        sym_results.push((sym.to_string(), r));
+        for symbol in SYMBOLS {
+            let key = format!("{}_{}", symbol, interval);
+            if let Some(df) = data_map.get(&key) {
+                print!("  {symbol} — ");
+                
+                let mut strat = CrossSectionalMomentum::default();
+                match wf.run(&mut strat, df) {
+                    Ok(result) => {
+                        if result.is_robust {
+                            println!(
+                                "{} wins={}/{} OOS_sh={:.3} OOS_ret={:.1}% MC_p={:.3}",
+                                "✅ ROBUST".green().bold(),
+                                result.windows_passed,
+                                result.windows_total,
+                                result.avg_test_sharpe,
+                                result.avg_test_return_pct,
+                                result.avg_monte_carlo_p.unwrap_or(f64::NAN)
+                            );
+                        } else {
+                            println!(
+                                "{} wins={}/{} OOS_sh={:.3} OOS_ret={:.1}%",
+                                "❌ not robust".red(),
+                                result.windows_passed,
+                                result.windows_total,
+                                result.avg_test_sharpe,
+                                result.avg_test_return_pct
+                            );
+                        }
                     }
-                }
-
-                if sym_results.is_empty() { continue; }
-
-                let robust: Vec<_> = sym_results.iter().filter(|(_, r)| r.is_robust).collect();
-                let avg_oos_sharpe = sym_results.iter().map(|(_, r)| r.avg_test_sharpe).sum::<f64>()
-                    / sym_results.len() as f64;
-                let avg_oos_ret = sym_results.iter().map(|(_, r)| r.avg_test_return_pct).sum::<f64>()
-                    / sym_results.len() as f64;
-
-                if robust.is_empty() {
-                    println!(
-                        "  {:<14} mom={:3} — {}/{} robust | avg OOS sh={:.3} ret={:.1}% {}",
-                        strat_name, mom_period, robust.len(), sym_results.len(),
-                        avg_oos_sharpe, avg_oos_ret, "❌".red()
-                    );
-                } else {
-                    any_robust = true;
-                    println!(
-                        "  {:<14} mom={:3} — {}/{} robust | avg OOS sh={:.3} ret={:.1}% {} — {}",
-                        strat_name, mom_period, robust.len(), sym_results.len(),
-                        avg_oos_sharpe, avg_oos_ret, "✅".green().bold(),
-                        robust.iter().map(|(s, _)| s.as_str()).collect::<Vec<_>>().join(", ")
-                    );
-                    for (sym, result) in &robust {
-                        result.print_summary();
-                        println!("  Asset: {} ({} mom={})", sym, strat_name, mom_period);
-                    }
+                    Err(e) => println!("ERROR: {e}"),
                 }
             }
         }
         println!();
-    }
-
-    if !any_robust {
-        println!(
-            "{}",
-            "No cross-sectional momentum configurations passed walk-forward validation.".yellow()
-        );
-        println!("This is a signal about current market regime — CS momentum may be in a drawdown period.");
     }
 
     Ok(())
