@@ -1953,3 +1953,113 @@ mod cs_momentum_tests {
         assert!(s.iter().all(|&v| v == 0.0), "Should be all neutral without cs features");
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STRATEGY 11: Cross-Sectional Mean Reversion
+// -----------------------------------------------------------------------------
+// Inverse of CrossSectionalMomentum. If CS momentum is consistently losing OOS,
+// it implies short-term crypto markets are mean-reverting: the weakest recent
+// performers tend to bounce back, the strongest recent performers tend to cool off.
+//
+// Parameters:
+//   long_threshold (0.0–1.0): go LONG when rank <= this (i.e., recent underperformers)
+//   short_threshold (0.0–1.0): go SHORT when rank >= this (i.e., recent overperformers)
+//   use_trend_score: if 1.0, use cs_trend_score inverted; if 0.0, use raw rank
+// ─────────────────────────────────────────────────────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CrossSectionalMeanReversion {
+    /// Go LONG when cs_momentum_rank <= this (recent underperformers)
+    pub long_threshold: f64,
+    /// Go SHORT when cs_momentum_rank >= this (recent overperformers)
+    pub short_threshold: f64,
+    /// If 1.0, use cs_trend_score inverted
+    pub use_trend_score: f64,
+}
+
+impl CrossSectionalMeanReversion {
+    pub fn new() -> Self {
+        Self {
+            long_threshold: 0.25,
+            short_threshold: 0.75,
+            use_trend_score: 0.0,
+        }
+    }
+}
+
+impl Default for CrossSectionalMeanReversion {
+    fn default() -> Self { Self::new() }
+}
+
+impl SignalGenerator for CrossSectionalMeanReversion {
+    fn name(&self) -> &str { "CS_MeanReversion" }
+    fn train(&mut self, _: &DataFrame, _: &Series) -> Result<()> { Ok(()) }
+
+    fn predict(&self, df: &DataFrame) -> Result<Series> {
+        let signal_col = if self.use_trend_score > 0.5 && df.column("cs_trend_score").is_ok() {
+            "cs_trend_score"
+        } else if df.column("cs_momentum_rank").is_ok() {
+            "cs_momentum_rank"
+        } else {
+            return Ok(Series::new("signal", vec![0.0f64; df.height()]));
+        };
+
+        let scores: Vec<f64> = df
+            .column(signal_col)?
+            .f64()?
+            .into_iter()
+            .map(|v| v.unwrap_or(0.0))
+            .collect();
+
+        let is_rank_col = signal_col == "cs_momentum_rank";
+
+        let signals: Vec<f64> = scores
+            .iter()
+            .map(|&s| {
+                if is_rank_col {
+                    // INVERTED: go long on LOWEST rank (recent underperformers)
+                    if s <= self.long_threshold {
+                        1.0
+                    } else if s >= self.short_threshold {
+                        -1.0
+                    } else {
+                        0.0
+                    }
+                } else {
+                    // trend_score inverted: go long on negative scores
+                    let thresh = self.short_threshold - 0.5;
+                    if s <= -thresh {
+                        1.0
+                    } else if s >= thresh {
+                        -1.0
+                    } else {
+                        0.0
+                    }
+                }
+            })
+            .collect();
+
+        Ok(Series::new("signal", signals))
+    }
+
+    fn explain(&self, df: &DataFrame) -> Result<Series> {
+        Ok(Series::new("explanation",
+            vec!["CS_MeanReversion: long recent underperformers, short recent overperformers"; df.height()]))
+    }
+}
+
+impl OptimizableStrategy for CrossSectionalMeanReversion {
+    fn param_ranges(&self) -> HashMap<String, (f64, f64)> {
+        let mut m = HashMap::new();
+        m.insert("long_threshold".to_string(),  (0.10, 0.40));
+        m.insert("short_threshold".to_string(), (0.60, 0.90));
+        m.insert("use_trend_score".to_string(), (0.0, 1.0));
+        m
+    }
+
+    fn set_params(&mut self, p: &StrategyParams) {
+        self.long_threshold  = p.get("long_threshold",  0.25);
+        self.short_threshold = p.get("short_threshold", 0.75);
+        self.use_trend_score = p.get("use_trend_score", 0.0);
+    }
+}

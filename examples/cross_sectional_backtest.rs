@@ -5,7 +5,7 @@
 //! time-series strategies because it's adaptive (signal is always relative, not absolute).
 
 use colored::*;
-use krypto::algo::strategies::CrossSectionalMomentum;
+use krypto::algo::strategies::{CrossSectionalMomentum, CrossSectionalMeanReversion};
 use krypto::backtest::walk_forward::{WalkForwardBacktester, WalkForwardConfig};
 use krypto::data::loader::DataLoader;
 use krypto::features::cross_sectional::compute_cs_features;
@@ -73,51 +73,53 @@ async fn main() -> anyhow::Result<()> {
                 },
             };
 
-            let mut sym_results = Vec::new();
-            for sym in SYMBOLS {
-                let df = match enriched.get(*sym) {
-                    Some(d) => d,
-                    None => continue,
-                };
-                let wf = WalkForwardBacktester::new(cfg.clone());
-                let mut strat = CrossSectionalMomentum::default();
-                if let Ok(result) = wf.run(&mut strat, df) {
-                    sym_results.push((sym.to_string(), result));
+            // Test both momentum and mean-reversion variants
+            for (strat_name, is_reversion) in &[("Momentum", false), ("MeanReversion", true)] {
+                let mut sym_results = Vec::new();
+                for sym in SYMBOLS {
+                    let df = match enriched.get(*sym) {
+                        Some(d) => d,
+                        None => continue,
+                    };
+                    let wf = WalkForwardBacktester::new(cfg.clone());
+                    let result = if *is_reversion {
+                        let mut strat = CrossSectionalMeanReversion::default();
+                        wf.run(&mut strat, df)
+                    } else {
+                        let mut strat = CrossSectionalMomentum::default();
+                        wf.run(&mut strat, df)
+                    };
+                    if let Ok(r) = result {
+                        sym_results.push((sym.to_string(), r));
+                    }
                 }
-            }
 
-            // Summarize across assets for this momentum period
-            let robust: Vec<_> = sym_results.iter().filter(|(_, r)| r.is_robust).collect();
-            let avg_oos_sharpe = sym_results.iter().map(|(_, r)| r.avg_test_sharpe).sum::<f64>()
-                / sym_results.len() as f64;
-            let avg_oos_ret = sym_results.iter().map(|(_, r)| r.avg_test_return_pct).sum::<f64>()
-                / sym_results.len() as f64;
+                if sym_results.is_empty() { continue; }
 
-            if robust.is_empty() {
-                println!(
-                    "  mom={:3} — {}/{} robust | avg OOS sh={:.3} ret={:.1}% {}",
-                    mom_period,
-                    robust.len(),
-                    sym_results.len(),
-                    avg_oos_sharpe,
-                    avg_oos_ret,
-                    "❌".red()
-                );
-            } else {
-                any_robust = true;
-                println!(
-                    "  mom={:3} — {}/{} robust | avg OOS sh={:.3} ret={:.1}% {} — {}",
-                    mom_period,
-                    robust.len(),
-                    sym_results.len(),
-                    avg_oos_sharpe,
-                    avg_oos_ret,
-                    "✅".green().bold(),
-                    robust.iter().map(|(s, _)| s.as_str()).collect::<Vec<_>>().join(", ")
-                );
-                for (sym, result) in &robust {
-                    result.print_summary();
-                    println!("  Asset: {} (mom={})", sym, mom_period);
+                let robust: Vec<_> = sym_results.iter().filter(|(_, r)| r.is_robust).collect();
+                let avg_oos_sharpe = sym_results.iter().map(|(_, r)| r.avg_test_sharpe).sum::<f64>()
+                    / sym_results.len() as f64;
+                let avg_oos_ret = sym_results.iter().map(|(_, r)| r.avg_test_return_pct).sum::<f64>()
+                    / sym_results.len() as f64;
+
+                if robust.is_empty() {
+                    println!(
+                        "  {:<14} mom={:3} — {}/{} robust | avg OOS sh={:.3} ret={:.1}% {}",
+                        strat_name, mom_period, robust.len(), sym_results.len(),
+                        avg_oos_sharpe, avg_oos_ret, "❌".red()
+                    );
+                } else {
+                    any_robust = true;
+                    println!(
+                        "  {:<14} mom={:3} — {}/{} robust | avg OOS sh={:.3} ret={:.1}% {} — {}",
+                        strat_name, mom_period, robust.len(), sym_results.len(),
+                        avg_oos_sharpe, avg_oos_ret, "✅".green().bold(),
+                        robust.iter().map(|(s, _)| s.as_str()).collect::<Vec<_>>().join(", ")
+                    );
+                    for (sym, result) in &robust {
+                        result.print_summary();
+                        println!("  Asset: {} ({} mom={})", sym, strat_name, mom_period);
+                    }
                 }
             }
         }
