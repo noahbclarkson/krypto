@@ -1,319 +1,219 @@
-//! Binance Perpetual Funding Rate Fetcher
+//! Binance Perpetual Funding Rate Data Loader
 //!
+//! Fetches funding rate history from Binance USDT-M Futures API.
 //! Funding rates are published every 8 hours (00:00, 08:00, 16:00 UTC).
-//! Extreme positive rates → market is overheated long → price tends to revert down.
-//! Extreme negative rates → market is overheated short → price tends to revert up.
-//!
-//! This loader fetches the full funding rate history and can align it to a price DataFrame.
+//! No API key required — this is public data.
 //!
 //! # Example
 //! ```ignore
+//! use krypto::data::funding_rate::FundingRateLoader;
+//!
 //! let loader = FundingRateLoader::new();
-//! let rates = loader.fetch_all("BTCUSDT").await?;
-//! let aligned = loader.align_to_ohlcv(&rates, &price_df, "4h")?;
+//! let df = loader.fetch("BTCUSDT", None, None).await?;
+//! println!("Loaded {} funding rate records", df.height());
 //! ```
 
 use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
 use polars::prelude::*;
-use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use reqwest::Client;
+use serde::Deserialize;
+use std::path::PathBuf;
 
-const BINANCE_FUTURES_BASE: &str = "https://fapi.binance.com";
-const BATCH_SIZE: u32 = 1000;
-const FUNDING_INTERVAL_MS: i64 = 8 * 60 * 60 * 1000; // 8h in ms
-
-// ─── Data types ────────────────────────────────────────────────────────────────
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FundingRateRecord {
-    pub symbol: String,
-    pub funding_time_ms: i64,
-    pub funding_rate: f64,
-    pub mark_price: f64,
-}
-
-impl FundingRateRecord {
-    pub fn funding_time_secs(&self) -> i64 {
-        self.funding_time_ms / 1000
-    }
-}
-
-// ─── Raw Binance response ──────────────────────────────────────────────────────
+const FUNDING_BASE_URL: &str = "https://fapi.binance.com/fapi/v1/fundingRate";
+const PAGE_LIMIT: u64 = 1000;
+/// Funding interval in milliseconds (8 hours).
+pub const FUNDING_INTERVAL_MS: i64 = 8 * 3600 * 1_000;
 
 #[derive(Debug, Deserialize)]
-struct BinanceFundingRate {
+struct RawFundingRate {
     #[serde(rename = "fundingTime")]
-    funding_time: u64,
+    funding_time: i64,
     #[serde(rename = "fundingRate")]
     funding_rate: String,
     #[serde(rename = "markPrice")]
-    mark_price: String,
+    mark_price: Option<String>,
 }
 
-// ─── Cache ─────────────────────────────────────────────────────────────────────
-
-#[derive(Debug, Serialize, Deserialize)]
-struct FundingCache {
-    records: Vec<FundingRateRecord>,
-    fetched_at_ms: i64,
+/// Configuration for caching funding rate data.
+#[derive(Debug, Clone)]
+pub struct FundingCacheConfig {
+    pub dir: String,
+    pub enabled: bool,
 }
 
-fn cache_path(base_dir: &Path, symbol: &str) -> PathBuf {
-    base_dir.join(format!("funding_{}.bincode", symbol.to_lowercase()))
-}
-
-fn load_cache(path: &Path) -> Option<FundingCache> {
-    let data = std::fs::read(path).ok()?;
-    bincode::deserialize(&data).ok()
-}
-
-fn save_cache(path: &Path, cache: &FundingCache) {
-    if let Some(parent) = path.parent() {
-        let _ = std::fs::create_dir_all(parent);
-    }
-    if let Ok(data) = bincode::serialize(cache) {
-        let _ = std::fs::write(path, data);
+impl Default for FundingCacheConfig {
+    fn default() -> Self {
+        Self {
+            dir: "data/funding_cache".to_string(),
+            enabled: true,
+        }
     }
 }
 
-// ─── Loader ────────────────────────────────────────────────────────────────────
-
+/// Loader for Binance perpetual funding rate history.
 pub struct FundingRateLoader {
-    client: reqwest::Client,
-    cache_dir: Option<PathBuf>,
-    /// How old cache can be before a refresh is triggered (ms). Default: 8h.
-    cache_ttl_ms: i64,
+    client: Client,
+    cache: FundingCacheConfig,
 }
 
 impl FundingRateLoader {
     pub fn new() -> Self {
         Self {
-            client: reqwest::Client::new(),
-            cache_dir: None,
-            cache_ttl_ms: FUNDING_INTERVAL_MS,
+            client: Client::new(),
+            cache: FundingCacheConfig::default(),
         }
     }
 
-    pub fn with_cache(cache_dir: impl Into<PathBuf>) -> Self {
+    pub fn with_cache_dir(dir: &str) -> Self {
         Self {
-            client: reqwest::Client::new(),
-            cache_dir: Some(cache_dir.into()),
-            cache_ttl_ms: FUNDING_INTERVAL_MS,
+            client: Client::new(),
+            cache: FundingCacheConfig {
+                dir: dir.to_string(),
+                enabled: true,
+            },
         }
     }
 
-    /// Fetch the complete funding rate history for a symbol.
-    /// Uses pagination to retrieve all records from inception to now.
-    pub async fn fetch_all(&self, symbol: &str) -> Result<Vec<FundingRateRecord>> {
-        // Check cache first
-        if let Some(ref dir) = self.cache_dir {
-            let path = cache_path(dir, symbol);
-            if let Some(cache) = load_cache(&path) {
-                let now_ms = chrono::Utc::now().timestamp_millis();
-                if now_ms - cache.fetched_at_ms < self.cache_ttl_ms {
-                    return Ok(cache.records);
-                }
-                // Cache stale — do an incremental update
-                if !cache.records.is_empty() {
-                    let last_ms = cache.records.last().unwrap().funding_time_ms;
-                    let mut records = cache.records;
-                    let new = self.fetch_since(symbol, last_ms + 1).await?;
-                    records.extend(new);
-                    let updated = FundingCache {
-                        records: records.clone(),
-                        fetched_at_ms: now_ms,
-                    };
-                    save_cache(&path, &updated);
-                    return Ok(records);
-                }
-            }
-        }
-
-        // Full fetch from inception (Binance perpetuals launched ~Sept 2019)
-        // Start from 2019-09-01 00:00:00 UTC in milliseconds
-        let inception_ms: u64 = 1_567_296_000_000;
-        let records = self.fetch_paginated(symbol, Some(inception_ms), None).await?;
-
-        if let Some(ref dir) = self.cache_dir {
-            let path = cache_path(dir, symbol);
-            let cache = FundingCache {
-                records: records.clone(),
-                fetched_at_ms: chrono::Utc::now().timestamp_millis(),
-            };
-            save_cache(&path, &cache);
-        }
-
-        Ok(records)
+    fn cache_path(&self, symbol: &str) -> PathBuf {
+        PathBuf::from(&self.cache.dir).join(format!("{}_funding.parquet", symbol.to_lowercase()))
     }
 
-    /// Fetch funding rates starting from a specific timestamp (ms).
-    async fn fetch_since(&self, symbol: &str, start_ms: i64) -> Result<Vec<FundingRateRecord>> {
-        self.fetch_paginated(symbol, Some(start_ms as u64), None).await
-    }
-
-    /// Paginated fetch: walks forward through time in BATCH_SIZE chunks.
-    async fn fetch_paginated(
+    /// Fetch full funding rate history for a symbol.
+    ///
+    /// Paginates through all available history (Binance allows up to 1000 records per page).
+    /// Results are cached to parquet if caching is enabled.
+    ///
+    /// Returns a DataFrame with columns: `time` (Datetime), `funding_rate` (f64), `mark_price` (f64).
+    pub async fn fetch(
         &self,
         symbol: &str,
-        start_time: Option<u64>,
-        end_time: Option<u64>,
-    ) -> Result<Vec<FundingRateRecord>> {
-        let mut all: Vec<FundingRateRecord> = Vec::new();
-        let mut current_start = start_time;
-
-        loop {
-            let mut url = format!(
-                "{}/fapi/v1/fundingRate?symbol={}&limit={}",
-                BINANCE_FUTURES_BASE, symbol, BATCH_SIZE
-            );
-            if let Some(st) = current_start {
-                url.push_str(&format!("&startTime={}", st));
-            }
-            if let Some(et) = end_time {
-                url.push_str(&format!("&endTime={}", et));
-            }
-
-            let resp = self
-                .client
-                .get(&url)
-                .send()
-                .await
-                .context("Failed to fetch funding rate from Binance")?;
-
-            let batch: Vec<BinanceFundingRate> = resp
-                .json()
-                .await
-                .context("Failed to parse funding rate response")?;
-
-            if batch.is_empty() {
-                break;
-            }
-
-            let last_time = batch.last().unwrap().funding_time;
-            let n = batch.len();
-
-            for r in batch {
-                all.push(FundingRateRecord {
-                    symbol: symbol.to_string(),
-                    funding_time_ms: r.funding_time as i64,
-                    funding_rate: r.funding_rate.parse().unwrap_or(0.0),
-                    mark_price: r.mark_price.parse().unwrap_or(0.0),
-                });
-            }
-
-            if n < BATCH_SIZE as usize {
-                break;
-            }
-
-            // Advance past the last record
-            current_start = Some(last_time + 1);
-
-            // Rate limit: 1 req/s is conservative; Binance allows more
-            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-        }
-
-        Ok(all)
-    }
-
-    /// Align funding rates to an OHLCV DataFrame.
-    ///
-    /// For each bar in the price DataFrame, finds the most recent funding rate at or before
-    /// the bar's timestamp and adds it as a new column `funding_rate`.
-    ///
-    /// Funding rates are 8h — they apply to bars between publication times.
-    pub fn align_to_ohlcv(
-        &self,
-        rates: &[FundingRateRecord],
-        price_df: &DataFrame,
-        _interval: &str,
+        start_time: Option<DateTime<Utc>>,
+        end_time: Option<DateTime<Utc>>,
     ) -> Result<DataFrame> {
-        if rates.is_empty() {
-            anyhow::bail!("No funding rate records to align");
+        let cache_path = self.cache_path(symbol);
+
+        // Try cache first
+        if self.cache.enabled && cache_path.exists() && start_time.is_none() && end_time.is_none() {
+            if let Ok(df) = self.load_cache(&cache_path) {
+                return Ok(df);
+            }
         }
 
-        let time_col = price_df
-            .column("time")
-            .context("price_df must have 'time' column")?
-            .cast(&DataType::Int64)
-            .context("Failed to cast time to i64")?;
+        let df = self.fetch_paginated(symbol, start_time, end_time).await?;
 
-        let bar_times: Vec<i64> = time_col.i64()?.into_iter().flatten().collect();
-        let n = bar_times.len();
-
-        // Build sorted funding time → rate lookup
-        let mut sorted_rates: Vec<(i64, f64)> = rates
-            .iter()
-            .map(|r| (r.funding_time_ms, r.funding_rate))
-            .collect();
-        sorted_rates.sort_by_key(|(t, _)| *t);
-
-        // For each bar, binary search for the most recent funding rate
-        let mut aligned_rates: Vec<f64> = Vec::with_capacity(n);
-        let mut aligned_rate_ma8: Vec<f64> = Vec::with_capacity(n);
-        let mut aligned_rate_z: Vec<f64> = Vec::with_capacity(n);
-
-        for &bar_time_ms in &bar_times {
-            let idx = sorted_rates
-                .partition_point(|(t, _)| *t <= bar_time_ms);
-            let rate = if idx == 0 {
-                0.0
-            } else {
-                sorted_rates[idx - 1].1
-            };
-            aligned_rates.push(rate);
+        // Save to cache
+        if self.cache.enabled && start_time.is_none() && end_time.is_none() {
+            if let Err(e) = self.save_cache(&cache_path, &df) {
+                eprintln!("Warning: failed to cache funding rates: {e}");
+            }
         }
-
-        // Compute 8-period (= 64h on 8h data, 8 periods) moving average of funding rate
-        let window = 8usize;
-        for i in 0..n {
-            let start = if i >= window { i - window + 1 } else { 0 };
-            let slice = &aligned_rates[start..=i];
-            aligned_rate_ma8.push(slice.iter().sum::<f64>() / slice.len() as f64);
-        }
-
-        // Compute z-score of funding rate vs its rolling 30-period mean/std
-        let zscore_window = 30usize;
-        for i in 0..n {
-            let start = if i >= zscore_window { i - zscore_window + 1 } else { 0 };
-            let slice = &aligned_rates[start..=i];
-            let mean = slice.iter().sum::<f64>() / slice.len() as f64;
-            let variance = slice.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / slice.len() as f64;
-            let std = variance.sqrt();
-            let z = if std > f64::EPSILON {
-                (aligned_rates[i] - mean) / std
-            } else {
-                0.0
-            };
-            aligned_rate_z.push(z);
-        }
-
-        // Clone price_df and add new columns
-        let mut df = price_df.clone();
-        df.with_column(Series::new("funding_rate".into(), aligned_rates))?;
-        df.with_column(Series::new("funding_rate_ma8".into(), aligned_rate_ma8))?;
-        df.with_column(Series::new("funding_rate_z".into(), aligned_rate_z))?;
 
         Ok(df)
     }
 
-    /// Compute funding rate statistics for a given slice of records.
-    pub fn compute_stats(rates: &[FundingRateRecord]) -> FundingRateStats {
-        if rates.is_empty() {
-            return FundingRateStats::default();
+    async fn fetch_paginated(
+        &self,
+        symbol: &str,
+        start_time: Option<DateTime<Utc>>,
+        end_time: Option<DateTime<Utc>>,
+    ) -> Result<DataFrame> {
+        let mut all_records: Vec<RawFundingRate> = Vec::new();
+
+        // Default start: 2020-01-01 (earliest reliable Binance perpetual data)
+        let mut current_start = start_time
+            .map(|dt| dt.timestamp_millis())
+            .unwrap_or(1_577_836_800_000i64); // 2020-01-01 UTC
+
+        let end_ms = end_time
+            .map(|dt| dt.timestamp_millis())
+            .unwrap_or(i64::MAX);
+
+        loop {
+            let url = format!(
+                "{}?symbol={}&limit={}&startTime={}",
+                FUNDING_BASE_URL, symbol, PAGE_LIMIT, current_start
+            );
+
+            let resp: Vec<RawFundingRate> = self
+                .client
+                .get(&url)
+                .send()
+                .await
+                .context("Failed to fetch funding rates from Binance")?
+                .json()
+                .await
+                .context("Failed to parse funding rate response")?;
+
+            if resp.is_empty() {
+                break;
+            }
+
+            let last_time = resp.last().unwrap().funding_time;
+            let page_count = resp.len() as u64;
+
+            for r in resp {
+                if r.funding_time <= end_ms {
+                    all_records.push(r);
+                }
+            }
+
+            // Stop if we've reached the end or didn't get a full page
+            if last_time >= end_ms || page_count < PAGE_LIMIT {
+                break;
+            }
+
+            // Advance to next page (funding rates are every 8h)
+            current_start = last_time + FUNDING_INTERVAL_MS;
+
+            // Brief pause to be a good API citizen
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
-        let values: Vec<f64> = rates.iter().map(|r| r.funding_rate).collect();
-        let mean = values.iter().sum::<f64>() / values.len() as f64;
-        let variance = values.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / values.len() as f64;
-        let std = variance.sqrt();
-        let min = values.iter().copied().fold(f64::INFINITY, f64::min);
-        let max = values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
 
-        let mut sorted = values.clone();
-        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-        let p5 = sorted[(sorted.len() as f64 * 0.05) as usize];
-        let p95 = sorted[(sorted.len() as f64 * 0.95) as usize];
+        self.records_to_df(all_records)
+    }
 
-        FundingRateStats { mean, std, min, max, p5, p95, count: values.len() }
+    fn records_to_df(&self, records: Vec<RawFundingRate>) -> Result<DataFrame> {
+        let mut times: Vec<i64> = Vec::with_capacity(records.len());
+        let mut rates: Vec<f64> = Vec::with_capacity(records.len());
+        let mut marks: Vec<f64> = Vec::with_capacity(records.len());
+
+        for r in records {
+            times.push(r.funding_time);
+            rates.push(r.funding_rate.parse::<f64>().unwrap_or(0.0));
+            marks.push(
+                r.mark_price
+                    .as_deref()
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(0.0),
+            );
+        }
+
+        let df = DataFrame::new(vec![
+            Series::new("time".into(), times)
+                .cast(&DataType::Datetime(TimeUnit::Milliseconds, None))?,
+            Series::new("funding_rate".into(), rates),
+            Series::new("mark_price".into(), marks),
+        ])?;
+
+        Ok(df)
+    }
+
+    fn load_cache(&self, path: &PathBuf) -> Result<DataFrame> {
+        use polars::io::parquet::ParquetReader;
+        use std::fs::File;
+        let file = File::open(path)?;
+        let df = ParquetReader::new(file).finish()?;
+        Ok(df)
+    }
+
+    fn save_cache(&self, path: &PathBuf, df: &DataFrame) -> Result<()> {
+        use polars::io::parquet::ParquetWriter;
+        use std::fs::{self, File};
+        fs::create_dir_all(path.parent().unwrap_or(path))?;
+        let file = File::create(path)?;
+        ParquetWriter::new(file).finish(&mut df.clone())?;
+        Ok(())
     }
 }
 
@@ -323,98 +223,172 @@ impl Default for FundingRateLoader {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct FundingRateStats {
-    pub mean: f64,
-    pub std: f64,
-    pub min: f64,
-    pub max: f64,
-    /// 5th percentile (extreme negative)
-    pub p5: f64,
-    /// 95th percentile (extreme positive)
-    pub p95: f64,
-    pub count: usize,
+/// Compute rolling statistics on a funding rate series for use as strategy features.
+///
+/// Returns a DataFrame with the original data plus:
+/// - `funding_rate_z`: z-score of funding rate (using rolling window)
+/// - `funding_rate_ma`: rolling mean
+/// - `funding_rate_std`: rolling std
+/// - `funding_extreme`: 1.0 if top quartile, -1.0 if bottom quartile, 0.0 otherwise
+pub fn compute_funding_features(df: &DataFrame, window: usize) -> Result<DataFrame> {
+    let rates = df.column("funding_rate")?.f64()?;
+    let n = rates.len();
+
+    let mut z_scores = vec![0.0f64; n];
+    let mut rolling_ma = vec![0.0f64; n];
+    let mut rolling_std = vec![0.0f64; n];
+    let mut extremes = vec![0.0f64; n];
+
+    for i in 0..n {
+        if i < window {
+            continue;
+        }
+        let slice: Vec<f64> = (i.saturating_sub(window)..i)
+            .filter_map(|j| rates.get(j))
+            .collect();
+
+        if slice.len() < 2 {
+            continue;
+        }
+
+        let mean = slice.iter().sum::<f64>() / slice.len() as f64;
+        let variance =
+            slice.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (slice.len() - 1) as f64;
+        let std = variance.sqrt();
+
+        rolling_ma[i] = mean;
+        rolling_std[i] = std;
+
+        if std > f64::EPSILON {
+            let current = rates.get(i).unwrap_or(0.0);
+            z_scores[i] = (current - mean) / std;
+
+            // Classify as extreme (using 1-sigma threshold — in crypto, funding is leptokurtic)
+            if z_scores[i] > 1.5 {
+                extremes[i] = 1.0; // Extreme positive: longs paying, fade the longs
+            } else if z_scores[i] < -1.5 {
+                extremes[i] = -1.0; // Extreme negative: shorts paying, fade the shorts
+            }
+        }
+    }
+
+    let mut result = df.clone();
+    result.with_column(Series::new("funding_rate_z".into(), z_scores))?;
+    result.with_column(Series::new("funding_rate_ma".into(), rolling_ma))?;
+    result.with_column(Series::new("funding_rate_std".into(), rolling_std))?;
+    result.with_column(Series::new("funding_extreme".into(), extremes))?;
+
+    Ok(result)
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+/// Align funding rate data to an OHLCV DataFrame's timestamps.
+///
+/// Funding rates are published every 8 hours, but OHLCV data may be 1h or 4h.
+/// This function forward-fills funding rates onto each OHLCV bar's timestamp,
+/// then computes rolling z-score features.
+///
+/// The resulting DataFrame has all original OHLCV columns plus:
+/// - `funding_rate`: most recent funding rate at that bar
+/// - `funding_rate_z`: rolling z-score
+/// - `funding_rate_ma`: rolling mean
+/// - `funding_rate_std`: rolling std
+/// - `funding_extreme`: -1.0, 0.0, or 1.0 classification
+///
+/// # Parameters
+/// - `ohlcv_df`: the OHLCV DataFrame (must have `time` column as Datetime milliseconds)
+/// - `funding_df`: output from `FundingRateLoader::fetch()`
+/// - `z_window`: number of funding periods for rolling z-score (default: 90 = ~30 days)
+pub fn align_to_ohlcv(
+    ohlcv_df: &DataFrame,
+    funding_df: &DataFrame,
+    z_window: usize,
+) -> Result<DataFrame> {
+    // Extract timestamps from both DataFrames
+    let ohlcv_times = ohlcv_df.column("time")?.cast(&DataType::Int64)?;
+    let funding_times = funding_df.column("time")?.cast(&DataType::Int64)?;
+    let funding_rates = funding_df.column("funding_rate")?.f64()?;
+
+    let ohlcv_ts: Vec<i64> = ohlcv_times.i64()?.into_iter().map(|v| v.unwrap_or(0)).collect();
+    let fund_ts: Vec<i64> = funding_times.i64()?.into_iter().map(|v| v.unwrap_or(0)).collect();
+    let fund_rates: Vec<f64> = funding_rates.into_iter().map(|v| v.unwrap_or(0.0)).collect();
+
+    // Forward-fill: for each OHLCV bar, find the most recent funding rate at or before it
+    let mut aligned_rates: Vec<f64> = Vec::with_capacity(ohlcv_ts.len());
+    let mut fund_idx = 0usize;
+
+    for &ots in &ohlcv_ts {
+        // Advance fund_idx to the last funding record <= ohlcv timestamp
+        while fund_idx + 1 < fund_ts.len() && fund_ts[fund_idx + 1] <= ots {
+            fund_idx += 1;
+        }
+        if fund_ts[fund_idx] <= ots {
+            aligned_rates.push(fund_rates[fund_idx]);
+        } else {
+            // Before first funding record — use 0 (neutral)
+            aligned_rates.push(0.0);
+        }
+    }
+
+    // Attach funding_rate column to ohlcv
+    let mut result = ohlcv_df.clone();
+    result.with_column(Series::new("funding_rate".into(), aligned_rates))?;
+
+    // Compute rolling features
+    compute_funding_features(&result, z_window)
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use polars::prelude::*;
 
-    fn make_rates(values: &[f64]) -> Vec<FundingRateRecord> {
-        values
-            .iter()
-            .enumerate()
-            .map(|(i, &r)| FundingRateRecord {
-                symbol: "BTCUSDT".to_string(),
-                funding_time_ms: i as i64 * FUNDING_INTERVAL_MS,
-                funding_rate: r,
-                mark_price: 50_000.0,
-            })
-            .collect()
-    }
-
-    #[test]
-    fn test_compute_stats_basic() {
-        let rates = make_rates(&[0.0001, -0.0001, 0.0002, -0.0002, 0.0001]);
-        let stats = FundingRateLoader::compute_stats(&rates);
-        assert_eq!(stats.count, 5);
-        assert!((stats.mean - 0.00002).abs() < 1e-10);
-        assert!(stats.min < 0.0);
-        assert!(stats.max > 0.0);
-    }
-
-    #[test]
-    fn test_compute_stats_empty() {
-        let stats = FundingRateLoader::compute_stats(&[]);
-        assert_eq!(stats.count, 0);
-    }
-
-    #[test]
-    fn test_align_to_ohlcv_basic() {
-        use polars::prelude::*;
-        use chrono::NaiveDate;
-
-        // Build a minimal price DataFrame with timestamps matching funding rate times
-        let base_ms = 0i64;
-        let bar_times: Vec<i64> = (0..10)
-            .map(|i| base_ms + i * 4 * 60 * 60 * 1000) // 4h bars
+    fn make_funding_df(rates: Vec<f64>) -> DataFrame {
+        let n = rates.len();
+        let times: Vec<i64> = (0..n as i64)
+            .map(|i| 1_577_836_800_000 + i * FUNDING_INTERVAL_MS)
             .collect();
-
-        let df = DataFrame::new(vec![
-            Series::new("time".into(), bar_times.clone())
+        DataFrame::new(vec![
+            Series::new("time".into(), times)
                 .cast(&DataType::Datetime(TimeUnit::Milliseconds, None))
                 .unwrap(),
-            Series::new("close".into(), vec![100.0f64; 10]),
+            Series::new("funding_rate".into(), rates),
+            Series::new("mark_price".into(), vec![50_000.0f64; n]),
         ])
-        .unwrap();
-
-        // Funding rates at t=0 and t=8h
-        let rates = make_rates(&[0.0001, -0.0002]);
-
-        let loader = FundingRateLoader::new();
-        let aligned = loader.align_to_ohlcv(&rates, &df, "4h").unwrap();
-
-        assert!(aligned.column("funding_rate").is_ok());
-        assert!(aligned.column("funding_rate_z").is_ok());
-        assert!(aligned.column("funding_rate_ma8").is_ok());
-
-        let fr = aligned.column("funding_rate").unwrap().f64().unwrap();
-        // First 2 bars (0-4h) should have rate from t=0 (0.0001)
-        assert!((fr.get(0).unwrap() - 0.0001).abs() < 1e-10);
-        // Bar at 8h should have rate from t=8h (-0.0002)
-        assert!((fr.get(2).unwrap() - (-0.0002)).abs() < 1e-10);
+        .unwrap()
     }
 
     #[test]
-    fn test_funding_record_time_conversion() {
-        let r = FundingRateRecord {
-            symbol: "BTCUSDT".to_string(),
-            funding_time_ms: 1_000_000,
-            funding_rate: 0.0001,
-            mark_price: 50_000.0,
-        };
-        assert_eq!(r.funding_time_secs(), 1_000);
+    fn test_funding_features_basic() {
+        let rates = vec![0.0001f64; 30]; // constant rates
+        let df = make_funding_df(rates);
+        let result = compute_funding_features(&df, 10).unwrap();
+        assert!(result.get_column_names().contains(&"funding_rate_z"));
+        assert!(result.get_column_names().contains(&"funding_extreme"));
+    }
+
+    #[test]
+    fn test_funding_features_extreme_positive() {
+        // Use varying baseline so std > 0, then spike the last bar well above 1.5 sigma
+        let mut rates: Vec<f64> = (0..30).map(|i| 0.0001 + (i as f64 % 5.0) * 0.00005).collect();
+        rates[29] = 0.05; // large positive spike
+        let df = make_funding_df(rates);
+        let result = compute_funding_features(&df, 20).unwrap();
+        let extremes = result.column("funding_extreme").unwrap().f64().unwrap();
+        assert_eq!(extremes.get(29).unwrap(), 1.0, "Expected extreme positive at last bar");
+    }
+
+    #[test]
+    fn test_funding_features_extreme_negative() {
+        let mut rates: Vec<f64> = (0..30).map(|i| 0.0001 + (i as f64 % 5.0) * 0.00005).collect();
+        rates[29] = -0.05; // large negative spike
+        let df = make_funding_df(rates);
+        let result = compute_funding_features(&df, 20).unwrap();
+        let extremes = result.column("funding_extreme").unwrap().f64().unwrap();
+        assert_eq!(extremes.get(29).unwrap(), -1.0, "Expected extreme negative at last bar");
+    }
+
+    #[test]
+    fn test_funding_interval_ms() {
+        assert_eq!(FUNDING_INTERVAL_MS, 28_800_000); // 8h in ms
     }
 }
