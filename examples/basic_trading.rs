@@ -1,6 +1,9 @@
-use krypto::algo::ensemble::MetaEnsemble;
+use krypto::algo::ensemble::{MetaEnsemble, VotingEnsemble};
+use krypto::algo::strategies::{BollingerReversion, DynamicTrend, RsiMeanReversion};
+use krypto::algo::SignalGenerator;
 use krypto::data::loader::DataLoader;
 use krypto::features::frac_diff::frac_diff_ffd;
+use krypto::features::indicators::FeatureEngine;
 use krypto::labeling::triple_barrier::apply_triple_barrier;
 use polars::prelude::*;
 
@@ -10,7 +13,10 @@ async fn main() -> anyhow::Result<()> {
     let symbol = "BTCUSDT";
 
     println!("Fetching data for {symbol}...");
-    let df = loader.fetch_data(symbol, "1h", 1000).await?;
+    let mut df = loader.fetch_data(symbol, "1h", 1000).await?;
+
+    println!("Computing technical indicators...");
+    df = FeatureEngine::add_technicals(&df, None)?;
 
     println!("Applying Fractional Differentiation...");
     let close_series = df.column("close")?;
@@ -36,12 +42,31 @@ async fn main() -> anyhow::Result<()> {
 
     let _labels = apply_triple_barrier(&df, &vol_series, 24, (2.0, 1.0))?;
 
-    let ensemble = MetaEnsemble::new();
+    // Build ensemble with multiple orthogonal strategies
+    let mut ensemble = MetaEnsemble::new();
+    ensemble.add_strategy(Box::new(DynamicTrend::default()));
+    ensemble.add_strategy(Box::new(RsiMeanReversion::default()));
+    ensemble.add_strategy(Box::new(BollingerReversion::default()));
 
-    println!("Analyzing current market regime...");
+    println!("Running Meta-Ensemble with 3 orthogonal strategies...");
     let signal = ensemble.generate_signal(&df)?;
 
-    println!("Final Meta-Signal: {signal:.4}");
+    // Also test VotingEnsemble for consensus-based signals
+    let voting = VotingEnsemble::new(
+        vec![
+            Box::new(DynamicTrend::default()),
+            Box::new(RsiMeanReversion::default()),
+            Box::new(BollingerReversion::default()),
+        ],
+        2, // min_agree: need 2 of 3 to agree
+    );
+
+    println!("Running VotingEnsemble (requires 2/3 agreement)...");
+    let vote_series = voting.predict(&df)?;
+    let vote_signal = vote_series.f64()?.last().unwrap_or(0.0);
+
+    println!("Meta-Signal: {signal:.4}");
+    println!("Vote-Signal: {vote_signal:.4}");
 
     if signal > 0.5 {
         println!("ACTION: BUY");
