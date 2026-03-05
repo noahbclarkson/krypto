@@ -326,11 +326,11 @@ mod ensemble_tests {
         let volumes: Vec<f64> = vec![1000.0; n];
         let rsi: Vec<f64> = vec![55.0; n];
         DataFrame::new(vec![
-            Series::new("close".into(), closes),
-            Series::new("volume".into(), volumes),
-            Series::new("rsi".into(), rsi),
-            Series::new("high".into(), vec![105.0f64; n]),
-            Series::new("low".into(), vec![95.0f64; n]),
+            Series::new("close", closes),
+            Series::new("volume", volumes),
+            Series::new("rsi", rsi),
+            Series::new("high", vec![105.0f64; n]),
+            Series::new("low", vec![95.0f64; n]),
         ]).unwrap()
     }
 

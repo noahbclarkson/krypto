@@ -72,8 +72,8 @@ pub fn compute_cs_features(
         .collect();
 
     // For each asset, determine its length (may differ)
-    let lengths: HashMap<&String, usize> = dfs.iter().map(|(s, df)| (s, df.height())).collect();
-    // Note: max_len is not used since we crop all assets to min_len for fair cross-sectional ranking
+    // Note: lengths not used since we crop all assets to min_len for fair cross-sectional ranking
+    let _lengths: HashMap<&String, usize> = dfs.iter().map(|(s, df)| (s, df.height())).collect();
 
     // Build rank arrays per asset (indexed at the end of each asset's timeline)
     // Strategy: for each bar position in the longest series, compute cross-sectional ranks
