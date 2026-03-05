@@ -116,9 +116,10 @@ impl DataLoader {
                 .with_context(|| format!("Failed to create cache directory: {:?}", parent))?;
         }
 
-        df.clone()
-            .lazy()
-            .sink_parquet(path.to_path_buf(), Default::default())
+        let file = std::fs::File::create(path)
+            .with_context(|| format!("Failed to create cache file: {:?}", path))?;
+        ParquetWriter::new(file)
+            .finish(&mut df.clone())
             .context("Failed to write cache file")?;
 
         tracing::info!("Saved {} candles to cache: {:?}", df.height(), path);
