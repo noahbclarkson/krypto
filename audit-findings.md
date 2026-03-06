@@ -45,12 +45,17 @@
 
 **Recommendation:** Upgrade system rustc to 1.93+ (already available via rustup) or pin all ecosystem-heavy dependencies in krypto.
 
-### krypto: Test Warnings (Non-blocking)
-**Status:** DOCUMENTED
-**File:** `src/experiment/runner.rs`
-**Issue:** `clippy::too_many_arguments` - `assert!(result.max_consecutive_losses >= 0)` has 36 arguments
-**Impact:** Low - tests compile and run fine, just verbose.
-**Notes:** The assertion is valid for verifying backtest data quality. Consider refactoring to smaller helper functions in future.
+### krypto: validator.rs - Experimental Module
+**Status:** DOCUMENTED (Technical Debt)
+**File:** `src/backtest/validator.rs`
+**Issue:** Large module with many `todo!()` macros and `#[allow(dead_code)]` attributes.
+**Impact:** Low - This is intentional. The module is clearly marked as experimental with unimplemented methods.
+**Notes:** Contains well-designed API for lower-interval stop validation. The TODOs are for future implementation, not bugs. Methods include:
+- `validate_candle()` - needs implementation
+- `validate_candles()` - needs implementation
+- `check_candle_trigger()` - needs implementation
+- `fetch_lower_interval_data()` - needs implementation
+**Recommendation:** Complete implementation when intra-bar stop validation becomes a priority for live trading.
 
 ### krypto-web: setState-in-effect Anti-pattern (RESOLVED)
 **Status:** FIXED
