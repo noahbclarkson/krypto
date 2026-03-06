@@ -32,5 +32,8 @@ indicatif = "0.17"
 plotters = { version = "0.3.7", default-features = false, features = ["bitmap_backend", "bitmap_encoder", "chrono", "line_series"] }
 bincode = "1.3"
 
+# Pin url to avoid icu_properties requiring rust 1.83+
+url = "=2.5.0"
+
 [target.'cfg(windows)'.dependencies]
 plotters = "0.3.7"
