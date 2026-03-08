@@ -264,6 +264,100 @@ impl DataLoader {
         Ok(df)
     }
 
+    /// Fetch OHLCV data for a specific time range.
+    ///
+    /// Fetches all candles between `start_time_ms` and `end_time_ms` (milliseconds),
+    /// paginating as needed.
+    ///
+    /// # Arguments
+    ///
+    /// * `symbol` - Trading pair (e.g., "BTCUSDT")
+    /// * `interval` - Candle interval (e.g., "5m", "1h")
+    /// * `start_time_ms` - Start of range in Unix milliseconds
+    /// * `end_time_ms` - End of range in Unix milliseconds
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use krypto::data::loader::DataLoader;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> anyhow::Result<()> {
+    ///     let loader = DataLoader::new(None, None);
+    ///     let df = loader.fetch_data_in_range("BTCUSDT", "5m", 1700000000000, 1700003600000).await?;
+    ///     println!("Loaded {} candles in range", df.height());
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn fetch_data_in_range(
+        &self,
+        symbol: &str,
+        interval: &str,
+        start_time_ms: u64,
+        end_time_ms: u64,
+    ) -> Result<DataFrame> {
+        tracing::info!(
+            "Fetching {} {} candles between {} and {} from Binance",
+            symbol, interval, start_time_ms, end_time_ms
+        );
+
+        let mut all_klines = Vec::new();
+        let mut current_start = start_time_ms;
+
+        loop {
+            let resp = self
+                .market
+                .get_klines(symbol, interval, Some(1000), Some(current_start), Some(end_time_ms))
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to fetch range candles for {} @ {} ({}-{})",
+                        symbol, interval, current_start, end_time_ms
+                    )
+                })?;
+
+            let KlineSummaries::AllKlineSummaries(mut batch) = resp;
+            if batch.is_empty() {
+                break;
+            }
+
+            // Advance start for next page
+            let last_open_time = batch.last().map(|k| k.open_time as u64).unwrap_or(end_time_ms);
+            let fetched = batch.len();
+            all_klines.append(&mut batch);
+
+            // If we got fewer than 1000, we've reached the end of the range
+            if fetched < 1000 {
+                break;
+            }
+
+            current_start = last_open_time + 1;
+            if current_start > end_time_ms {
+                break;
+            }
+
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
+
+        if all_klines.is_empty() {
+            anyhow::bail!(
+                "No data returned for {} @ {} in range [{}, {}]",
+                symbol, interval, start_time_ms, end_time_ms
+            );
+        }
+
+        all_klines.sort_by_key(|k| k.open_time);
+        all_klines.dedup_by_key(|k| k.open_time);
+
+        tracing::info!(
+            "Fetched {} candles for {} in range",
+            all_klines.len(), symbol
+        );
+
+        let df = self.klines_to_dataframe(all_klines)?;
+        Ok(df)
+    }
+
     /// Fetch data and cache it locally.
     ///
     /// This will first try to load from cache. If not found or stale,

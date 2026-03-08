@@ -5,9 +5,6 @@
 //! provides validation by fetching lower-interval data (e.g., 5m) to check
 //! intra-bar price action.
 //!
-//! NOTE: This module is experimental and not yet fully implemented.
-//! Methods contain `todo!()` and are marked with `#[allow(dead_code)]`.
-//!
 //! # Problem
 //!
 //! Consider a 1h candle with:
@@ -24,10 +21,38 @@
 //!
 //! Fetch 5m (or other lower-interval) data for the same period and walk through
 //! each candle to determine the exact sequence of price movements.
+//!
+//! # Example
+//!
+//! ```rust,no_run
+//! use krypto::backtest::validator::{LowerIntervalValidator, ValidatorConfig, PositionDirection};
+//! use krypto::data::loader::DataLoader;
+//!
+//! async fn run() -> anyhow::Result<()> {
+//!     let loader = DataLoader::new(None, None);
+//!     let validator = LowerIntervalValidator::with_defaults(loader);
+//!
+//!     let result = validator.validate_candle(
+//!         "BTCUSDT",
+//!         1700000000000, // candle start in ms
+//!         3600_000,      // 1h duration in ms
+//!         PositionDirection::Long,
+//!         Some(95.0),
+//!         None,
+//!     ).await?;
+//!
+//!     if result.triggered {
+//!         println!("Stop hit at {}", result.trigger_price.unwrap());
+//!     }
+//!     Ok(())
+//! }
+//! ```
 
 use anyhow::Result;
-use chrono::{DateTime, Utc};
 use polars::prelude::*;
+
+/// A candle entry for batch validation: (start_ms, duration_ms, direction, stop, take_profit)
+pub type BatchCandle = (i64, u64, PositionDirection, Option<f64>, Option<f64>);
 
 /// Represents a price level that can trigger an exit.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -56,8 +81,8 @@ pub struct ValidationResult {
     pub trigger_level: Option<ExitLevel>,
     /// Exact price at which the exit occurred.
     pub trigger_price: Option<f64>,
-    /// Timestamp when the exit occurred (start of the triggering candle).
-    pub trigger_time: Option<DateTime<Utc>>,
+    /// Timestamp when the exit occurred (ms).
+    pub trigger_time_ms: Option<i64>,
     /// Index of the lower-interval candle that triggered the exit.
     pub trigger_candle_index: Option<usize>,
     /// Whether this was a gap open scenario (price opened beyond the level).
@@ -71,9 +96,27 @@ impl ValidationResult {
             triggered: false,
             trigger_level: None,
             trigger_price: None,
-            trigger_time: None,
+            trigger_time_ms: None,
             trigger_candle_index: None,
             is_gap_open: false,
+        }
+    }
+
+    /// Exit was triggered.
+    fn triggered(
+        level: ExitLevel,
+        price: f64,
+        time_ms: i64,
+        candle_idx: usize,
+        is_gap_open: bool,
+    ) -> Self {
+        Self {
+            triggered: true,
+            trigger_level: Some(level),
+            trigger_price: Some(price),
+            trigger_time_ms: Some(time_ms),
+            trigger_candle_index: Some(candle_idx),
+            is_gap_open,
         }
     }
 }
@@ -83,11 +126,12 @@ impl ValidationResult {
 pub struct ValidatorConfig {
     /// Lower timeframe to use for validation (e.g., "5m", "15m").
     pub lower_interval: String,
+    /// Duration in milliseconds of one lower-interval candle (for time range calculation).
+    pub lower_interval_ms: u64,
     /// Whether to treat gap opens as triggered stops.
-    /// If true, when price opens beyond the stop level, the stop is considered hit.
     pub gap_opens_trigger_stops: bool,
     /// Whether to treat gap opens as triggered take profits.
-    pub gap_opers_trigger_tp: bool,
+    pub gap_opens_trigger_tp: bool,
     /// Maximum number of lower-interval candles to fetch per request.
     pub max_candles_per_fetch: u16,
     /// Behavior when lower-interval data is unavailable.
@@ -98,10 +142,31 @@ impl Default for ValidatorConfig {
     fn default() -> Self {
         Self {
             lower_interval: "5m".to_string(),
+            lower_interval_ms: 5 * 60 * 1000,
             gap_opens_trigger_stops: true,
-            gap_opers_trigger_tp: true,
+            gap_opens_trigger_tp: true,
             max_candles_per_fetch: 1000,
             on_missing_data: MissingDataBehavior::Conservative,
+        }
+    }
+}
+
+impl ValidatorConfig {
+    /// Create a config for 1m lower interval.
+    pub fn one_minute() -> Self {
+        Self {
+            lower_interval: "1m".to_string(),
+            lower_interval_ms: 60 * 1000,
+            ..Default::default()
+        }
+    }
+
+    /// Create a config for 15m lower interval.
+    pub fn fifteen_minute() -> Self {
+        Self {
+            lower_interval: "15m".to_string(),
+            lower_interval_ms: 15 * 60 * 1000,
+            ..Default::default()
         }
     }
 }
@@ -115,50 +180,18 @@ pub enum MissingDataBehavior {
     Optimistic,
     /// Return an error when data is missing.
     Error,
-    /// Skip validation for this candle and log a warning.
+    /// Skip validation for this candle (return no_trigger with a warning log).
     SkipWithWarning,
 }
 
 /// Main validator struct for lower-interval stop validation.
-///
-/// # Example
-///
-/// ```rust,no_run
-/// use krypto::backtest::validator::{LowerIntervalValidator, ValidatorConfig, PositionDirection};
-/// use krypto::data::loader::DataLoader;
-///
-/// async fn example() -> anyhow::Result<()> {
-///     let loader = DataLoader::new(None, None);
-///     let config = ValidatorConfig::default();
-///     let validator = LowerIntervalValidator::new(loader, config);
-///
-///     // Validate a 1h candle with a stop at 95.0
-///     let result = validator.validate_candle(
-///         "BTCUSDT",
-///         1700000000,  // timestamp
-///         PositionDirection::Long,
-///         Some(95.0),  // stop loss
-///         None,        // no take profit
-///     ).await?;
-///
-///     if result.triggered {
-///         println!("Stop hit at {} on {}", 
-///             result.trigger_price.unwrap(),
-///             result.trigger_time.unwrap()
-///         );
-///     }
-///     Ok(())
-/// }
-/// ```
-#[allow(dead_code)]
 pub struct LowerIntervalValidator {
     /// Data loader for fetching lower-interval candles.
     loader: crate::data::DataLoader,
     /// Configuration for validation behavior.
     config: ValidatorConfig,
-    /// Cache of fetched lower-interval data to avoid redundant API calls.
-    /// Key: (symbol, higher_interval_start_time)
-    // TODO: Consider using LRU cache with size limit
+    /// Cache of fetched lower-interval data.
+    /// Key: (symbol, higher_candle_start_ms) → DataFrame of lower-interval candles
     cache: std::collections::HashMap<(String, i64), DataFrame>,
 }
 
@@ -172,7 +205,7 @@ impl LowerIntervalValidator {
         }
     }
 
-    /// Create a validator with default configuration.
+    /// Create a validator with default configuration (5m lower interval).
     pub fn with_defaults(loader: crate::data::DataLoader) -> Self {
         Self::new(loader, ValidatorConfig::default())
     }
@@ -185,143 +218,265 @@ impl LowerIntervalValidator {
     /// # Arguments
     ///
     /// * `symbol` - Trading pair (e.g., "BTCUSDT")
-    /// * `candle_start_time` - Unix timestamp (seconds) of the higher-timeframe candle start
+    /// * `candle_start_ms` - Unix timestamp (ms) of the higher-timeframe candle start
+    /// * `candle_duration_ms` - Duration of the higher candle in ms (e.g., 3600000 for 1h)
     /// * `direction` - Long or short position
     /// * `stop_price` - Stop loss price level (optional)
     /// * `take_profit_price` - Take profit price level (optional)
-    ///
-    /// # Returns
-    ///
-    /// A `ValidationResult` indicating whether and how an exit was triggered.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - Lower-interval data cannot be fetched and `on_missing_data` is `Error`
-    /// - Invalid price levels (e.g., stop above entry for long)
-    ///
-    /// TODO: Implement this method
     pub async fn validate_candle(
         &self,
-        _symbol: &str,
-        _candle_start_time: i64,
-        _direction: PositionDirection,
-        _stop_price: Option<f64>,
-        _take_profit_price: Option<f64>,
+        symbol: &str,
+        candle_start_ms: i64,
+        candle_duration_ms: u64,
+        direction: PositionDirection,
+        stop_price: Option<f64>,
+        take_profit_price: Option<f64>,
     ) -> Result<ValidationResult> {
-        // TODO: Implementation steps:
-        // 1. Calculate the time range for the higher-timeframe candle
-        // 2. Check cache for lower-interval data
-        // 3. If not cached, fetch lower-interval data
-        // 4. Iterate through lower-interval candles in chronological order
-        // 5. For each candle, check if stop or TP was hit
-        // 6. Handle gap open scenarios
-        // 7. Return the first trigger found
-        todo!("Implement validate_candle")
+        if stop_price.is_none() && take_profit_price.is_none() {
+            return Ok(ValidationResult::no_trigger());
+        }
+
+        let start_ms = candle_start_ms as u64;
+        let end_ms = start_ms + candle_duration_ms;
+
+        // Fetch lower-interval data
+        let lower_df = match self.fetch_lower_interval_data(symbol, start_ms, end_ms).await {
+            Ok(df) => df,
+            Err(e) => {
+                return self.handle_missing_data(e, stop_price);
+            }
+        };
+
+        self.scan_for_trigger(&lower_df, direction, stop_price, take_profit_price)
     }
 
     /// Validate multiple candles in batch.
     ///
-    /// This is more efficient than calling `validate_candle` multiple times
-    /// because it can fetch larger chunks of lower-interval data at once.
-    ///
-    /// # Arguments
-    ///
-    /// * `symbol` - Trading pair
-    /// * `candles` - Slice of (start_time, direction, stop_price, tp_price) tuples
-    ///
-    /// # Returns
-    ///
-    /// Vector of `ValidationResult`s in the same order as input candles.
-    ///
-    /// TODO: Implement this method
+    /// More efficient than calling `validate_candle` multiple times because
+    /// it fetches a larger chunk of lower-interval data at once.
     pub async fn validate_candles(
         &self,
-        _symbol: &str,
-        _candles: &[(i64, PositionDirection, Option<f64>, Option<f64>)],
+        symbol: &str,
+        candles: &[BatchCandle],
     ) -> Result<Vec<ValidationResult>> {
-        // TODO: Implementation steps:
-        // 1. Calculate the overall time range needed
-        // 2. Fetch all lower-interval data in one request
-        // 3. Process each candle using the cached data
-        // 4. Return results
-        todo!("Implement validate_candles")
+        if candles.is_empty() {
+            return Ok(vec![]);
+        }
+
+        // Calculate overall time range
+        let overall_start = candles.iter().map(|(t, _, _, _, _)| *t as u64).min().unwrap_or(0);
+        let overall_end = candles
+            .iter()
+            .map(|(t, dur, _, _, _)| *t as u64 + *dur)
+            .max()
+            .unwrap_or(0);
+
+        // Fetch all lower-interval data in one request
+        let lower_df = match self.fetch_lower_interval_data(symbol, overall_start, overall_end).await {
+            Ok(df) => df,
+            Err(e) => {
+                tracing::warn!("Failed to fetch lower interval data for batch: {}", e);
+                // Return conservative/optimistic results for all
+                return Ok(candles
+                    .iter()
+                    .map(|(_, _, _, stop, _)| {
+                        self.handle_missing_data(
+                            anyhow::anyhow!("No data"),
+                            *stop,
+                        )
+                        .unwrap_or_else(|_| ValidationResult::no_trigger())
+                    })
+                    .collect());
+            }
+        };
+
+        // Extract time column
+        let time_col = lower_df.column("time")?.datetime()?;
+
+        let mut results = Vec::with_capacity(candles.len());
+        for (candle_start_ms, candle_dur_ms, direction, stop, tp) in candles {
+            let start_ms = *candle_start_ms;
+            let end_ms = start_ms + *candle_dur_ms as i64;
+
+            // Filter lower_df to this candle's window
+            let mask = time_col
+                .into_iter()
+                .map(|t| t.map(|v| v >= start_ms && v < end_ms).unwrap_or(false))
+                .collect::<BooleanChunked>();
+
+            let candle_df = lower_df.filter(&mask)?;
+
+            if candle_df.is_empty() {
+                results.push(
+                    self.handle_missing_data(anyhow::anyhow!("No lower data for candle"), *stop)
+                        .unwrap_or_else(|_| ValidationResult::no_trigger()),
+                );
+            } else {
+                results.push(self.scan_for_trigger(&candle_df, *direction, *stop, *tp)?);
+            }
+        }
+
+        Ok(results)
+    }
+
+    /// Scan a DataFrame of lower-interval candles for a stop/TP trigger.
+    fn scan_for_trigger(
+        &self,
+        df: &DataFrame,
+        direction: PositionDirection,
+        stop_price: Option<f64>,
+        take_profit_price: Option<f64>,
+    ) -> Result<ValidationResult> {
+        let opens = df.column("open")?.f64()?;
+        let highs = df.column("high")?.f64()?;
+        let lows = df.column("low")?.f64()?;
+        let closes = df.column("close")?.f64()?;
+        let times = df.column("time")?.datetime()?;
+
+        for i in 0..df.height() {
+            let open = opens.get(i).unwrap_or(f64::NAN);
+            let high = highs.get(i).unwrap_or(f64::NAN);
+            let low = lows.get(i).unwrap_or(f64::NAN);
+            let close = closes.get(i).unwrap_or(f64::NAN);
+            let time_ms = times.get(i).unwrap_or(0);
+
+            if open.is_nan() || high.is_nan() || low.is_nan() || close.is_nan() {
+                continue;
+            }
+
+            if let Some((level, price, is_gap)) =
+                self.check_candle_trigger(open, high, low, direction, stop_price, take_profit_price)
+            {
+                return Ok(ValidationResult::triggered(level, price, time_ms, i, is_gap));
+            }
+        }
+
+        Ok(ValidationResult::no_trigger())
     }
 
     /// Check if a single lower-interval candle triggers an exit.
     ///
-    /// This is the core logic that determines if price action within a candle
-    /// would have triggered a stop or take profit.
-    ///
-    /// # Arguments
-    ///
-    /// * `open` - Candle open price
-    /// * `high` - Candle high price
-    /// * `low` - Candle low price
-    /// * `close` - Candle close price
-    /// * `direction` - Position direction (long/short)
-    /// * `stop_price` - Stop loss level
-    /// * `take_profit_price` - Take profit level
-    ///
-    /// # Returns
-    ///
-    /// `Some((ExitLevel, trigger_price))` if triggered, `None` otherwise.
+    /// Returns `Some((ExitLevel, fill_price, is_gap_open))` if triggered.
     ///
     /// # Edge Cases
     ///
-    /// - **Gap open**: If open is beyond stop/TP, check `gap_opens_trigger_stops`/`gap_opers_trigger_tp`
-    /// - **Both hit**: If stop and TP are both within the candle range, assume stop
-    ///   hits first (conservative for backtesting). Future: could use tick data.
-    ///
-    /// TODO: Implement this method
-    #[allow(clippy::too_many_arguments)]
-    #[allow(dead_code)]
+    /// - **Gap open**: If open is beyond stop/TP, fill at open price
+    /// - **Both hit in same candle**: Assume stop hit first (conservative)
     fn check_candle_trigger(
         &self,
         open: f64,
         high: f64,
         low: f64,
-        _close: f64,
         direction: PositionDirection,
         stop_price: Option<f64>,
         take_profit_price: Option<f64>,
     ) -> Option<(ExitLevel, f64, bool)> {
-        // The third element of the tuple is `is_gap_open`
-        //
-        // TODO: Implementation logic:
-        // 1. For longs: stop triggers if low <= stop_price, TP triggers if high >= tp_price
-        // 2. For shorts: stop triggers if high >= stop_price, TP triggers if low <= tp_price
-        // 3. Check gap open first (open beyond the level)
-        // 4. If both could trigger, prefer stop (conservative)
-        // 5. Return (level, estimated_fill_price, is_gap_open)
-        let _ = (open, high, low, direction, stop_price, take_profit_price);
-        todo!("Implement check_candle_trigger")
+        let mut stop_hit: Option<(ExitLevel, f64, bool)> = None;
+        let mut tp_hit: Option<(ExitLevel, f64, bool)> = None;
+
+        match direction {
+            PositionDirection::Long => {
+                // Long: stop triggers when price falls to/below stop, TP when rises to/above TP
+                if let Some(stop) = stop_price {
+                    if low <= stop {
+                        let is_gap = open < stop;
+                        let fill = if is_gap && self.config.gap_opens_trigger_stops {
+                            open // gapped through — fill at open
+                        } else if is_gap {
+                            return None; // gap but not configured to trigger
+                        } else {
+                            stop
+                        };
+                        stop_hit = Some((ExitLevel::StopLoss(stop), fill, is_gap));
+                    }
+                }
+                if let Some(tp) = take_profit_price {
+                    if high >= tp {
+                        let is_gap = open > tp;
+                        let fill = if is_gap && self.config.gap_opens_trigger_tp {
+                            open
+                        } else if is_gap {
+                            return None;
+                        } else {
+                            tp
+                        };
+                        tp_hit = Some((ExitLevel::TakeProfit(tp), fill, is_gap));
+                    }
+                }
+            }
+            PositionDirection::Short => {
+                // Short: stop triggers when price rises to/above stop, TP when falls to/below TP
+                if let Some(stop) = stop_price {
+                    if high >= stop {
+                        let is_gap = open > stop;
+                        let fill = if is_gap && self.config.gap_opens_trigger_stops {
+                            open
+                        } else if is_gap {
+                            return None;
+                        } else {
+                            stop
+                        };
+                        stop_hit = Some((ExitLevel::StopLoss(stop), fill, is_gap));
+                    }
+                }
+                if let Some(tp) = take_profit_price {
+                    if low <= tp {
+                        let is_gap = open < tp;
+                        let fill = if is_gap && self.config.gap_opens_trigger_tp {
+                            open
+                        } else if is_gap {
+                            return None;
+                        } else {
+                            tp
+                        };
+                        tp_hit = Some((ExitLevel::TakeProfit(tp), fill, is_gap));
+                    }
+                }
+            }
+        }
+
+        // If both triggered in same candle, prefer stop (conservative)
+        stop_hit.or(tp_hit)
     }
 
     /// Fetch lower-interval data for a given time range.
-    ///
-    /// # Arguments
-    ///
-    /// * `symbol` - Trading pair
-    /// * `start_time` - Unix timestamp (seconds) of range start
-    /// * `end_time` - Unix timestamp (seconds) of range end
-    ///
-    /// # Returns
-    ///
-    /// DataFrame with lower-interval OHLCV data.
-    ///
-    /// TODO: Implement this method
-    #[allow(dead_code)]
     async fn fetch_lower_interval_data(
         &self,
         symbol: &str,
-        start_time: i64,
-        end_time: i64,
+        start_ms: u64,
+        end_ms: u64,
     ) -> Result<DataFrame> {
-        // TODO: Use self.loader to fetch data
-        // Need to handle Binance API's time-based filtering
-        let _ = (symbol, start_time, end_time);
-        todo!("Implement fetch_lower_interval_data")
+        self.loader
+            .fetch_data_in_range(symbol, &self.config.lower_interval, start_ms, end_ms)
+            .await
+    }
+
+    /// Handle missing data according to configured behavior.
+    fn handle_missing_data(
+        &self,
+        err: anyhow::Error,
+        stop_price: Option<f64>,
+    ) -> Result<ValidationResult> {
+        match self.config.on_missing_data {
+            MissingDataBehavior::Conservative => {
+                // Assume stop was hit
+                tracing::debug!("Missing lower data (conservative): {}", err);
+                let level = stop_price
+                    .map(ExitLevel::StopLoss)
+                    .unwrap_or(ExitLevel::StopLoss(0.0));
+                let price = stop_price.unwrap_or(0.0);
+                Ok(ValidationResult::triggered(level, price, 0, 0, false))
+            }
+            MissingDataBehavior::Optimistic => {
+                tracing::debug!("Missing lower data (optimistic): {}", err);
+                Ok(ValidationResult::no_trigger())
+            }
+            MissingDataBehavior::Error => Err(err),
+            MissingDataBehavior::SkipWithWarning => {
+                tracing::warn!("Missing lower data, skipping candle: {}", err);
+                Ok(ValidationResult::no_trigger())
+            }
+        }
     }
 
     /// Clear the internal cache.
@@ -329,54 +484,18 @@ impl LowerIntervalValidator {
         self.cache.clear();
     }
 
-    /// Get cache statistics (number of entries, estimated size).
-    pub fn cache_stats(&self) -> (usize, Option<usize>) {
-        let entries = self.cache.len();
-        // TODO: Calculate actual memory usage if possible
-        (entries, None)
+    /// Get number of cached entries.
+    pub fn cache_len(&self) -> usize {
+        self.cache.len()
     }
 }
 
 /// Determine which level was hit first when both stop and TP are in range.
 ///
-/// This is inherently ambiguous with OHLCV data alone. We use a conservative
-/// heuristic: assume the stop was hit first (protects capital).
-///
-/// Future improvements could use:
-/// - Tick data for exact sequence
-/// - Statistical models based on typical price paths
-/// - User-configurable bias
-///
-/// TODO: Consider making this configurable in ValidatorConfig
-#[allow(dead_code)]
-fn determine_first_trigger(
-    _open: f64,
-    _high: f64,
-    _low: f64,
-    _direction: PositionDirection,
-    _stop_price: f64,
-    _tp_price: f64,
-) -> ExitLevel {
-    // Conservative default: assume stop hits first
-    ExitLevel::StopLoss(_stop_price)
-}
-
-/// Estimate the fill price for a triggered level.
-///
-/// For a stop loss, we typically get a worse fill than the stop price
-/// due to slippage. This function estimates that fill.
-///
-/// TODO: Integrate with the slippage model from the main Backtester
-#[allow(dead_code)]
-fn estimate_fill_price(
-    trigger_level: ExitLevel,
-    _candle_data: (f64, f64, f64, f64), // (open, high, low, close)
-    _slippage_bps: f64,
-) -> f64 {
-    match trigger_level {
-        ExitLevel::StopLoss(price) => price,
-        ExitLevel::TakeProfit(price) => price,
-    }
+/// Conservative default: assume stop hits first (protects capital).
+/// Future: use tick data or statistical models for better accuracy.
+pub fn determine_first_trigger(stop_price: f64, _tp_price: f64) -> ExitLevel {
+    ExitLevel::StopLoss(stop_price)
 }
 
 #[cfg(test)]
@@ -399,9 +518,145 @@ mod tests {
         assert_eq!(config.on_missing_data, MissingDataBehavior::Conservative);
     }
 
-    // TODO: Add integration tests with mock data
-    // - Test gap open scenario
-    // - Test stop and TP both in range
-    // - Test missing data handling
-    // - Test long vs short direction
+    #[test]
+    fn test_validator_config_variants() {
+        let c1m = ValidatorConfig::one_minute();
+        assert_eq!(c1m.lower_interval, "1m");
+        assert_eq!(c1m.lower_interval_ms, 60_000);
+
+        let c15m = ValidatorConfig::fifteen_minute();
+        assert_eq!(c15m.lower_interval, "15m");
+        assert_eq!(c15m.lower_interval_ms, 15 * 60 * 1000);
+    }
+
+    /// Test the core candle trigger logic without any network calls.
+    #[test]
+    fn test_check_candle_trigger_long_stop_hit() {
+        use crate::data::loader::DataLoader;
+        let loader = DataLoader::new(None, None);
+        let validator = LowerIntervalValidator::with_defaults(loader);
+
+        // Long position, stop at 95, candle dips to 90
+        let result = validator.check_candle_trigger(
+            100.0, 105.0, 90.0,
+            PositionDirection::Long,
+            Some(95.0), None,
+        );
+        assert!(result.is_some());
+        let (level, fill, is_gap) = result.unwrap();
+        assert_eq!(level, ExitLevel::StopLoss(95.0));
+        assert_eq!(fill, 95.0);
+        assert!(!is_gap);
+    }
+
+    #[test]
+    fn test_check_candle_trigger_long_tp_hit() {
+        use crate::data::loader::DataLoader;
+        let loader = DataLoader::new(None, None);
+        let validator = LowerIntervalValidator::with_defaults(loader);
+
+        // Long, TP at 110, candle reaches 115
+        let result = validator.check_candle_trigger(
+            100.0, 115.0, 98.0,
+            PositionDirection::Long,
+            None, Some(110.0),
+        );
+        assert!(result.is_some());
+        let (level, fill, _is_gap) = result.unwrap();
+        assert_eq!(level, ExitLevel::TakeProfit(110.0));
+        assert_eq!(fill, 110.0);
+    }
+
+    #[test]
+    fn test_check_candle_trigger_long_no_hit() {
+        use crate::data::loader::DataLoader;
+        let loader = DataLoader::new(None, None);
+        let validator = LowerIntervalValidator::with_defaults(loader);
+
+        // Long, stop at 90, TP at 115, candle stays 100-105
+        let result = validator.check_candle_trigger(
+            100.0, 105.0, 98.0,
+            PositionDirection::Long,
+            Some(90.0), Some(115.0),
+        );
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_check_candle_trigger_long_both_hit_prefers_stop() {
+        use crate::data::loader::DataLoader;
+        let loader = DataLoader::new(None, None);
+        let validator = LowerIntervalValidator::with_defaults(loader);
+
+        // Both in range — stop should win (conservative)
+        let result = validator.check_candle_trigger(
+            100.0, 120.0, 85.0,
+            PositionDirection::Long,
+            Some(90.0), Some(115.0),
+        );
+        assert!(result.is_some());
+        let (level, _, _) = result.unwrap();
+        assert!(matches!(level, ExitLevel::StopLoss(_)));
+    }
+
+    #[test]
+    fn test_check_candle_trigger_long_gap_open() {
+        use crate::data::loader::DataLoader;
+        let loader = DataLoader::new(None, None);
+        let validator = LowerIntervalValidator::with_defaults(loader);
+
+        // Gap down: open below stop (85 < 90 stop), so fills at open
+        let result = validator.check_candle_trigger(
+            85.0, 88.0, 82.0,
+            PositionDirection::Long,
+            Some(90.0), None,
+        );
+        assert!(result.is_some());
+        let (level, fill, is_gap) = result.unwrap();
+        assert_eq!(level, ExitLevel::StopLoss(90.0));
+        assert_eq!(fill, 85.0); // fills at open, not stop
+        assert!(is_gap);
+    }
+
+    #[test]
+    fn test_check_candle_trigger_short_stop_hit() {
+        use crate::data::loader::DataLoader;
+        let loader = DataLoader::new(None, None);
+        let validator = LowerIntervalValidator::with_defaults(loader);
+
+        // Short, stop at 110, candle reaches 115
+        let result = validator.check_candle_trigger(
+            100.0, 115.0, 95.0,
+            PositionDirection::Short,
+            Some(110.0), None,
+        );
+        assert!(result.is_some());
+        let (level, fill, _) = result.unwrap();
+        assert_eq!(level, ExitLevel::StopLoss(110.0));
+        assert_eq!(fill, 110.0);
+    }
+
+    #[test]
+    fn test_check_candle_trigger_short_tp_hit() {
+        use crate::data::loader::DataLoader;
+        let loader = DataLoader::new(None, None);
+        let validator = LowerIntervalValidator::with_defaults(loader);
+
+        // Short, TP at 85, candle dips to 80
+        let result = validator.check_candle_trigger(
+            100.0, 102.0, 80.0,
+            PositionDirection::Short,
+            None, Some(85.0),
+        );
+        assert!(result.is_some());
+        let (level, fill, _) = result.unwrap();
+        assert_eq!(level, ExitLevel::TakeProfit(85.0));
+        assert_eq!(fill, 85.0);
+    }
+
+    #[test]
+    fn test_determine_first_trigger() {
+        let result = determine_first_trigger(90.0, 115.0);
+        assert!(matches!(result, ExitLevel::StopLoss(p) if p == 90.0));
+    }
 }
