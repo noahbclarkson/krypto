@@ -318,6 +318,9 @@ pub struct SplitResult {
 
     /// Test period range (start, end) as bar indices
     pub test_range: (usize, usize),
+
+    /// Test period equity curve (mark-to-market equity at each bar)
+    pub equity_curve: Option<Vec<f64>>,
 }
 
 /// Backtest metrics snapshot.

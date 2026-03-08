@@ -832,6 +832,7 @@ impl ExperimentRunner {
                 test_metrics: BacktestMetrics::from(test.clone()),
                 train_range: info.train_range,
                 test_range: info.test_range,
+                equity_curve: Some(test.equity_curve.clone()),
             })
             .collect();
 
@@ -871,16 +872,31 @@ impl ExperimentRunner {
 
         // Save equity curve if requested
         if self.config.output.save_equity_curve {
-            let curve_path = self.output_dir.join("equity_curve.csv");
-            // TODO: Save actual equity curve
-            std::fs::write(&curve_path, "equity\n")?;
+            // Find the best split's equity curve
+            if let Some(best_split) = summary.split_results.iter().find(|s| {
+                summary.best.sharpe_ratio > 0.0 &&
+                (s.test_metrics.sharpe_ratio - summary.best.sharpe_ratio).abs() < 0.001
+            }) {
+                if let Some(curve) = &best_split.equity_curve {
+                    let curve_path = self.output_dir.join("equity_curve.csv");
+                    let mut csv = String::from("bar,equity\n");
+                    for (i, eq) in curve.iter().enumerate() {
+                        csv.push_str(&format!("{},{}\n", i, eq));
+                    }
+                    let bytes = csv.len() as u64;
+                    std::fs::write(&curve_path, &csv)?;
 
-            self.manifest.add_output(OutputFile {
-                file_type: OutputFileType::EquityCurve,
-                path: PathBuf::from("equity_curve.csv"),
-                size_bytes: 7,
-                description: "Equity curve over time".to_string(),
-            });
+                    self.manifest.add_output(OutputFile {
+                        file_type: OutputFileType::EquityCurve,
+                        path: PathBuf::from("equity_curve.csv"),
+                        size_bytes: bytes,
+                        description: format!(
+                            "Equity curve for {} (split {})",
+                            best_split.symbol, best_split.split_index
+                        ),
+                    });
+                }
+            }
         }
 
         // Save config snapshot
