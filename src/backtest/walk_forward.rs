@@ -619,6 +619,7 @@ mod tests {
             avg_loss_pct: -1.0,
             largest_win_pct: 5.0,
             largest_loss_pct: -2.0,
+            trades: vec![],
         };
 
         let w = WindowResult {

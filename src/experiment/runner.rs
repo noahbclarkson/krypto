@@ -1352,6 +1352,7 @@ mod tests {
             avg_loss_pct: 1.0,
             largest_win_pct: 3.5,
             largest_loss_pct: 1.5,
+            trades: vec![],
         };
 
         // Convert to BacktestMetrics
