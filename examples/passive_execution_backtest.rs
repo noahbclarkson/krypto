@@ -16,25 +16,14 @@ use krypto::{
     data::loader::DataLoader,
     features::indicators::FeatureEngine,
 };
-use polars::prelude::*;
 use std::time::Instant;
 
 const FDUSD_PAIRS: &[&str] = &["BTCFDUSD", "ETHFDUSD", "SOLFDUSD"];
 const INTERVALS: &[&str] = &["1h", "4h"];
-const CANDLES: u16 = 1500;
+// Candle counts chosen so 1m data (candles * 60 or 240) fits in u16 (max 65535)
+const CANDLES_1H: u16 = 500;   // 500 * 60 = 30,000 1m candles
+const CANDLES_4H: u16 = 200;   // 200 * 240 = 48,000 1m candles
 const CAPITAL: f64 = 10_000.0;
-
-#[derive(Debug, Clone)]
-struct RunResult {
-    strategy: String,
-    symbol: String,
-    interval: String,
-    market_ret: f64,
-    passive_ret: f64,
-    improve: f64,
-    fill_rate: f64,
-    ticks: f64,
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -44,23 +33,31 @@ async fn main() -> Result<()> {
 
     let loader = DataLoader::new(None, None);
     let backtester = Backtester::with_defaults(CAPITAL);
-    let mut results: Vec<RunResult> = Vec::new();
+    let mut results: Vec<(&str, &str, &str, f64, f64, f64, f64, f64)> = Vec::new();
 
-    // Pre-fetch tick sizes from API (globally cached — one call per process)
-    println!("\n{}", "Phase 0: Tick sizes from Binance API (cached)...".bright_green());
+    // Pre-fetch tick sizes from API (globally cached)
+    println!("\n{}", "Tick sizes from Binance API (cached)...".bright_green());
     for symbol in FDUSD_PAIRS {
         let tick = TickSize::fetch(symbol).await?;
         println!("  {} = {}", symbol, tick.value());
     }
 
-    println!("\n{}", "Phase 1: Fetching OHLCV + 1m data...".bright_green());
+    println!("\n{}", "Fetching OHLCV + 1m data...".bright_green());
 
     for symbol in FDUSD_PAIRS {
         for interval in INTERVALS {
-            print!("  {} {} ... ", symbol, interval);
+            let (candles_h, mins_per_bar) = if *interval == "1h" {
+                (CANDLES_1H, 60u32)
+            } else {
+                (CANDLES_4H, 240u32)
+            };
+            let candles_1m = (candles_h as u32 * mins_per_bar) as u16;
+
+            print!("  {} {} ({} {} bars, {} 1m bars)... ",
+                symbol, interval, candles_h, interval, candles_1m);
             let t = Instant::now();
 
-            let df_high = match loader.fetch_data(symbol, interval, CANDLES).await {
+            let df_high = match loader.fetch_data(symbol, interval, candles_h).await {
                 Ok(df) => match FeatureEngine::add_technicals(&df, None) {
                     Ok(df) => df,
                     Err(e) => { println!("{} technicals: {}", "✗".red(), e); continue; }
@@ -68,8 +65,7 @@ async fn main() -> Result<()> {
                 Err(e) => { println!("{} {}", "✗".red(), e); continue; }
             };
 
-            let mins: u32 = if *interval == "1h" { 60 } else { 240 };
-            let df_low = match loader.fetch_data(symbol, "1m", (CANDLES as u32 * mins) as u16).await {
+            let df_low = match loader.fetch_data(symbol, "1m", candles_1m).await {
                 Ok(df) => df,
                 Err(e) => { println!("{} 1m: {}", "✗".red(), e); continue; }
             };
@@ -90,12 +86,14 @@ async fn main() -> Result<()> {
                     Err(_) => continue,
                 };
 
+                // Market execution backtest
                 let market = match backtester.run(&df_high, &signals, 0.05, 0.0) {
                     Ok(r) => r,
                     Err(_) => continue,
                 };
                 if market.total_trades == 0 { continue; }
 
+                // Passive execution
                 let config = PassiveConfig {
                     ticks_below_open: 3,
                     tick_size: TickSize::from_value(tick),
@@ -110,26 +108,27 @@ async fn main() -> Result<()> {
                     Err(_) => continue,
                 };
 
+                // Passive backtest
                 let passive = match backtester.run(&df_high, &passive_sigs, 0.05, 0.0) {
                     Ok(r) => r,
                     Err(_) => continue,
                 };
 
-                results.push(RunResult {
-                    strategy: name.to_string(),
-                    symbol: symbol.to_string(),
-                    interval: interval.to_string(),
-                    market_ret: market.total_return_pct,
-                    passive_ret: passive.total_return_pct,
-                    improve: passive.total_return_pct - market.total_return_pct,
-                    fill_rate: stats.fill_rate,
-                    ticks: stats.avg_price_improvement_ticks,
-                });
+                results.push((
+                    name,
+                    symbol,
+                    interval,
+                    market.total_return_pct,
+                    passive.total_return_pct,
+                    passive.total_return_pct - market.total_return_pct,
+                    stats.fill_rate,
+                    stats.avg_price_improvement_ticks,
+                ));
             }
         }
     }
 
-    results.sort_by(|a, b| b.improve.partial_cmp(&a.improve).unwrap());
+    results.sort_by(|a, b| b.5.partial_cmp(&a.5).unwrap());
 
     println!("\n{}", "━".repeat(100).bright_cyan());
     println!("{}", "  Market vs Passive Execution".bright_cyan().bold());
@@ -138,20 +137,19 @@ async fn main() -> Result<()> {
         "Strategy", "Symbol", "Int", "Market%", "Passive%", "Improve%", "Fill%", "Ticks");
     println!("{}", "─".repeat(100));
 
-    for r in &results {
-        let imp = if r.improve > 0.0 {
-            format!("{:>8.1}%", r.improve).green().to_string()
+    for (name, sym, int, mkt, pas, imp, fill, ticks) in &results {
+        let imp_str = if *imp > 0.0 {
+            format!("{:>8.1}%", imp).green().to_string()
         } else {
-            format!("{:>8.1}%", r.improve).red().to_string()
+            format!("{:>8.1}%", imp).red().to_string()
         };
         println!("  {:<18} {:<12} {:<5} {:>8.1}% {:>8.1}% {} {:>5.0}% {:>6.1}",
-            r.strategy, r.symbol, r.interval, r.market_ret, r.passive_ret, imp,
-            r.fill_rate * 100.0, r.ticks);
+            name, sym, int, mkt, pas, imp_str, fill * 100.0, ticks);
     }
 
-    let improved = results.iter().filter(|r| r.improve > 0.0).count();
-    let avg_imp = results.iter().map(|r| r.improve).sum::<f64>() / results.len().max(1) as f64;
-    let avg_fill = results.iter().map(|r| r.fill_rate).sum::<f64>() / results.len().max(1) as f64;
+    let improved = results.iter().filter(|r| r.5 > 0.0).count();
+    let avg_imp = results.iter().map(|r| r.5).sum::<f64>() / results.len().max(1) as f64;
+    let avg_fill = results.iter().map(|r| r.6).sum::<f64>() / results.len().max(1) as f64;
 
     println!("\n  Improved: {}/{} | Avg improvement: {:.1}% | Avg fill rate: {:.0}%",
         improved, results.len(), avg_imp, avg_fill * 100.0);
@@ -166,7 +164,7 @@ async fn main() -> Result<()> {
     - 1m data     → parquet files alongside 1h (60x more data)
 
   Bottlenecks:
-    - 1m parquet files are large (1500 1h bars = 90,000 1m bars)
+    - 1m parquet files are large (500 1h bars = 30,000 1m bars)
     - Strategy features recomputed on each run (not cached)
     - No incremental update — full fetch if candle count changes
 
