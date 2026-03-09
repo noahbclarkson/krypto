@@ -12,7 +12,7 @@
 //! 4. If not filled: move to next 1m candle, update limit to new `open - N_ticks`
 //! 5. Repeat until filled (almost 100% fill rate since most candles dip below open)
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
