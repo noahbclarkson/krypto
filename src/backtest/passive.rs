@@ -15,29 +15,48 @@
 use anyhow::{anyhow, Result};
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
+use tokio::sync::RwLock;
 
-/// Tick size configuration - fetched from Binance API
+/// Global cache for tick sizes (symbol -> tick size)
+static TICK_SIZE_CACHE: OnceLock<RwLock<std::collections::HashMap<String, f64>>> = OnceLock::new();
+
+fn get_tick_cache() -> &'static RwLock<std::collections::HashMap<String, f64>> {
+    TICK_SIZE_CACHE.get_or_init(|| RwLock::new(std::collections::HashMap::new()))
+}
+
+/// Tick size configuration - fetched from Binance API with caching
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TickSize(f64);
 
 impl TickSize {
-    /// Fetch tick size from Binance futures API.
+    /// Fetch tick size from Binance futures API (cached).
+    /// First call fetches all tick sizes, subsequent calls use cache.
     pub async fn fetch(symbol: &str) -> Result<Self> {
+        // Check cache first
+        let cache = get_tick_cache().read().await;
+        if let Some(&tick) = cache.get(symbol) {
+            return Ok(Self(tick));
+        }
+        drop(cache);
+        
+        // Not in cache, fetch from API
         let url = "https://fapi.binance.com/fapi/v1/exchangeInfo";
         let resp = reqwest::get(url).await?;
         let text = resp.text().await?;
         let info: serde_json::Value = serde_json::from_str(&text)?;
         
+        // Parse ALL tick sizes and cache them
+        let mut cache = get_tick_cache().write().await;
         if let Some(symbols) = info.get("symbols").and_then(|s| s.as_array()) {
             for sym_info in symbols {
-                if sym_info.get("symbol").and_then(|s| s.as_str()) == Some(symbol) {
+                if let Some(sym_name) = sym_info.get("symbol").and_then(|s| s.as_str()) {
                     if let Some(filters) = sym_info.get("filters").and_then(|f| f.as_array()) {
                         for filter in filters {
                             if filter.get("filterType").and_then(|t| t.as_str()) == Some("PRICE_FILTER") {
                                 if let Some(tick_str) = filter.get("tickSize").and_then(|t| t.as_str()) {
                                     if let Ok(tick) = tick_str.parse::<f64>() {
-                                        tracing::info!("Fetched tick size for {}: {}", symbol, tick);
-                                        return Ok(Self(tick));
+                                        cache.insert(sym_name.to_string(), tick);
                                     }
                                 }
                             }
@@ -47,10 +66,15 @@ impl TickSize {
             }
         }
         
-        // Fallback to hardcoded if API fails
-        let tick = Self::fallback(symbol);
-        tracing::warn!("Using fallback tick size for {}: {}", symbol, tick);
-        Ok(Self(tick))
+        // Now return the requested symbol
+        if let Some(&tick) = cache.get(symbol) {
+            tracing::info!("Cached tick size for {}: {}", symbol, tick);
+            Ok(Self(tick))
+        } else {
+            let tick = Self::fallback(symbol);
+            tracing::warn!("Using fallback tick size for {}: {}", symbol, tick);
+            Ok(Self(tick))
+        }
     }
     
     /// Fallback tick sizes if API is unavailable
@@ -343,6 +367,19 @@ impl PassiveExecutor {
             }
         }
         Series::new("signal".into(), signals)
+    }
+    
+    /// Run passive execution and return both signals and stats.
+    /// Convenience method for wiring into backtest workflows.
+    pub async fn process_signals(
+        &self,
+        df_high: &DataFrame,
+        df_low: &DataFrame,
+        signals: &Series,
+    ) -> Result<(Series, PassiveFillStats)> {
+        let (fills, stats) = self.simulate(df_high, df_low, signals).await?;
+        let filtered_signals = self.fills_to_signals(&fills, df_high.height());
+        Ok((filtered_signals, stats))
     }
 }
 
