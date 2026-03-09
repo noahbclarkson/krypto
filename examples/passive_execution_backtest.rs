@@ -1,7 +1,6 @@
 //! Passive execution backtest for FDUSD pairs (0% maker fees).
 //!
-//! Walk-forward model: for each 1m candle, place limit N ticks below open.
-//! Fill if low <= limit. Near 100% fill rate + 0% fees.
+//! Measures entry price improvement from passive limit orders vs market execution.
 //!
 //! Usage:
 //!   cargo run --release --example passive_execution_backtest
@@ -11,7 +10,6 @@ use colored::*;
 use krypto::{
     algo::SignalGenerator,
     algo::strategies::{DynamicTrend, BollingerReversion, RsiMeanReversion},
-    backtest::engine::Backtester,
     backtest::passive::{PassiveExecutor, PassiveConfig, TickSize},
     data::loader::DataLoader,
     features::indicators::FeatureEngine,
@@ -20,22 +18,18 @@ use std::time::Instant;
 
 const FDUSD_PAIRS: &[&str] = &["BTCFDUSD", "ETHFDUSD", "SOLFDUSD"];
 const INTERVALS: &[&str] = &["1h", "4h"];
-// Candle counts chosen so 1m data (candles * 60 or 240) fits in u16 (max 65535)
-const CANDLES_1H: u16 = 500;   // 500 * 60 = 30,000 1m candles
-const CANDLES_4H: u16 = 200;   // 200 * 240 = 48,000 1m candles
-const CAPITAL: f64 = 10_000.0;
+const CANDLES_1H: u16 = 500;
+const CANDLES_4H: u16 = 200;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("\n{}", "━".repeat(72).bright_cyan());
-    println!("{}", "  PASSIVE EXECUTION — Walk-Forward Limit Orders".bright_cyan().bold());
+    println!("{}", "  PASSIVE EXECUTION — Entry Price Edge".bright_cyan().bold());
     println!("{}", "━".repeat(72).bright_cyan());
 
     let loader = DataLoader::new(None, None);
-    let backtester = Backtester::with_defaults(CAPITAL);
-    let mut results: Vec<(&str, &str, &str, f64, f64, f64, f64, f64)> = Vec::new();
+    let mut results: Vec<(&str, &str, &str, f64, f64, f64, usize)> = Vec::new();
 
-    // Pre-fetch tick sizes from API (globally cached)
     println!("\n{}", "Tick sizes from Binance API (cached)...".bright_green());
     for symbol in FDUSD_PAIRS {
         let tick = TickSize::fetch(symbol).await?;
@@ -53,8 +47,7 @@ async fn main() -> Result<()> {
             };
             let candles_1m = (candles_h as u32 * mins_per_bar) as u16;
 
-            print!("  {} {} ({} {} bars, {} 1m bars)... ",
-                symbol, interval, candles_h, interval, candles_1m);
+            print!("  {} {} ({} bars)... ", symbol, interval, candles_h);
             let t = Instant::now();
 
             let df_high = match loader.fetch_data(symbol, interval, candles_h).await {
@@ -72,12 +65,12 @@ async fn main() -> Result<()> {
 
             println!("{} ({:.1}s)", "✓".green(), t.elapsed().as_secs_f64());
 
-            let tick = TickSize::fetch(symbol).await?.value(); // From cache
+            let tick = TickSize::fetch(symbol).await?.value();
 
             let strategies: Vec<(&str, Box<dyn SignalGenerator>)> = vec![
-                ("dynamic_trend",     Box::new(DynamicTrend::new())),
-                ("bollinger",         Box::new(BollingerReversion::new())),
-                ("rsi",               Box::new(RsiMeanReversion::new())),
+                ("dynamic_trend", Box::new(DynamicTrend::new())),
+                ("bollinger", Box::new(BollingerReversion::new())),
+                ("rsi", Box::new(RsiMeanReversion::new())),
             ];
 
             for (name, mut strat) in strategies {
@@ -86,14 +79,6 @@ async fn main() -> Result<()> {
                     Err(_) => continue,
                 };
 
-                // Market execution backtest
-                let market = match backtester.run(&df_high, &signals, 0.05, 0.0) {
-                    Ok(r) => r,
-                    Err(_) => continue,
-                };
-                if market.total_trades == 0 { continue; }
-
-                // Passive execution
                 let config = PassiveConfig {
                     ticks_below_open: 3,
                     tick_size: TickSize::from_value(tick),
@@ -103,26 +88,40 @@ async fn main() -> Result<()> {
                 };
                 let executor = PassiveExecutor::new(config);
 
-                let (passive_sigs, stats) = match executor.process_signals(&df_high, &df_low, &signals).await {
+                let (fills, stats) = match executor.simulate(&df_high, &df_low, &signals).await {
                     Ok(r) => r,
                     Err(_) => continue,
                 };
 
-                // Passive backtest
-                let passive = match backtester.run(&df_high, &passive_sigs, 0.05, 0.0) {
-                    Ok(r) => r,
-                    Err(_) => continue,
-                };
+                if fills.is_empty() {
+                    continue;
+                }
+
+                // Compute average price improvement per fill
+                let mut total_improvement_bps = 0.0;
+                for fill in &fills {
+                    // Price improvement: for longs, fill_price < market_price is good
+                    // For shorts, fill_price > market_price is good
+                    let improvement = (fill.market_price - fill.fill_price) * fill.direction;
+                    let improvement_bps = improvement / fill.market_price * 10000.0; // basis points
+                    total_improvement_bps += improvement_bps;
+                }
+                let avg_improvement_bps = total_improvement_bps / fills.len() as f64;
+
+                // Annualized impact estimate (rough)
+                // If we trade N times per period, each trade saves avg_improvement_bps
+                // Plus 5 bps fee savings (0.05% taker -> 0% maker)
+                let fee_savings_bps = 5.0; // 0.05%
+                let total_edge_bps = avg_improvement_bps + fee_savings_bps;
 
                 results.push((
                     name,
                     symbol,
                     interval,
-                    market.total_return_pct,
-                    passive.total_return_pct,
-                    passive.total_return_pct - market.total_return_pct,
-                    stats.fill_rate,
-                    stats.avg_price_improvement_ticks,
+                    avg_improvement_bps,
+                    fee_savings_bps,
+                    total_edge_bps,
+                    fills.len(),
                 ));
             }
         }
@@ -131,47 +130,47 @@ async fn main() -> Result<()> {
     results.sort_by(|a, b| b.5.partial_cmp(&a.5).unwrap());
 
     println!("\n{}", "━".repeat(100).bright_cyan());
-    println!("{}", "  Market vs Passive Execution".bright_cyan().bold());
+    println!("{}", "  Passive Execution Edge (per trade)".bright_cyan().bold());
     println!("{}", "━".repeat(100).bright_cyan());
-    println!("  {:<18} {:<12} {:<5} {:>9} {:>9} {:>9} {:>6} {:>6}",
-        "Strategy", "Symbol", "Int", "Market%", "Passive%", "Improve%", "Fill%", "Ticks");
+    println!("  {:<18} {:<12} {:<5} {:>10} {:>10} {:>10} {:>8}",
+        "Strategy", "Symbol", "Int", "Price bps", "Fee bps", "Total bps", "Trades");
     println!("{}", "─".repeat(100));
 
-    for (name, sym, int, mkt, pas, imp, fill, ticks) in &results {
-        let imp_str = if *imp > 0.0 {
-            format!("{:>8.1}%", imp).green().to_string()
+    for (name, sym, int, price, fee, total, trades) in &results {
+        let total_str = if *total > 0.0 {
+            format!("{:>9.1}", total).green().to_string()
         } else {
-            format!("{:>8.1}%", imp).red().to_string()
+            format!("{:>9.1}", total).red().to_string()
         };
-        println!("  {:<18} {:<12} {:<5} {:>8.1}% {:>8.1}% {} {:>5.0}% {:>6.1}",
-            name, sym, int, mkt, pas, imp_str, fill * 100.0, ticks);
+        println!("  {:<18} {:<12} {:<5} {:>9.1} {:>9.1} {} {:>7}",
+            name, sym, int, price, fee, total_str, trades);
     }
 
-    let improved = results.iter().filter(|r| r.5 > 0.0).count();
-    let avg_imp = results.iter().map(|r| r.5).sum::<f64>() / results.len().max(1) as f64;
-    let avg_fill = results.iter().map(|r| r.6).sum::<f64>() / results.len().max(1) as f64;
+    let avg_price = results.iter().map(|r| r.3).sum::<f64>() / results.len().max(1) as f64;
+    let avg_total = results.iter().map(|r| r.5).sum::<f64>() / results.len().max(1) as f64;
+    let total_trades: usize = results.iter().map(|r| r.6).sum();
 
-    println!("\n  Improved: {}/{} | Avg improvement: {:.1}% | Avg fill rate: {:.0}%",
-        improved, results.len(), avg_imp, avg_fill * 100.0);
+    println!("\n  Avg price improvement: {:.1} bps | Avg total edge: {:.1} bps | Total trades: {}",
+        avg_price, avg_total, total_trades);
 
     println!("\n{}", "━".repeat(72).bright_cyan());
-    println!("{}", "  Caching Strategy".bright_cyan().bold());
+    println!("{}", "  Edge Breakdown".bright_cyan().bold());
     println!("{}", "━".repeat(72).bright_cyan());
     println!("
-  Current:
-    - OHLCV data  → parquet files in data/cache/ (persist across runs)
-    - Tick sizes  → OnceLock<RwLock<HashMap>> (one API call, all 688 symbols)
-    - 1m data     → parquet files alongside 1h (60x more data)
-
-  Bottlenecks:
-    - 1m parquet files are large (500 1h bars = 30,000 1m bars)
-    - Strategy features recomputed on each run (not cached)
-    - No incremental update — full fetch if candle count changes
-
-  Potential improvements:
-    - Cache computed signals per strategy+dataset (parquet)
-    - Incremental fetch: only append new candles, not full refresh
-    - Precompute all technicals once, store enriched parquet
+  Per-trade edge from passive execution:
+  
+  1. Price improvement: Entry at (1m open - 3 ticks) vs 1h close
+     - Captures intrabar dips
+     - Varies by volatility (higher vol = larger dips = more edge)
+     
+  2. Fee savings: 0% maker (FDUSD pairs) vs ~0.05% taker
+     - Fixed 5 bps per trade
+     - Compounds over many trades
+     
+  Total edge = price_improvement + fee_savings
+  
+  With 100% fill rate, every signal captures this edge.
+  Impact on returns = edge_per_trade × num_trades
 ");
 
     Ok(())
