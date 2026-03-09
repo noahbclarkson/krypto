@@ -195,8 +195,8 @@ mod tests {
     fn make_df(closes: Vec<f64>) -> DataFrame {
         let n = closes.len();
         DataFrame::new(vec![
-            Series::new("close".into(), closes),
-            Series::new("volume".into(), vec![1000.0f64; n]),
+            Series::new("close", closes),
+            Series::new("volume", vec![1000.0f64; n]),
         ])
         .unwrap()
     }

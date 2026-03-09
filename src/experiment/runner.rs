@@ -1319,8 +1319,7 @@ mod tests {
         // Verify V3 metrics are present
         assert!(result.sortino_ratio.is_finite() || result.sortino_ratio == 0.0);
         assert!(result.calmar_ratio.is_finite() || result.calmar_ratio == 0.0);
-        assert!(result.max_consecutive_wins >= 0);
-        assert!(result.max_consecutive_losses >= 0);
+        // max_consecutive_wins and max_consecutive_losses are u32, always >= 0
 
         println!("Single backtest: {} trades, {:.2}% return, equity ${:.2}",
                  result.total_trades, result.total_return_pct, result.final_equity);
