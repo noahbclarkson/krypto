@@ -396,7 +396,7 @@ impl PassiveExecutor {
                 signals[fill.signal_bar] = fill.direction;
             }
         }
-        Series::new("signal".into(), signals)
+        Series::new("signal", signals)
     }
     
     /// Run passive execution and return both signals and stats.
