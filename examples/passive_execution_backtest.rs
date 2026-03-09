@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
     println!("{}", "━".repeat(72).bright_cyan());
 
     let loader = DataLoader::new(None, None);
-    let mut results: Vec<(&str, &str, &str, f64, f64, f64, usize)> = Vec::new();
+    let mut results: Vec<(&str, &str, &str, f64, f64, f64, f64, usize)> = Vec::new();
 
     println!("\n{}", "Tick sizes from Binance API (cached)...".bright_green());
     for symbol in FDUSD_PAIRS {
@@ -85,6 +85,7 @@ async fn main() -> Result<()> {
                     max_wait_bars: 240,
                     maker_fee: 0.0,
                     update_threshold_ticks: Some(5),
+                    anchor_to_signal: true, // Anchor to signal price, not 1m open
                 };
                 let executor = PassiveExecutor::new(config);
 
@@ -121,6 +122,7 @@ async fn main() -> Result<()> {
                     avg_improvement_bps,
                     fee_savings_bps,
                     total_edge_bps,
+                    stats.fill_rate,
                     fills.len(),
                 ));
             }
@@ -132,23 +134,23 @@ async fn main() -> Result<()> {
     println!("\n{}", "━".repeat(100).bright_cyan());
     println!("{}", "  Passive Execution Edge (per trade)".bright_cyan().bold());
     println!("{}", "━".repeat(100).bright_cyan());
-    println!("  {:<18} {:<12} {:<5} {:>10} {:>10} {:>10} {:>8}",
-        "Strategy", "Symbol", "Int", "Price bps", "Fee bps", "Total bps", "Trades");
+    println!("  {:<18} {:<12} {:<5} {:>10} {:>10} {:>10} {:>8} {:>8}",
+        "Strategy", "Symbol", "Int", "Price bps", "Fee bps", "Total bps", "Fill%", "Trades");
     println!("{}", "─".repeat(100));
 
-    for (name, sym, int, price, fee, total, trades) in &results {
+    for (name, sym, int, price, fee, total, fill, trades) in &results {
         let total_str = if *total > 0.0 {
             format!("{:>9.1}", total).green().to_string()
         } else {
             format!("{:>9.1}", total).red().to_string()
         };
-        println!("  {:<18} {:<12} {:<5} {:>9.1} {:>9.1} {} {:>7}",
-            name, sym, int, price, fee, total_str, trades);
+        println!("  {:<18} {:<12} {:<5} {:>9.1} {:>9.1} {} {:>7.0}% {:>7}",
+            name, sym, int, price, fee, total_str, fill * 100.0, trades);
     }
 
     let avg_price = results.iter().map(|r| r.3).sum::<f64>() / results.len().max(1) as f64;
     let avg_total = results.iter().map(|r| r.5).sum::<f64>() / results.len().max(1) as f64;
-    let total_trades: usize = results.iter().map(|r| r.6).sum();
+    let total_trades: usize = results.iter().map(|r| r.7).sum();
 
     println!("\n  Avg price improvement: {:.1} bps | Avg total edge: {:.1} bps | Total trades: {}",
         avg_price, avg_total, total_trades);

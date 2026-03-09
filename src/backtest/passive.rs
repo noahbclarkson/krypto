@@ -113,6 +113,9 @@ pub struct PassiveConfig {
     pub maker_fee: f64,
     /// If set, only update limit when price moves X ticks above current limit.
     pub update_threshold_ticks: Option<u32>,
+    /// If true, anchor limit to signal price (1h close) instead of each 1m open.
+    /// This eliminates gap direction bias but may have lower fill rates.
+    pub anchor_to_signal: bool,
 }
 
 impl Default for PassiveConfig {
@@ -123,6 +126,7 @@ impl Default for PassiveConfig {
             max_wait_bars: 60,
             maker_fee: 0.0,
             update_threshold_ticks: None,
+            anchor_to_signal: true, // Default to signal-anchored to avoid gap bias
         }
     }
 }
@@ -241,6 +245,17 @@ impl PassiveExecutor {
             let mut bars_checked = 0;
             let mut current_limit: Option<f64> = None;
 
+            // If anchoring to signal price, calculate limit once
+            let signal_limit = if self.config.anchor_to_signal {
+                Some(if direction > 0.0 {
+                    market_price - offset
+                } else {
+                    market_price + offset
+                })
+            } else {
+                None
+            };
+
             for j in 0..df_low.height() {
                 let low_time = low_times.get(j).unwrap_or(0);
                 if low_time < bar_start {
@@ -264,27 +279,37 @@ impl PassiveExecutor {
                 }
 
                 // Calculate limit price for this candle
-                let limit_price = if direction > 0.0 {
-                    open - offset
+                let limit_price = if let Some(sl) = signal_limit {
+                    // Anchored to signal price - use same limit throughout
+                    sl
                 } else {
-                    open + offset
-                };
-
-                // Check if we should update the limit
-                let should_update = match (current_limit, self.config.update_threshold_ticks) {
-                    (None, _) => true,
-                    (Some(_), None) => true,
-                    (Some(prev_limit), Some(threshold)) => {
-                        let threshold_value = threshold as f64 * tick;
-                        if direction > 0.0 {
-                            open > prev_limit + threshold_value
-                        } else {
-                            open < prev_limit - threshold_value
-                        }
+                    // Walk-forward: update limit based on current 1m open
+                    if direction > 0.0 {
+                        open - offset
+                    } else {
+                        open + offset
                     }
                 };
 
-                if should_update {
+                // Check if we should update the limit (only for walk-forward mode)
+                if signal_limit.is_none() {
+                    let should_update = match (current_limit, self.config.update_threshold_ticks) {
+                        (None, _) => true,
+                        (Some(_), None) => true,
+                        (Some(prev_limit), Some(threshold)) => {
+                            let threshold_value = threshold as f64 * tick;
+                            if direction > 0.0 {
+                                open > prev_limit + threshold_value
+                            } else {
+                                open < prev_limit - threshold_value
+                            }
+                        }
+                    };
+
+                    if should_update {
+                        current_limit = Some(limit_price);
+                    }
+                } else {
                     current_limit = Some(limit_price);
                 }
 
@@ -475,6 +500,7 @@ mod tests {
             max_wait_bars: 60,
             maker_fee: 0.0,
             update_threshold_ticks: None,
+            anchor_to_signal: false,
         };
         let executor = PassiveExecutor::new(config);
         let (fills, stats) = executor.simulate(&df_high, &df_low, &signals).await.unwrap();
@@ -495,6 +521,7 @@ mod tests {
             max_wait_bars: 60,
             maker_fee: 0.0,
             update_threshold_ticks: None,
+            anchor_to_signal: false,
         };
         let executor = PassiveExecutor::new(config);
         let (fills, stats) = executor.simulate(&df_high, &df_low, &signals).await.unwrap();
