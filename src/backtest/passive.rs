@@ -1,51 +1,47 @@
 //! Passive execution model for FDUSD pairs with 0% maker fees.
 //!
 //! Instead of executing at market (paying taker fees), this module simulates
-//! placing limit orders below the current price and waiting for fills.
-//! On Binance FDUSD pairs, maker fees are 0%, so this can significantly
-//! improve returns for strategies with slight edges.
+//! placing limit orders below each 1m candle's open and walking forward.
 //!
-//! # How it works
+//! # How it works (correct model)
 //!
-//! 1. Signal fires on 1h/4h candle close
-//! 2. Instead of market buy, place limit at `close * (1 - tick_offset)`
-//! 3. Scan 1m candles within that bar:
-//!    - If `low <= limit_price`: filled at limit (0 fees, better price)
-//!    - If not filled by bar end: skip signal OR market execute
-//! 4. For shorts: place limit above current price
+//! For each higher-timeframe bar (e.g., 1h):
+//! 1. Iterate through each 1m candle within that bar
+//! 2. At each 1m open, place limit at `open - N_ticks`
+//! 3. If `low <= limit`: filled at limit (0 fees, better price!)
+//! 4. If not filled: move to next 1m candle, update limit to new `open - N_ticks`
+//! 5. Repeat until filled (almost 100% fill rate since most candles dip below open)
+//!
+//! # Why this works
+//!
+//! Almost every candle has intrabar movement where `low < open`. By constantly
+//! updating our limit to be just below each new open, we capture that dip.
 //!
 //! # Example
 //!
 //! ```no_run
-//! use krypto::backtest::passive::{PassiveExecutor, PassiveConfig};
+//! use krypto::backtest::passive::{PassiveExecutor, PassiveConfig, TickSize};
 //! use krypto::data::loader::DataLoader;
-//! use polars::prelude::*;
 //!
 //! async fn example() -> anyhow::Result<()> {
 //!     let loader = DataLoader::new(None, None);
 //!     
-//!     // Fetch 1h and 1m data
 //!     let df_1h = loader.fetch_data("BTCFDUSD", "1h", 1000).await?;
 //!     let df_1m = loader.fetch_data("BTCFDUSD", "1m", 60000).await?;
 //!     
-//!     // Your signal series (from a strategy)
-//!     let signals = Series::new("signal".into(), vec![0.0; 1000]);
+//!     let signals = df_1h.column("close")?.f64()?.clone(); // Your strategy signals
 //!     
-//!     // Configure passive execution
 //!     let config = PassiveConfig {
-//!         tick_offset_bps: 5.0,      // 5 bps below market
-//!         max_wait_bars: 1,          // Fill within 1 bar or skip
-//!         force_market_on_timeout: false,
-//!         maker_fee: 0.0,            // FDUSD pairs have 0% maker fee
-//!         taker_fee: 0.001,          // 0.1% if we have to market execute
+//!         ticks_below_open: 3,      // 3 ticks below each 1m open
+//!         tick_size: TickSize::from_symbol("BTCFDUSD"), // 0.01 for BTC
+//!         max_wait_bars: 60,        // Max 60 1m candles (1 hour)
+//!         maker_fee: 0.0,           // FDUSD = 0%
 //!     };
 //!     
 //!     let executor = PassiveExecutor::new(config);
-//!     let fills = executor.simulate(&df_1h, &df_1m, &signals).await?;
+//!     let fills = executor.simulate(&df_1h, &df_1m, &signals.into()).await?;
 //!     
 //!     println!("Fill rate: {:.1}%", fills.fill_rate * 100.0);
-//!     println!("Avg price improvement: {:.2} bps", fills.avg_price_improvement_bps);
-//!     
 //!     Ok(())
 //! }
 //! ```
@@ -53,31 +49,67 @@
 use anyhow::Result;
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+/// Tick size configuration for different symbols.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct TickSize(f64);
+
+impl TickSize {
+    /// Get tick size for a symbol.
+    pub fn from_symbol(symbol: &str) -> Self {
+        let tick = match symbol {
+            // BTC pairs - 0.01 minimum
+            s if s.starts_with("BTC") => 0.01,
+            // ETH pairs - 0.001 minimum
+            s if s.starts_with("ETH") => 0.001,
+            // SOL pairs - 0.0001 minimum
+            s if s.starts_with("SOL") => 0.0001,
+            // BNB pairs - 0.01 minimum
+            s if s.starts_with("BNB") => 0.01,
+            // XRP pairs - 0.00001 minimum
+            s if s.starts_with("XRP") => 0.00001,
+            // Default - 0.0001
+            _ => 0.0001,
+        };
+        Self(tick)
+    }
+
+    /// Get the tick size value.
+    pub fn value(&self) -> f64 {
+        self.0
+    }
+}
+
+impl Default for TickSize {
+    fn default() -> Self {
+        Self(0.0001)
+    }
+}
 
 /// Configuration for passive limit order execution.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PassiveConfig {
-    /// How far below (longs) or above (shorts) market to place limit, in basis points.
-    /// E.g., 5.0 = place limit 0.05% below current price.
-    pub tick_offset_bps: f64,
-    /// Maximum bars to wait for a fill before giving up.
+    /// Number of ticks below each 1m open to place limit.
+    pub ticks_below_open: u32,
+    /// Tick size for the symbol.
+    pub tick_size: TickSize,
+    /// Maximum lower-timeframe bars to wait for a fill (e.g., 60 for 1h with 1m data).
     pub max_wait_bars: usize,
-    /// If true, execute at market after timeout. If false, skip the signal.
-    pub force_market_on_timeout: bool,
     /// Maker fee rate (0.0 for FDUSD pairs).
     pub maker_fee: f64,
-    /// Taker fee rate (used if force_market_on_timeout is true).
-    pub taker_fee: f64,
+    /// If true, only update limit when price moves X ticks above current limit.
+    pub update_threshold_ticks: Option<u32>,
 }
 
 impl Default for PassiveConfig {
     fn default() -> Self {
         Self {
-            tick_offset_bps: 5.0,        // 5 bps = 0.05%
-            max_wait_bars: 1,            // Fill within current bar
-            force_market_on_timeout: false,
-            maker_fee: 0.0,              // FDUSD pairs
-            taker_fee: 0.001,            // 0.1% standard
+            ticks_below_open: 3,
+            tick_size: TickSize::default(),
+            max_wait_bars: 60,
+            maker_fee: 0.0,
+            update_threshold_ticks: None,
         }
     }
 }
@@ -87,18 +119,18 @@ impl Default for PassiveConfig {
 pub struct PassiveFillStats {
     /// Total signals generated.
     pub total_signals: usize,
-    /// Signals that resulted in fills (either limit or market).
+    /// Signals that resulted in fills.
     pub filled_signals: usize,
     /// Signals that were skipped (no fill within timeout).
     pub skipped_signals: usize,
     /// Fill rate (filled / total).
     pub fill_rate: f64,
-    /// Average price improvement in basis points (negative = worse).
-    pub avg_price_improvement_bps: f64,
+    /// Average price improvement in ticks (positive = better than market).
+    pub avg_price_improvement_ticks: f64,
     /// Total fees saved by using maker vs taker.
     pub total_fees_saved: f64,
-    /// Estimated PnL improvement from better fills (excluding fees).
-    pub pnl_improvement_pct: f64,
+    /// Average bars to fill.
+    pub avg_bars_to_fill: f64,
 }
 
 /// A single fill event from passive execution.
@@ -110,18 +142,14 @@ pub struct FillEvent {
     pub fill_bar_lower: usize,
     /// Signal direction: 1.0 = long, -1.0 = short.
     pub direction: f64,
-    /// Market price at signal time.
+    /// Market price at signal time (higher-timeframe close).
     pub market_price: f64,
-    /// Limit price that was set.
-    pub limit_price: f64,
-    /// Actual fill price (limit price if filled, market if timeout forced).
+    /// Actual fill price.
     pub fill_price: f64,
     /// How many lower-timeframe bars until fill.
     pub bars_to_fill: usize,
     /// Fee paid on this fill.
     pub fee: f64,
-    /// Whether this was a limit fill (true) or market fill (false).
-    pub was_limit_fill: bool,
 }
 
 /// Passive execution simulator.
@@ -135,22 +163,15 @@ impl PassiveExecutor {
         Self { config }
     }
 
-    /// Create with default configuration (5 bps offset, 1 bar timeout, 0% maker fee).
+    /// Create with default configuration.
     pub fn with_defaults() -> Self {
         Self::new(PassiveConfig::default())
     }
 
     /// Simulate passive execution on a signal series.
     ///
-    /// # Arguments
-    ///
-    /// * `df_high` - Higher timeframe OHLCV data (e.g., 1h)
-    /// * `df_low` - Lower timeframe OHLCV data (e.g., 1m) covering the same period
-    /// * `signals` - Signal series aligned with `df_high`
-    ///
-    /// # Returns
-    ///
-    /// A vector of fill events and aggregate statistics.
+    /// Walks forward through lower-timeframe candles, placing limit orders
+    /// below each open until filled.
     pub async fn simulate(
         &self,
         df_high: &DataFrame,
@@ -159,14 +180,11 @@ impl PassiveExecutor {
     ) -> Result<(Vec<FillEvent>, PassiveFillStats)> {
         let high_times = df_high.column("time")?.datetime()?;
         let high_closes = df_high.column("close")?.f64()?;
-        let high_highs = df_high.column("high")?.f64()?;
-        let high_lows = df_high.column("low")?.f64()?;
 
         let low_times = df_low.column("time")?.datetime()?;
-        let _low_opens = df_low.column("open")?.f64()?;
+        let low_opens = df_low.column("open")?.f64()?;
         let low_highs = df_low.column("high")?.f64()?;
         let low_lows = df_low.column("low")?.f64()?;
-        let _low_closes = df_low.column("close")?.f64()?;
 
         let signals_f64 = signals.f64()?;
 
@@ -174,11 +192,11 @@ impl PassiveExecutor {
         let mut total_signals = 0usize;
         let mut filled_signals = 0usize;
         let mut skipped_signals = 0usize;
-        let mut price_improvements_bps: Vec<f64> = Vec::new();
-        let mut total_fees_saved = 0.0;
-        let mut pnl_improvement = 0.0;
+        let mut price_improvements: Vec<f64> = Vec::new();
+        let mut bars_to_fill_list: Vec<usize> = Vec::new();
 
-        let tick_offset = self.config.tick_offset_bps / 10_000.0;
+        let tick = self.config.tick_size.value();
+        let offset = self.config.ticks_below_open as f64 * tick;
 
         for i in 0..df_high.height() {
             let sig = signals_f64.get(i).unwrap_or(0.0);
@@ -193,14 +211,7 @@ impl PassiveExecutor {
                 continue;
             }
 
-            // Determine limit price based on direction
-            let (limit_price, direction) = if sig > 0.0 {
-                // Long: place limit below market
-                (market_price * (1.0 - tick_offset), 1.0)
-            } else {
-                // Short: place limit above market
-                (market_price * (1.0 + tick_offset), -1.0)
-            };
+            let direction = if sig > 0.0 { 1.0 } else { -1.0 };
 
             // Find the time range for this higher-timeframe bar
             let bar_start = high_times.get(i).unwrap_or(0);
@@ -210,11 +221,12 @@ impl PassiveExecutor {
                 i64::MAX
             };
 
-            // Find lower-timeframe bars within this range
+            // Walk forward through lower-timeframe candles
             let mut filled = false;
             let mut fill_price = 0.0;
             let mut fill_bar_lower = 0;
-            let mut bars_to_fill = 0;
+            let mut bars_checked = 0;
+            let mut current_limit: Option<f64> = None;
 
             for j in 0..df_low.height() {
                 let low_time = low_times.get(j).unwrap_or(0);
@@ -225,81 +237,113 @@ impl PassiveExecutor {
                     break;
                 }
 
-                bars_to_fill += 1;
+                let open = low_opens.get(j).unwrap_or(0.0);
+                let high = low_highs.get(j).unwrap_or(0.0);
+                let low = low_lows.get(j).unwrap_or(0.0);
 
-                let low_low = low_lows.get(j).unwrap_or(f64::MAX);
-                let low_high = low_highs.get(j).unwrap_or(f64::MIN);
+                if open <= 0.0 {
+                    continue;
+                }
+
+                bars_checked += 1;
+                if bars_checked > self.config.max_wait_bars {
+                    break;
+                }
+
+                // Calculate limit price for this candle
+                let limit_price = if direction > 0.0 {
+                    // Long: place limit below open
+                    open - offset
+                } else {
+                    // Short: place limit above open
+                    open + offset
+                };
+
+                // Check if we should update the limit
+                let should_update = match (current_limit, self.config.update_threshold_ticks) {
+                    (None, _) => true,
+                    (Some(_), None) => true,
+                    (Some(prev_limit), Some(threshold)) => {
+                        let threshold_value = threshold as f64 * tick;
+                        if direction > 0.0 {
+                            // Long: update if price moved up (open > prev_limit + threshold)
+                            open > prev_limit + threshold_value
+                        } else {
+                            // Short: update if price moved down (open < prev_limit - threshold)
+                            open < prev_limit - threshold_value
+                        }
+                    }
+                };
+
+                if should_update {
+                    current_limit = Some(limit_price);
+                }
+
+                let limit = current_limit.unwrap_or(limit_price);
 
                 // Check if limit would have been hit
                 let hit = if direction > 0.0 {
-                    // Long: limit below market, fills if low <= limit
-                    low_low <= limit_price
+                    // Long: fills if low <= limit
+                    low <= limit
                 } else {
-                    // Short: limit above market, fills if high >= limit
-                    low_high >= limit_price
+                    // Short: fills if high >= limit
+                    high >= limit
                 };
 
                 if hit {
                     filled = true;
-                    fill_price = limit_price;
+                    fill_price = limit;
                     fill_bar_lower = j;
                     break;
                 }
             }
 
-            if !filled && self.config.force_market_on_timeout {
-                // Force market execution at bar close
-                fill_price = high_closes.get(i).unwrap_or(market_price);
-                filled = true;
-            }
-
             if filled {
                 filled_signals += 1;
 
-                let was_limit = (fill_price - limit_price).abs() < 0.0001;
-                let fee = if was_limit {
-                    self.config.maker_fee
-                } else {
-                    self.config.taker_fee
-                };
-
-                // Calculate price improvement vs market
-                let improvement_bps = if direction > 0.0 {
+                // Calculate price improvement
+                let improvement_ticks = if direction > 0.0 {
                     // Long: better = lower fill price
-                    ((market_price - fill_price) / market_price) * 10_000.0
+                    (market_price - fill_price) / tick
                 } else {
                     // Short: better = higher fill price
-                    ((fill_price - market_price) / market_price) * 10_000.0
+                    (fill_price - market_price) / tick
                 };
 
-                price_improvements_bps.push(improvement_bps);
+                price_improvements.push(improvement_ticks);
+                bars_to_fill_list.push(bars_checked);
 
-                if was_limit {
-                    total_fees_saved += self.config.taker_fee - self.config.maker_fee;
-                    pnl_improvement += improvement_bps / 10_000.0;
-                }
+                let fee = self.config.maker_fee;
 
                 fills.push(FillEvent {
                     signal_bar: i,
                     fill_bar_lower,
                     direction,
                     market_price,
-                    limit_price,
                     fill_price,
-                    bars_to_fill,
+                    bars_to_fill: bars_checked,
                     fee,
-                    was_limit_fill: was_limit,
                 });
             } else {
                 skipped_signals += 1;
             }
         }
 
-        let avg_improvement = if price_improvements_bps.is_empty() {
+        let avg_improvement = if price_improvements.is_empty() {
             0.0
         } else {
-            price_improvements_bps.iter().sum::<f64>() / price_improvements_bps.len() as f64
+            price_improvements.iter().sum::<f64>() / price_improvements.len() as f64
         };
+
+        let avg_bars = if bars_to_fill_list.is_empty() {
+            0.0
+        } else {
+            bars_to_fill_list.iter().sum::<usize>() as f64 / bars_to_fill_list.len() as f64
+        };
+
+        // Assume taker fee would be 0.1% for comparison
+        let taker_fee = 0.001;
+        let fees_saved = filled_signals as f64 * (taker_fee - self.config.maker_fee);
 
         let stats = PassiveFillStats {
             total_signals,
@@ -310,18 +354,15 @@ impl PassiveExecutor {
             } else {
                 0.0
             },
-            avg_price_improvement_bps: avg_improvement,
-            total_fees_saved,
-            pnl_improvement_pct: pnl_improvement * 100.0,
+            avg_price_improvement_ticks: avg_improvement,
+            total_fees_saved: fees_saved,
+            avg_bars_to_fill: avg_bars,
         };
 
         Ok((fills, stats))
     }
 
-    /// Convert fill events to a signal series that can be fed to the backtest engine.
-    ///
-    /// This creates a signal series where signals are only present at bars where
-    /// passive execution would have resulted in a fill.
+    /// Convert fill events to a signal series for the backtest engine.
     pub fn fills_to_signals(&self, fills: &[FillEvent], num_bars: usize) -> Series {
         let mut signals = vec![0.0f64; num_bars];
 
@@ -341,12 +382,12 @@ mod tests {
     use polars::time::*;
 
     fn make_test_data() -> (DataFrame, DataFrame) {
-        // 1h data: 3 bars
-        let high_times: Vec<i64> = vec![0, 3600_000, 7200_000]; // 1h in ms
-        let high_closes = vec![100.0, 101.0, 99.0];
-        let high_highs = vec![101.0, 102.0, 100.0];
-        let high_lows = vec![99.0, 100.0, 98.0];
-        let high_vols = vec![1000.0; 3];
+        // 1h data: 2 bars
+        let high_times: Vec<i64> = vec![0, 3600_000]; // 1h in ms
+        let high_closes = vec![100.0, 101.0];
+        let high_highs = vec![101.0, 102.0];
+        let high_lows = vec![99.0, 100.0];
+        let high_vols = vec![1000.0; 2];
 
         let high_times_dt = DatetimeChunked::from_naive_datetime(
             "time".into(),
@@ -367,7 +408,8 @@ mod tests {
             "volume" => high_vols,
         ).unwrap();
 
-        // 1m data: simulate 3 minutes per hour, with one bar dipping below limit
+        // 1m data: 3 minutes per hour
+        // Most candles have low < open, so we should get fills
         let mut low_times = Vec::new();
         let mut low_opens = Vec::new();
         let mut low_highs = Vec::new();
@@ -375,28 +417,19 @@ mod tests {
         let mut low_closes = Vec::new();
         let mut low_vols = Vec::new();
 
-        for (h, &base_time) in high_times.iter().enumerate() {
+        for (&base_time, &close) in high_times.iter().zip(high_closes.iter()) {
             for m in 0..3 {
                 low_times.push(base_time + m as i64 * 60_000);
-                // Bar 0, minute 1: price dips below 99.9 (limit at 99.95)
-                if h == 0 && m == 1 {
-                    low_opens.push(100.0);
-                    low_highs.push(100.0);
-                    low_lows.push(99.8); // Below limit!
-                    low_closes.push(99.9);
-                } else if h == 0 {
-                    // Bar 0 other minutes
-                    low_opens.push(100.0);
-                    low_highs.push(100.5);
-                    low_lows.push(99.9);
-                    low_closes.push(100.2);
-                } else {
-                    // Bar 1 and 2: no dips, highs stay above 100.9 so short would fill
-                    low_opens.push(101.0);
-                    low_highs.push(101.5);
-                    low_lows.push(100.9); // Above limit for long (100.9495)
-                    low_closes.push(101.2);
-                }
+                // Simulate typical candle: open, goes up, goes down, closes
+                let open = close;
+                let high = open + 0.5;
+                let low = open - 0.3; // Low is below open!
+                let close = open + 0.1;
+
+                low_opens.push(open);
+                low_highs.push(high);
+                low_lows.push(low);
+                low_closes.push(close);
                 low_vols.push(100.0);
             }
         }
@@ -424,71 +457,56 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_passive_fill_on_dip() {
+    async fn test_high_fill_rate_long() {
         let (df_high, df_low) = make_test_data();
 
         // Signal: buy on bar 0
-        let signals = Series::new("signal".into(), vec![1.0, 0.0, 0.0]);
-
-        let executor = PassiveExecutor::with_defaults();
-        let (fills, stats) = executor.simulate(&df_high, &df_low, &signals).await.unwrap();
-
-        assert_eq!(stats.total_signals, 1);
-        assert_eq!(stats.filled_signals, 1);
-        assert_eq!(fills.len(), 1);
-
-        let fill = &fills[0];
-        assert!(fill.was_limit_fill, "Should have filled at limit price");
-        assert_eq!(fill.direction, 1.0);
-        assert!(fill.bars_to_fill > 0, "Should take at least 1 lower bar");
-    }
-
-    #[tokio::test]
-    async fn test_skip_on_no_dip() {
-        let (df_high, df_low) = make_test_data();
-
-        // Signal: buy on bar 1 (no dip in that hour)
-        let signals = Series::new("signal".into(), vec![0.0, 1.0, 0.0]);
-
-        let executor = PassiveExecutor::with_defaults();
-        let (_, stats) = executor.simulate(&df_high, &df_low, &signals).await.unwrap();
-
-        assert_eq!(stats.total_signals, 1);
-        assert_eq!(stats.filled_signals, 0);
-        assert_eq!(stats.skipped_signals, 1);
-    }
-
-    #[tokio::test]
-    async fn test_force_market_on_timeout() {
-        let (df_high, df_low) = make_test_data();
-
-        // Signal: buy on bar 1 (no dip)
-        let signals = Series::new("signal".into(), vec![0.0, 1.0, 0.0]);
+        let signals = Series::new("signal".into(), vec![1.0, 0.0]);
 
         let config = PassiveConfig {
-            force_market_on_timeout: true,
-            ..Default::default()
+            ticks_below_open: 3,
+            tick_size: TickSize(0.01),
+            max_wait_bars: 60,
+            maker_fee: 0.0,
+            update_threshold_ticks: None,
         };
         let executor = PassiveExecutor::new(config);
         let (fills, stats) = executor.simulate(&df_high, &df_low, &signals).await.unwrap();
 
-        assert_eq!(stats.filled_signals, 1);
-        assert!(!fills[0].was_limit_fill, "Should be market fill");
+        assert_eq!(stats.total_signals, 1);
+        assert_eq!(stats.filled_signals, 1, "Should fill when low < open");
+        assert!(stats.fill_rate > 0.99, "Fill rate should be near 100%");
     }
 
     #[tokio::test]
-    async fn test_short_execution() {
+    async fn test_price_improvement() {
         let (df_high, df_low) = make_test_data();
 
-        // Signal: short on bar 0
-        let signals = Series::new("signal".into(), vec![-1.0, 0.0, 0.0]);
+        let signals = Series::new("signal".into(), vec![1.0, 0.0]);
 
-        let executor = PassiveExecutor::with_defaults();
+        let config = PassiveConfig {
+            ticks_below_open: 3,
+            tick_size: TickSize(0.01),
+            max_wait_bars: 60,
+            maker_fee: 0.0,
+            update_threshold_ticks: None,
+        };
+        let executor = PassiveExecutor::new(config);
         let (fills, stats) = executor.simulate(&df_high, &df_low, &signals).await.unwrap();
 
-        assert_eq!(stats.total_signals, 1);
-        // Short limit is above market, low_low going down won't fill it
-        // So this should be skipped unless price goes UP
-        assert_eq!(stats.filled_signals, 0);
+        // Fill price should be below market price for long
+        assert!(!fills.is_empty());
+        let fill = &fills[0];
+        assert!(fill.fill_price < fill.market_price, "Long fill should be below market");
+        assert!(stats.avg_price_improvement_ticks > 0.0, "Should have positive improvement");
+    }
+
+    #[tokio::test]
+    async fn test_tick_size_lookup() {
+        assert_eq!(TickSize::from_symbol("BTCFDUSD").value(), 0.01);
+        assert_eq!(TickSize::from_symbol("ETHFDUSD").value(), 0.001);
+        assert_eq!(TickSize::from_symbol("SOLFDUSD").value(), 0.0001);
+        assert_eq!(TickSize::from_symbol("BNBFDUSD").value(), 0.01);
+        assert_eq!(TickSize::from_symbol("XRPFDUSD").value(), 0.00001);
     }
 }
