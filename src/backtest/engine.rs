@@ -54,6 +54,25 @@ impl Trade {
     pub fn duration_bars(&self) -> usize {
         self.exit_bar.saturating_sub(self.entry_bar)
     }
+
+    /// Export this trade as a CSV row (without header).
+    /// Columns: entry_bar,exit_bar,direction,entry_price,exit_price,size,pnl_pct,pnl_amt,exit_reason,fees
+    pub fn to_csv_row(&self) -> String {
+        let dir = if self.direction > 0.0 { "long" } else { "short" };
+        format!(
+            "{},{},{},{},{},{},{},{},{},{}",
+            self.entry_bar,
+            self.exit_bar,
+            dir,
+            self.entry_price,
+            self.exit_price,
+            self.position_size,
+            self.pnl_pct,
+            self.pnl_amount,
+            self.exit_reason,
+            self.fees
+        )
+    }
 }
 
 /// Why a position was closed.
@@ -65,6 +84,16 @@ pub enum ExitReason {
     StopLoss,
     /// Take profit target was reached.
     TakeProfit,
+}
+
+impl std::fmt::Display for ExitReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExitReason::SignalExit => write!(f, "signal"),
+            ExitReason::StopLoss => write!(f, "stop"),
+            ExitReason::TakeProfit => write!(f, "tp"),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -644,6 +673,38 @@ impl Backtester {
     }
 }
 
+impl BacktestResult {
+    /// Export all trades to CSV format.
+    ///
+    /// Returns a string with header row followed by one row per trade.
+    /// Columns: entry_bar,exit_bar,direction,entry_price,exit_price,size,pnl_pct,pnl_amt,exit_reason,fees
+    ///
+    /// # Example
+    /// ```no_run
+    /// use krypto::backtest::engine::{Backtester, PositionSizing};
+    /// # use polars::prelude::*;
+    /// # fn main() -> anyhow::Result<()> {
+    /// # let df = DataFrame::default();
+    /// # let signal = Series::new("signal".into(), vec![0.0; 10]);
+    /// let bt = Backtester::with_defaults(10_000.0);
+    /// let result = bt.run(&df, &signal, 0.05, 0.10)?;
+    /// let csv = result.trades_to_csv();
+    /// std::fs::write("trades.csv", &csv)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn trades_to_csv(&self) -> String {
+        let header = "entry_bar,exit_bar,direction,entry_price,exit_price,size,pnl_pct,pnl_amt,exit_reason,fees";
+        let rows: Vec<String> = self.trades.iter().map(|t| t.to_csv_row()).collect();
+        format!("{}\n{}", header, rows.join("\n"))
+    }
+
+    /// Export trades to CSV and write to file.
+    pub fn export_trades(&self, path: &std::path::Path) -> std::io::Result<()> {
+        std::fs::write(path, self.trades_to_csv())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1080,5 +1141,32 @@ mod tests {
         let engine_pnl = result.final_equity - 10_000.0;
         let diff = (journal_pnl - engine_pnl).abs();
         assert!(diff < 1.0, "journal PnL sum ({journal_pnl:.2}) should match engine PnL ({engine_pnl:.2}), diff={diff:.4}");
+    }
+
+    #[test]
+    fn test_trades_to_csv() {
+        let df = create_test_dataframe();
+        let signal = create_buy_signal();
+        let bt = Backtester::with_defaults(10_000.0);
+        let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        let csv = result.trades_to_csv();
+        let lines: Vec<&str> = csv.lines().collect();
+
+        // Header + one row per trade
+        assert!(lines.len() > 1, "CSV should have header + data rows");
+        assert!(lines[0].contains("entry_bar"), "header should have entry_bar");
+        assert!(lines[0].contains("exit_reason"), "header should have exit_reason");
+
+        // Each data row should parse correctly
+        for line in &lines[1..] {
+            let cols: Vec<&str> = line.split(',').collect();
+            assert_eq!(cols.len(), 10, "each row should have 10 columns");
+            // entry_bar and exit_bar should be valid integers
+            assert!(cols[0].parse::<usize>().is_ok(), "entry_bar should be int");
+            assert!(cols[1].parse::<usize>().is_ok(), "exit_bar should be int");
+            // direction should be long or short
+            assert!(cols[2] == "long" || cols[2] == "short", "direction should be long/short");
+        }
     }
 }
