@@ -89,6 +89,11 @@ impl TickSize {
         }
     }
 
+    /// Create from a raw value (when already known).
+    pub fn from_value(v: f64) -> Self {
+        Self(v)
+    }
+
     /// Get the tick size value.
     pub fn value(&self) -> f64 {
         self.0
