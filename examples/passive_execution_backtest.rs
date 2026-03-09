@@ -1,7 +1,10 @@
 //! Passive execution backtest for FDUSD pairs (0% maker fees).
 //!
-//! Compares market execution vs passive limit order execution.
-//! Shows fill rates, price improvements, and fee savings.
+//! Demonstrates the walk-forward limit order model:
+//! - For each 1m candle within a 1h bar
+//! - Place limit at open - N_ticks
+//! - Fill if low <= limit
+//! - Almost 100% fill rate + better price + 0% fees
 //!
 //! Usage:
 //!   cargo run --release --example passive_execution_backtest
@@ -10,9 +13,9 @@ use anyhow::Result;
 use colored::*;
 use krypto::{
     algo::SignalGenerator,
-    algo::strategies::{DynamicTrend, RsiMeanReversion, BollingerReversion, MacdTrend},
-    backtest::engine::{Backtester, BacktestResult, PositionSizing},
-    backtest::passive::{PassiveExecutor, PassiveConfig, PassiveFillStats},
+    algo::strategies::{DynamicTrend, RsiMeanReversion, BollingerReversion},
+    backtest::engine::{Backtester, PositionSizing},
+    backtest::passive::{PassiveExecutor, PassiveConfig, TickSize},
     data::loader::DataLoader,
     features::indicators::FeatureEngine,
 };
@@ -21,15 +24,16 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 // FDUSD pairs have 0% maker fees on Binance
-const FDUSD_PAIRS: &[&str] = &["BTCFDUSD", "ETHFDUSD", "SOLFDUSD"];
+const FDUSD_PAIRS: &[(&str, f64)] = &[
+    ("BTCFDUSD", 0.01),
+    ("ETHFDUSD", 0.001),
+    ("SOLFDUSD", 0.0001),
+    ("BNBFDUSD", 0.01),
+];
 
-// Intervals where passive execution works well (30m+)
 const INTERVALS: &[&str] = &["1h", "4h"];
-
-const CANDLES: u16 = 2000;
+const CANDLES: u16 = 1000;
 const CAPITAL: f64 = 10_000.0;
-const TRAILING_STOP: f64 = 0.05;
-const TAKE_PROFIT: f64 = 0.0;
 
 #[derive(Debug, Clone)]
 struct ComparisonResult {
@@ -40,56 +44,41 @@ struct ComparisonResult {
     passive_return_pct: f64,
     improvement_pct: f64,
     fill_rate: f64,
-    avg_price_improvement_bps: f64,
-    fees_saved: f64,
+    avg_price_improvement_ticks: f64,
+    fees_saved_pct: f64,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("\n{}", "━".repeat(72).bright_cyan());
-    println!("{}", "  PASSIVE EXECUTION BACKTEST (FDUSD 0% Maker Fee)".bright_cyan().bold());
+    println!("{}", "  PASSIVE EXECUTION — Walk-Forward Limit Orders".bright_cyan().bold());
     println!("{}", "━".repeat(72).bright_cyan());
-    println!("\n  Comparing market vs passive limit order execution on FDUSD pairs.\n");
+    println!("\n  Walk-forward model: place limit below each 1m open, fill if low <= limit\n");
 
     let loader = DataLoader::new(None, None);
     let mut comparisons: Vec<ComparisonResult> = Vec::new();
 
-    // Strategies to test
     let strategies: Vec<(&str, Box<dyn SignalGenerator>)> = vec![
         ("dynamic_trend", Box::new(DynamicTrend::new())),
         ("rsi_mean_reversion", Box::new(RsiMeanReversion::new())),
         ("bollinger_reversion", Box::new(BollingerReversion::new())),
-        ("macd_trend", Box::new(MacdTrend::new())),
     ];
 
     let backtester = Backtester::with_defaults(CAPITAL)
         .with_position_sizing(PositionSizing::Full);
 
-    let passive_config = PassiveConfig {
-        tick_offset_bps: 5.0,           // 5 bps below market
-        max_wait_bars: 1,               // Fill within current bar
-        force_market_on_timeout: false, // Skip if no fill
-        maker_fee: 0.0,                 // FDUSD = 0% maker
-        taker_fee: 0.001,               // 0.1% taker
-    };
-    let executor = PassiveExecutor::new(passive_config);
-
     println!("{}", "Phase 1: Fetching data...".bright_green());
 
-    // Cache all data first
     let mut data_cache: HashMap<(String, String), (DataFrame, DataFrame)> = HashMap::new();
 
-    for symbol in FDUSD_PAIRS {
+    for (symbol, tick_size) in FDUSD_PAIRS {
         for interval in INTERVALS {
             print!("  {} {} (1h + 1m)... ", symbol, interval);
             let t = Instant::now();
 
-            // Fetch higher timeframe
             match loader.fetch_data(symbol, interval, CANDLES).await {
                 Ok(df_high) => {
                     let df_high = FeatureEngine::add_technicals(&df_high, None).unwrap();
-
-                    // Calculate how many 1m candles we need
                     let mins_per_bar = match interval {
                         "1h" => 60,
                         "4h" => 240,
@@ -97,14 +86,10 @@ async fn main() -> Result<()> {
                     };
                     let candles_1m = CANDLES as u32 * mins_per_bar;
 
-                    // Fetch 1m data
                     match loader.fetch_data(symbol, "1m", candles_1m as u16).await {
                         Ok(df_low) => {
                             println!("{} ({:.1}s)", "✓".green(), t.elapsed().as_secs_f64());
-                            data_cache.insert(
-                                (symbol.to_string(), interval.to_string()),
-                                (df_high, df_low),
-                            );
+                            data_cache.insert((symbol.to_string(), interval.to_string()), (df_high, df_low));
                         }
                         Err(e) => println!("{} 1m fetch: {}", "✗".red(), e),
                     }
@@ -117,17 +102,18 @@ async fn main() -> Result<()> {
     println!("\n{}", "Phase 2: Running comparisons...".bright_green());
 
     for ((symbol, interval), (df_high, df_low)) in &data_cache {
+        let tick_size = FDUSD_PAIRS.iter().find(|(s, _)| *s == symbol).map(|(_, t)| *t).unwrap_or(0.01);
+
         for (strat_name, mut strategy) in &strategies {
             print!("\r  {} on {} {}                    ", strat_name, symbol, interval);
 
-            // Generate signals
             let signals = match strategy.predict(df_high) {
                 Ok(s) => s,
                 Err(_) => continue,
             };
 
-            // Run market execution backtest
-            let market_result = match backtester.run(df_high, &signals, TRAILING_STOP, TAKE_PROFIT) {
+            // Market execution backtest
+            let market_result = match backtester.run(df_high, &signals, 0.05, 0.0) {
                 Ok(r) => r,
                 Err(_) => continue,
             };
@@ -136,7 +122,16 @@ async fn main() -> Result<()> {
                 continue;
             }
 
-            // Simulate passive execution
+            // Passive execution
+            let config = PassiveConfig {
+                ticks_below_open: 3,
+                tick_size: TickSize(tick_size),
+                max_wait_bars: 240,
+                maker_fee: 0.0, // 0% on FDUSD
+                update_threshold_ticks: Some(5), // Update if price moves 5 ticks away
+            };
+
+            let executor = PassiveExecutor::new(config);
             let (fills, stats) = match executor.simulate(df_high, df_low, &signals).await {
                 Ok(r) => r,
                 Err(_) => continue,
@@ -146,16 +141,17 @@ async fn main() -> Result<()> {
                 continue;
             }
 
-            // Create filtered signal series with only filled signals
+            // Create filtered signal series
             let passive_signals = executor.fills_to_signals(&fills, df_high.height());
 
             // Run backtest with passive signals
-            let passive_result = match backtester.run(df_high, &passive_signals, TRAILING_STOP, TAKE_PROFIT) {
+            let passive_result = match backtester.run(df_high, &passive_signals, 0.05, 0.0) {
                 Ok(r) => r,
                 Err(_) => continue,
             };
 
             let improvement = passive_result.total_return_pct - market_result.total_return_pct;
+            let fees_saved = (market_result.total_fees_paid - passive_result.total_fees_paid) / CAPITAL * 100.0;
 
             comparisons.push(ComparisonResult {
                 strategy: strat_name.to_string(),
@@ -165,8 +161,8 @@ async fn main() -> Result<()> {
                 passive_return_pct: passive_result.total_return_pct,
                 improvement_pct: improvement,
                 fill_rate: stats.fill_rate,
-                avg_price_improvement_bps: stats.avg_price_improvement_bps,
-                fees_saved: stats.total_fees_saved,
+                avg_price_improvement_ticks: stats.avg_price_improvement_ticks,
+                fees_saved_pct: fees_saved,
             });
         }
     }
@@ -177,11 +173,11 @@ async fn main() -> Result<()> {
     comparisons.sort_by(|a, b| b.improvement_pct.partial_cmp(&a.improvement_pct).unwrap());
 
     println!("{}", "━".repeat(100).bright_cyan());
-    println!("{}", "  RESULTS: Market vs Passive Execution".bright_cyan().bold());
+    println!("{}", "  RESULTS: Market vs Walk-Forward Passive Execution".bright_cyan().bold());
     println!("{}", "━".repeat(100).bright_cyan());
     println!(
         "  {:<22} {:<12} {:<5} {:>10} {:>10} {:>10} {:>6} {:>8}",
-        "Strategy", "Symbol", "Int", "Market%", "Passive%", "Improve%", "Fill%", "Bps"
+        "Strategy", "Symbol", "Int", "Market%", "Passive%", "Improve%", "Fill%", "Ticks"
     );
     println!("{}", "─".repeat(100));
 
@@ -200,7 +196,7 @@ async fn main() -> Result<()> {
             c.passive_return_pct,
             improve_col,
             c.fill_rate * 100.0,
-            c.avg_price_improvement_bps
+            c.avg_price_improvement_ticks
         );
     }
 
@@ -209,7 +205,7 @@ async fn main() -> Result<()> {
     println!("{}", "  Summary".bright_cyan().bold());
     println!("{}", "━".repeat(72).bright_cyan());
 
-    let improved_count = comparisons.iter().filter(|c| c.improvement_pct > 0.0).count();
+    let improved = comparisons.iter().filter(|c| c.improvement_pct > 0.0).count();
     let avg_improvement = if !comparisons.is_empty() {
         comparisons.iter().map(|c| c.improvement_pct).sum::<f64>() / comparisons.len() as f64
     } else {
@@ -220,39 +216,24 @@ async fn main() -> Result<()> {
     } else {
         0.0
     };
-    let avg_price_improvement = if !comparisons.is_empty() {
-        comparisons.iter().map(|c| c.avg_price_improvement_bps).sum::<f64>() / comparisons.len() as f64
-    } else {
-        0.0
-    };
 
     println!("  Total comparisons:     {}", comparisons.len());
-    println!("  Improved by passive:   {}/{} ({:.0f}%)",
-        improved_count.green(),
-        comparisons.len(),
-        improved_count as f64 / comparisons.len().max(1) as f64 * 100.0
-    );
-    println!("  Avg return improvement: {:.1}%", avg_improvement);
-    println!("  Avg fill rate:          {:.0f}%", avg_fill_rate * 100.0);
-    println!("  Avg price improvement:  {:.1f} bps", avg_price_improvement);
-    println!("  Fee savings:            0.1% per trade (maker vs taker)");
+    println!("  Improved by passive:  {}/{} ({:.0f}%)", improved.green(), comparisons.len(), improved as f64 / comparisons.len().max(1) as f64 * 100.0);
+    println!("  Avg return improvement: {:.1f}%", avg_improvement);
+    println!("  Avg fill rate:         {:.0f}%", avg_fill_rate * 100.0);
 
-    // Explanation
     println!("\n{}", "━".repeat(72).bright_cyan());
-    println!("{}", "  How Passive Execution Works".bright_cyan().bold());
+    println!("{}", "  How Walk-Forward Execution Works".bright_cyan().bold());
     println!("{}", "━".repeat(72).bright_cyan());
-    println!("
-  1. Signal fires on 1h candle close at $100
-  2. Instead of market buy at $100 (0.1% fee), place limit at $99.95 (5 bps below)
-  3. Scan 1m candles within that hour:
-     - If price dips to $99.95 → filled at limit (0% fee, better price!)
-     - If price never dips → skip signal
-  4. For shorts: place limit above market
+    println!("\n  1. Signal fires on 1h close at $100
+  2. Walk through each 1m candle:
+     - Candle 0: open=$100, place limit at $99.97 (3 ticks below)
+     - If low ≤ $99.97 → filled! (almost always since most candles dip)
+     - If not filled, candle 1: open=$99.98, place limit at $99.95
+     - Continue until filled
+  3. Result: almost 100% fill rate at slightly better price + 0% fees
 
-  Benefits:
-  - Better entry price (5 bps average improvement)
-  - Zero fees on FDUSD pairs
-  - Forces patience — only trade when market comes to you
+  This captures the natural open-to-low movement in most candles.
 ");
 
     println!();
