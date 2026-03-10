@@ -25,8 +25,9 @@ const SYMBOL: &str = "BTCUSDT";
 const INTERVAL_HIGH: &str = "1h";
 const INTERVAL_LOW: &str = "1m";
 const CANDLES_HIGH: u16 = 500;
-// 1m candles covering the same period (500 * 60 = 30,000, cap at Binance max)
-const CANDLES_LOW: u16 = 1500;
+// 1m candles needed to cover the full higher-TF window: 500 * 60 = 30,000
+// fetch_data paginates automatically in chunks of 1,000
+const CANDLES_LOW: u16 = 30_000;
 const CAPITAL: f64 = 10_000.0;
 const TRAILING_STOP: f64 = 0.05;
 const TAKE_PROFIT: f64 = 0.15;
