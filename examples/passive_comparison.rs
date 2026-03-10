@@ -60,7 +60,7 @@ async fn main() -> Result<()> {
     println!("\n  Tick size: {}", tick);
 
     // Generate signals
-    let mut strat = DynamicTrend::new();
+    let strat = DynamicTrend::new();
     let signals = strat.predict(&df_high)?;
 
     // Count signals

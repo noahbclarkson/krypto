@@ -43,7 +43,7 @@ impl Strategy for SmaCrossover {
         &self.name
     }
 
-    fn on_bar(&mut self, bar: &Bar, position: f64, history: &[Bar]) -> Option<Trade> {
+    fn on_bar(&mut self, _bar: &Bar, position: f64, history: &[Bar]) -> Option<Trade> {
         if history.len() < self.slow_period + 1 {
             return None;
         }
@@ -134,10 +134,7 @@ impl Strategy for RsiStrategy {
             self.prices.pop_front();
         }
 
-        let rsi = match self.calc_rsi() {
-            Some(r) => r,
-            None => return None,
-        };
+        let rsi = self.calc_rsi()?;
 
         if rsi < self.oversold && position == 0.0 {
             Some(Trade::Long { size: 1.0 })

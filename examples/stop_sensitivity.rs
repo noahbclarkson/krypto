@@ -31,6 +31,7 @@ async fn main() -> Result<()> {
 
     let loader = DataLoader::new(None, None);
 
+    #[allow(clippy::type_complexity)]
     let strategies: Vec<(&str, fn() -> Box<dyn SignalGenerator>)> = vec![
         ("dynamic_trend", || Box::new(DynamicTrend::new())),
         ("bollinger", || Box::new(BollingerReversion::new())),
@@ -102,7 +103,7 @@ async fn main() -> Result<()> {
     println!("{}", "─".repeat(90));
 
     for r in rows.iter().take(40) {
-        let ret_color = if r.return_pct > 0.0 { "green" } else { "red" };
+        let _ret_color = if r.return_pct > 0.0 { "green" } else { "red" };
         println!("{:<20} {:<10} {:<4} {:>4.0}% {:>7} {:>9.1}% {:>5.0}% {:>6.0}%",
             r.strategy, r.symbol, r.interval, r.stop_pct, r.trades,
             r.return_pct, r.win_rate, r.max_dd);

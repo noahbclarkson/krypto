@@ -34,6 +34,7 @@ async fn main() -> Result<()> {
     let loader = DataLoader::new(None, None);
 
     // Build strategies — same list as full_strategy_backtest
+    #[allow(clippy::type_complexity)]
     let strategy_fns: Vec<(&str, fn() -> Box<dyn SignalGenerator>)> = vec![
         ("dynamic_trend",        || Box::new(DynamicTrend::new())),
         ("bollinger",            || Box::new(BollingerReversion::new())),
@@ -69,7 +70,7 @@ async fn main() -> Result<()> {
             };
 
             for (name, make_strat) in &strategy_fns {
-                let mut strat = make_strat();
+                let strat = make_strat();
                 let signals = match strat.predict(&df) {
                     Ok(s) => s,
                     Err(_) => continue,

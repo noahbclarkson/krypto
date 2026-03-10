@@ -146,6 +146,7 @@ fn calculate_apr(total_return_pct: f64, days: f64) -> f64 {
     ((1.0 + r).powf(365.0 / days) - 1.0) * 100.0
 }
 
+#[allow(clippy::too_many_arguments)]
 fn evaluate_strategy<S: OptimizableStrategy + Clone>(
     optimizer: &Optimizer,
     backtester: &Backtester,

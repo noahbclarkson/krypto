@@ -1102,7 +1102,7 @@ mod tests {
 
     fn create_buy_signal() -> Series {
         // Buy at bar 1, sell at bar 5, buy at bar 6
-        Series::new("signal".into(), vec![0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0])
+        Series::new("signal", vec![0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0])
     }
 
     #[test]
@@ -1219,7 +1219,7 @@ mod tests {
     #[test]
     fn test_position_sizing_with_no_trades() {
         let df = create_test_dataframe();
-        let signal = Series::new("signal".into(), vec![0.0; 10]); // No trades
+        let signal = Series::new("signal", vec![0.0; 10]); // No trades
         
         let backtester = Backtester::with_defaults(10_000.0)
             .with_position_sizing(PositionSizing::FixedFraction(0.5));
@@ -1271,7 +1271,7 @@ mod tests {
 
     fn create_short_signal() -> Series {
         // Flat on bar 0, short bars 1-8, exit on bar 9
-        Series::new("signal".into(),
+        Series::new("signal",
             vec![0.0f64, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 0.0])
     }
 
@@ -1301,7 +1301,7 @@ mod tests {
     fn test_short_vs_long_on_bearish_trend() {
         let df = create_bearish_dataframe();
         let short_sig = create_short_signal();
-        let long_sig  = Series::new("signal".into(),
+        let long_sig  = Series::new("signal",
             vec![0.0f64, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]);
 
         let bt = Backtester::new(10_000.0, 0.0, 0.0);
@@ -1322,7 +1322,7 @@ mod tests {
     fn test_short_entry_and_signal_exit() {
         let df = create_bearish_dataframe();
         // Short bars 1-2, back to flat from bar 3
-        let signal = Series::new("signal".into(),
+        let signal = Series::new("signal",
             vec![0.0f64, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
 
         let bt = Backtester::new(10_000.0, 0.0, 0.0);
@@ -1450,7 +1450,7 @@ mod tests {
         let vols   = vec![1000.0; 8];
         let df = df!("close" => closes, "high" => highs, "low" => lows, "volume" => vols).unwrap();
         // Hold long the whole time so stop must trigger
-        let signal = Series::new("signal".into(), vec![1.0; 8]);
+        let signal = Series::new("signal", vec![1.0; 8]);
 
         let bt = Backtester::new(10_000.0, 0.0, 0.0); // zero fees for clarity
         let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
@@ -1473,7 +1473,7 @@ mod tests {
         let lows   = vec![ 99.0,  99.0, 104.0, 107.0, 111.0, 114.0, 114.0];
         let vols   = vec![1000.0; 7];
         let df = df!("close" => closes, "high" => highs, "low" => lows, "volume" => vols).unwrap();
-        let signal = Series::new("signal".into(), vec![1.0; 7]);
+        let signal = Series::new("signal", vec![1.0; 7]);
 
         let bt = Backtester::new(10_000.0, 0.0, 0.0);
         let result = bt.run(&df, &signal, 0.30, 0.10); // 30% stop, 10% TP

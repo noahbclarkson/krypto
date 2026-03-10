@@ -10,7 +10,7 @@
 //!   --interval <str>   Candle interval (default: 1h)
 //!   --capital <num>    Initial capital (default: 10000)
 
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use colored::*;
 use krypto::{
     data::loader::DataLoader,
@@ -51,7 +51,7 @@ impl Strategy for SmaCrossover {
         &self.name
     }
 
-    fn on_bar(&mut self, bar: &Bar, position: f64, history: &[Bar]) -> Option<Trade> {
+    fn on_bar(&mut self, _bar: &Bar, position: f64, history: &[Bar]) -> Option<Trade> {
         if history.len() < self.slow_period + 1 {
             return None;
         }
@@ -139,10 +139,7 @@ impl Strategy for RsiStrategy {
             self.prices.pop_front();
         }
 
-        let rsi = match self.calc_rsi() {
-            Some(r) => r,
-            None => return None,
-        };
+        let rsi = self.calc_rsi()?;
 
         if rsi < self.oversold && position == 0.0 {
             Some(Trade::Long { size: 1.0 })
@@ -163,6 +160,7 @@ impl Strategy for RsiStrategy {
 // -----------------------------------------------------------------------------
 
 fn dataframe_to_bars(df: &polars::prelude::DataFrame) -> anyhow::Result<Vec<Bar>> {
+    #[allow(unused_imports)]
     use polars::prelude::*;
     
     let time_col = df.column("time")?.datetime()?;
@@ -180,7 +178,7 @@ fn dataframe_to_bars(df: &polars::prelude::DataFrame) -> anyhow::Result<Vec<Bar>
         let nsecs = ((time_ms % 1000) * 1_000_000) as u32;
         
         let time = DateTime::from_timestamp(secs, nsecs)
-            .unwrap_or_else(|| Utc::now());
+            .unwrap_or_else(Utc::now);
         
         bars.push(Bar::new(
             time,
@@ -262,7 +260,7 @@ fn parse_args() -> (u16, String, f64) {
         i += 1;
     }
 
-    (candles, interval, capital)
+    (candles as u16, interval, capital)
 }
 
 // -----------------------------------------------------------------------------
@@ -292,7 +290,7 @@ async fn main() -> anyhow::Result<()> {
     println!("{}", "Fetching live data from Binance...".cyan());
     let loader = DataLoader::new(None, None);
     
-    let df = loader.fetch_data("BTCUSDT", &interval, candles).await?;
+    let df = loader.fetch_data("BTCUSDT", &interval, candles as u32).await?;
     println!("{} Fetched {} candles", "✓".green(), df.height());
     println!();
 

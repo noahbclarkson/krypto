@@ -352,8 +352,8 @@ mod ensemble_tests {
         for i in 20..n { volumes[i] = 100.0; }
 
         let df = DataFrame::new(vec![
-            Series::new("close".into(), vec![100.0f64; n]),
-            Series::new("volume".into(), volumes),
+            Series::new("close", vec![100.0f64; n]),
+            Series::new("volume", volumes),
         ]).unwrap();
 
         let filter = ConfirmedStrategy { vol_multiplier: 1.5, vol_period: 20, use_vol_confirm: true };

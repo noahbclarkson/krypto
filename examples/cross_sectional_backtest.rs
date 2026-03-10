@@ -10,7 +10,7 @@ use krypto::algo::strategies::CrossSectionalMomentum;
 use krypto::backtest::walk_forward::{WalkForwardBacktester, WalkForwardConfig};
 use krypto::data::universe::{compute_cross_sectional_features, Universe};
 use krypto::features::indicators::FeatureEngine;
-use std::collections::HashMap;
+
 
 const SYMBOLS: &[&str] = &["BTCFDUSD", "ETHFDUSD", "SOLFDUSD", "DOGEFDUSD", "XRPFDUSD"];
 const INTERVALS: &[&str] = &["4h", "1h"];

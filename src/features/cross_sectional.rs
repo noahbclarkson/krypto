@@ -283,7 +283,7 @@ mod tests {
         for i in 10..60 {
             let s = scores.get(i).unwrap();
             assert!(
-                s >= -2.0 && s <= 2.0,
+                (-2.0..=2.0).contains(&s),
                 "Trend score {s:.2} out of expected range at bar {i}"
             );
         }

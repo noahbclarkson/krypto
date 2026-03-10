@@ -218,7 +218,7 @@ async fn main() -> anyhow::Result<()> {
     // Load data
     println!("Fetching data from Binance...");
     let loader = DataLoader::new(None, None);
-    let df = loader.fetch_data(symbol, interval, candles as u16).await?;
+    let df = loader.fetch_data(symbol, interval, candles as u32).await?;
     
     let n_rows = df.height();
     println!("Loaded {} bars\n", n_rows);
@@ -233,7 +233,7 @@ async fn main() -> anyhow::Result<()> {
 
     let bars: Vec<Bar> = (0..n_rows)
         .map(|i| {
-            let time_ms = time_col.get(i).unwrap_or(0) as i64;
+            let time_ms = time_col.get(i).unwrap_or(0);
             let secs = time_ms / 1000;
             let nsecs = ((time_ms % 1000) * 1_000_000) as u32;
             let time = Utc.timestamp_opt(secs, nsecs).single().unwrap_or_else(Utc::now);

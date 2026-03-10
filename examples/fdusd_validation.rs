@@ -128,7 +128,7 @@ async fn main() -> Result<()> {
         let usdt_result = match loader.fetch_data(&usdt_sym, INTERVAL, CANDLES).await {
             Ok(df) => {
                 let df = FeatureEngine::add_technicals(&df, None)?;
-                let mut strat = registry.create(STRATEGY).unwrap();
+                let strat = registry.create(STRATEGY).unwrap();
                 let signals = strat.predict(&df)?;
                 let bt = Backtester::new(CAPITAL, TAKER_FEE, 5.0)
                     .with_position_sizing(PositionSizing::Full);
@@ -181,7 +181,7 @@ async fn main() -> Result<()> {
                     }
                 };
 
-                let mut strat = registry.create(STRATEGY).unwrap();
+                let strat = registry.create(STRATEGY).unwrap();
                 let signals = strat.predict(&df_high)?;
 
                 let bt = Backtester::new(CAPITAL, 0.0, 0.0)

@@ -1676,9 +1676,9 @@ mod funding_rate_tests {
     fn make_df_with_funding(fr_z: Vec<f64>, rsi: Vec<f64>) -> DataFrame {
         let n = fr_z.len();
         DataFrame::new(vec![
-            Series::new("funding_rate_z".into(), fr_z),
-            Series::new("rsi".into(), rsi),
-            Series::new("close".into(), vec![100.0f64; n]),
+            Series::new("funding_rate_z", fr_z),
+            Series::new("rsi", rsi),
+            Series::new("close", vec![100.0f64; n]),
         ])
         .unwrap()
     }
@@ -1687,7 +1687,7 @@ mod funding_rate_tests {
     fn test_no_funding_data_returns_neutral() {
         let strat = FundingRateReversion::default();
         let df = DataFrame::new(vec![
-            Series::new("close".into(), vec![100.0f64; 5]),
+            Series::new("close", vec![100.0f64; 5]),
         ])
         .unwrap();
         let signals = strat.predict(&df).unwrap();
@@ -1925,8 +1925,8 @@ mod cs_momentum_tests {
     fn make_df_with_ranks(ranks: Vec<f64>) -> DataFrame {
         let n = ranks.len();
         DataFrame::new(vec![
-            Series::new("cs_momentum_rank".into(), ranks),
-            Series::new("close".into(), vec![100.0f64; n]),
+            Series::new("cs_momentum_rank", ranks),
+            Series::new("close", vec![100.0f64; n]),
         ]).unwrap()
     }
 
@@ -1945,7 +1945,7 @@ mod cs_momentum_tests {
 
     #[test]
     fn test_cs_momentum_no_features_neutral() {
-        let df = DataFrame::new(vec![Series::new("close".into(), vec![100.0f64; 5])]).unwrap();
+        let df = DataFrame::new(vec![Series::new("close", vec![100.0f64; 5])]).unwrap();
         let strat = CrossSectionalMomentum::default();
         let signals = strat.predict(&df).unwrap();
         let s: Vec<f64> = signals.f64().unwrap().into_iter().map(|v| v.unwrap()).collect();

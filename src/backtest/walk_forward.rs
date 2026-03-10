@@ -509,7 +509,7 @@ mod tests {
                     .unwrap()
                     .and_utc()
                     .timestamp_millis()
-                    + i * 14400_000
+                    + i * 14_400_000
             })
             .collect();
         let close: Vec<f64> = (0..n).map(|i| 100.0 + (i as f64 * 0.01)).collect();
@@ -519,14 +519,14 @@ mod tests {
         let volume: Vec<f64> = vec![1000.0; n];
 
         DataFrame::new(vec![
-            Series::new("time".into(), times)
+            Series::new("time", times)
                 .cast(&DataType::Datetime(TimeUnit::Milliseconds, None))
                 .unwrap(),
-            Series::new("open".into(), open),
-            Series::new("high".into(), high),
-            Series::new("low".into(), low),
-            Series::new("close".into(), close),
-            Series::new("volume".into(), volume),
+            Series::new("open", open),
+            Series::new("high", high),
+            Series::new("low", low),
+            Series::new("close", close),
+            Series::new("volume", volume),
         ])
         .unwrap()
     }
@@ -553,7 +553,7 @@ mod tests {
     fn test_monte_carlo_p_range() {
         let backtester = Backtester::new(10_000.0, 0.0, 0.0);
         let df = make_test_df(100);
-        let signals = Series::new("signal".into(), vec![1.0f64; 100]);
+        let signals = Series::new("signal", vec![1.0f64; 100]);
         let p = monte_carlo_p_value(&backtester, &df, &signals, 0.0, 0.05, 0.10, 50);
         assert!((0.0..=1.0).contains(&p), "p-value must be in [0,1]: {}", p);
     }

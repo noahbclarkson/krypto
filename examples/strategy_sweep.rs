@@ -77,7 +77,7 @@ fn compute_median_atr_pct(df: &DataFrame) -> f64 {
         (Some(atr_ca), Some(close_ca)) => {
             let mut ratios: Vec<f64> = atr_ca
                 .into_iter()
-                .zip(close_ca.into_iter())
+                .zip(close_ca)
                 .filter_map(|(a, c)| match (a, c) {
                     (Some(av), Some(cv)) if cv > 0.0 => Some(av / cv),
                     _ => None,
@@ -167,7 +167,7 @@ async fn main() -> Result<()> {
                         atr_tp_mult,
                     );
 
-                    let mut strat = match registry.create(strat_name) {
+                    let strat = match registry.create(strat_name) {
                         Some(s) => s,
                         None => continue,
                     };

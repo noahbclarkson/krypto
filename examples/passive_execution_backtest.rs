@@ -28,6 +28,7 @@ async fn main() -> Result<()> {
     println!("{}", "━".repeat(72).bright_cyan());
 
     let loader = DataLoader::new(None, None);
+    #[allow(clippy::type_complexity)]
     let mut results: Vec<(&str, &str, &str, f64, f64, f64, f64, usize)> = Vec::new();
 
     println!("\n{}", "Tick sizes from Binance API (cached)...".bright_green());
@@ -45,7 +46,7 @@ async fn main() -> Result<()> {
             } else {
                 (CANDLES_4H, 240u32)
             };
-            let candles_1m = (candles_h as u32 * mins_per_bar) as u16;
+            let candles_1m = candles_h * mins_per_bar;
 
             print!("  {} {} ({} bars)... ", symbol, interval, candles_h);
             let t = Instant::now();
@@ -73,7 +74,7 @@ async fn main() -> Result<()> {
                 ("rsi", Box::new(RsiMeanReversion::new())),
             ];
 
-            for (name, mut strat) in strategies {
+            for (name, strat) in strategies {
                 let signals = match strat.predict(&df_high) {
                     Ok(s) => s,
                     Err(_) => continue,

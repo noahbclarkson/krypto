@@ -1,6 +1,6 @@
 use krypto::algo::strategies::{DynamicTrend, RsiMeanReversion, MacdTrend, BollingerReversion, AtrBreakout};
 use krypto::algo::SignalGenerator;
-use krypto::algo::optimization::{OptimizableStrategy, Optimizer};
+use krypto::algo::optimization::Optimizer;
 use krypto::backtest::engine::Backtester;
 use krypto::data::loader::DataLoader;
 use krypto::features::indicators::FeatureEngine;

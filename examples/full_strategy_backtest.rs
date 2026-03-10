@@ -33,6 +33,7 @@ const MIN_TRADES: usize = 15;
 // ──────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct RunResult {
     strategy: String,
     symbol: String,
@@ -69,7 +70,7 @@ impl RunResult {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let candles: u16 = args.windows(2)
+    let candles: u32 = args.windows(2)
         .find(|w| w[0] == "--candles")
         .and_then(|w| w[1].parse().ok())
         .unwrap_or(CANDLES);
@@ -141,7 +142,7 @@ async fn main() -> Result<()> {
             print!("\r  [{done:>3}/{total}] {name:<26} {sym:<9} {int}    ");
             let _ = std::io::Write::flush(&mut std::io::stdout());
 
-            let mut strat = match registry.create(name) {
+            let strat = match registry.create(name) {
                 Some(s) => s,
                 None => continue,
             };

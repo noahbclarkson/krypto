@@ -60,6 +60,7 @@ async fn main() -> Result<()> {
 
     let loader = DataLoader::new(None, None);
 
+    #[allow(clippy::type_complexity)]
     let strategy_fns: Vec<(&str, fn() -> Box<dyn SignalGenerator>)> = vec![
         ("bollinger",          || Box::new(BollingerReversion::new())),
         ("volatility_squeeze", || Box::new(VolatilitySqueeze::new())),
@@ -80,7 +81,7 @@ async fn main() -> Result<()> {
             _ => 60,
         };
         // 1m data to cover the full backtest window
-        let candles_1m as u32 = ((candles_h as u32) * mins_per_bar).min(u16::MAX as u32) as u16;
+        let candles_1m = candles_h * mins_per_bar;
 
         print!("  Fetching {} {} + 1m data... ", symbol, interval);
         let df_high = match loader.fetch_data(symbol, interval, candles_h).await {
@@ -90,7 +91,7 @@ async fn main() -> Result<()> {
             },
             Err(e) => { println!("✗ {e}"); continue; }
         };
-        let df_low = match loader.fetch_data(symbol, "1m", candles_1m as u32).await {
+        let df_low = match loader.fetch_data(symbol, "1m", candles_1m).await {
             Ok(df) => df,
             Err(e) => { println!("✗ 1m: {e}"); continue; }
         };

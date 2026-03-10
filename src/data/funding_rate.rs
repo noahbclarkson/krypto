@@ -367,11 +367,11 @@ mod tests {
             .map(|i| 1_577_836_800_000 + i * FUNDING_INTERVAL_MS)
             .collect();
         DataFrame::new(vec![
-            Series::new("time".into(), times)
+            Series::new("time", times)
                 .cast(&DataType::Datetime(TimeUnit::Milliseconds, None))
                 .unwrap(),
-            Series::new("funding_rate".into(), rates),
-            Series::new("mark_price".into(), vec![50_000.0f64; n]),
+            Series::new("funding_rate", rates),
+            Series::new("mark_price", vec![50_000.0f64; n]),
         ])
         .unwrap()
     }

@@ -6,7 +6,7 @@ use anyhow::Result;
 use krypto::{
     algo::strategies::RsiMeanReversion,
     algo::SignalGenerator,
-    backtest::engine::{Backtester, PositionSizing},
+    backtest::engine::Backtester,
     data::loader::DataLoader,
     features::indicators::FeatureEngine,
 };

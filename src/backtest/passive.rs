@@ -472,14 +472,14 @@ mod tests {
     
 
     fn make_test_data() -> (DataFrame, DataFrame) {
-        let high_times: Vec<i64> = vec![0, 3600_000];
+        let high_times: Vec<i64> = vec![0, 3_600_000];
         let high_closes = vec![100.0, 101.0];
         let high_highs = vec![101.0, 102.0];
         let high_lows = vec![99.0, 100.0];
         let high_vols = vec![1000.0; 2];
 
         let high_times_dt = DatetimeChunked::from_naive_datetime(
-            "time".into(),
+            "time",
             high_times.iter().map(|&ms| {
                 chrono::DateTime::from_timestamp_millis(ms)
                     .unwrap()
@@ -521,7 +521,7 @@ mod tests {
         }
 
         let low_times_dt = DatetimeChunked::from_naive_datetime(
-            "time".into(),
+            "time",
             low_times.iter().map(|&ms| {
                 chrono::DateTime::from_timestamp_millis(ms)
                     .unwrap()
@@ -545,7 +545,7 @@ mod tests {
     #[tokio::test]
     async fn test_high_fill_rate_long() {
         let (df_high, df_low) = make_test_data();
-        let signals = Series::new("signal".into(), vec![1.0, 0.0]);
+        let signals = Series::new("signal", vec![1.0, 0.0]);
 
         let config = PassiveConfig {
             ticks_below_open: 3,
@@ -566,7 +566,7 @@ mod tests {
     #[tokio::test]
     async fn test_price_improvement() {
         let (df_high, df_low) = make_test_data();
-        let signals = Series::new("signal".into(), vec![1.0, 0.0]);
+        let signals = Series::new("signal", vec![1.0, 0.0]);
 
         let config = PassiveConfig {
             ticks_below_open: 3,

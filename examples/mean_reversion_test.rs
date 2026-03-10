@@ -6,7 +6,7 @@
 //! Usage:
 //!   cargo run --example mean_reversion_test -- [symbol] [interval] [candles]
 
-use anyhow::Result;
+
 use krypto::{
     algo::strategies::{BollingerReversion, RsiMeanReversion},
     algo::SignalGenerator,
@@ -37,7 +37,7 @@ async fn main() -> anyhow::Result<()> {
     // Load data
     println!("Fetching data from Binance...");
     let loader = DataLoader::new(None, None);
-    let raw_df = loader.fetch_data(symbol, interval, candles).await?;
+    let raw_df = loader.fetch_data(symbol, interval, candles as u32).await?;
     println!("Loaded {} bars", raw_df.height());
 
     // Add technical indicators

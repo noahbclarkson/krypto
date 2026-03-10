@@ -7,7 +7,6 @@
 //! Results are logged to `walk_forward_results.json`.
 
 use colored::*;
-use krypto::algo::optimization::OptimizableStrategy;
 use krypto::algo::strategies::{
     AdaptiveMaCrossover, AtrBreakout, BollingerReversion, DynamicTrend, MacdTrend, ObvTrend,
     PriceMomentum, RegimeAdaptive, RsiMeanReversion, VolAdjustedMomentum, VolatilitySqueeze,
@@ -140,13 +139,13 @@ fn cache_to_df(records: Vec<CandleCache>) -> anyhow::Result<polars::frame::DataF
         volumes.push(r.volume);
     }
     Ok(DataFrame::new(vec![
-        Series::new("time".into(), times)
+        Series::new("time", times)
             .cast(&DataType::Datetime(TimeUnit::Milliseconds, None))?,
-        Series::new("open".into(), opens),
-        Series::new("high".into(), highs),
-        Series::new("low".into(), lows),
-        Series::new("close".into(), closes),
-        Series::new("volume".into(), volumes),
+        Series::new("open", opens),
+        Series::new("high", highs),
+        Series::new("low", lows),
+        Series::new("close", closes),
+        Series::new("volume", volumes),
     ])?)
 }
 
@@ -256,7 +255,6 @@ async fn main() -> anyhow::Result<()> {
 
     let loader = DataLoader::new(None, None);
     let mut all_records: Vec<RunRecord> = Vec::new();
-    let mut robust_count = 0;
 
     for interval in &intervals {
         println!("{}", format!("── Interval: {} ──", interval).yellow().bold());
@@ -287,7 +285,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Summary
-    robust_count = all_records.iter().filter(|r| r.is_robust).count();
+    let robust_count = all_records.iter().filter(|r| r.is_robust).count();
     let total = all_records.len();
 
     println!("{}", "═══ FINAL SUMMARY ═══".cyan().bold());
