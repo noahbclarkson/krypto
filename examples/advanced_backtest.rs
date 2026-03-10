@@ -50,7 +50,7 @@ struct TradeCandidate {
     equity_curve: Vec<(NaiveDateTime, f64)>,
 }
 
-fn cache_path(symbol: &str, interval: &str, limit: u16) -> PathBuf {
+fn cache_path(symbol: &str, interval: &str, limit: u32) -> PathBuf {
     let filename = format!("{symbol}_{interval}_{limit}.bin");
     Path::new(CACHE_DIR).join(filename)
 }
@@ -121,7 +121,7 @@ async fn load_or_fetch(
     loader: &DataLoader,
     symbol: &str,
     interval: &str,
-    limit: u16,
+    limit: u32,
 ) -> anyhow::Result<(DataFrame, bool)> {
     let path = cache_path(symbol, interval, limit);
     if path.exists() {

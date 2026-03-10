@@ -80,7 +80,7 @@ async fn main() -> Result<()> {
             _ => 60,
         };
         // 1m data to cover the full backtest window
-        let candles_1m = ((candles_h as u32) * mins_per_bar).min(u16::MAX as u32) as u16;
+        let candles_1m as u32 = ((candles_h as u32) * mins_per_bar).min(u16::MAX as u32) as u16;
 
         print!("  Fetching {} {} + 1m data... ", symbol, interval);
         let df_high = match loader.fetch_data(symbol, interval, candles_h).await {
@@ -90,7 +90,7 @@ async fn main() -> Result<()> {
             },
             Err(e) => { println!("✗ {e}"); continue; }
         };
-        let df_low = match loader.fetch_data(symbol, "1m", candles_1m).await {
+        let df_low = match loader.fetch_data(symbol, "1m", candles_1m as u32).await {
             Ok(df) => df,
             Err(e) => { println!("✗ 1m: {e}"); continue; }
         };

@@ -37,3 +37,9 @@ url = "=2.5.0"
 
 [target.'cfg(windows)'.dependencies]
 plotters = "0.3.7"
+
+[profile.sweep]
+inherits = "release"
+opt-level = 1
+lto = false
+codegen-units = 16

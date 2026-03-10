@@ -63,7 +63,7 @@ async fn main() -> Result<()> {
     for symbol in SYMBOLS {
         for interval in INTERVALS {
             let mins_per_bar = match *interval { "1h" => 60u32, "4h" => 240, "1d" => 1440, _ => 60 };
-            let candles_1m = ((CANDLES as u32) * mins_per_bar).min(65000) as u16;
+            let candles_1m as u32 = ((CANDLES as u32) * mins_per_bar).min(65000) as u16;
 
             print!("Fetching {} {} + 1m... ", symbol, interval);
             let df_high = match loader.fetch_data(symbol, interval, CANDLES).await {
@@ -73,7 +73,7 @@ async fn main() -> Result<()> {
                 },
                 Err(_) => { println!("fetch err"); continue; }
             };
-            let df_low = match loader.fetch_data(symbol, "1m", candles_1m).await {
+            let df_low = match loader.fetch_data(symbol, "1m", candles_1m as u32).await {
                 Ok(df) => df,
                 Err(_) => { println!("1m fetch err"); continue; }
             };
