@@ -16,7 +16,7 @@ use krypto::{
 
 const SYMBOLS: &[&str] = &["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"];
 const INTERVALS: &[&str] = &["1h", "4h"]; // 1d skipped — requires too many 1m candles
-const CANDLES: u16 = 300;   // keep 1m data fetch reasonable
+const CANDLES: u32 = 300;   // keep 1m data fetch reasonable
 const CAPITAL: f64 = 10_000.0;
 const TRAILING_STOP: f64 = 0.12; // 12% — wider than 5%, based on stop sensitivity test
 const TAKE_PROFIT: f64 = 0.20;   // 20%

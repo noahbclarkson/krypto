@@ -181,7 +181,7 @@ impl DataLoader {
     /// # Arguments
     /// * `symbol` - Trading pair (e.g., "BTCUSDT")
     /// * `interval` - Candle interval (e.g., "1h", "4h", "1d")
-    /// * `total_candles` - Number of candles to fetch (max 65535)
+    /// * `total_candles` - Number of candles to fetch (u32, supports up to ~4 billion)
     ///
     /// # Returns
     /// DataFrame with columns: time, open, high, low, close, volume
@@ -195,7 +195,7 @@ impl DataLoader {
         &self,
         symbol: &str,
         interval: &str,
-        total_candles: u16,
+        total_candles: u32,
     ) -> Result<DataFrame> {
         tracing::info!(
             "Fetching {} {} candles for {} from Binance",
@@ -366,7 +366,7 @@ impl DataLoader {
         &self,
         symbol: &str,
         interval: &str,
-        total_candles: u16,
+        total_candles: u32,
     ) -> Result<DataFrame> {
         // Try cache first
         if let Some(cached) = self.load_from_cache(symbol, interval)? {

@@ -406,14 +406,14 @@ impl ExperimentRunner {
         Ok(df)
     }
 
-    fn resolve_lookback_candles(&self) -> Result<u16> {
+    fn resolve_lookback_candles(&self) -> Result<u32> {
         if let Some(lookback) = self.config.data.lookback_candles {
-            let bounded = lookback.min(u16::MAX as usize) as u16;
-            if lookback > u16::MAX as usize {
+            let bounded = lookback.min(u32::MAX as usize) as u32;
+            if lookback > u32::MAX as usize {
                 warn!(
-                    "lookback_candles={} exceeds u16::MAX; clamped to {}",
+                    "lookback_candles={} exceeds u32::MAX; clamped to {}",
                     lookback,
-                    u16::MAX
+                    u32::MAX
                 );
             }
             return Ok(bounded.max(1));
@@ -455,13 +455,13 @@ impl ExperimentRunner {
 
         let secs = (end - start).num_seconds().max(interval_secs as i64);
         let estimated = ((secs as f64 / interval_secs as f64).ceil() as usize).max(1);
-        let bounded = estimated.min(u16::MAX as usize) as u16;
+        let bounded = estimated.min(u32::MAX as usize) as u32;
 
-        if estimated > u16::MAX as usize {
+        if estimated > u32::MAX as usize {
             warn!(
-                "Resolved candle count {} exceeds u16::MAX; clamped to {}",
+                "Resolved candle count {} exceeds u32::MAX; clamped to {}",
                 estimated,
-                u16::MAX
+                u32::MAX
             );
         }
 
@@ -472,7 +472,7 @@ impl ExperimentRunner {
         &self,
         symbol: &str,
         interval: &str,
-        total_candles: u16,
+        total_candles: u32,
     ) -> Result<DataFrame> {
         let loader = DataLoader::new(None, None);
 

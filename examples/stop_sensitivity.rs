@@ -15,7 +15,7 @@ use krypto::{
 
 const SYMBOLS: &[&str] = &["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"];
 const INTERVALS: &[&str] = &["1h", "4h"];
-const CANDLES: u16 = 3000;
+const CANDLES: u32 = 3000;
 const CAPITAL: f64 = 10_000.0;
 const TAKE_PROFIT: f64 = 0.15; // 15% fixed
 const MAKER_FEE: f64 = 0.0;    // FDUSD 0%

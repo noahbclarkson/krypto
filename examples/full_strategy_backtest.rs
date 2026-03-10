@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 // ──────────────────────── tunables ────────────────────────────────────────────
-const CANDLES: u16 = 3000;
+const CANDLES: u32 = 3000;
 const CAPITAL: f64 = 10_000.0;
 const TRAILING_STOP: f64 = 0.05; // 5 %
 const TAKE_PROFIT: f64 = 0.15; // 15 % (0.0 to disable)

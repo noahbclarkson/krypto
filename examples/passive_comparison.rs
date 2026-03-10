@@ -26,8 +26,8 @@ async fn main() -> Result<()> {
     let loader = DataLoader::new(None, None);
     let symbol = "BTCFDUSD";
     let interval = "1h";
-    let candles_h: u16 = 100;
-    let candles_1m: u16 = 6000; // 100 * 60
+    let candles_h: u32 = 100;
+    let candles_1m: u32 = 6000; // 100 * 60
 
     println!("\n{}", "Fetching data...".bright_green());
     let df_high = loader.fetch_data(symbol, interval, candles_h).await?;

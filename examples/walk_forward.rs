@@ -74,7 +74,7 @@ impl RunRecord {
 
 // ─── Data loading with cache ───────────────────────────────────────────────────
 
-fn cache_path(symbol: &str, interval: &str, limit: u16) -> PathBuf {
+fn cache_path(symbol: &str, interval: &str, limit: u32) -> PathBuf {
     PathBuf::from(CACHE_DIR).join(format!("{symbol}_{interval}_{limit}.bin"))
 }
 
@@ -154,7 +154,7 @@ async fn load_or_fetch(
     loader: &DataLoader,
     symbol: &str,
     interval: &str,
-    limit: u16,
+    limit: u32,
 ) -> anyhow::Result<(polars::frame::DataFrame, bool)> {
     let path = cache_path(symbol, interval, limit);
     if path.exists() {
@@ -252,7 +252,7 @@ async fn main() -> anyhow::Result<()> {
 
     let symbols = vec!["BTCFDUSD", "ETHFDUSD", "SOLFDUSD", "DOGEFDUSD", "XRPFDUSD"];
     let intervals = vec!["4h", "1d", "1h"];
-    let limit: u16 = 10_000;
+    let limit: u32 = 10_000;
 
     let loader = DataLoader::new(None, None);
     let mut all_records: Vec<RunRecord> = Vec::new();

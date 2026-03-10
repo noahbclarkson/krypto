@@ -22,7 +22,7 @@ const SYMBOLS: &[(&str, &str)] = &[
     ("SOLUSDT", "SOLFDUSD"),
 ];
 const INTERVALS: &[&str] = &["1h", "4h"];
-const OHLCV_LIMIT: u16 = 10_000;
+const OHLCV_LIMIT: u32 = 10_000;
 /// Funding z-score window: 90 periods × 8h = 30 days of rolling baseline
 const Z_WINDOW: usize = 90;
 

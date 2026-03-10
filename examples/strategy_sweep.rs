@@ -14,11 +14,14 @@ use krypto::{
 use polars::prelude::*;
 use std::collections::HashMap;
 
-const CANDLES: u16 = 3000;
+const CANDLES: u32 = 3000;
 const CAPITAL: f64 = 10_000.0;
 
 // Focus on SOL since that's where we saw signal
-const SYMBOLS: &[&str] = &["SOLUSDT", "BTCUSDT"];
+const SYMBOLS: &[&str] = &[
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", 
+    "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT"
+];
 const INTERVALS: &[&str] = &["4h", "1d"];
 const STRATEGIES: &[&str] = &["bollinger_reversion", "volatility_squeeze"];
 

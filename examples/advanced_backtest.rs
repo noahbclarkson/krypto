@@ -284,7 +284,7 @@ fn draw_chart(cands: &[TradeCandidate]) -> Result<(), Box<dyn std::error::Error>
 async fn main() -> anyhow::Result<()> {
     let symbols = vec!["BTCFDUSD", "ETHFDUSD", "SOLFDUSD", "DOGEFDUSD", "XRPFDUSD"];
     let intervals = vec!["1h", "4h", "1d"];
-    let limit: u16 = 10_000;
+    let limit: u32 = 10_000;
 
     println!(
         "{}",

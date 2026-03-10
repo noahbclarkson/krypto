@@ -14,7 +14,7 @@ use std::collections::HashMap;
 
 const SYMBOLS: &[&str] = &["BTCFDUSD", "ETHFDUSD", "SOLFDUSD", "DOGEFDUSD", "XRPFDUSD"];
 const INTERVALS: &[&str] = &["4h", "1h"];
-const LIMIT: u16 = 10_000;
+const LIMIT: u32 = 10_000;
 const CS_LOOKBACK: usize = 42; // e.g. 7 days of 4h data
 
 #[tokio::main]

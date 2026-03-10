@@ -11,7 +11,7 @@ use krypto::backtest::walk_forward::{WalkForwardBacktester, WalkForwardConfig};
 use krypto::data::loader::DataLoader;
 use krypto::features::indicators::FeatureEngine;
 
-const LIMIT: u16 = 10_000;
+const LIMIT: u32 = 10_000;
 
 fn cfg_for_interval(interval: &str, iters: usize) -> WalkForwardConfig {
     match interval {

@@ -18,8 +18,8 @@ use std::time::Instant;
 
 const FDUSD_PAIRS: &[&str] = &["BTCFDUSD", "ETHFDUSD", "SOLFDUSD"];
 const INTERVALS: &[&str] = &["1h", "4h"];
-const CANDLES_1H: u16 = 500;
-const CANDLES_4H: u16 = 200;
+const CANDLES_1H: u32 = 500;
+const CANDLES_4H: u32 = 200;
 
 #[tokio::main]
 async fn main() -> Result<()> {

@@ -34,7 +34,7 @@ const PAIRS: &[(&str, &str)] = &[
     ("ETHFDUSD", "1d"),
 ];
 
-const CANDLES: u16 = 500;
+const CANDLES: u32 = 500;
 const CAPITAL: f64 = 10_000.0;
 const TRAILING_STOP: f64 = 0.05;
 const TAKE_PROFIT: f64 = 0.15;
@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
 
     for (symbol, interval) in PAIRS {
         // Candle counts per timeframe
-        let candles_h: u16 = CANDLES;
+        let candles_h: u32 = CANDLES;
         let mins_per_bar: u32 = match *interval {
             "1h" => 60,
             "4h" => 240,

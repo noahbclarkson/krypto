@@ -21,7 +21,7 @@ impl Universe {
         &self,
         symbols: &[&str],
         intervals: &[&str],
-        limit: u16,
+        limit: u32,
     ) -> Result<HashMap<String, DataFrame>> {
         let mut tasks = Vec::new();
 

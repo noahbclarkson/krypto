@@ -232,7 +232,7 @@ fn print_summary(summary: &BotSummary) {
 fn parse_args() -> (u16, String, f64) {
     let args: Vec<String> = std::env::args().collect();
     
-    let mut candles: u16 = 1000;
+    let mut candles: u32 = 1000;
     let mut interval = "1h".to_string();
     let mut capital = 10_000.0;
 
