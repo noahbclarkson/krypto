@@ -319,7 +319,7 @@ impl OptimizableStrategy for ConfirmedDynamicTrend {
 #[cfg(test)]
 mod ensemble_tests {
     use super::*;
-    use polars::prelude::*;
+    
 
     fn make_df(n: usize) -> DataFrame {
         let closes: Vec<f64> = (0..n).map(|i| 100.0 + i as f64 * 0.1).collect();

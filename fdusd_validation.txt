@@ -1,0 +1,161 @@
+   Compiling krypto v0.7.0 (/root/.openclaw/workspace/repos/krypto)
+warning: variable does not need to be mutable
+   --> examples/fdusd_validation.rs:131:21
+    |
+131 |                 let mut strat = registry.create(STRATEGY).unwrap();
+    |                     ----^^^^^
+    |                     |
+    |                     help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> examples/fdusd_validation.rs:184:21
+    |
+184 |                 let mut strat = registry.create(STRATEGY).unwrap();
+    |                     ----^^^^^
+    |                     |
+    |                     help: remove this `mut`
+
+warning: `krypto` (example "fdusd_validation") generated 2 warnings (run `cargo fix --example "fdusd_validation" -p krypto` to apply 2 suggestions)
+    Finished `sweep` profile [optimized] target(s) in 31.44s
+warning: the following packages contain code that will be rejected by a future version of Rust: binance-rs-async v1.3.3
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running `target/sweep/examples/fdusd_validation`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  FDUSD PASSIVE EXECUTION VALIDATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Strategy:  bollinger_reversion
+  Interval:  1d
+  ATR Stop:  0.5× ATR
+  Lower TF:  30m (adaptive, 48 bars/signal bar)
+  USDT fee:  0.050% taker
+  FDUSD fee: 0.000% maker (passive limit orders)
+
+  XRPUSDT / XRPFDUSD
+    USDT taker    trades= 237  WR= 60.3%  PF= 2.71  Ann.Ret=    96.2%  Ann.Shp= 8779.80  DD= 12.4%  Tr/yr= 30.2
+    FDUSD passv   trades=  71  WR= 52.1%  PF= 2.20  Ann.Ret=    35.8%  Ann.Shp=   58.85  DD= 10.4%  Tr/yr= 28.3
+    └── fill_rate=100.0%  price_impr=3.0ticks  bars_to_fill=27.3
+
+  DOGEUSDT / DOGEFDUSD
+    USDT taker    trades= 229  WR= 58.1%  PF= 2.12  Ann.Ret=   132.6%  Ann.Shp= 7073.42  DD= 23.2%  Tr/yr= 34.3
+    FDUSD passv   trades=  87  WR= 47.1%  PF= 1.72  Ann.Ret=    33.7%  Ann.Shp=   29.60  DD= 21.3%  Tr/yr= 34.7
+    └── fill_rate=98.9%  price_impr=3.0ticks  bars_to_fill=26.1
+
+  ADAUSDT / ADAFDUSD
+    USDT taker    trades= 264  WR= 53.8%  PF= 2.05  Ann.Ret=    68.5%  Ann.Shp= 1707.08  DD= 20.5%  Tr/yr= 33.4
+    FDUSD passv   trades=  78  WR= 48.7%  PF= 1.94  Ann.Ret=    33.1%  Ann.Shp=   36.02  DD= 15.6%  Tr/yr= 32.4
+    └── fill_rate=97.6%  price_impr=3.0ticks  bars_to_fill=26.2
+
+  LINKUSDT / LINKFDUSD
+    USDT taker    trades= 244  WR= 55.3%  PF= 1.63  Ann.Ret=    72.4%  Ann.Shp= 1079.00  DD= 26.0%  Tr/yr= 34.1
+    FDUSD passv   trades=  70  WR= 44.3%  PF= 1.06  Ann.Ret=     2.2%  Ann.Shp=    1.25  DD= 23.5%  Tr/yr= 29.5
+    └── fill_rate=100.0%  price_impr=3.0ticks  bars_to_fill=27.2
+
+  BNBUSDT / BNBFDUSD
+    USDT taker    trades= 288  WR= 48.3%  PF= 1.53  Ann.Ret=    52.0%  Ann.Shp=  414.50  DD= 43.0%  Tr/yr= 35.1
+    FDUSD passv   trades=  92  WR= 40.2%  PF= 1.04  Ann.Ret=     1.2%  Ann.Shp=    0.76  DD= 25.1%  Tr/yr= 35.1
+    └── fill_rate=100.0%  price_impr=3.0ticks  bars_to_fill=23.9
+
+  SOLUSDT / SOLFDUSD
+    USDT taker    trades= 196  WR= 54.6%  PF= 1.85  Ann.Ret=    91.3%  Ann.Shp= 1237.84  DD= 17.4%  Tr/yr= 35.1
+    FDUSD passv   trades=  89  WR= 49.4%  PF= 1.45  Ann.Ret=    17.6%  Ann.Shp=   21.48  DD= 13.9%  Tr/yr= 35.5
+    └── fill_rate=100.0%  price_impr=3.0ticks  bars_to_fill=27.4
+
+  BTCUSDT / BTCFDUSD
+    USDT taker    trades= 276  WR= 50.0%  PF= 2.12  Ann.Ret=    37.4%  Ann.Shp=  325.97  DD= 22.3%  Tr/yr= 33.6
+    FDUSD passv   trades=  88  WR= 42.0%  PF= 1.76  Ann.Ret=    14.3%  Ann.Shp=   29.92  DD=  8.1%  Tr/yr= 33.9
+    └── fill_rate=100.0%  price_impr=3.0ticks  bars_to_fill=25.7
+
+  ETHUSDT / ETHFDUSD
+    USDT taker    trades= 272  WR= 61.0%  PF= 3.33  Ann.Ret=    69.3%  Ann.Shp= 3586.23  DD= 11.9%  Tr/yr= 33.1
+    FDUSD passv   trades=  85  WR= 52.9%  PF= 3.70  Ann.Ret=    48.3%  Ann.Shp=   99.12  DD= 10.3%  Tr/yr= 32.7
+    └── fill_rate=100.0%  price_impr=3.0ticks  bars_to_fill=26.5
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SUMMARY: USDT TAKER vs FDUSD PASSIVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Root    USDAnnR%    USDShp  FDSAnnR%    FDSShp  FillRate  PrImprTk  BarsToFll  ShpDelta
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  XRP         96.2   8779.80      35.8     58.85     100.0%       3.0       27.3  -8720.95
+  DOGE       132.6   7073.42      33.7     29.60      98.9%       3.0       26.1  -7043.82
+  ADA         68.5   1707.08      33.1     36.02      97.6%       3.0       26.2  -1671.06
+  LINK        72.4   1079.00       2.2      1.25     100.0%       3.0       27.2  -1077.75
+  BNB         52.0    414.50       1.2      0.76     100.0%       3.0       23.9   -413.74
+  SOL         91.3   1237.84      17.6     21.48     100.0%       3.0       27.4  -1216.36
+  BTC         37.4    325.97      14.3     29.92     100.0%       3.0       25.7   -296.05
+  ETH         69.3   3586.23      48.3     99.12     100.0%       3.0       26.5  -3487.11
+
+  Avg Sharpe delta (FDUSD passive − USDT taker): -2990.85
+  ✗ USDT taker outperforms FDUSD passive on Sharpe
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  VIABLE FDUSD CANDIDATES (fill rate ≥ 50%, ann. return > 0%)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  XRPFDUSD — bollinger_reversion 1d (0.5× ATR stop):
+    Ann. Return: 35.8%
+    Ann. Sharpe: 58.85
+    Trades/yr:   28.3
+    Win Rate:    52.1%
+    Max DD:      10.4%
+    Fill Rate:   100.0%
+
+  DOGEFDUSD — bollinger_reversion 1d (0.5× ATR stop):
+    Ann. Return: 33.7%
+    Ann. Sharpe: 29.60
+    Trades/yr:   34.7
+    Win Rate:    47.1%
+    Max DD:      21.3%
+    Fill Rate:   98.9%
+
+  ADAFDUSD — bollinger_reversion 1d (0.5× ATR stop):
+    Ann. Return: 33.1%
+    Ann. Sharpe: 36.02
+    Trades/yr:   32.4
+    Win Rate:    48.7%
+    Max DD:      15.6%
+    Fill Rate:   97.6%
+
+  LINKFDUSD — bollinger_reversion 1d (0.5× ATR stop):
+    Ann. Return: 2.2%
+    Ann. Sharpe: 1.25
+    Trades/yr:   29.5
+    Win Rate:    44.3%
+    Max DD:      23.5%
+    Fill Rate:   100.0%
+
+  BNBFDUSD — bollinger_reversion 1d (0.5× ATR stop):
+    Ann. Return: 1.2%
+    Ann. Sharpe: 0.76
+    Trades/yr:   35.1
+    Win Rate:    40.2%
+    Max DD:      25.1%
+    Fill Rate:   100.0%
+
+  SOLFDUSD — bollinger_reversion 1d (0.5× ATR stop):
+    Ann. Return: 17.6%
+    Ann. Sharpe: 21.48
+    Trades/yr:   35.5
+    Win Rate:    49.4%
+    Max DD:      13.9%
+    Fill Rate:   100.0%
+
+  BTCFDUSD — bollinger_reversion 1d (0.5× ATR stop):
+    Ann. Return: 14.3%
+    Ann. Sharpe: 29.92
+    Trades/yr:   33.9
+    Win Rate:    42.0%
+    Max DD:      8.1%
+    Fill Rate:   100.0%
+
+  ETHFDUSD — bollinger_reversion 1d (0.5× ATR stop):
+    Ann. Return: 48.3%
+    Ann. Sharpe: 99.12
+    Trades/yr:   32.7
+    Win Rate:    52.9%
+    Max DD:      10.3%
+    Fill Rate:   100.0%
+

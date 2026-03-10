@@ -498,7 +498,7 @@ fn compute_sharpe_from_equity(curve: &[f64]) -> f64 {
 mod tests {
     use super::*;
     use chrono::NaiveDate;
-    use polars::prelude::*;
+    
 
     fn make_test_df(n: usize) -> DataFrame {
         let times: Vec<i64> = (0..n as i64)

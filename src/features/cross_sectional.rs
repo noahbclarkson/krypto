@@ -190,7 +190,7 @@ pub fn compute_cs_features(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use polars::prelude::*;
+    
 
     fn make_df(closes: Vec<f64>) -> DataFrame {
         let n = closes.len();

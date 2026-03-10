@@ -1671,7 +1671,7 @@ impl OptimizableStrategy for RegimeAdaptive {
 #[cfg(test)]
 mod funding_rate_tests {
     use super::*;
-    use polars::prelude::*;
+    
 
     fn make_df_with_funding(fr_z: Vec<f64>, rsi: Vec<f64>) -> DataFrame {
         let n = fr_z.len();
@@ -1920,7 +1920,7 @@ impl OptimizableStrategy for CrossSectionalMomentum {
 #[cfg(test)]
 mod cs_momentum_tests {
     use super::*;
-    use polars::prelude::*;
+    
 
     fn make_df_with_ranks(ranks: Vec<f64>) -> DataFrame {
         let n = ranks.len();

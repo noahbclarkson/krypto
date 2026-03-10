@@ -469,7 +469,7 @@ impl PassiveExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use polars::time::*;
+    
 
     fn make_test_data() -> (DataFrame, DataFrame) {
         let high_times: Vec<i64> = vec![0, 3600_000];
@@ -556,7 +556,7 @@ mod tests {
             anchor_to_signal: false,
         };
         let executor = PassiveExecutor::new(config);
-        let (fills, stats) = executor.simulate(&df_high, &df_low, &signals).await.unwrap();
+        let (_fills, stats) = executor.simulate(&df_high, &df_low, &signals).await.unwrap();
 
         assert_eq!(stats.total_signals, 1);
         assert_eq!(stats.filled_signals, 1, "Should fill when low < open");

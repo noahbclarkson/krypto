@@ -359,7 +359,7 @@ pub fn align_to_ohlcv(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use polars::prelude::*;
+    
 
     fn make_funding_df(rates: Vec<f64>) -> DataFrame {
         let n = rates.len();
