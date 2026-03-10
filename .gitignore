@@ -22,3 +22,5 @@ krypto_report.md
 /examples/cache
 
 backtest_results.png
+# Sweep outputs
+sweep_output*.txt
