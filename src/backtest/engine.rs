@@ -705,6 +705,276 @@ impl BacktestResult {
     }
 }
 
+impl Backtester {
+    /// Run backtest with passive (limit order) execution on FDUSD pairs.
+    ///
+    /// Differs from `run()` in two ways:
+    /// 1. Entry prices come from passive limit fills rather than market close price.
+    /// 2. Signals that don't get filled within `max_wait_bars` are skipped entirely.
+    ///
+    /// This models the real FDUSD 0% maker fee execution path. Call with
+    /// `fee_pct = 0.0` and `slippage_bps = 0.0` on the Backtester.
+    pub async fn run_passive(
+        &self,
+        df_high: &DataFrame,
+        df_low: &DataFrame,
+        signal: &Series,
+        trailing_sl: f64,
+        take_profit: f64,
+        passive_config: crate::backtest::passive::PassiveConfig,
+    ) -> Result<BacktestResult> {
+        use crate::backtest::passive::PassiveExecutor;
+        use std::collections::HashMap;
+
+        // Phase 1: Pre-compute passive fills.
+        // Returns FillEvent per signal, giving us the actual fill price and bar index.
+        let executor = PassiveExecutor::new(passive_config);
+        let (fills, _stats) = executor.simulate(df_high, df_low, signal).await?;
+
+        // Build a map from signal_bar → fill_price so the main loop can look it up.
+        // If a signal bar has no fill entry, it means the order didn't fill — skip it.
+        let fill_map: HashMap<usize, f64> = fills.iter()
+            .map(|f| (f.signal_bar, f.fill_price))
+            .collect();
+
+        // Phase 2: Run the standard backtest loop, but override entry prices with
+        // passive fill prices and skip any signal that didn't get filled.
+        let closes = df_high.column("close")?.f64()?;
+        let highs = df_high.column("high")?.f64()?;
+        let lows = df_high.column("low")?.f64()?;
+        let signals = signal.f64()?;
+
+        let mut equity = self.initial_capital;
+        let mut position = 0.0f64;
+        let mut position_size = 0.0f64;
+        let mut entry_price = 0.0f64;
+        let mut highest_price_in_trade = 0.0f64;
+        let mut lowest_price_in_trade = 0.0f64;
+
+        let mut wins = 0usize;
+        let mut losses = 0usize;
+        let mut gross_profit = 0.0f64;
+        let mut gross_loss = 0.0f64;
+        let mut total_fees_paid = 0.0f64;
+
+        let mut peak_equity = equity;
+        let mut max_drawdown = 0.0f64;
+        let mut equity_curve = Vec::with_capacity(closes.len());
+
+        let mut trade_returns: Vec<f64> = Vec::new();
+        let mut trade_durations: Vec<usize> = Vec::new();
+        let mut entry_bar = 0usize;
+        let mut consecutive_wins = 0usize;
+        let mut consecutive_losses = 0usize;
+        let mut max_consecutive_wins = 0usize;
+        let mut max_consecutive_losses = 0usize;
+        let mut largest_win_pct = 0.0f64;
+        let mut largest_loss_pct = 0.0f64;
+
+        let mut trades: Vec<Trade> = Vec::new();
+
+        for i in 0..closes.len() {
+            let price = closes.get(i).unwrap_or(0.0);
+            let high  = highs.get(i).unwrap_or(price);
+            let low   = lows.get(i).unwrap_or(price);
+            let sig   = signals.get(i).unwrap_or(0.0);
+
+            // ── Trailing stop (long) ───────────────────────────────────────
+            if position > 0.0 {
+                highest_price_in_trade = highest_price_in_trade.max(high);
+                let stop_price = highest_price_in_trade * (1.0 - trailing_sl);
+                if low < stop_price {
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0;
+                    let pnl_pct = (stop_price - entry_price) / entry_price;
+                    let pnl_amount = notional * pnl_pct - fee;
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+                    if pnl_amount > 0.0 { wins += 1; gross_profit += pnl_amount; }
+                    else { losses += 1; gross_loss += pnl_amount.abs(); }
+                    Self::update_trade_metrics(pnl_pct, i, entry_bar, &mut trade_returns,
+                        &mut trade_durations, &mut consecutive_wins, &mut consecutive_losses,
+                        &mut max_consecutive_wins, &mut max_consecutive_losses,
+                        &mut largest_win_pct, &mut largest_loss_pct);
+                    trades.push(Trade { entry_bar, exit_bar: i, entry_price,
+                        exit_price: stop_price, direction: 1.0, position_size,
+                        pnl_pct, pnl_amount, exit_reason: ExitReason::StopLoss, fees: fee });
+                    position = 0.0; position_size = 0.0;
+                }
+            }
+
+            // ── Trailing stop (short) ──────────────────────────────────────
+            if position < 0.0 {
+                lowest_price_in_trade = lowest_price_in_trade.min(low);
+                let stop_price = lowest_price_in_trade * (1.0 + trailing_sl);
+                if high > stop_price {
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0;
+                    let pnl_pct = (entry_price - stop_price) / entry_price;
+                    let pnl_amount = notional * pnl_pct - fee;
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+                    if pnl_amount > 0.0 { wins += 1; gross_profit += pnl_amount; }
+                    else { losses += 1; gross_loss += pnl_amount.abs(); }
+                    Self::update_trade_metrics(pnl_pct, i, entry_bar, &mut trade_returns,
+                        &mut trade_durations, &mut consecutive_wins, &mut consecutive_losses,
+                        &mut max_consecutive_wins, &mut max_consecutive_losses,
+                        &mut largest_win_pct, &mut largest_loss_pct);
+                    trades.push(Trade { entry_bar, exit_bar: i, entry_price,
+                        exit_price: stop_price, direction: -1.0, position_size,
+                        pnl_pct, pnl_amount, exit_reason: ExitReason::StopLoss, fees: fee });
+                    position = 0.0; position_size = 0.0;
+                }
+            }
+
+            // ── Take profit (long) ─────────────────────────────────────────
+            if take_profit > 0.0 && position > 0.0 {
+                let tp_price = entry_price * (1.0 + take_profit);
+                if high >= tp_price {
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0;
+                    let pnl_pct = (tp_price - entry_price) / entry_price;
+                    let pnl_amount = notional * pnl_pct - fee;
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+                    if pnl_amount > 0.0 { wins += 1; gross_profit += pnl_amount; }
+                    else { losses += 1; gross_loss += pnl_amount.abs(); }
+                    Self::update_trade_metrics(pnl_pct, i, entry_bar, &mut trade_returns,
+                        &mut trade_durations, &mut consecutive_wins, &mut consecutive_losses,
+                        &mut max_consecutive_wins, &mut max_consecutive_losses,
+                        &mut largest_win_pct, &mut largest_loss_pct);
+                    trades.push(Trade { entry_bar, exit_bar: i, entry_price,
+                        exit_price: tp_price, direction: 1.0, position_size,
+                        pnl_pct, pnl_amount, exit_reason: ExitReason::TakeProfit, fees: fee });
+                    position = 0.0; position_size = 0.0;
+                }
+            }
+
+            // ── Take profit (short) ────────────────────────────────────────
+            if take_profit > 0.0 && position < 0.0 {
+                let tp_price = entry_price * (1.0 - take_profit);
+                if low <= tp_price {
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0;
+                    let pnl_pct = (entry_price - tp_price) / entry_price;
+                    let pnl_amount = notional * pnl_pct - fee;
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+                    if pnl_amount > 0.0 { wins += 1; gross_profit += pnl_amount; }
+                    else { losses += 1; gross_loss += pnl_amount.abs(); }
+                    Self::update_trade_metrics(pnl_pct, i, entry_bar, &mut trade_returns,
+                        &mut trade_durations, &mut consecutive_wins, &mut consecutive_losses,
+                        &mut max_consecutive_wins, &mut max_consecutive_losses,
+                        &mut largest_win_pct, &mut largest_loss_pct);
+                    trades.push(Trade { entry_bar, exit_bar: i, entry_price,
+                        exit_price: tp_price, direction: -1.0, position_size,
+                        pnl_pct, pnl_amount, exit_reason: ExitReason::TakeProfit, fees: fee });
+                    position = 0.0; position_size = 0.0;
+                }
+            }
+
+            // ── Signal change / exit ───────────────────────────────────────
+            let new_direction = if sig > 0.01 { 1.0 } else if sig < -0.01 { -1.0 } else { 0.0 };
+            if position.abs() > 0.01 && (new_direction != position || new_direction == 0.0) {
+                // Close existing position at current close
+                let notional = equity * position_size;
+                let fee = notional * self.fee_pct * 2.0;
+                let raw_pnl = if position > 0.0 {
+                    (price - entry_price) / entry_price
+                } else {
+                    (entry_price - price) / entry_price
+                };
+                let pnl_amount = notional * raw_pnl - fee;
+                equity += pnl_amount;
+                total_fees_paid += fee;
+                if pnl_amount > 0.0 { wins += 1; gross_profit += pnl_amount; }
+                else { losses += 1; gross_loss += pnl_amount.abs(); }
+                Self::update_trade_metrics(raw_pnl, i, entry_bar, &mut trade_returns,
+                    &mut trade_durations, &mut consecutive_wins, &mut consecutive_losses,
+                    &mut max_consecutive_wins, &mut max_consecutive_losses,
+                    &mut largest_win_pct, &mut largest_loss_pct);
+                trades.push(Trade { entry_bar, exit_bar: i, entry_price,
+                    exit_price: price, direction: position, position_size,
+                    pnl_pct: raw_pnl, pnl_amount, exit_reason: ExitReason::SignalExit, fees: fee });
+                position = 0.0; position_size = 0.0;
+            }
+
+            // ── Entry (passive fill required) ──────────────────────────────
+            if new_direction != 0.0 && position.abs() < 0.01 {
+                // Only enter if there was a passive fill at this bar
+                if let Some(&fill_px) = fill_map.get(&i) {
+                    position_size = self.calculate_position_size(equity, fill_px, trailing_sl);
+                    entry_price = fill_px;
+                    highest_price_in_trade = price;
+                    lowest_price_in_trade = price;
+                    entry_bar = i;
+                    position = new_direction;
+                }
+                // No fill → skip this signal (order didn't execute)
+            }
+
+            // ── Drawdown & equity curve ────────────────────────────────────
+            if equity > peak_equity { peak_equity = equity; }
+            let dd = (peak_equity - equity) / peak_equity;
+            if dd > max_drawdown { max_drawdown = dd; }
+
+            let mtm = if position.abs() > 0.01 {
+                let p = if position > 0.0 { (price - entry_price) / entry_price }
+                        else { (entry_price - price) / entry_price };
+                equity + equity * position_size * p
+            } else { equity };
+            equity_curve.push(mtm);
+        }
+
+        let total_trades = wins + losses;
+        let win_rate = if total_trades > 0 { wins as f64 / total_trades as f64 } else { 0.0 };
+        let profit_factor = if gross_loss > 0.0 { gross_profit / gross_loss } else { gross_profit };
+        let total_return_pct = (equity - self.initial_capital) / self.initial_capital * 100.0;
+        let max_drawdown_pct = max_drawdown * 100.0;
+
+        let downside: Vec<f64> = trade_returns.iter().filter(|&&r| r < 0.0).map(|&r| r * r).collect();
+        let downside_std = if downside.is_empty() { 0.0 } else { (downside.iter().sum::<f64>() / downside.len() as f64).sqrt() };
+        let avg_ret = if trade_returns.is_empty() { 0.0 } else { trade_returns.iter().sum::<f64>() / trade_returns.len() as f64 };
+        let sortino = if downside_std > 0.0 { avg_ret / downside_std } else { 0.0 };
+        let avg_duration = if trade_durations.is_empty() { 0.0 }
+            else { trade_durations.iter().sum::<usize>() as f64 / trade_durations.len() as f64 };
+        let calmar = if max_drawdown > 0.0 { total_return_pct / max_drawdown_pct } else { total_return_pct };
+
+        let avg_win_pct = if wins > 0 {
+            trades.iter().filter(|t| t.pnl_amount > 0.0).map(|t| t.pnl_pct * 100.0).sum::<f64>() / wins as f64
+        } else { 0.0 };
+        let avg_loss_pct = if losses > 0 {
+            trades.iter().filter(|t| t.pnl_amount <= 0.0).map(|t| t.pnl_pct * 100.0).sum::<f64>() / losses as f64
+        } else { 0.0 };
+        let avg_pos_size = if trades.is_empty() { 0.0 }
+            else { trades.iter().map(|t| t.position_size).sum::<f64>() / trades.len() as f64 };
+
+        Ok(BacktestResult {
+            final_equity: equity,
+            total_return_pct,
+            win_rate: win_rate * 100.0,
+            total_trades,
+            profit_factor,
+            max_drawdown_pct,
+            total_fees_paid,
+            equity_curve,
+            trades,
+            sharpe_ratio: 0.0, // Needs full equity-curve return series to compute
+            kelly_fraction: 0.0,
+            sortino_ratio: sortino,
+            calmar_ratio: calmar,
+            avg_trade_duration_bars: avg_duration,
+            max_consecutive_wins,
+            max_consecutive_losses,
+            avg_win_pct,
+            avg_loss_pct,
+            largest_win_pct,
+            largest_loss_pct,
+            average_position_size: avg_pos_size,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
