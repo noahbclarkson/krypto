@@ -1,22 +1,75 @@
 //! Passive execution model for FDUSD pairs (0% maker fees).
 //!
 //! Instead of executing at market (paying taker fees), this module simulates
-//! placing limit orders below each 1m candle's open and walking forward.
+//! placing limit orders below each lower-timeframe candle's open and walking forward.
 //!
 //! # How it works (correct model)
 //!
 //! For each higher-timeframe bar (e.g., 1h):
-//! 1. Iterate through each 1m candle within that bar
-//! 2. At each 1m open, place limit at `open - N_ticks`
+//! 1. Iterate through each lower-timeframe candle within that bar
+//! 2. At each lower-tf open, place limit at `open - N_ticks`
 //! 3. If `low <= limit`: filled at limit (0 fees, better price!)
-//! 4. If not filled: move to next 1m candle, update limit to new `open - N_ticks`
+//! 4. If not filled: move to next lower-tf candle, update limit to new `open - N_ticks`
 //! 5. Repeat until filled (almost 100% fill rate since most candles dip below open)
+//!
+//! # Adaptive lower interval
+//!
+//! Use [`lower_interval_for_signal`] to automatically pick the appropriate
+//! lower-timeframe based on the signal interval:
+//! - 1h signal → 5m  (12 bars per signal bar)
+//! - 4h signal → 15m (16 bars per signal bar)
+//! - 1d signal → 30m (48 bars per signal bar)
 
 use anyhow::Result;
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 use tokio::sync::RwLock;
+
+/// Select the appropriate lower-timeframe interval for passive execution given the signal interval.
+///
+/// Chosen to balance fill precision against data fetch volume:
+/// - `"1h"` → `"5m"`  (12 bars per signal bar)
+/// - `"4h"` → `"15m"` (16 bars per signal bar)
+/// - `"1d"` → `"30m"` (48 bars per signal bar)
+/// - anything else → `"5m"` (conservative fallback)
+pub fn lower_interval_for_signal(signal_interval: &str) -> &'static str {
+    match signal_interval {
+        "1h" | "2h" => "5m",
+        "4h" | "6h" | "8h" | "12h" => "15m",
+        "1d" | "3d" | "1w" => "30m",
+        _ => "5m",
+    }
+}
+
+/// Number of lower-timeframe bars that fit within one signal-interval bar.
+/// Used to configure `PassiveConfig::max_wait_bars`.
+pub fn bars_per_signal(signal_interval: &str) -> usize {
+    let lower = lower_interval_for_signal(signal_interval);
+    let signal_secs = interval_to_seconds(signal_interval).unwrap_or(3600);
+    let lower_secs = interval_to_seconds(lower).unwrap_or(300);
+    (signal_secs / lower_secs) as usize
+}
+
+fn interval_to_seconds(interval: &str) -> Option<u64> {
+    match interval {
+        "1m" => Some(60),
+        "3m" => Some(3 * 60),
+        "5m" => Some(5 * 60),
+        "15m" => Some(15 * 60),
+        "30m" => Some(30 * 60),
+        "1h" => Some(60 * 60),
+        "2h" => Some(2 * 60 * 60),
+        "4h" => Some(4 * 60 * 60),
+        "6h" => Some(6 * 60 * 60),
+        "8h" => Some(8 * 60 * 60),
+        "12h" => Some(12 * 60 * 60),
+        "1d" => Some(24 * 60 * 60),
+        "3d" => Some(3 * 24 * 60 * 60),
+        "1w" => Some(7 * 24 * 60 * 60),
+        _ => None,
+    }
+}
 
 /// Global cache for tick sizes (symbol -> tick size)
 static TICK_SIZE_CACHE: OnceLock<RwLock<std::collections::HashMap<String, f64>>> = OnceLock::new();

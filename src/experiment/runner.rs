@@ -1352,6 +1352,12 @@ mod tests {
             largest_win_pct: 3.5,
             largest_loss_pct: 1.5,
             trades: vec![],
+            // Normalised metrics
+            annualised_return_pct: 0.0,
+            trades_per_year: 0.0,
+            annualised_sharpe: 0.0,
+            return_per_trade_pct: 1.0,
+            backtest_years: 0.0,
         };
 
         // Convert to BacktestMetrics

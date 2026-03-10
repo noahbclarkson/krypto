@@ -121,6 +121,20 @@ pub struct BacktestResult {
     pub largest_loss_pct: f64,
     /// Individual closed trade records. Empty only if no trades were taken.
     pub trades: Vec<Trade>,
+
+    // ── Normalised / time-adjusted metrics ──────────────────────────────────
+    /// Annualised return (%). Computed from total return and the time span of
+    /// the backtest in years. Use this to compare strategies across timeframes.
+    pub annualised_return_pct: f64,
+    /// Number of trades per year. High frequency = more statistically robust.
+    pub trades_per_year: f64,
+    /// Annualised Sharpe ratio (sharpe_ratio × √(trades_per_year)).
+    /// Best single metric for comparing strategies across timeframes.
+    pub annualised_sharpe: f64,
+    /// Return per trade (total_return_pct / total_trades). Edge per opportunity.
+    pub return_per_trade_pct: f64,
+    /// Number of years covered by the backtest (derived from timestamps).
+    pub backtest_years: f64,
 }
 
 /// Trading engine that simulates strategy execution over historical data.
@@ -285,6 +299,18 @@ impl Backtester {
     }
 
     pub fn run(&self, df: &DataFrame, signal: &Series, trailing_sl: f64, take_profit: f64) -> Result<BacktestResult> {
+        // Compute time span for normalised metrics
+        let backtest_years = df.column("time").ok()
+            .and_then(|s| {
+                let ts = s.datetime().ok()?;
+                let first = ts.get(0)?;
+                let last = ts.get(ts.len().saturating_sub(1))?;
+                // timestamps are in milliseconds
+                let diff_ms = (last - first).abs() as f64;
+                Some(diff_ms / (365.25 * 24.0 * 3600.0 * 1000.0))
+            })
+            .unwrap_or(0.0);
+
         let closes = df.column("close")?.f64()?;
         let highs = df.column("high")?.f64()?;
         let lows = df.column("low")?.f64()?;
@@ -691,6 +717,30 @@ impl Backtester {
             0.0
         };
 
+        // ── Normalised / time-adjusted metrics ──────────────────────────────
+        let annualised_return_pct = if backtest_years > 0.0 {
+            // Compound annualisation: (1 + total_return)^(1/years) - 1
+            ((1.0 + total_return).powf(1.0 / backtest_years) - 1.0) * 100.0
+        } else {
+            0.0
+        };
+        let trades_per_year = if backtest_years > 0.0 {
+            total_trades as f64 / backtest_years
+        } else {
+            0.0
+        };
+        // Annualise Sharpe: multiply per-trade Sharpe by √(trades_per_year)
+        let annualised_sharpe = if trades_per_year > 0.0 {
+            sharpe * trades_per_year.sqrt()
+        } else {
+            0.0
+        };
+        let return_per_trade_pct = if total_trades > 0 {
+            total_return * 100.0 / total_trades as f64
+        } else {
+            0.0
+        };
+
         Ok(BacktestResult {
             total_trades,
             win_rate: win_rate * 100.0,
@@ -714,6 +764,12 @@ impl Backtester {
             largest_win_pct,
             largest_loss_pct,
             trades,
+            // Normalised metrics
+            annualised_return_pct,
+            trades_per_year,
+            annualised_sharpe,
+            return_per_trade_pct,
+            backtest_years,
         })
     }
 }
@@ -1016,6 +1072,12 @@ impl Backtester {
             largest_win_pct,
             largest_loss_pct,
             average_position_size: avg_pos_size,
+            // Normalised metrics (not computed in this path — no time column access)
+            annualised_return_pct: 0.0,
+            trades_per_year: 0.0,
+            annualised_sharpe: 0.0,
+            return_per_trade_pct: if total_trades > 0 { total_return_pct / total_trades as f64 } else { 0.0 },
+            backtest_years: 0.0,
         })
     }
 }

@@ -620,6 +620,11 @@ mod tests {
             largest_win_pct: 5.0,
             largest_loss_pct: -2.0,
             trades: vec![],
+            annualised_return_pct: 0.0,
+            trades_per_year: 0.0,
+            annualised_sharpe: 0.0,
+            return_per_trade_pct: 0.0,
+            backtest_years: 0.0,
         };
 
         let w = WindowResult {
