@@ -167,6 +167,51 @@ impl Backtester {
         self
     }
 
+    /// Run a backtest using passive limit-order execution (0% maker fees).
+    ///
+    /// This method:
+    /// 1. Runs `PassiveExecutor::process_signals()` on the lower-timeframe (`df_low`) data
+    ///    to simulate placing limit orders below each bar open.
+    /// 2. Converts the fill events to a filtered signal series (only filled bars get signals).
+    /// 3. Runs the standard `run()` with the passive executor's fee rate (typically 0.0).
+    ///
+    /// # Arguments
+    /// * `df_high` - Higher-timeframe OHLCV data (e.g. 1h candles)
+    /// * `df_low`  - Lower-timeframe OHLCV data (e.g. 1m candles) for fill simulation
+    /// * `signals` - Raw strategy signals on the higher timeframe
+    /// * `trailing_sl` - Trailing stop fraction (e.g. 0.05 = 5%)
+    /// * `take_profit` - Take-profit fraction (e.g. 0.15 = 15%, 0.0 to disable)
+    /// * `passive_config` - Configuration for the passive executor
+    ///
+    /// Returns the standard `BacktestResult` plus fill statistics.
+    pub async fn run_with_passive(
+        &self,
+        df_high: &polars::prelude::DataFrame,
+        df_low: &polars::prelude::DataFrame,
+        signals: &polars::prelude::Series,
+        trailing_sl: f64,
+        take_profit: f64,
+        passive_config: crate::backtest::passive::PassiveConfig,
+    ) -> anyhow::Result<(BacktestResult, crate::backtest::passive::PassiveFillStats)> {
+        use crate::backtest::passive::PassiveExecutor;
+
+        let executor = PassiveExecutor::new(passive_config.clone());
+        let (filtered_signals, fill_stats) = executor
+            .process_signals(df_high, df_low, signals)
+            .await?;
+
+        // Build a zero-fee backtester using the maker fee from passive config
+        let passive_bt = Backtester::new(
+            self.initial_capital,
+            passive_config.maker_fee,
+            0.0, // No slippage — we set the limit price
+        )
+        .with_position_sizing(self.position_sizing);
+
+        let result = passive_bt.run(df_high, &filtered_signals, trailing_sl, take_profit)?;
+        Ok((result, fill_stats))
+    }
+
     /// Convert slippage_bps to a multiplier factor (e.g. 5 bps → 0.0005).
     #[inline]
     fn slippage_factor(&self) -> f64 {
