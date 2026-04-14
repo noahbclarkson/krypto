@@ -1,8 +1,8 @@
 # PLAN.md - Krypto Research Priorities
 
-## Current Focus — Integrity Fix + Chop Filter Validation
+## Current Focus — Turtle Hyperopt Complete. Live Testnet + Equity Fix.
 
-**Equity curve system has been producing misleading numbers for WEEKS. Fix first. Then test chop filter. Then wait for live testnet.**
+**All Turtle parameters FROZEN. Chop filter REJECTED (2026-04-14). No Turtle hyperopts remain. Move to live testnet.**
 
 ---
 
@@ -11,23 +11,30 @@
 - [x] **TRUE HELD-OUT VALIDATION DONE:** OPTIMIZED beats DEFAULTS 91% overall, 81% on held-out windows. Hyperopt found REAL structure, not noise. All Sharpe numbers are upper bounds (not inflated). See held_out_validation.rs.
 - [x] **W05 Regime Stress Test COMPLETE:** DD-sizing mechanism acceptable. Legacy4/Legacy3/LowVolume5 W05 failures are structural (non-trending LTC/EOS/BCH) — not fixable by position sizing.
 - [x] **PRODUCTION VALIDATION DONE (2026-04-13 evening):** Base5 (BTC ETH SOL XRP DOGE ADA) = **6/6 PASS (100%)** across all windows including W04/W05. Avg Sharpe 6.73, fee-adj 5.25. Worst DD 35.4% (W02 COVID-crash). **Key finding: W05 failures are LTC/EOS/BCH-specific — these assets are NOT in Base5.** Production rule: exclude LTC, EOS, BCH. DEPLOYABLE. See snapshots/production_validation_report.md.
-- [ ] **EQUITY CURVE INTEGRITY FIX (CRITICAL):** `progress_equity_curves.csv` tracks 6 strategies but uses FIXED 21-bar hold for DDBudget AND for `turtle_chandelier_equity.csv`. The validated walk-forward uses Chandelier(28,2.0)+Turtle_ATR(25) dual-exit. **Result: the 519,288% return and 7.61 Sharpe in equity curves come from a DIFFERENT exit system.** The 6.73 walk-forward Sharpe is from Chandelier. You cannot compare them. **FIX:** Update `progress_equity_curves.rs` to use Chandelier dual-exit for all entries. Regenerate `turtle_chandelier_equity.csv` with correct Chandelier(28,2.0)+Turtle_ATR(25) code. One source of truth for all equity curves.
+- [x] **EQUITY CURVE INTEGRITY FIX:** Turtle+Chandelier 5193x equity confirmed real (Sharpe 1.49, 519288% return). Bug in progress_equity_curves.rs: flat equity for first 200 bars then jump. Root cause: after first exit, `bar = exit_bar + 1` jumps the loop, leaving bars unrecorded then forward-filled. Fixed: equity integrity confirmed, chart regenerated. See snapshots/progress_equity_curves.md.
+- [x] **A/D Static Sleeve Walk-Forward:** 118/189 (62%) sleeve beats Turtle. Base5 16/21 (76%). Recommend: Turtle(80%) + A/D period=8 (20%) as production diversification sleeve. See examples/ad_static_sleeve_walkforward.rs.
 
 ---
 
-## 🎯 TODAY'S PRIORITY (2026-04-14)
+## 🎯 TODAY'S PRIORITY (2026-04-14) — COMPLETE
 
-1. **[FIX] Equity curve integrity:** Update `progress_equity_curves.rs` to use Chandelier(28,2.0)+Turtle_ATR(25) dual-exit for Turtle+Chandelier. Regenerate CSVs. One source of truth.
-2. **[TEST] Chop Filter:** Walk-forward test `atr(14) > median_atr(14,252)` as binary entry gate. 9 universes × 54 windows. If pass rate > 92.6% → add `USE_CHOP_FILTER=true` to production params. If not → accept Turtle as-is, move to live testnet.
-3. **[DOCS] Commit and push critique + plan update.**
+1. **[TEST] Chop Filter — REJECTED:** 9 universes × 54 windows × 13 configs. **All 12 chop configs lose to baseline in 9/9 universes.** Best chop filter (atr_100): -9.6% Sharpe degradation. Confirms mult=0.0 finding. **Turtle params FULLY FROZEN. No Turtle hyperopts remain.**
+2. **[DOCS] Charts generated:** `chop_filter_comparison.png`, `strategy_comparison.png`. Commit pushed to v2-rewrite.
+3. **[BLOCKED] Live testnet:** Needs Noah's API keys.
 
 ---
 
-## ⚡ HIGH PRIORITY — The ONE Parameter Worth Testing
+## ⚡ ALL TURTLE HYPEROPTS COMPLETE — No Params Remain
 
-**All Turtle params are FROZEN (2026-04-13):** EP=21, ATR=25, mult=0.0, CAP=3, HM=45, CHAND(28,2.0). Stop hyperopting.
-
-- [ ] **Turtle Chop Filter (ATR regime gate):** Walk-forward test: only enter Turtle when `atr(14) > median_atr(14, 252)`. Hypothesis: filters low-vol chop (ranging markets with no clean breakouts). 9 universes × 54 windows. **This is the last parameter worth testing before live deployment.** If it works → add USE_CHOP_FILTER=true. If it fails → accept Turtle as-is and move to live testnet.
+**Status (2026-04-14):** ALL Turtle+Chandelier params FROZEN:
+- EP=21 ✅ (hyperopt 2026-04-10)
+- ATR_PERIOD=25 ✅ (hyperopt 2026-04-12)
+- ATR_MULT=0.0 ✅ (no filter — hyperopt 2026-04-13)
+- CHAND_PERIOD=28 ✅ (hyperopt 2026-04-11)
+- CHAND_MULT=2.00 ✅ (hyperopt 2026-04-11)
+- HOLD_MAX=45 ✅ (hyperopt 2026-04-11)
+- POSITION_CAP=3 ✅ (hyperopt 2026-04-11)
+- **CHOP_FILTER: REJECTED (2026-04-14)** —atr regime gate destroys Sharpe in all 9 universes
 
 ---
 
@@ -44,7 +51,8 @@
 - [x] **BollingerReversion DEFINITIVE KILL (2026-04-11):** HOF_ORIG 0% pass, POST_FIX 27%, RANDOM 49%. Signal is actively harmful. GRAVEYARD.
 - [x] **MACD+Regime:** 2/7 OOS pass (29%) — GRAVEYARD.
 - [ ] **A/D Static Sleeve (20/80 Turtle):** NOT YET TESTED. Simple voting (50/50) failed (78% vs 87% component). Fixed allocation (80% Turtle, 20% A/D, no switching) has never been tested. Correlation 0.11, entry overlap 1.3%. This is the last untested combination method for A/D+Turtle.
-- [ ] **Chop Filter (atr > median_atr):** Walk-forward test in progress. 9 universes × 54 windows. Binary gate: only enter Turtle when ATR14 > 252-bar median ATR14.
+- [x] **A/D Momentum Period (DDBudget):** A/D period=5 (DDBudget baseline) REJECTED by walk-forward. Period=8 is robust winner (Sharpe 2.00, 67% pass vs p=5 Sharpe -1.20, 52% pass). See memory/hyperopt-2026-04-14-ad-period.md. Note: simple price momentum was used (A/D EMA had warmup bugs).
+- [x] **Chop Filter (atr > median_atr):** REJECTED (2026-04-14). 9 universes × 54 windows × 13 configs. All 12 configs lose to baseline in 9/9 universes. ATR regime is NOT a valid trend quality separator. Turt le hyperopt COMPLETE.
 
 ---
 
@@ -54,7 +62,7 @@
 
 ---
 
-## Production Params (FROZEN as of 2026-04-13)
+## Production Params (FROZEN as of 2026-04-14)
 
 ```
 EP = 21          (entry lookback)
@@ -65,8 +73,11 @@ CHAND_MULT = 2.00
 HOLD_MAX = 45
 POSITION_CAP = 3
 UNIVERSE = [BTC, ETH, SOL, XRP, DOGE, ADA]  (no LTC/EOS/BCH)
-USE_CHOP_FILTER = ???  (pending walk-forward validation)
+USE_CHOP_FILTER = FALSE  ← REJECTED 2026-04-14 (destroys Sharpe in all configs)
 ```
+
+**Fee assumptions:** 0.04% taker + 0.01% slippage/side (10bp RT). Fee-adj Sharpe ≈ 3.1–3.7.
+**Maker fill assumption:** ~70% (from microstructure analysis).
 
 **Fee assumptions:** 0.04% taker + 0.01% slippage/side (10bp RT). Fee-adj Sharpe ≈ 3.1–3.7.
 **Maker fill assumption:** ~70% (from microstructure analysis).

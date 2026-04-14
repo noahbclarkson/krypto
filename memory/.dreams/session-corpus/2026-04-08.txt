@@ -1,0 +1,5 @@
+[krypto/sessions/755ae3e0-b3c1-469f-86ae-df79cd1f2e12.jsonl#L5] User: [cron:7478712d-7c0c-4ed4-90ed-c462fdefad2e kira — daily progress report + equity tracking] You are Kira — quantitative trading researcher on krypto. Your workspace files are already loaded. ## Task: Daily Progress Report + Equity Tracking This is NOT a summary of what you d
+[krypto/sessions/755ae3e0-b3c1-469f-86ae-df79cd1f2e12.jsonl#L42] Assistant: Now I have enough data to write the daily record. Let me build the tracking infrastructure and charts.
+[krypto/sessions/755ae3e0-b3c1-469f-86ae-df79cd1f2e12.jsonl#L44] Assistant: Now let me read the existing chart script and understand the current progress data:
+[krypto/sessions/755ae3e0-b3c1-469f-86ae-df79cd1f2e12.jsonl#L56] Assistant: Now let me update the CSV with today's data and generate all charts:
+[krypto/sessions/755ae3e0-b3c1-469f-86ae-df79cd1f2e12.jsonl#L78] Assistant: --- **Daily Progress Report — 2026-04-08** **Leaderboard (2026-04-08):** 1. DDBudget 3-sleeve (Base5): **Sharpe 7.68**, Return 33,715%, MaxDD **13.0%**, 420 trades ← NEW BEST 2. A/D Momentum (Base5): Sharpe 5.34, Return 45,681%, MaxDD 21.1%, 420 trades 3. MACD+Regime 
