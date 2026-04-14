@@ -2,7 +2,7 @@
 
 ## Current Focus — Equity Integrity Fixed. Per-Year Decomposition Done.
 
-**All Turtle parameters FROZEN. Live testnet BLOCKED on API keys. Research CLOSED.**
+**All Turtle parameters FROZEN. Live testnet BLOCKED on API keys. Research CLOSED. Progress chart cleaned.**
 
 ---
 
@@ -21,8 +21,8 @@
    ⚠️ **Three Sharpe numbers for Turtle:**
    - Walk-forward per-window avg: **6.29** (mean of per-window Sharpe ratios — NOT daily compounded)
    - Daily equity Sharpe (honest): **~1.0-1.3** (computed from actual daily returns on equity curve)
-   - Progress chart (wrong engine): **2.80** (fixed 21-bar hold — not comparable to the above)
-   - **Never report 6.29 on an equity chart.** Use ~1.0-1.3 for equity curve captions.
+   - Progress chart (corrected 6-symbol Base5): **2.24** (Chandelier dual-exit, not fixed hold)
+   - **Never report 6.29 on an equity chart.** Use ~1.0-2.5 for equity curve captions.
 
 ---
 
@@ -31,9 +31,10 @@
 - [x] **TRUE HELD-OUT VALIDATION DONE:** OPTIMIZED beats DEFAULTS 91% overall, 81% on held-out windows. Hyperopt found REAL structure, not noise.
 - [x] **W05 Regime Stress Test COMPLETE:** Base5 6/6 pass. Failures are LTC/EOS/BCH-specific. Production rule: exclude those assets.
 - [x] **PRODUCTION VALIDATION DONE:** Base5 = 6/6 PASS (100%). Avg Sharpe 6.73, fee-adj 5.25. Worst DD 35.4% (W02 COVID-crash). DEPLOYABLE.
-- [x] **EQUITY CURVE INTEGRITY FIX:** Off-by-one bug fixed (db47c6e). Turtle now shows real 2.80 Sharpe in unified harness.
+- [x] **EQUITY CURVE INTEGRITY FIX:** Off-by-one bug fixed (db47c6e). Turtle now shows real 2.24 Sharpe (6-symbol Base5) in unified harness. MACD+Regime (2/7 OOS) and Blend removed from chart (graveyard).
 - [x] **A/D Static Sleeve: REJECTED.** Only 46% win rate. Turtle-only is production.
 - [x] **Daily Equity Harness RUN.** Chart: `charts/turtle_chandelier_equity.png`. Equity $10K → $51.9M, 224 trades.
+- [x] **EXECUTION MODEL AUDIT (2026-04-14):** Live Binance BTCUSDT perp maker rate 63% (vs 70% assumption — slightly conservative). USDT-M fees: Maker 0.02%, Taker 0.05%. 70% assumption is slightly conservative; strategy remains viable.
 
 ---
 
@@ -41,13 +42,9 @@
 
 1. **[BLOCKED] Live testnet:** `live_turtle_chandelier.rs` built, never tested. Needs Noah's API keys. This is the ONLY remaining validation step before paper trading.
 
-2. **[TRACK B] BTC Trend Scalar Position Sizing:** Build `btc_trend_scalar_walkforward.rs` — scale Turtle allocation based on BTC trend state (bull=100%, chop=50%, bear=25%). 9-universe sweep. Test on Base5. If pass rate stays ≥6/6 and Sharpe improves → add as production risk overlay.
+2. **[TRACK B] 2021/2022 chop decomposition:** Turtle Sharpe 0.76 (2021) and 0.51 (2022) are the genuine underperformance years. Analyze WHY Turtle lagged BTC in these chop/alternate-bull years.
 
-3. **[TRACK A] Execution model re-audit:** Verify ~70% maker fill assumption still holds with current Binance data. Maker-taker spreads may have changed.
-
-4. **[FIXME] Progress chart stale MACD+Regime:** MACD+Regime shows 5.21 Sharpe in progress chart but actual OOS is 2/7 pass (29%). Either re-run `macd_regime_walk_forward` for fresh equity curve, or remove from progress chart until re-validated.
-
-5. **[TRACK B] 2021/2022 chop decomposition:** Turtle Sharpe 0.76 (2021) and 0.51 (2022) are the genuine underperformance years — not 2023. Analyze WHY Turtle lagged BTC in these chop/alternate-bull years.
+3. **[TRACK C] Alternative universe stress test:** Test Turtle+Chandelier on non-Base5 universes (smaller caps, different compositions) to understand robustness boundaries.
 
 ---
 

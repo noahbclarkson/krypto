@@ -171,6 +171,11 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 - Previous CAP={1,2,3,4,5} sweep was sufficient — no default change needed
 - CAP=3 confirmed as stable default; higher CAP provides no additional value
 
+## 2026-04-14 (22:01 UTC) — BTC Trend Scalar Rejected
+- **BTC Trend Scalar Position Sizing: DEAD (GRAVEYARD 2026-04-14).** Swept 9 bear/chop scalar configs on Base5 (6 windows). Baseline (no scaling) wins: Sharpe 5.46, 6/6 pass. Best scaled config (mild b=0.75) degrades to 5.22 Sharpe and loses -15% avg return. The regime classifier (SMA21 vs SMA200) was 100% BULL in all test windows — the scalar was never active. 2026 YTD underperformance (-22.7%) is regime-inherent whipsawing, not fixable by position scaling.
+- **Meta-lesson:** Position scaling overlays consistently fail on Turtle+Chandelier. USDT hedge (30% DD reduction), W05 tail-risk sizing, and now BTC trend scalar — all reduce return without proportional DD benefit. The Chandelier exit already manages adverse positions. Adding layers of position sizing is redundant and harmful to risk-adjusted returns.
+- **Project status:** Research is truly closed. All scaling/overlay ideas exhausted. Only live testnet (blocked on API keys) remains.
+
 ## 2026-04-15 — Equity Curve Full Data + Per-Year Decomposition
 
 **Equity CSV export cap fixed:** `end_bar = n.min(start_bar + 5000)` (was 2000 → truncating at 2023-07-30).
