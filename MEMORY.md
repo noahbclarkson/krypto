@@ -163,3 +163,10 @@
 
 ### Strategy Params (Frozen)
 EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
+
+### CAP/TOP_K Sweep (2026-04-14)
+- Swept CAP ∈ {3,4,5,6,7,8,10,12,15,20} — extensive range
+- WINNER: CAP=3 (Sharpe 6.287, pass 92.6%)
+- CAP≥6 all produce IDENTICAL results (Sharpe 5.715) — universe limit (~6 symbols)
+- Previous CAP={1,2,3,4,5} sweep was sufficient — no default change needed
+- CAP=3 confirmed as stable default; higher CAP provides no additional value
