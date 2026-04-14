@@ -170,3 +170,34 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 - CAP≥6 all produce IDENTICAL results (Sharpe 5.715) — universe limit (~6 symbols)
 - Previous CAP={1,2,3,4,5} sweep was sufficient — no default change needed
 - CAP=3 confirmed as stable default; higher CAP provides no additional value
+
+## 2026-04-15 — Equity Curve Full Data + Per-Year Decomposition
+
+**Equity CSV export cap fixed:** `end_bar = n.min(start_bar + 5000)` (was 2000 → truncating at 2023-07-30).
+
+**Full history results (2018-02-07 to 2026-04-14):**
+- $10K → $67M (+670,515%), 310 trades, MaxDD 62.6%
+- Daily equity Sharpe: ~1.0-1.3 (HONEST number for equity charts)
+- Walk-forward Sharpe 6.29 is NOT directly comparable — it's a per-window averaged Sharpe ratio
+
+**Per-year performance (Rust harness, Feb→Feb convention):**
+| Year | Turtle% | BTC% | Sharpe | Notes |
+|------|---------|------|--------|-------|
+| 2018 | +1393% | -65% | 2.07 | Dominated crash |
+| 2019 | +421% | +127% | 1.38 | Strong trend |
+| 2020 | +879% | +441% | 2.03 | COVID + bull |
+| 2021 | +35.5% | -16.5% | 0.76 | ⚠️ CHOP — BTC choppy, Turtle whipsawed |
+| 2022 | +10.9% | -45.6% | 0.51 | ⚠️ BEAR CHOP — BTC crashed, Turtle missed rebound |
+| 2023 | +101.9% | +146.5% | 1.01 | BTC-led rally, Turtle lagged BTC |
+| 2024 | +145.7% | +34.9% | 1.25 | ✅ Strong |
+| 2025 | +73.8% | -20.3% | 1.22 | ✅ Strong |
+| 2026 | -22.7% | +12.7% | -5.31 | ⚠️ Current underperformance |
+
+**2023 \"weakness\" was a data artifact** — BTC/ETH parquet 3000-row cap truncated to 2023-03-23, making 2023 look like only +10.9%. Corrected full data: +101.9%.
+
+**Key insight on Sharpe numbers:**
+- Walk-forward Sharpe 6.29 = mean of per-window Sharpe ratios (each window: mean/std × √252, then averaged). This methodology inflates the number.
+- Daily equity Sharpe ~1.0-1.3 = true annualized Sharpe from actual compounded equity curve daily returns. This is what to use on equity chart captions.
+- Never report 6.29 on an equity chart.
+
+**Charts:** `charts/turtle_comprehensive.png` (3-panel: log equity, drawdown, per-year); `charts/progress_equity_curves_corrected.png`

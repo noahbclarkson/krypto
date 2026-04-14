@@ -1,8 +1,8 @@
 # PLAN.md - Krypto Research Priorities
 
-## Current Focus — Turtle+Chandelier Validated. Live Testnet.
+## Current Focus — Equity Integrity Fixed. Per-Year Decomposition Done.
 
-**All Turtle parameters FROZEN. A/D sleeve REJECTED. Live testnet blocked on API keys.**
+**All Turtle parameters FROZEN. Live testnet BLOCKED on API keys. Research CLOSED.**
 
 ---
 
@@ -14,7 +14,15 @@
 
 3. **SOL coverage: VERIFIED.** `solusdt_1d.parquet` EXISTS (2073 rows, 2020-08 to 2026-04-14). BTC/ETH cap at 3000 rows → 2026-03-23. Minor gap (~3 weeks for BTC/ETH).
 
-4. **Daily equity harness: RUN.** `turtle_chandelier_daily_equity.rs` — first execution. Equity $10K → $51.9M (+519,288%), 224 trades, MaxDD 53.6%. Per-year: best in bear/trending (2018: +1429%, 2020: +1247%), weak in choppy bull (2023: +10.9% vs BTC +28.6%). ⚠️ Entry look-ahead bias in harness (both walk-forward and equity use same-bar close entry). Relative comparisons unaffected. ⚠️ 2023 weakness is display-model full-Kelly issue, not production (production uses fixed notional).
+4. **Daily equity harness: FULL DATA RUN (2026-04-15).** Export cap fixed (2000→5000 bars). Full history: $10K → $67M (+670,515%), 310 trades, MaxDD 62.6%. Per-year: 2018 +1393%, 2019 +421%, 2020 +879%, 2021 +35.5% (choppy), 2022 +10.9% (BTC -45.6%), 2023 +101.9% (CORRECTED — was falsely +10.9%), 2024 +145.7%, 2025 +73.8%, 2026 -22.7% YTD.
+
+   ⚠️ **2023 "weakness" was a data artifact.** The +10.9% figure was from stale BTC/ETH parquet (3000-row cap → 2023-03-23). Full data: +101.9% vs BTC +146.5%.
+
+   ⚠️ **Three Sharpe numbers for Turtle:**
+   - Walk-forward per-window avg: **6.29** (mean of per-window Sharpe ratios — NOT daily compounded)
+   - Daily equity Sharpe (honest): **~1.0-1.3** (computed from actual daily returns on equity curve)
+   - Progress chart (wrong engine): **2.80** (fixed 21-bar hold — not comparable to the above)
+   - **Never report 6.29 on an equity chart.** Use ~1.0-1.3 for equity curve captions.
 
 ---
 
@@ -33,9 +41,27 @@
 
 1. **[BLOCKED] Live testnet:** `live_turtle_chandelier.rs` built, never tested. Needs Noah's API keys. This is the ONLY remaining validation step before paper trading.
 
-2. **[DATA] BTC/ETH refresh:** BTCUSDT and ETHUSDT parquet files cap at 3000 rows (→ 2026-03-23). Re-fetch with larger CANDLES limit to include Q1 2026.
+2. **[TRACK B] BTC Trend Scalar Position Sizing:** Build `btc_trend_scalar_walkforward.rs` — scale Turtle allocation based on BTC trend state (bull=100%, chop=50%, bear=25%). 9-universe sweep. Test on Base5. If pass rate stays ≥6/6 and Sharpe improves → add as production risk overlay.
 
-3. **[TRACK B] 2023 chop stress test:** Turtle returned only +10.9% vs BTC +28.6% in 2023. Run dedicated 2023 sub-period analysis. Quantify how much of this is regime-specific vs structural.
+3. **[TRACK A] Execution model re-audit:** Verify ~70% maker fill assumption still holds with current Binance data. Maker-taker spreads may have changed.
+
+4. **[FIXME] Progress chart stale MACD+Regime:** MACD+Regime shows 5.21 Sharpe in progress chart but actual OOS is 2/7 pass (29%). Either re-run `macd_regime_walk_forward` for fresh equity curve, or remove from progress chart until re-validated.
+
+5. **[TRACK B] 2021/2022 chop decomposition:** Turtle Sharpe 0.76 (2021) and 0.51 (2022) are the genuine underperformance years — not 2023. Analyze WHY Turtle lagged BTC in these chop/alternate-bull years.
+
+---
+
+## ✅ 2023 CHOP STRESS TEST — RESOLVED (2026-04-15)
+
+**2023 was NOT weak — was a data artifact.**
+- Previously: Turtle +10.9% vs BTC +28.6% → "weak"
+- Corrected: Turtle +101.9% vs BTC +146.5% → BTC-led rally, Turtle still +101.9%
+- Root cause: BTC/ETH parquet capped at 3000 rows (→ 2023-03-23), equity harness used stale BTC prices
+
+**True problem years:**
+- 2021: Sharpe 0.76 — BTC chop (+9.3%), Turtle +35.5% with 58.3% MaxDD
+- 2022: Sharpe 0.51 — BTC crash (-45.6%), Turtle +10.9% (whipsawed in bear chop)
+- 2026 YTD: Sharpe -5.31 — Turtle -22.7% vs BTC +12.7% (current underperformance)
 
 ---
 
@@ -80,8 +106,16 @@ USE_CHOP_FILTER = FALSE  ← REJECTED
 ```
 
 **Fee assumptions:** Walk-forward uses 20bp RT (0.1% taker each side). This is already conservative — real maker fills are ~70% at zero cost, reducing effective fees.
-**Expected live Sharpe:** ~5-6 (walk-forward 6.29 × maker fill benefit)
-**Live testnet gate:** Run 30 days → if Sharpe > 1.0 with real fills → paper-to-stage. If Sharpe < 0.5 → diagnose.
+
+**Honest Sharpe summary:**
+- Walk-forward per-window avg: **6.29** (methodology artifact — mean of per-window Sharpe ratios; NOT daily compounded)
+- Daily equity Sharpe (from full equity curve): **~1.0-1.3** ← this is the honest number
+- Fee-adj walk-forward Sharpe: **~5.0** (6.29 × 0.78 maker/taker mix — inflated by W03 mega-bull)
+- Progress chart (wrong engine): **2.80** (fixed 21-bar hold — incomparable)
+
+**Expected live Sharpe:** ~1.0-2.0 range. If > 1.0 after 30 days live → proceed. If < 0.5 → diagnose.
+
+⚠️ **The 6.29 walk-forward Sharpe is NOT directly comparable to the daily equity Sharpe (~1.0).** They are different statistical objects. The equity chart caption must use ~1.0-1.3, not 6.29.
 
 ---
 
