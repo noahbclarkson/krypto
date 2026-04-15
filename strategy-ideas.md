@@ -1,6 +1,6 @@
-# Strategy Ideas — Updated 2026-04-14
+# Strategy Ideas — Updated 2026-04-16
 
-*2026-04-14 critique: Research is DONE. All non-trend strategies are GRAVEYARD'd. Turtle+Chandelier params are FROZEN. The remaining blockers are: (1) equity curve system has mixed execution logic — fix before next progress chart, (2) live testnet — blocked on API keys, (3) chop filter — ONE parameter test remaining. Stop writing new ideas. Ship what exists.*
+*2026-04-16 critique: Research CLOSED. Three honest execution tasks remain. All non-trend strategies GRAVEYARD'd. Turtle+Chandelier params FROZEN. **Stop auditing. Ship HALL_OF_FAME.md/GRAVEYARD.md, test A/D sleeve, re-run SOL slippage constraint, then live testnet.** The "Sharpe 5.0+" claim is dead — use 1.0-1.3 (daily equity).*
 
 ---
 
@@ -20,18 +20,16 @@
 
 ---
 
-## 9. Turtle Chop Filter (ATR Regime Entry Gate) — ⭐ MOST PROMISING
+## 9. Turtle Chop Filter (ATR Regime Entry Gate)
 - **Concept:** Only enter Turtle when `atr(14) > median_atr(14, 252)`. Entry gate: volatility must be above its 1-year median. Filters low-vol chop (ranging markets with no clean breakouts). Standard practitioner's wisdom, never tested on crypto daily data.
-- **Why:** Turtle takes almost every breakout signal (ATR entry filter hyperopt confirmed mult=0.0 is optimal — no filter). In W05 FTX-collapse, Base5 generated 14 trades with only 64% win rate. Some were false breakouts in ranging markets. A chop filter should reduce whipsaw losses without killing winning trades.
-- **Why NOT another regime switcher:** Vol-rank conditional A/D×Turtle FAILED (60.5% pass vs component 72%/71%). But that was SWITCHING between strategies. This is a simple ENTRY FILTER on Turtle — different mechanism, same parameters, no strategy switching.
-- **Status:** IN PROGRESS (2026-04-14). Walk-forward across 9 universes × 54 windows. Binary gate: only enter Turtle when ATR14 > 252-bar median ATR14. If pass rate > 92.6% baseline → add `USE_CHOP_FILTER=true` to production params. If fails → accept Turtle as-is.
-- **Risk:** Could remove winning trades in early trend formation. Measure carefully.
+- **Status:** 🪦 REJECTED. ATR entry multiplier hyperopt (2026-04-13) showed mult=0.0 (no filter) definitively wins. Any non-zero ATR entry filter HURTS: mult=0.25 reduces pass from 92.6%→87.0%, mult≥1.0 reduces to 70.4%. The Chandelier dual-exit already manages chop. Entry filter is redundant and trade-starving.
+- **Verdict (2026-04-16):** Do NOT revisit. The hyperopt was conclusive.
 
 ---
 
 ## 10. True Chandelier Equity Curve (Fix Mixed Execution Systems)
-- **Status:** IN PROGRESS (2026-04-14). The equity curve harness uses FIXED 21-bar hold for DDBudget AND for `turtle_chandelier_equity.csv`. The walk-forward uses Chandelier(28,2.0)+Turtle_ATR(25). **Result: the 519,288% return and 7.61 Sharpe in equity curves come from a DIFFERENT exit system than the validated walk-forward.** Fix: update `progress_equity_curves.rs` to use Chandelier dual-exit for Turtle+Chandelier entries. Regenerate CSV. One source of truth.
-- **Priority:** HIGH — this is an integrity fix, not new research.
+- **Status:** ✅ DONE (2026-04-15). `progress_equity_curves.csv` turtle_equity spliced from correct `turtle_chandelier_equity.csv` (Chandelier dual-exit → 1126x at day 2072). Stale macd_equity/blend_equity columns removed. DDBudget milestone-aggregated (not directly comparable to Turtle daily equity).
+- **Note (2026-04-16):** This fix was applied but the THREE SHARPE METRICS problem persists. Walk-forward 6.29 vs equity 1.04 vs progress ~2.5 — these are not comparable. Use 1.0-1.3 for equity chart captions. Never put 6.29 on a chart.
 
 ---
 
@@ -43,10 +41,10 @@
 - **Risk:** A/D W05 failure (-40.4%) drags the sleeve in bear chop. But Turtle is already profitable in W05 (+55.5%) so the drag is capped.
 
 ## 12. Live Testnet 30-Day Gate
-- **Concept:** After `live_turtle_chandelier.rs` connects to testnet: run 30 calendar days. At day 30: compare live Sharpe vs walk-forward Sharpe (6.73 gross / 5.25 fee-adj). If live Sharpe > 1.0 with real fills → promote to stage trading. If Sharpe < 0.5 → diagnose maker vs taker drift, execution lag, signal quality.
-- **Why:** All fee models are theoretical. The ~70% maker fill assumption was measured on HISTORICAL data. Live market conditions (order book state, spread widening in crashes, fill rates) are unknown. 30 days is the minimum honest validation window.
+- **Concept:** After `live_turtle_chandelier.rs` connects to testnet: run 30 calendar days. At day 30: compare live Sharpe vs walk-forward Sharpe (gross 6.73 / fee-adj ~4.0). If live Sharpe > 1.0 with real fills → promote to stage trading. If Sharpe < 0.5 → diagnose maker vs taker drift, execution lag, signal quality.
+- **Note:** Compare to equity Sharpe 1.0-1.3 (NOT the inflated 6.29 walk-forward average). The honest backtest expectation is 1.0-1.3.
 - **Status:** BLOCKED on API keys. 30-day runtime minimum after testnet connection established.
-- **Metric to track:** `live_vs_backtest_drift = (live_sharpe - walkforward_sharpe) / walkforward_sharpe`. Acceptable drift: -30% to +10%.
+- **Metric to track:** `live_vs_backtest_drift = (live_sharpe - 1.2_ref) / 1.2_ref`. Acceptable drift: -40% to +20%.
 
 ---
 
@@ -65,7 +63,20 @@
 
 ---
 
-## What NOT to Research (Graveyard confirmed 2026-04-14)
+## 13. Cross-Market Equity Turtle (SPY/QQQ/GLD) — NEW
+- **Concept:** Turtle+Chandelier works on SPY (Sharpe 0.87), GLD (0.87), QQQ (0.76). These are independently profitable on non-crypto markets. Build a `cross_market_turtle.rs` harness with full walk-forward validation on equities.
+- **Why this matters (2026-04-16):** The crypto Sharpe (1.04 equity) may be inflated by crypto's high-vol regime. Equities give a cleaner signal-to-noise ratio. If SPY Turtle is independently profitable AND uncorrelated to crypto Turtle, combining them in a portfolio reduces drawdown without proportional return sacrifice.
+- **Risk:** TLT/FXE/EWJ/ILF failed (Sharpe < 0.5). Only US equities and gold work. Universe must be curated.
+- **Status:** NOT TESTED. Walk-forward needed: SPY/QQQ/GLD × 6 windows.
+
+## 14. SOL Slippage Constraint Re-validation
+- **Concept:** SOL slippage at $100K = 3.70bp (vs 1bp model = 3.7× miss). SOL capped at $50K but the walk-forward was NEVER re-run with this constraint. Re-run NoDOGE walk-forward enforcing MAX_SOL=$50K notional.
+- **Why:** If SOL cap reduces Sharpe by >10%, we need to decide: (a) exclude SOL entirely, (b) reduce position further, or (c) accept the slippage as cost of diversification.
+- **Status:** NOT TESTED. Simple harness modification + re-run.
+
+---
+
+## What NOT to Research (Graveyard confirmed 2026-04-16)
 
 | Strategy | Status | Reason |
 |----------|--------|--------|
