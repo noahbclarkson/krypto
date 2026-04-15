@@ -75,29 +75,28 @@
 
 ---
 
-## 🎯 SESSION STATUS (2026-04-15 evening)
+## 🎯 CRITIQUE FINDINGS (2026-04-16 evening)
 
-**New today:** Trade Expectancy Analysis (2026-04-15 evening)
+**Biggest blind spot: No regime defense.**
+- 2026 YTD: Turtle -22.7% vs BTC +12.7% — worst relative performance in strategy history
+- ALL non-trend strategies dead (GRAVEYARD: BollingerRev 0/288, FDUSD carry 19%, 4h MR 0/4, 1h MR 0/6, funding MR 43%)
+- ALL position-sizing overlays failed (USDT hedge, BTC scalar, chop filter, drawdown trigger)
+- No real-time regime detection in the live bot — cannot reduce exposure when strategy is in hostile chop
+- Structural conclusion: Turtle only works in trending regimes. When markets don't trend, we underperform with no defensive answer.
 
-    **[⚠️ CRITICAL] Volume-ranked top-3 ENTRY SELECTION DESTROYS VALUE** (2026-04-15 evening)
-    - Method A (ranked top-3 by DV): 114 trades, equity 194x
-    - Method B (unranked, each sym independently): 278 trades, equity 374,884x
-    - **164 valid Turtle entries skipped by ranking** (59% of possible trades)
-    - All unranked symbol avg returns: BTC +5.4%, ETH +6.6%, SOL +13.3%, XRP +1.0%, DOGE +8.1%
-    - Walk-forward validates ranked approach at portfolio level (6/6 pass) — position cap (3) limits concurrency
-    - **Implication:** DV ranking is a portfolio construction filter, NOT an entry signal enhancement. Live bot should consider wider participation.
+**Metric honesty:** "Sharpe 5.0+" is DEAD. Use 1.0-1.3 on equity charts. Three incompatible Sharpe numbers documented (6.29 WF avg / 1.34 daily equity / ~2.5 progress). Flag any instance of "Sharpe 5+" in reports — it is not comparable.
 
-All PLAN items from 2026-04-16 critique are now RESOLVED:
+**Last 5 commits:** Refinement/auditing only, not discovery. Research is closed.
 
-1. **[✅ DONE] HALL_OF_FAME.md and GRAVEYARD.md** — Created (2026-04-16). All HOF/graveyard entries archived from MEMORY.md.
+## 🎯 NEXT THREE EXECUTION TASKS (2026-04-16)
 
-2. **[✅ DONE] A/D Static Sleeve test** — Run 2026-04-16. Full 9-universe × 21-window walk-forward: 47% (89/189 windows). Avg Sharpe improvement +7.3%. Below 50% reliability threshold. **Turtle-only is production.**
+1. **[🔴 HIGH] Cross-Market Equity Walk-Forward** — Build `cross_market_equity_walkforward.rs`: SPY/QQQ/GLD × 6-window OOS walk-forward. Validates whether Turtle edge is genuine market microstructure (equities pass independently) or crypto survivorship bias. Acceptance: ≥3/5 assets pass → claim strengthened.
 
-3. **[✅ DOCUMENTED] SOL Slippage** — Backtester uses % returns, not dollar sizing. $50K SOL cap is a LIVE TRADING RISK CONSTRAINT only. Cannot be validated in backtest. Paper mode: SOL +97%, 58.6% WR — SOL is strongest performer.
+2. **[🟡 MED] SOL Dollar-Sized Re-test** — Re-run NoDOGE walk-forward enforcing MAX_SOL=$50K notional per trade. Compare equity Sharpe vs unlimited. SOL is strongest performer; need to know if the dollar cap materially impacts results. Acceptance: if Sharpe drops >10% → reconsider SOL inclusion.
 
-4. **[✅ VERIFIED] Live testnet** — `live_turtle_chandelier.rs` paper mode verified (2026-04-16): 501 trades, +145% avg return, all 5 symbols positive. **BLOCKED ON API KEYS.** Code is production-ready; just needs testnet credentials.
+3. **[🟡 MED] Regime Monitor for Live Bot** — Add to `live_turtle_chandelier.rs`: BTC 21d SMA vs 200d SMA ratio + ATR z-score vs 252d median. Log regime state each bar, display in bot status. Not a trading signal — just transparency about when strategy is in a hostile environment.
 
-5. **[✅ DONE] Unranked Walk-Forward Validation (2026-04-15):** `unranked_turtle_walkforward.rs` — 6-window walk-forward comparing ranked (top-3 DV gate) vs unranked (all symbols). Results: ranked 6/6 pass / Sharpe 5.46 / +96% ret / 49% DD; unranked 5/6 pass (fails W02) / Sharpe 4.00 / +117% ret / 28% DD. **Verdict: KEEP ranked in production.** Unranked has higher return + lower DD but fails W02 (COVID chop). Pass rate dominance (6/6) is decisive for production. The full-history finding (164 skipped trades) does NOT survive OOS validation.
+**Blocked:** Live testnet (API keys from Noah). All three tasks above are executable without API keys.
 
 ---
 

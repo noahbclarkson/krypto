@@ -93,3 +93,22 @@
 | Regime-conditional allocation | GRAVEYARD | 60.5% pass, dragged by weak A/D |
 
 **Conclusion:** Stop researching. Ship what's validated. Run live testnet.
+
+## 13. Cross-Market Equity Turtle (SPY/QQQ/GLD) — NEW 2026-04-16
+- **Concept:** Turtle+Chandelier works on SPY (Sharpe 0.87), GLD (0.87), QQQ (0.76) on a simple point-in-time backtest. Build `cross_market_equity_walkforward.rs` with full 6-window OOS walk-forward on US equities and gold.
+- **Why this matters:** The crypto equity Sharpe (1.04) may be inflated by crypto's high-vol regime. If equities pass OOS validation independently, the edge is proven market microstructure — not crypto survivorship bias. If they fail, we learn the edge is regime-dependent.
+- **Risk:** TLT/FXE/EWJ/ILF failed (Sharpe < 0.5). Universe must be curated to US equities + gold only.
+- **Acceptance:** ≥3/5 assets (SPY, QQQ, GLD, TLT, FXE) pass OOS → claim strengthened.
+- **Status:** NOT TESTED. Walk-forward harness template exists (`turtle_chandelier_walkforward.rs`).
+
+## 14. SOL Dollar-Sized Walk-Forward Re-test — NEW 2026-04-16
+- **Concept:** $50K SOL cap is documented as a live-trading risk constraint only — the backtester uses % returns, not dollar sizing. Re-run NoDOGE walk-forward instrumenting per-trade notional and enforcing MAX_SOL=$50K.
+- **Why:** SOL is the strongest paper-mode performer (+97%, 58.6% WR, 18% DD). If dollar-sizing cap materially degrades equity Sharpe (>10%), decision needed: cap harder, exclude SOL, or accept slippage as diversification cost.
+- **Challenge:** Backtester returns % not $ — need to track per-trade notional separately or simulate dollar-sized fills.
+- **Status:** NOT TESTED. Needs instrumented harness.
+
+## 15. Regime Monitor for Live Bot — NEW 2026-04-16
+- **Concept:** Add a simple regime display to `live_turtle_chandelier.rs`: BTC 21d SMA vs 200d SMA (trend/bear) + ATR(14) z-score vs 252d median (high/low vol). Log regime state each bar, display in bot status output.
+- **Why:** Every position-sizing/regime overlay has failed (USDT hedge, BTC scalar, chop filter, drawdown trigger). We have no regime detection. We cannot reduce exposure when the strategy is in a hostile chop environment. The monitor doesn't fix this — it just makes it VISIBLE.
+- **Note:** Not a trading signal. Not a position sizing trigger. Pure transparency.
+- **Status:** NOT BUILT. Needs ~20 lines added to live_turtle_chandelier.rs.
