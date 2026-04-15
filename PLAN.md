@@ -96,9 +96,21 @@ ALL Turtle+Chandelier params FROZEN as of 2026-04-14:
 
 ---
 
-## 🟡 BLOCKED — Awaiting Noah's API Keys
+## ✅ W04/W05 FAILURE ATTRIBUTION — SYMBOL-SPECIFIC vs REGIME (2026-04-15)
 
-- **LIVE TESTNET CONNECTION:** `live_turtle_chandelier.rs` built, --live flag exists, never tested. **BLOCKED on API keys from Noah.**
+**Question:** Are W04/W05 failures symbol-specific or regime-inherent?
+
+**Method:** Per-symbol single-symbol Turtle+Chandelier runs + portfolio for W04 and W05 across Base5, Legacy4, LowVolume5.
+
+**Key findings:**
+- XRPUSDT: fails 2/2 in Base5 W04/W05
+- ADAUSDT: fails 2/2 in Base5 W04/W05
+- SOLUSDT: strongest in chop — +47.3% (W04), +39.4% (W05)
+- **BTC fails in Legacy4 W05** (regime-inherent) but **passes in Base5 W05** (peers carry)
+- Base5 portfolio passes 6/6 because SOL/DOGE/ETH compensate for XRP/ADA failures
+- Regime-inherent failures only in Legacy4/LowVolume5 (universe collapses in W05 when too many fail)
+
+**Verdict:** Symbol-specific (XRP/ADA consistently weak). Portfolio-level absorbs individual failures. **No change to Base5 production universe needed.**
 
 ---
 
