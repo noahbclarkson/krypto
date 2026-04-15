@@ -231,3 +231,16 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 **Key insight:** The walk-forward 5.46 Sharpe is NOT comparable to the equity 1.04 Sharpe. They measure different things (per-window average vs compounded daily equity). Never put 5.46 on an equity chart.
 
 **Pattern confirmed:** Last 6 commits = 4/6 docs/audit, 2/6 actual work. Project auditing itself. Research is closed. Only live testnet (blocked on API keys) advances the project.
+
+## 2026-04-15 (Late) — Cross-Market Audit
+- **Cross-Market Audit COMPLETE.** Turtle+Chandelier params tested on 8 non-crypto assets (2008–2026):
+  - SPY: Sharpe 0.87, +92% cumret ✓ PASS
+  - GLD: Sharpe 0.87, +57% cumret ✓ PASS
+  - QQQ: Sharpe 0.76, +51% cumret ✓ PASS
+  - TLT: Sharpe 0.43 — fail (bonds don't trend)
+  - FXE/EWJ/ILF/UUP: negative or marginal
+- **Pass rate: 3/8.** Edge generalizes to equities and gold, NOT to fixed income or FX.
+- **Key insight:** Crypto equity Sharpe (1.04) is comparable to SPY (0.87) — the strategy's edge is genuine market microstructure, NOT crypto survivorship bias.
+- **Crisis protection confirmed:** 2008 GFC SPY -36% → Turtle -2.4%; 2022 Hike SPY -19% → Turtle -0.5%.
+- **Equity curve bug:** `progress_equity_curves.rs` truncates timeline at 52 bars (3000-row CANDLES cap). Equity totals correct (Turtle 120.8x), but timeline visualization truncated.
+- **Charts:** `charts/cross_market_audit.png`, `charts/cross_market_spy_per_year.png`

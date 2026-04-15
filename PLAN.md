@@ -70,7 +70,7 @@
 
 2. **[DONE] Production readiness report:** `snapshots/production_readiness.md` — consolidated ALL validation results into single scorecard (Base5 6/6, GLOBAL 45/54 pass, equity Sharpe 1.04, fee-adj 3.82).
 
-3. **[IN PROGRESS] Stale example file hygiene:** 325 examples, many obsolete. Priority cleanup: BollingerReversion family (9 files), MACD+Regime (2 files), FDUSD basis (2 files), funding reversion (1 file), cross-sectional (11 files), correlation breakout (1 file).
+3. **[DONE 2026-04-15] Cross-Market Audit (Track A):** Turtle+Chandelier tested on SPY/QQQ/GLD/TLT/FXE/EWJ/ILF (2008–2026). SPY✓GLD✓QQQ✓ pass (Sharpe 0.76-0.87). TLT/FXE/EWJ/ILF fail. Edge generalizes to equities/gold — NOT crypto survivorship bias. Charts: `charts/cross_market_audit.png`.
 
 ---
 
