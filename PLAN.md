@@ -75,7 +75,17 @@
 
 ---
 
-## 🎯 SESSION STATUS (2026-04-16)
+## 🎯 SESSION STATUS (2026-04-15 evening)
+
+**New today:** Trade Expectancy Analysis (2026-04-15 evening)
+
+    **[⚠️ CRITICAL] Volume-ranked top-3 ENTRY SELECTION DESTROYS VALUE** (2026-04-15 evening)
+    - Method A (ranked top-3 by DV): 114 trades, equity 194x
+    - Method B (unranked, each sym independently): 278 trades, equity 374,884x
+    - **164 valid Turtle entries skipped by ranking** (59% of possible trades)
+    - All unranked symbol avg returns: BTC +5.4%, ETH +6.6%, SOL +13.3%, XRP +1.0%, DOGE +8.1%
+    - Walk-forward validates ranked approach at portfolio level (6/6 pass) — position cap (3) limits concurrency
+    - **Implication:** DV ranking is a portfolio construction filter, NOT an entry signal enhancement. Live bot should consider wider participation.
 
 All PLAN items from 2026-04-16 critique are now RESOLVED:
 
