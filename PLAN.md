@@ -44,9 +44,9 @@
 
    ⚠️ **Three Sharpe numbers for Turtle:**
    - Walk-forward per-window avg: **6.29** (mean of per-window Sharpe ratios — NOT daily compounded)
-   - Daily equity Sharpe (honest): **~1.0-1.3** (computed from actual daily returns on equity curve)
-   - Progress chart (corrected 6-symbol Base5): **2.24** (Chandelier dual-exit, not fixed hold)
-   - **Never report 6.29 on an equity chart.** Use ~1.0-2.5 for equity curve captions.
+   - Daily equity Sharpe (NoDOGE, honest): **1.34** (computed from actual daily returns on equity curve)
+   - Progress chart (NoDOGE, 5 symbols): **~2.5** (Chandelier dual-exit, not fixed hold)
+   - **Never report 6.29 on an equity chart.** Use 1.0-1.4 for NoDOGE equity curve captions.
 
 ---
 
@@ -54,7 +54,7 @@
 
 - [x] **TRUE HELD-OUT VALIDATION DONE:** OPTIMIZED beats DEFAULTS 91% overall, 81% on held-out windows. Hyperopt found REAL structure, not noise.
 - [x] **W05 Regime Stress Test COMPLETE:** Base5 6/6 pass. Failures are LTC/EOS/BCH-specific. Production rule: exclude those assets.
-- [x] **PRODUCTION VALIDATION DONE:** Base5 = 6/6 PASS (100%). Avg Sharpe 6.73, fee-adj 5.25. Worst DD 35.4% (W02 COVID-crash). DEPLOYABLE.
+- [x] **PRODUCTION VALIDATION DONE:** NoDOGE = 6/6 PASS (100%). Avg Sharpe 6.87, fee-adj ~4.8. Worst DD 35.4%. DEPLOYABLE.
 - [x] **EQUITY CURVE INTEGRITY FIX (UPDATED 2026-04-15):** Off-by-one bug fixed (db47c6e). Turtle now shows real 2.24 Sharpe (6-symbol Base5) in unified harness. MACD+Regime (2/7 OOS) and Blend removed from chart (graveyard).
   **⚠️ PROGRESS CHART RECORRECTED (2026-04-15):** `progress_equity_curves.csv` turtle_equity was still using wrong engine (fixed 21-bar hold → 116x at day 2072). Fixed: now spliced from correct `turtle_chandelier_equity.csv` (Chandelier dual-exit → **1126x at day 2072**). Stale macd_equity/blend_equity columns removed from CSV. DDBudget = milestone-aggregated (NOT directly comparable to Turtle's daily equity).
 - [x] **A/D Static Sleeve: REJECTED.** Only 46% win rate. Turtle-only is production.
@@ -110,7 +110,12 @@ ALL Turtle+Chandelier params FROZEN as of 2026-04-14:
 - Base5 portfolio passes 6/6 because SOL/DOGE/ETH compensate for XRP/ADA failures
 - Regime-inherent failures only in Legacy4/LowVolume5 (universe collapses in W05 when too many fail)
 
-**Verdict:** Symbol-specific (XRP/ADA consistently weak). Portfolio-level absorbs individual failures. **No change to Base5 production universe needed.**
+**Verdict (UPDATED 2026-04-15):** Rough W04/W05 attribution was methodologically flawed. Formal 11-universe walk-forward shows:
+- XRP/ADA together are NEUTRAL diversifiers (XRP drag offset by ADA in some windows)
+- **NoDOGE** (BTC/ETH/SOL/XRP/DOGE): 6/6 pass, Sharpe 6.87, worst DD 35.4% — BEST production candidate
+- Removing ADA reduces tail risk AND improves Sharpe (+28% vs Base5)
+- **ADA is a portfolio drag** in bull years (2021, 2024, 2025) — Turtle can't capture ADA's pumps, adds whipsaw
+- **Prod5BNB fails W02** (BNB crashes more than ADA in COVID)
 
 ---
 
@@ -124,7 +129,7 @@ CHAND_PERIOD = 28
 CHAND_MULT = 2.00
 HOLD_MAX = 45
 POSITION_CAP = 3
-UNIVERSE = [BTC, ETH, SOL, XRP, DOGE, ADA]  (no LTC/EOS/BCH)
+UNIVERSE = [BTC, ETH, SOL, XRP, DOGE]  (NoDOGE — ADA removed, was portfolio drag in bull years)
 USE_CHOP_FILTER = FALSE  ← REJECTED
 MAX_SOL_POSITION = $50K notional  ← due to slippage risk
 ```
@@ -135,9 +140,9 @@ MAX_SOL_POSITION = $50K notional  ← due to slippage risk
 
 **Honest Sharpe summary:**
 - Walk-forward per-window avg: **6.29** (methodology artifact — mean of per-window Sharpe ratios; NOT daily compounded)
-- Daily equity Sharpe (from full equity curve): **~1.0-1.3** ← this is the honest number
-- Progress chart (Base5, 6 symbols): **2.24** (Chandelier dual-exit)
-- **Never report 6.29 on an equity chart.** Use ~1.0-2.5 for equity curve captions.
+- Daily equity Sharpe (NoDOGE, full equity curve): **1.34** ← up from Base5 1.04 after ADA removal
+- Progress chart (NoDOGE, 5 symbols): **~2.5** (Chandelier dual-exit)
+- **Never report 6.29 on an equity chart.** Use 1.0-1.4 for NoDOGE equity curve captions.
 
 **Expected live Sharpe:** ~1.0-2.0 range. If > 1.0 after 30 days live → proceed. If < 0.5 → diagnose.
 
