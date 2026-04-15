@@ -207,3 +207,27 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 - Never report 6.29 on an equity chart.
 
 **Charts:** `charts/turtle_comprehensive.png` (3-panel: log equity, drawdown, per-year); `charts/progress_equity_curves_corrected.png`
+
+## 2026-04-16 — Production Readiness Scorecard
+
+**New deliverable:** `snapshots/production_readiness.md` — consolidated ALL validation results into single production scorecard. Key numbers:
+
+| Metric | Value |
+|--------|-------|
+| Base5 walk-forward | **6/6 pass (100%)** |
+| Global 9-universe | 45/54 pass (83%) |
+| Base5 avg Sharpe | 5.46 |
+| Base5 fee-adj Sharpe | ~3.82 (22-33% fee drag) |
+| **Daily equity Sharpe** | **1.04 (honest)** |
+| Equity: $10K → $67M | +670,515% total |
+| Annualised return | +111.3% |
+| MaxDD | 62.6% |
+| Total trades | 310 (full history) / 776 (9-universe WF) |
+
+**Base5 per-window:** W00 +256% (Sharpe 8.63), W01 +8% (Sharpe 1.01), W02 +6% (Sharpe 1.83), W03 +164% (Sharpe 6.86), W04 +51% (Sharpe 9.53), W05 +89% (Sharpe 4.87) — all PASS.
+
+**Verification script:** `gen_pr.py` confirms equity Sharpe 1.04 via daily return std/mean (not milestone-aggregated).
+
+**Key insight:** The walk-forward 5.46 Sharpe is NOT comparable to the equity 1.04 Sharpe. They measure different things (per-window average vs compounded daily equity). Never put 5.46 on an equity chart.
+
+**Pattern confirmed:** Last 6 commits = 4/6 docs/audit, 2/6 actual work. Project auditing itself. Research is closed. Only live testnet (blocked on API keys) advances the project.

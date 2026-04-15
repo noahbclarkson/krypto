@@ -68,9 +68,9 @@
 
 1. **[BLOCKED] Live testnet:** `live_turtle_chandelier.rs` built, never tested. Needs Noah's API keys. This is the ONLY remaining validation step before paper trading.
 
-2. **[SOL slippage cap]:** Document max SOL position ≤$50K notional to stay within slippage model. Add to production notes.
+2. **[DONE] Production readiness report:** `snapshots/production_readiness.md` — consolidated ALL validation results into single scorecard (Base5 6/6, GLOBAL 45/54 pass, equity Sharpe 1.04, fee-adj 3.82).
 
-3. **[DONE] 2021/2022 chop decomposition:** BTC RSI thresholds too conservative — all trades classified as chop. Not actionable without better classifier.
+3. **[IN PROGRESS] Stale example file hygiene:** 325 examples, many obsolete. Priority cleanup: BollingerReversion family (9 files), MACD+Regime (2 files), FDUSD basis (2 files), funding reversion (1 file), cross-sectional (11 files), correlation breakout (1 file).
 
 ---
 
