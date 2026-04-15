@@ -1,0 +1,2058 @@
+use anyhow::Result;
+use polars::prelude::*;
+
+/// Position sizing strategy for backtesting.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub enum PositionSizing {
+    /// Use 100% of available equity on every trade (default, backwards compatible)
+    #[default]
+    Full,
+    /// Use a fixed fraction of equity per trade (e.g., 0.5 = 50%)
+    FixedFraction(f64),
+    /// Size position so that stop loss = X% of equity
+    /// The parameter is the risk percentage (e.g., 0.02 = 2% risk per trade)
+    RiskPerTrade(f64),
+}
+
+/// A single closed trade record for journaling and analysis.
+///
+/// Populated in `BacktestResult::trades` after every `Backtester::run()` call.
+/// Use this to build trade journals, run post-backtest analysis, or feed
+/// the `LowerIntervalValidator` with precise entry/exit bar indices.
+#[derive(Debug, Clone)]
+pub struct Trade {
+    /// Bar index at which the position was entered.
+    pub entry_bar: usize,
+    /// Bar index at which the position was closed.
+    pub exit_bar: usize,
+    /// Actual fill price at entry (after slippage).
+    pub entry_price: f64,
+    /// Actual fill price at exit (stop, TP, or signal price).
+    pub exit_price: f64,
+    /// Direction: `1.0` = long, `-1.0` = short.
+    pub direction: f64,
+    /// Position size as fraction of equity at entry (0.0–1.0).
+    pub position_size: f64,
+    /// PnL as a percentage of entry price (e.g. `0.05` = 5% gain).
+    pub pnl_pct: f64,
+    /// Absolute PnL in currency units (after fees).
+    pub pnl_amount: f64,
+    /// Why the trade was closed.
+    pub exit_reason: ExitReason,
+    /// Total fees paid on this trade (entry + exit legs combined).
+    pub fees: f64,
+}
+
+impl Trade {
+    /// Returns `true` if the trade was profitable.
+    pub fn is_win(&self) -> bool {
+        self.pnl_amount > 0.0
+    }
+
+    /// Number of bars the position was held.
+    pub fn duration_bars(&self) -> usize {
+        self.exit_bar.saturating_sub(self.entry_bar)
+    }
+
+    /// Export this trade as a CSV row (without header).
+    /// Columns: entry_bar,exit_bar,direction,entry_price,exit_price,size,pnl_pct,pnl_amt,exit_reason,fees
+    pub fn to_csv_row(&self) -> String {
+        let dir = if self.direction > 0.0 {
+            "long"
+        } else {
+            "short"
+        };
+        format!(
+            "{},{},{},{},{},{},{},{},{},{}",
+            self.entry_bar,
+            self.exit_bar,
+            dir,
+            self.entry_price,
+            self.exit_price,
+            self.position_size,
+            self.pnl_pct,
+            self.pnl_amount,
+            self.exit_reason,
+            self.fees
+        )
+    }
+}
+
+/// Why a position was closed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExitReason {
+    /// The strategy signal changed — position flipped or went flat.
+    SignalExit,
+    /// Trailing stop loss was hit.
+    StopLoss,
+    /// Take profit target was reached.
+    TakeProfit,
+    /// Maximum holding period (bars) exceeded.
+    MaxBars,
+}
+
+impl std::fmt::Display for ExitReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExitReason::SignalExit => write!(f, "signal"),
+            ExitReason::StopLoss => write!(f, "stop"),
+            ExitReason::TakeProfit => write!(f, "tp"),
+            ExitReason::MaxBars => write!(f, "max_bars"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BacktestResult {
+    pub total_trades: usize,
+    pub win_rate: f64,
+    pub profit_factor: f64,
+    pub final_equity: f64,
+    pub total_return_pct: f64,
+    pub max_drawdown_pct: f64,
+    pub sharpe_ratio: f64,
+    pub kelly_fraction: f64,
+    pub equity_curve: Vec<f64>,
+    pub total_fees_paid: f64,
+    pub average_position_size: f64,
+    // Extended metrics (V3)
+    pub sortino_ratio: f64,
+    pub calmar_ratio: f64,
+    pub avg_trade_duration_bars: f64,
+    pub max_consecutive_wins: usize,
+    pub max_consecutive_losses: usize,
+    pub avg_win_pct: f64,
+    pub avg_loss_pct: f64,
+    pub largest_win_pct: f64,
+    pub largest_loss_pct: f64,
+    /// Individual closed trade records. Empty only if no trades were taken.
+    pub trades: Vec<Trade>,
+
+    // ── Normalised / time-adjusted metrics ──────────────────────────────────
+    /// Annualised return (%). Computed from total return and the time span of
+    /// the backtest in years. Use this to compare strategies across timeframes.
+    pub annualised_return_pct: f64,
+    /// Number of trades per year. High frequency = more statistically robust.
+    pub trades_per_year: f64,
+    /// Annualised Sharpe ratio (sharpe_ratio × √(trades_per_year)).
+    /// Best single metric for comparing strategies across timeframes.
+    pub annualised_sharpe: f64,
+    /// Return per trade (total_return_pct / total_trades). Edge per opportunity.
+    pub return_per_trade_pct: f64,
+    /// Number of years covered by the backtest (derived from timestamps).
+    pub backtest_years: f64,
+}
+
+/// Trading engine that simulates strategy execution over historical data.
+///
+/// **✅ SUPPORTS:**
+/// - **Long & Short Positions:** Fully supports signals from `-1.0` (short) to `1.0` (long).
+///   Short positions profit when price drops and are correctly tracked in PnL calculations.
+/// - **Position Sizing:** Multiple strategies including full equity, fixed fraction, and risk-based sizing.
+/// - **Trailing Stops:** Dynamic stop-loss that follows price movements for both longs and shorts.
+/// - **Fees & Slippage:** Realistic cost modeling with configurable fee percentages and slippage.
+///
+/// **⚠️ KNOWN LIMITATIONS:**
+/// - **Optimistic Trailing Stop:** The stop-loss is evaluated against the `close` price
+///   at the end of the candle. In reality, a stop would trigger intra-bar at the `low` price,
+///   meaning this backtester produces falsely optimistic results for volatile assets.
+pub struct Backtester {
+    initial_capital: f64,
+    fee_pct: f64,
+    /// Slippage in basis points (bps). Default: 5 bps = 0.05%.
+    /// Applied to the fill price: buys pay more, sells receive less.
+    slippage_bps: f64,
+    /// Position sizing strategy. Default: Full (100% of equity)
+    position_sizing: PositionSizing,
+    /// Maximum bars to hold a position before forced exit. None = no limit.
+    max_bars: Option<usize>,
+}
+
+impl Backtester {
+    pub fn new(initial_capital: f64, fee_pct: f64, slippage_bps: f64) -> Self {
+        Self {
+            initial_capital,
+            fee_pct,
+            slippage_bps,
+            position_sizing: PositionSizing::Full,
+            max_bars: None,
+        }
+    }
+
+    /// Create a backtester with sensible defaults (5 bps slippage).
+    pub fn with_defaults(initial_capital: f64) -> Self {
+        Self::new(initial_capital, 0.001, 5.0)
+    }
+
+    /// Set the position sizing strategy
+    pub fn with_position_sizing(mut self, sizing: PositionSizing) -> Self {
+        self.position_sizing = sizing;
+        self
+    }
+
+    /// Set the maximum holding period in bars.
+    /// Positions held longer than this are forcibly closed at the close price.
+    pub fn with_max_bars(mut self, max_bars: usize) -> Self {
+        self.max_bars = Some(max_bars);
+        self
+    }
+
+    /// Run a backtest using passive limit-order execution (0% maker fees).
+    ///
+    /// This method:
+    /// 1. Runs `PassiveExecutor::process_signals()` on the lower-timeframe (`df_low`) data
+    ///    to simulate placing limit orders below each bar open.
+    /// 2. Converts the fill events to a filtered signal series (only filled bars get signals).
+    /// 3. Runs the standard `run()` with the passive executor's fee rate (typically 0.0).
+    ///
+    /// # Arguments
+    /// * `df_high` - Higher-timeframe OHLCV data (e.g. 1h candles)
+    /// * `df_low`  - Lower-timeframe OHLCV data (e.g. 1m candles) for fill simulation
+    /// * `signals` - Raw strategy signals on the higher timeframe
+    /// * `trailing_sl` - Trailing stop fraction (e.g. 0.05 = 5%)
+    /// * `take_profit` - Take-profit fraction (e.g. 0.15 = 15%, 0.0 to disable)
+    /// * `passive_config` - Configuration for the passive executor
+    ///
+    /// Returns the standard `BacktestResult` plus fill statistics.
+    pub async fn run_with_passive(
+        &self,
+        df_high: &polars::prelude::DataFrame,
+        df_low: &polars::prelude::DataFrame,
+        signals: &polars::prelude::Series,
+        trailing_sl: f64,
+        take_profit: f64,
+        passive_config: crate::backtest::passive::PassiveConfig,
+    ) -> anyhow::Result<(BacktestResult, crate::backtest::passive::PassiveFillStats)> {
+        use crate::backtest::passive::PassiveExecutor;
+
+        let executor = PassiveExecutor::new(passive_config.clone());
+        let (filtered_signals, fill_stats) =
+            executor.process_signals(df_high, df_low, signals).await?;
+
+        // Build a zero-fee backtester using the maker fee from passive config
+        let passive_bt = Backtester::new(
+            self.initial_capital,
+            passive_config.maker_fee,
+            0.0, // No slippage — we set the limit price
+        )
+        .with_position_sizing(self.position_sizing);
+
+        let result = passive_bt.run(df_high, &filtered_signals, trailing_sl, take_profit)?;
+        Ok((result, fill_stats))
+    }
+
+    /// Convert slippage_bps to a multiplier factor (e.g. 5 bps → 0.0005).
+    #[inline]
+    fn slippage_factor(&self) -> f64 {
+        self.slippage_bps / 10_000.0
+    }
+
+    /// Calculate position size based on the sizing strategy
+    fn calculate_position_size(&self, _equity: f64, _entry_price: f64, trailing_sl: f64) -> f64 {
+        match self.position_sizing {
+            PositionSizing::Full => 1.0,
+            PositionSizing::FixedFraction(fraction) => fraction.clamp(0.0, 1.0),
+            PositionSizing::RiskPerTrade(risk_pct) => {
+                // Risk per trade as a fraction of equity:
+                // risk_amount = risk_pct * equity
+                // units = risk_amount / (entry_price * trailing_sl)
+                // fraction = units * entry_price / equity = risk_pct / trailing_sl
+                // So position_size (fraction) = risk_pct / trailing_sl, capped at 1.0
+                if trailing_sl > 0.0 {
+                    (risk_pct / trailing_sl).clamp(0.0, 1.0)
+                } else {
+                    1.0
+                }
+            }
+        }
+    }
+
+    /// Update extended metrics when a trade is closed
+    #[allow(clippy::too_many_arguments)]
+    fn update_trade_metrics(
+        pnl_pct: f64,
+        current_bar: usize,
+        entry_bar: usize,
+        trade_returns: &mut Vec<f64>,
+        trade_durations: &mut Vec<usize>,
+        consecutive_wins: &mut usize,
+        consecutive_losses: &mut usize,
+        max_consecutive_wins: &mut usize,
+        max_consecutive_losses: &mut usize,
+        largest_win_pct: &mut f64,
+        largest_loss_pct: &mut f64,
+    ) {
+        // Track return percentage
+        trade_returns.push(pnl_pct);
+
+        // Track trade duration
+        let duration = current_bar.saturating_sub(entry_bar);
+        trade_durations.push(duration);
+
+        // Track consecutive wins/losses and largest win/loss
+        if pnl_pct > 0.0 {
+            *consecutive_wins += 1;
+            *consecutive_losses = 0;
+            *max_consecutive_wins = (*max_consecutive_wins).max(*consecutive_wins);
+
+            // Track largest win
+            let win_pct = pnl_pct * 100.0;
+            if win_pct > *largest_win_pct {
+                *largest_win_pct = win_pct;
+            }
+        } else {
+            *consecutive_losses += 1;
+            *consecutive_wins = 0;
+            *max_consecutive_losses = (*max_consecutive_losses).max(*consecutive_losses);
+
+            // Track largest loss (most negative)
+            let loss_pct = pnl_pct.abs() * 100.0;
+            if loss_pct > *largest_loss_pct {
+                *largest_loss_pct = loss_pct;
+            }
+        }
+    }
+
+    pub fn run(
+        &self,
+        df: &DataFrame,
+        signal: &Series,
+        trailing_sl: f64,
+        take_profit: f64,
+    ) -> Result<BacktestResult> {
+        // Compute time span for normalised metrics
+        let backtest_years = df
+            .column("time")
+            .ok()
+            .and_then(|s| {
+                let ts = s.datetime().ok()?;
+                let first = ts.get(0)?;
+                let last = ts.get(ts.len().saturating_sub(1))?;
+                // timestamps are in milliseconds
+                let diff_ms = (last - first).abs() as f64;
+                Some(diff_ms / (365.25 * 24.0 * 3600.0 * 1000.0))
+            })
+            .unwrap_or(0.0);
+
+        let closes = df.column("close")?.f64()?;
+        let highs = df.column("high")?.f64()?;
+        let lows = df.column("low")?.f64()?;
+        let signals = signal.f64()?;
+
+        let slip = self.slippage_factor();
+
+        let mut equity = self.initial_capital;
+        let mut position = 0.0;
+        let mut position_size = 0.0; // Track the position size (0.0 to 1.0)
+        let mut entry_price = 0.0;
+        let mut highest_price_in_trade = 0.0;
+        let mut lowest_price_in_trade = 0.0;
+
+        let mut wins = 0;
+        let mut losses = 0;
+        let mut gross_profit = 0.0;
+        let mut gross_loss = 0.0;
+        let mut total_fees_paid = 0.0;
+        let mut _returns_list: Vec<f64> = Vec::new();
+
+        let mut peak_equity = equity;
+        let mut max_drawdown = 0.0;
+
+        let mut equity_curve = Vec::with_capacity(closes.len());
+        let mut position_sizes: Vec<f64> = Vec::new();
+
+        // Extended metrics tracking (V3)
+        let mut trade_returns: Vec<f64> = Vec::new(); // For Sortino
+        let mut trade_durations: Vec<usize> = Vec::new(); // Bars held
+        let mut entry_bar: usize = 0; // Track entry bar for trade duration
+        let mut consecutive_wins = 0; // Track consecutive wins
+        let mut consecutive_losses = 0; // Track consecutive losses
+        let mut max_consecutive_wins = 0;
+        let mut max_consecutive_losses = 0;
+        let mut largest_win_pct = 0.0;
+        let mut largest_loss_pct = 0.0;
+
+        // Trade journal (V3)
+        let mut trades: Vec<Trade> = Vec::new();
+
+        for i in 0..closes.len() {
+            let price = closes.get(i).unwrap_or(0.0);
+            let high = highs.get(i).unwrap_or(price);
+            let low = lows.get(i).unwrap_or(price);
+            // Use previous bar's signal to avoid look-ahead bias:
+            // signal generated at close of bar i-1 executes at open of bar i
+            // (approximated as bar i close, which is conservative).
+            let sig = if i == 0 {
+                0.0
+            } else {
+                signals.get(i - 1).unwrap_or(0.0)
+            };
+
+            // ── Trailing stop logic ────────────────────────────────────────
+            // We check the bar's LOW for longs and HIGH for shorts — stops
+            // trigger intra-bar, not just at the close price.
+            if position > 0.0 {
+                if high > highest_price_in_trade {
+                    highest_price_in_trade = high;
+                }
+                let stop_price = highest_price_in_trade * (1.0 - trailing_sl);
+                if low < stop_price {
+                    // Stop triggered: fill at the stop price (not close)
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0; // entry + exit legs
+                    let pnl_pct = (stop_price - entry_price) / entry_price;
+                    let pnl_amount = notional * pnl_pct - fee;
+
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+
+                    if pnl_amount > 0.0 {
+                        wins += 1;
+                        gross_profit += pnl_amount;
+                    } else {
+                        losses += 1;
+                        gross_loss += pnl_amount.abs();
+                    }
+
+                    Self::update_trade_metrics(
+                        pnl_pct,
+                        i,
+                        entry_bar,
+                        &mut trade_returns,
+                        &mut trade_durations,
+                        &mut consecutive_wins,
+                        &mut consecutive_losses,
+                        &mut max_consecutive_wins,
+                        &mut max_consecutive_losses,
+                        &mut largest_win_pct,
+                        &mut largest_loss_pct,
+                    );
+
+                    trades.push(Trade {
+                        entry_bar,
+                        exit_bar: i,
+                        entry_price,
+                        exit_price: stop_price,
+                        direction: 1.0,
+                        position_size,
+                        pnl_pct,
+                        pnl_amount,
+                        exit_reason: ExitReason::StopLoss,
+                        fees: fee,
+                    });
+
+                    position = 0.0;
+                    position_size = 0.0;
+                }
+            } else if position < 0.0 {
+                if low < lowest_price_in_trade {
+                    lowest_price_in_trade = low;
+                }
+                let stop_price = lowest_price_in_trade * (1.0 + trailing_sl);
+                if high > stop_price {
+                    // Stop triggered: fill at the stop price (not close)
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0;
+                    let pnl_pct = (entry_price - stop_price) / entry_price;
+                    let pnl_amount = notional * pnl_pct - fee;
+
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+
+                    if pnl_amount > 0.0 {
+                        wins += 1;
+                        gross_profit += pnl_amount;
+                    } else {
+                        losses += 1;
+                        gross_loss += pnl_amount.abs();
+                    }
+
+                    Self::update_trade_metrics(
+                        pnl_pct,
+                        i,
+                        entry_bar,
+                        &mut trade_returns,
+                        &mut trade_durations,
+                        &mut consecutive_wins,
+                        &mut consecutive_losses,
+                        &mut max_consecutive_wins,
+                        &mut max_consecutive_losses,
+                        &mut largest_win_pct,
+                        &mut largest_loss_pct,
+                    );
+
+                    trades.push(Trade {
+                        entry_bar,
+                        exit_bar: i,
+                        entry_price,
+                        exit_price: stop_price,
+                        direction: -1.0,
+                        position_size,
+                        pnl_pct,
+                        pnl_amount,
+                        exit_reason: ExitReason::StopLoss,
+                        fees: fee,
+                    });
+
+                    position = 0.0;
+                    position_size = 0.0;
+                }
+            }
+
+            // ── Take profit logic ──────────────────────────────────────────
+            // Check if take profit was hit (only if TP > 0)
+            if take_profit > 0.0 {
+                if position > 0.0 {
+                    let tp_price = entry_price * (1.0 + take_profit);
+                    if high >= tp_price {
+                        // TP hit: fill at TP price
+                        let notional = equity * position_size;
+                        let fee = notional * self.fee_pct * 2.0;
+                        let pnl_pct = (tp_price - entry_price) / entry_price;
+                        let pnl_amount = notional * pnl_pct - fee;
+
+                        equity += pnl_amount;
+                        total_fees_paid += fee;
+
+                        if pnl_amount > 0.0 {
+                            wins += 1;
+                            gross_profit += pnl_amount;
+                        } else {
+                            losses += 1;
+                            gross_loss += pnl_amount.abs();
+                        }
+
+                        Self::update_trade_metrics(
+                            pnl_pct,
+                            i,
+                            entry_bar,
+                            &mut trade_returns,
+                            &mut trade_durations,
+                            &mut consecutive_wins,
+                            &mut consecutive_losses,
+                            &mut max_consecutive_wins,
+                            &mut max_consecutive_losses,
+                            &mut largest_win_pct,
+                            &mut largest_loss_pct,
+                        );
+
+                        trades.push(Trade {
+                            entry_bar,
+                            exit_bar: i,
+                            entry_price,
+                            exit_price: tp_price,
+                            direction: 1.0,
+                            position_size,
+                            pnl_pct,
+                            pnl_amount,
+                            exit_reason: ExitReason::TakeProfit,
+                            fees: fee,
+                        });
+
+                        position = 0.0;
+                        position_size = 0.0;
+                    }
+                } else if position < 0.0 {
+                    let tp_price = entry_price * (1.0 - take_profit);
+                    if low <= tp_price {
+                        // TP hit: fill at TP price
+                        let notional = equity * position_size;
+                        let fee = notional * self.fee_pct * 2.0;
+                        let pnl_pct = (entry_price - tp_price) / entry_price;
+                        let pnl_amount = notional * pnl_pct - fee;
+
+                        equity += pnl_amount;
+                        total_fees_paid += fee;
+
+                        if pnl_amount > 0.0 {
+                            wins += 1;
+                            gross_profit += pnl_amount;
+                        } else {
+                            losses += 1;
+                            gross_loss += pnl_amount.abs();
+                        }
+
+                        Self::update_trade_metrics(
+                            pnl_pct,
+                            i,
+                            entry_bar,
+                            &mut trade_returns,
+                            &mut trade_durations,
+                            &mut consecutive_wins,
+                            &mut consecutive_losses,
+                            &mut max_consecutive_wins,
+                            &mut max_consecutive_losses,
+                            &mut largest_win_pct,
+                            &mut largest_loss_pct,
+                        );
+
+                        trades.push(Trade {
+                            entry_bar,
+                            exit_bar: i,
+                            entry_price,
+                            exit_price: tp_price,
+                            direction: -1.0,
+                            position_size,
+                            pnl_pct,
+                            pnl_amount,
+                            exit_reason: ExitReason::TakeProfit,
+                            fees: fee,
+                        });
+
+                        position = 0.0;
+                        position_size = 0.0;
+                    }
+                }
+            }
+
+            // ── Max bars exit logic ────────────────────────────────────────
+            // Force exit if position held longer than max_bars
+            if let Some(max) = self.max_bars {
+                let bars_held = i - entry_bar;
+                if bars_held >= max && !(-0.01..=0.01).contains(&position) {
+                    // Max bars exceeded: exit at close price
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0;
+                    let pnl_pct = if position > 0.0 {
+                        (price - entry_price) / entry_price
+                    } else {
+                        (entry_price - price) / entry_price
+                    };
+                    let pnl_amount = notional * pnl_pct - fee;
+
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+
+                    if pnl_amount > 0.0 {
+                        wins += 1;
+                        gross_profit += pnl_amount;
+                    } else {
+                        losses += 1;
+                        gross_loss += pnl_amount.abs();
+                    }
+
+                    Self::update_trade_metrics(
+                        pnl_pct,
+                        i,
+                        entry_bar,
+                        &mut trade_returns,
+                        &mut trade_durations,
+                        &mut consecutive_wins,
+                        &mut consecutive_losses,
+                        &mut max_consecutive_wins,
+                        &mut max_consecutive_losses,
+                        &mut largest_win_pct,
+                        &mut largest_loss_pct,
+                    );
+
+                    trades.push(Trade {
+                        entry_bar,
+                        exit_bar: i,
+                        entry_price,
+                        exit_price: price,
+                        direction: position,
+                        position_size,
+                        pnl_pct,
+                        pnl_amount,
+                        exit_reason: ExitReason::MaxBars,
+                        fees: fee,
+                    });
+
+                    position = 0.0;
+                    position_size = 0.0;
+                }
+            }
+
+            // ── Signal-driven entry / exit ─────────────────────────────────
+            if (sig - position).abs() > 0.01 {
+                // Apply slippage: buys fill higher, sells fill lower
+                let exec_price = if sig > position {
+                    price * (1.0 + slip) // buy: worse fill
+                } else {
+                    price * (1.0 - slip) // sell: worse fill
+                };
+
+                if position.abs() > 0.01 {
+                    let raw_pnl_pct = if position > 0.0 {
+                        (exec_price - entry_price) / entry_price
+                    } else {
+                        (entry_price - exec_price) / entry_price
+                    };
+
+                    // Fee applied to notional value of the trade
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0;
+                    let net_pnl_pct = raw_pnl_pct - (self.fee_pct * 2.0);
+                    let pnl_amount = notional * net_pnl_pct;
+
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+                    _returns_list.push(net_pnl_pct);
+
+                    if pnl_amount > 0.0 {
+                        wins += 1;
+                        gross_profit += pnl_amount;
+                    } else {
+                        losses += 1;
+                        gross_loss += pnl_amount.abs();
+                    }
+
+                    Self::update_trade_metrics(
+                        net_pnl_pct,
+                        i,
+                        entry_bar,
+                        &mut trade_returns,
+                        &mut trade_durations,
+                        &mut consecutive_wins,
+                        &mut consecutive_losses,
+                        &mut max_consecutive_wins,
+                        &mut max_consecutive_losses,
+                        &mut largest_win_pct,
+                        &mut largest_loss_pct,
+                    );
+
+                    trades.push(Trade {
+                        entry_bar,
+                        exit_bar: i,
+                        entry_price,
+                        exit_price: exec_price,
+                        direction: position,
+                        position_size,
+                        pnl_pct: net_pnl_pct,
+                        pnl_amount,
+                        exit_reason: ExitReason::SignalExit,
+                        fees: fee,
+                    });
+                }
+
+                if sig.abs() > 0.01 {
+                    // Calculate position size when entering a position
+                    position_size = self.calculate_position_size(equity, exec_price, trailing_sl);
+                    position_sizes.push(position_size);
+                    entry_price = exec_price;
+                    highest_price_in_trade = price;
+                    lowest_price_in_trade = price;
+                    entry_bar = i; // Track entry bar for duration calculation
+                } else {
+                    position_size = 0.0;
+                }
+                position = sig;
+            }
+
+            // ── Drawdown tracking ──────────────────────────────────────────
+            if equity > peak_equity {
+                peak_equity = equity;
+            }
+            let dd = (peak_equity - equity) / peak_equity;
+            if dd > max_drawdown {
+                max_drawdown = dd;
+            }
+
+            // ── Mark-to-market equity curve ────────────────────────────────
+            let mtm_equity = if position.abs() > 0.01 {
+                let current_pnl_pct = if position > 0.0 {
+                    (price - entry_price) / entry_price
+                } else {
+                    (entry_price - price) / entry_price
+                };
+                equity + (equity * position_size * current_pnl_pct)
+            } else {
+                equity
+            };
+            equity_curve.push(mtm_equity);
+        }
+
+        let total_trades = wins + losses;
+        let win_rate = if total_trades > 0 {
+            wins as f64 / total_trades as f64
+        } else {
+            0.0
+        };
+
+        let profit_factor = if gross_loss.abs() > f64::EPSILON {
+            gross_profit / gross_loss
+        } else if gross_profit > 0.0 {
+            100.0
+        } else {
+            0.0
+        };
+
+        let total_return = (equity - self.initial_capital) / self.initial_capital;
+
+        let avg_win = if wins > 0 {
+            gross_profit / wins as f64
+        } else {
+            0.0
+        };
+
+        let avg_loss = if losses > 0 {
+            gross_loss / losses as f64
+        } else if total_trades > 0 {
+            1.0
+        } else {
+            0.0
+        };
+
+        let payoff_ratio = if avg_loss.abs() > f64::EPSILON {
+            avg_win / avg_loss
+        } else {
+            0.0
+        };
+
+        let kelly = if payoff_ratio > 0.0 {
+            win_rate - ((1.0 - win_rate) / payoff_ratio)
+        } else {
+            0.0
+        };
+
+        let kelly_fraction = (kelly * 0.5).clamp(0.0, 0.2);
+
+        let sharpe = if max_drawdown > 0.0 {
+            total_return / max_drawdown
+        } else {
+            0.0
+        };
+
+        let average_position_size = if !position_sizes.is_empty() {
+            position_sizes.iter().sum::<f64>() / position_sizes.len() as f64
+        } else {
+            0.0
+        };
+
+        // Extended metrics (V3)
+        // Sortino: use downside deviation instead of total volatility
+        let downside_returns: Vec<f64> = trade_returns
+            .iter()
+            .filter(|&&r| r < 0.0)
+            .copied()
+            .collect();
+        let downside_std = if !downside_returns.is_empty() {
+            let mean = downside_returns.iter().sum::<f64>() / downside_returns.len() as f64;
+            (downside_returns
+                .iter()
+                .map(|r| (r - mean).powi(2))
+                .sum::<f64>()
+                / downside_returns.len() as f64)
+                .sqrt()
+        } else {
+            0.0
+        };
+        let sortino_ratio = if downside_std > 0.0 {
+            total_return / downside_std
+        } else {
+            0.0
+        };
+
+        // Calmar: annualized return / max drawdown (simplified: total return / max DD)
+        let calmar_ratio = if max_drawdown > 0.0 {
+            total_return / max_drawdown
+        } else {
+            0.0
+        };
+
+        // Average trade duration
+        let avg_trade_duration_bars = if !trade_durations.is_empty() {
+            trade_durations.iter().sum::<usize>() as f64 / trade_durations.len() as f64
+        } else {
+            0.0
+        };
+
+        // Avg win/loss percentages
+        let avg_win_pct = if wins > 0 && gross_profit > 0.0 {
+            (gross_profit / wins as f64) / self.initial_capital * 100.0
+        } else {
+            0.0
+        };
+        let avg_loss_pct = if losses > 0 && gross_loss > 0.0 {
+            (gross_loss / losses as f64) / self.initial_capital * 100.0
+        } else {
+            0.0
+        };
+
+        // ── Normalised / time-adjusted metrics ──────────────────────────────
+        let annualised_return_pct = if backtest_years > 0.0 {
+            // Compound annualisation: (1 + total_return)^(1/years) - 1
+            ((1.0 + total_return).powf(1.0 / backtest_years) - 1.0) * 100.0
+        } else {
+            0.0
+        };
+        let trades_per_year = if backtest_years > 0.0 {
+            total_trades as f64 / backtest_years
+        } else {
+            0.0
+        };
+        // Annualise Sharpe: multiply per-trade Sharpe by √(trades_per_year)
+        let annualised_sharpe = if trades_per_year > 0.0 {
+            sharpe * trades_per_year.sqrt()
+        } else {
+            0.0
+        };
+        let return_per_trade_pct = if total_trades > 0 {
+            total_return * 100.0 / total_trades as f64
+        } else {
+            0.0
+        };
+
+        Ok(BacktestResult {
+            total_trades,
+            win_rate: win_rate * 100.0,
+            profit_factor,
+            final_equity: equity,
+            total_return_pct: total_return * 100.0,
+            max_drawdown_pct: max_drawdown * 100.0,
+            sharpe_ratio: sharpe,
+            kelly_fraction,
+            equity_curve,
+            total_fees_paid,
+            average_position_size,
+            // Extended metrics (V3)
+            sortino_ratio,
+            calmar_ratio,
+            avg_trade_duration_bars,
+            max_consecutive_wins,
+            max_consecutive_losses,
+            avg_win_pct,
+            avg_loss_pct,
+            largest_win_pct,
+            largest_loss_pct,
+            trades,
+            // Normalised metrics
+            annualised_return_pct,
+            trades_per_year,
+            annualised_sharpe,
+            return_per_trade_pct,
+            backtest_years,
+        })
+    }
+}
+
+impl BacktestResult {
+    /// Export all trades to CSV format.
+    ///
+    /// Returns a string with header row followed by one row per trade.
+    /// Columns: entry_bar,exit_bar,direction,entry_price,exit_price,size,pnl_pct,pnl_amt,exit_reason,fees
+    ///
+    /// # Example
+    /// ```no_run
+    /// use krypto::backtest::engine::{Backtester, PositionSizing};
+    /// # use polars::prelude::*;
+    /// # fn main() -> anyhow::Result<()> {
+    /// # let df = DataFrame::default();
+    /// # let signal = Series::new("signal".into(), vec![0.0; 10]);
+    /// let bt = Backtester::with_defaults(10_000.0);
+    /// let result = bt.run(&df, &signal, 0.05, 0.10)?;
+    /// let csv = result.trades_to_csv();
+    /// std::fs::write("trades.csv", &csv)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn trades_to_csv(&self) -> String {
+        let header = "entry_bar,exit_bar,direction,entry_price,exit_price,size,pnl_pct,pnl_amt,exit_reason,fees";
+        let rows: Vec<String> = self.trades.iter().map(|t| t.to_csv_row()).collect();
+        format!("{}\n{}", header, rows.join("\n"))
+    }
+
+    /// Export trades to CSV and write to file.
+    pub fn export_trades(&self, path: &std::path::Path) -> std::io::Result<()> {
+        std::fs::write(path, self.trades_to_csv())
+    }
+}
+
+impl Backtester {
+    /// Run backtest with passive (limit order) execution on FDUSD pairs.
+    ///
+    /// Differs from `run()` in two ways:
+    /// 1. Entry prices come from passive limit fills rather than market close price.
+    /// 2. Signals that don't get filled within `max_wait_bars` are skipped entirely.
+    ///
+    /// This models the real FDUSD 0% maker fee execution path. Call with
+    /// `fee_pct = 0.0` and `slippage_bps = 0.0` on the Backtester.
+    pub async fn run_passive(
+        &self,
+        df_high: &DataFrame,
+        df_low: &DataFrame,
+        signal: &Series,
+        trailing_sl: f64,
+        take_profit: f64,
+        passive_config: crate::backtest::passive::PassiveConfig,
+    ) -> Result<BacktestResult> {
+        use crate::backtest::passive::PassiveExecutor;
+        use std::collections::HashMap;
+
+        // Phase 1: Pre-compute passive fills.
+        // Returns FillEvent per signal, giving us the actual fill price and bar index.
+        let executor = PassiveExecutor::new(passive_config);
+        let (fills, _stats) = executor.simulate(df_high, df_low, signal).await?;
+
+        // Build a map from signal_bar → fill_price so the main loop can look it up.
+        // If a signal bar has no fill entry, it means the order didn't fill — skip it.
+        let fill_map: HashMap<usize, f64> =
+            fills.iter().map(|f| (f.signal_bar, f.fill_price)).collect();
+
+        // Phase 2: Run the standard backtest loop, but override entry prices with
+        // passive fill prices and skip any signal that didn't get filled.
+        let closes = df_high.column("close")?.f64()?;
+        let highs = df_high.column("high")?.f64()?;
+        let lows = df_high.column("low")?.f64()?;
+        let signals = signal.f64()?;
+
+        let mut equity = self.initial_capital;
+        let mut position = 0.0f64;
+        let mut position_size = 0.0f64;
+        let mut entry_price = 0.0f64;
+        let mut highest_price_in_trade = 0.0f64;
+        let mut lowest_price_in_trade = 0.0f64;
+
+        let mut wins = 0usize;
+        let mut losses = 0usize;
+        let mut gross_profit = 0.0f64;
+        let mut gross_loss = 0.0f64;
+        let mut total_fees_paid = 0.0f64;
+
+        let mut peak_equity = equity;
+        let mut max_drawdown = 0.0f64;
+        let mut equity_curve = Vec::with_capacity(closes.len());
+
+        let mut trade_returns: Vec<f64> = Vec::new();
+        let mut trade_durations: Vec<usize> = Vec::new();
+        let mut entry_bar = 0usize;
+        let mut consecutive_wins = 0usize;
+        let mut consecutive_losses = 0usize;
+        let mut max_consecutive_wins = 0usize;
+        let mut max_consecutive_losses = 0usize;
+        let mut largest_win_pct = 0.0f64;
+        let mut largest_loss_pct = 0.0f64;
+
+        let mut trades: Vec<Trade> = Vec::new();
+
+        for i in 0..closes.len() {
+            let price = closes.get(i).unwrap_or(0.0);
+            let high = highs.get(i).unwrap_or(price);
+            let low = lows.get(i).unwrap_or(price);
+            let sig = signals.get(i).unwrap_or(0.0);
+
+            // ── Trailing stop (long) ───────────────────────────────────────
+            if position > 0.0 {
+                highest_price_in_trade = highest_price_in_trade.max(high);
+                let stop_price = highest_price_in_trade * (1.0 - trailing_sl);
+                if low < stop_price {
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0;
+                    let pnl_pct = (stop_price - entry_price) / entry_price;
+                    let pnl_amount = notional * pnl_pct - fee;
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+                    if pnl_amount > 0.0 {
+                        wins += 1;
+                        gross_profit += pnl_amount;
+                    } else {
+                        losses += 1;
+                        gross_loss += pnl_amount.abs();
+                    }
+                    Self::update_trade_metrics(
+                        pnl_pct,
+                        i,
+                        entry_bar,
+                        &mut trade_returns,
+                        &mut trade_durations,
+                        &mut consecutive_wins,
+                        &mut consecutive_losses,
+                        &mut max_consecutive_wins,
+                        &mut max_consecutive_losses,
+                        &mut largest_win_pct,
+                        &mut largest_loss_pct,
+                    );
+                    trades.push(Trade {
+                        entry_bar,
+                        exit_bar: i,
+                        entry_price,
+                        exit_price: stop_price,
+                        direction: 1.0,
+                        position_size,
+                        pnl_pct,
+                        pnl_amount,
+                        exit_reason: ExitReason::StopLoss,
+                        fees: fee,
+                    });
+                    position = 0.0;
+                    position_size = 0.0;
+                }
+            }
+
+            // ── Trailing stop (short) ──────────────────────────────────────
+            if position < 0.0 {
+                lowest_price_in_trade = lowest_price_in_trade.min(low);
+                let stop_price = lowest_price_in_trade * (1.0 + trailing_sl);
+                if high > stop_price {
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0;
+                    let pnl_pct = (entry_price - stop_price) / entry_price;
+                    let pnl_amount = notional * pnl_pct - fee;
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+                    if pnl_amount > 0.0 {
+                        wins += 1;
+                        gross_profit += pnl_amount;
+                    } else {
+                        losses += 1;
+                        gross_loss += pnl_amount.abs();
+                    }
+                    Self::update_trade_metrics(
+                        pnl_pct,
+                        i,
+                        entry_bar,
+                        &mut trade_returns,
+                        &mut trade_durations,
+                        &mut consecutive_wins,
+                        &mut consecutive_losses,
+                        &mut max_consecutive_wins,
+                        &mut max_consecutive_losses,
+                        &mut largest_win_pct,
+                        &mut largest_loss_pct,
+                    );
+                    trades.push(Trade {
+                        entry_bar,
+                        exit_bar: i,
+                        entry_price,
+                        exit_price: stop_price,
+                        direction: -1.0,
+                        position_size,
+                        pnl_pct,
+                        pnl_amount,
+                        exit_reason: ExitReason::StopLoss,
+                        fees: fee,
+                    });
+                    position = 0.0;
+                    position_size = 0.0;
+                }
+            }
+
+            // ── Take profit (long) ─────────────────────────────────────────
+            if take_profit > 0.0 && position > 0.0 {
+                let tp_price = entry_price * (1.0 + take_profit);
+                if high >= tp_price {
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0;
+                    let pnl_pct = (tp_price - entry_price) / entry_price;
+                    let pnl_amount = notional * pnl_pct - fee;
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+                    if pnl_amount > 0.0 {
+                        wins += 1;
+                        gross_profit += pnl_amount;
+                    } else {
+                        losses += 1;
+                        gross_loss += pnl_amount.abs();
+                    }
+                    Self::update_trade_metrics(
+                        pnl_pct,
+                        i,
+                        entry_bar,
+                        &mut trade_returns,
+                        &mut trade_durations,
+                        &mut consecutive_wins,
+                        &mut consecutive_losses,
+                        &mut max_consecutive_wins,
+                        &mut max_consecutive_losses,
+                        &mut largest_win_pct,
+                        &mut largest_loss_pct,
+                    );
+                    trades.push(Trade {
+                        entry_bar,
+                        exit_bar: i,
+                        entry_price,
+                        exit_price: tp_price,
+                        direction: 1.0,
+                        position_size,
+                        pnl_pct,
+                        pnl_amount,
+                        exit_reason: ExitReason::TakeProfit,
+                        fees: fee,
+                    });
+                    position = 0.0;
+                    position_size = 0.0;
+                }
+            }
+
+            // ── Take profit (short) ────────────────────────────────────────
+            if take_profit > 0.0 && position < 0.0 {
+                let tp_price = entry_price * (1.0 - take_profit);
+                if low <= tp_price {
+                    let notional = equity * position_size;
+                    let fee = notional * self.fee_pct * 2.0;
+                    let pnl_pct = (entry_price - tp_price) / entry_price;
+                    let pnl_amount = notional * pnl_pct - fee;
+                    equity += pnl_amount;
+                    total_fees_paid += fee;
+                    if pnl_amount > 0.0 {
+                        wins += 1;
+                        gross_profit += pnl_amount;
+                    } else {
+                        losses += 1;
+                        gross_loss += pnl_amount.abs();
+                    }
+                    Self::update_trade_metrics(
+                        pnl_pct,
+                        i,
+                        entry_bar,
+                        &mut trade_returns,
+                        &mut trade_durations,
+                        &mut consecutive_wins,
+                        &mut consecutive_losses,
+                        &mut max_consecutive_wins,
+                        &mut max_consecutive_losses,
+                        &mut largest_win_pct,
+                        &mut largest_loss_pct,
+                    );
+                    trades.push(Trade {
+                        entry_bar,
+                        exit_bar: i,
+                        entry_price,
+                        exit_price: tp_price,
+                        direction: -1.0,
+                        position_size,
+                        pnl_pct,
+                        pnl_amount,
+                        exit_reason: ExitReason::TakeProfit,
+                        fees: fee,
+                    });
+                    position = 0.0;
+                    position_size = 0.0;
+                }
+            }
+
+            // ── Signal change / exit ───────────────────────────────────────
+            let new_direction = if sig > 0.01 {
+                1.0
+            } else if sig < -0.01 {
+                -1.0
+            } else {
+                0.0
+            };
+            if position.abs() > 0.01 && (new_direction != position || new_direction == 0.0) {
+                // Close existing position at current close
+                let notional = equity * position_size;
+                let fee = notional * self.fee_pct * 2.0;
+                let raw_pnl = if position > 0.0 {
+                    (price - entry_price) / entry_price
+                } else {
+                    (entry_price - price) / entry_price
+                };
+                let pnl_amount = notional * raw_pnl - fee;
+                equity += pnl_amount;
+                total_fees_paid += fee;
+                if pnl_amount > 0.0 {
+                    wins += 1;
+                    gross_profit += pnl_amount;
+                } else {
+                    losses += 1;
+                    gross_loss += pnl_amount.abs();
+                }
+                Self::update_trade_metrics(
+                    raw_pnl,
+                    i,
+                    entry_bar,
+                    &mut trade_returns,
+                    &mut trade_durations,
+                    &mut consecutive_wins,
+                    &mut consecutive_losses,
+                    &mut max_consecutive_wins,
+                    &mut max_consecutive_losses,
+                    &mut largest_win_pct,
+                    &mut largest_loss_pct,
+                );
+                trades.push(Trade {
+                    entry_bar,
+                    exit_bar: i,
+                    entry_price,
+                    exit_price: price,
+                    direction: position,
+                    position_size,
+                    pnl_pct: raw_pnl,
+                    pnl_amount,
+                    exit_reason: ExitReason::SignalExit,
+                    fees: fee,
+                });
+                position = 0.0;
+                position_size = 0.0;
+            }
+
+            // ── Entry (passive fill required) ──────────────────────────────
+            if new_direction != 0.0 && position.abs() < 0.01 {
+                // Only enter if there was a passive fill at this bar
+                if let Some(&fill_px) = fill_map.get(&i) {
+                    position_size = self.calculate_position_size(equity, fill_px, trailing_sl);
+                    entry_price = fill_px;
+                    highest_price_in_trade = price;
+                    lowest_price_in_trade = price;
+                    entry_bar = i;
+                    position = new_direction;
+                }
+                // No fill → skip this signal (order didn't execute)
+            }
+
+            // ── Drawdown & equity curve ────────────────────────────────────
+            if equity > peak_equity {
+                peak_equity = equity;
+            }
+            let dd = (peak_equity - equity) / peak_equity;
+            if dd > max_drawdown {
+                max_drawdown = dd;
+            }
+
+            let mtm = if position.abs() > 0.01 {
+                let p = if position > 0.0 {
+                    (price - entry_price) / entry_price
+                } else {
+                    (entry_price - price) / entry_price
+                };
+                equity + equity * position_size * p
+            } else {
+                equity
+            };
+            equity_curve.push(mtm);
+        }
+
+        let total_trades = wins + losses;
+        let win_rate = if total_trades > 0 {
+            wins as f64 / total_trades as f64
+        } else {
+            0.0
+        };
+        let profit_factor = if gross_loss > 0.0 {
+            gross_profit / gross_loss
+        } else {
+            gross_profit
+        };
+        let total_return_pct = (equity - self.initial_capital) / self.initial_capital * 100.0;
+        let max_drawdown_pct = max_drawdown * 100.0;
+
+        let downside: Vec<f64> = trade_returns
+            .iter()
+            .filter(|&&r| r < 0.0)
+            .map(|&r| r * r)
+            .collect();
+        let downside_std = if downside.is_empty() {
+            0.0
+        } else {
+            (downside.iter().sum::<f64>() / downside.len() as f64).sqrt()
+        };
+        let avg_ret = if trade_returns.is_empty() {
+            0.0
+        } else {
+            trade_returns.iter().sum::<f64>() / trade_returns.len() as f64
+        };
+        let sortino = if downside_std > 0.0 {
+            avg_ret / downside_std
+        } else {
+            0.0
+        };
+        let avg_duration = if trade_durations.is_empty() {
+            0.0
+        } else {
+            trade_durations.iter().sum::<usize>() as f64 / trade_durations.len() as f64
+        };
+        let calmar = if max_drawdown > 0.0 {
+            total_return_pct / max_drawdown_pct
+        } else {
+            total_return_pct
+        };
+
+        let avg_win_pct = if wins > 0 {
+            trades
+                .iter()
+                .filter(|t| t.pnl_amount > 0.0)
+                .map(|t| t.pnl_pct * 100.0)
+                .sum::<f64>()
+                / wins as f64
+        } else {
+            0.0
+        };
+        let avg_loss_pct = if losses > 0 {
+            trades
+                .iter()
+                .filter(|t| t.pnl_amount <= 0.0)
+                .map(|t| t.pnl_pct * 100.0)
+                .sum::<f64>()
+                / losses as f64
+        } else {
+            0.0
+        };
+        let avg_pos_size = if trades.is_empty() {
+            0.0
+        } else {
+            trades.iter().map(|t| t.position_size).sum::<f64>() / trades.len() as f64
+        };
+
+        Ok(BacktestResult {
+            final_equity: equity,
+            total_return_pct,
+            win_rate: win_rate * 100.0,
+            total_trades,
+            profit_factor,
+            max_drawdown_pct,
+            total_fees_paid,
+            equity_curve,
+            trades,
+            sharpe_ratio: 0.0, // Needs full equity-curve return series to compute
+            kelly_fraction: 0.0,
+            sortino_ratio: sortino,
+            calmar_ratio: calmar,
+            avg_trade_duration_bars: avg_duration,
+            max_consecutive_wins,
+            max_consecutive_losses,
+            avg_win_pct,
+            avg_loss_pct,
+            largest_win_pct,
+            largest_loss_pct,
+            average_position_size: avg_pos_size,
+            // Normalised metrics (not computed in this path — no time column access)
+            annualised_return_pct: 0.0,
+            trades_per_year: 0.0,
+            annualised_sharpe: 0.0,
+            return_per_trade_pct: if total_trades > 0 {
+                total_return_pct / total_trades as f64
+            } else {
+                0.0
+            },
+            backtest_years: 0.0,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_test_dataframe() -> DataFrame {
+        let closes = vec![
+            100.0, 101.0, 102.0, 101.0, 100.0, 99.0, 100.0, 101.0, 102.0, 103.0,
+        ];
+        let highs = vec![
+            101.0, 102.0, 103.0, 102.0, 101.0, 100.0, 101.0, 102.0, 103.0, 104.0,
+        ];
+        let lows = vec![
+            99.0, 100.0, 101.0, 100.0, 99.0, 98.0, 99.0, 100.0, 101.0, 102.0,
+        ];
+        let volumes = vec![1000.0; 10];
+
+        df!(
+            "close" => closes,
+            "high" => highs,
+            "low" => lows,
+            "volume" => volumes
+        )
+        .unwrap()
+    }
+
+    fn create_buy_signal() -> Series {
+        // Buy at bar 1, sell at bar 5, buy at bar 6
+        Series::new(
+            "signal",
+            vec![0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+        )
+    }
+
+    #[test]
+    fn test_full_position_sizing() {
+        let df = create_test_dataframe();
+        let signal = create_buy_signal();
+        let backtester =
+            Backtester::with_defaults(10_000.0).with_position_sizing(PositionSizing::Full);
+
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        // Full position sizing should use 100% of equity
+        assert_eq!(result.average_position_size, 1.0);
+        println!(
+            "Full sizing - Avg position size: {}, Final equity: ${:.2}",
+            result.average_position_size, result.final_equity
+        );
+    }
+
+    #[test]
+    fn test_fixed_fraction_position_sizing() {
+        let df = create_test_dataframe();
+        let signal = create_buy_signal();
+        let backtester = Backtester::with_defaults(10_000.0)
+            .with_position_sizing(PositionSizing::FixedFraction(0.5));
+
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        // Fixed fraction 0.5 should use 50% of equity
+        assert_eq!(result.average_position_size, 0.5);
+        println!(
+            "Fixed fraction 50% - Avg position size: {}, Final equity: ${:.2}",
+            result.average_position_size, result.final_equity
+        );
+
+        // With 50% position sizing, we should have less volatility but similar returns
+        let full_backtester =
+            Backtester::with_defaults(10_000.0).with_position_sizing(PositionSizing::Full);
+        let full_result = full_backtester.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        // With 50% sizing, both PnL and drawdown are scaled down vs full sizing.
+        // The equity difference may go either direction depending on strategy sign,
+        // but the drawdown should always be <= full sizing's drawdown.
+        assert!(result.max_drawdown_pct <= full_result.max_drawdown_pct);
+        // The difference in final equity should be smaller than with full sizing
+        let half_diff = (result.final_equity - 10_000.0).abs();
+        let full_diff = (full_result.final_equity - 10_000.0).abs();
+        assert!(
+            half_diff <= full_diff,
+            "Half-sized diff {half_diff:.2} should be <= full diff {full_diff:.2}"
+        );
+    }
+
+    #[test]
+    fn test_risk_per_trade_position_sizing() {
+        let df = create_test_dataframe();
+        let signal = create_buy_signal();
+
+        // 2% risk per trade with 5% trailing stop
+        let backtester = Backtester::with_defaults(10_000.0)
+            .with_position_sizing(PositionSizing::RiskPerTrade(0.02));
+
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        // With 2% risk and 5% stop loss, position size should be 0.4 (40%)
+        // position_size = (0.02 * equity) / (price * 0.05) = 0.4
+        let expected_position_size = 0.4;
+        assert!((result.average_position_size - expected_position_size).abs() < 0.01);
+        println!(
+            "Risk per trade 2% - Avg position size: {}, Final equity: ${:.2}",
+            result.average_position_size, result.final_equity
+        );
+    }
+
+    #[test]
+    fn test_risk_per_trade_different_stops() {
+        let df = create_test_dataframe();
+        let signal = create_buy_signal();
+
+        // Test with tighter stop (2%)
+        let backtester_tight = Backtester::with_defaults(10_000.0)
+            .with_position_sizing(PositionSizing::RiskPerTrade(0.02));
+        let result_tight = backtester_tight.run(&df, &signal, 0.02, 0.0).unwrap();
+
+        // With tighter stop, position size should be larger to maintain same risk
+        // position_size = (0.02 * equity) / (price * 0.02) = 1.0
+        assert!((result_tight.average_position_size - 1.0).abs() < 0.01);
+
+        // Test with wider stop (10%)
+        let backtester_wide = Backtester::with_defaults(10_000.0)
+            .with_position_sizing(PositionSizing::RiskPerTrade(0.02));
+        let result_wide = backtester_wide.run(&df, &signal, 0.10, 0.0).unwrap();
+
+        // With wider stop, position size should be smaller
+        // position_size = (0.02 * equity) / (price * 0.10) = 0.2
+        assert!((result_wide.average_position_size - 0.2).abs() < 0.01);
+
+        println!(
+            "Tight stop (2%) - Position size: {}",
+            result_tight.average_position_size
+        );
+        println!(
+            "Wide stop (10%) - Position size: {}",
+            result_wide.average_position_size
+        );
+    }
+
+    #[test]
+    fn test_backwards_compatibility() {
+        let df = create_test_dataframe();
+        let signal = create_buy_signal();
+
+        // Old API (without position sizing) should default to Full
+        let old_backtester = Backtester::new(10_000.0, 0.001, 5.0);
+        let old_result = old_backtester.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        // New API with explicit Full should match
+        let new_backtester =
+            Backtester::with_defaults(10_000.0).with_position_sizing(PositionSizing::Full);
+        let new_result = new_backtester.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        assert_eq!(
+            old_result.average_position_size,
+            new_result.average_position_size
+        );
+        assert_eq!(old_result.final_equity, new_result.final_equity);
+        assert_eq!(old_result.total_trades, new_result.total_trades);
+
+        println!("Backwards compatibility verified - both produce same results");
+    }
+
+    #[test]
+    fn test_position_sizing_with_no_trades() {
+        let df = create_test_dataframe();
+        let signal = Series::new("signal", vec![0.0; 10]); // No trades
+
+        let backtester = Backtester::with_defaults(10_000.0)
+            .with_position_sizing(PositionSizing::FixedFraction(0.5));
+
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        assert_eq!(result.total_trades, 0);
+        assert_eq!(result.average_position_size, 0.0);
+        assert_eq!(result.final_equity, 10_000.0); // No change
+    }
+
+    #[test]
+    fn test_fraction_bounds() {
+        // Test that fractions are clamped to [0, 1]
+        let df = create_test_dataframe();
+        let signal = create_buy_signal();
+
+        // Fraction > 1.0 should be clamped to 1.0
+        let backtester = Backtester::with_defaults(10_000.0)
+            .with_position_sizing(PositionSizing::FixedFraction(1.5));
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
+        assert_eq!(result.average_position_size, 1.0);
+
+        // Fraction < 0.0 should be clamped to 0.0
+        let backtester = Backtester::with_defaults(10_000.0)
+            .with_position_sizing(PositionSizing::FixedFraction(-0.5));
+        let result = backtester.run(&df, &signal, 0.05, 0.0).unwrap();
+        assert_eq!(result.average_position_size, 0.0);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SHORT SELLING TESTS
+    // Verify that -1.0 signals enter real short positions with correct PnL.
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    fn create_bearish_dataframe() -> DataFrame {
+        // Price declines steadily from 100 to 90
+        let closes = vec![100.0, 99.0, 98.0, 97.0, 96.0, 95.0, 94.0, 93.0, 92.0, 90.0];
+        let highs = vec![101.0, 100.0, 99.0, 98.0, 97.0, 96.0, 95.0, 94.0, 93.0, 91.0];
+        let lows = vec![99.0, 98.0, 97.0, 96.0, 95.0, 94.0, 93.0, 92.0, 91.0, 89.0];
+        let volumes = vec![1000.0f64; 10];
+        df!(
+            "close"  => closes,
+            "high"   => highs,
+            "low"    => lows,
+            "volume" => volumes
+        )
+        .unwrap()
+    }
+
+    fn create_short_signal() -> Series {
+        // Signal at bar i executes at bar i+1 (look-ahead-free).
+        // Signal short from bar 0 so it enters at bar 1, exits at bar 8.
+        Series::new(
+            "signal",
+            vec![-1.0f64, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 0.0, 0.0],
+        )
+    }
+
+    /// A -1.0 signal on a falling market must produce positive PnL.
+    #[test]
+    fn test_short_selling_profitable_when_price_drops() {
+        let df = create_bearish_dataframe();
+        let signal = create_short_signal();
+
+        // No fees, no slippage — makes manual verification straightforward.
+        let bt = Backtester::new(10_000.0, 0.0, 0.0);
+        let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        println!(
+            "Short sell — final: ${:.2}, return: {:.2}%",
+            result.final_equity, result.total_return_pct
+        );
+
+        assert!(
+            result.final_equity > 10_000.0,
+            "Short position should be profitable when price drops (got ${:.2})",
+            result.final_equity
+        );
+        assert!(
+            result.total_trades >= 1,
+            "Should record at least one closed trade"
+        );
+    }
+
+    /// Shorts must outperform longs in a bearish trend.
+    #[test]
+    fn test_short_vs_long_on_bearish_trend() {
+        let df = create_bearish_dataframe();
+        let short_sig = create_short_signal();
+        let long_sig = Series::new(
+            "signal",
+            vec![0.0f64, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+        );
+
+        let bt = Backtester::new(10_000.0, 0.0, 0.0);
+        let short_r = bt.run(&df, &short_sig, 0.05, 0.0).unwrap();
+        let long_r = bt.run(&df, &long_sig, 0.05, 0.0).unwrap();
+
+        println!(
+            "Short: ${:.2} ({:.2}%)",
+            short_r.final_equity, short_r.total_return_pct
+        );
+        println!(
+            "Long:  ${:.2} ({:.2}%)",
+            long_r.final_equity, long_r.total_return_pct
+        );
+
+        assert!(
+            short_r.total_return_pct > 0.0,
+            "Short should profit in bear market"
+        );
+        assert!(
+            long_r.total_return_pct < 0.0,
+            "Long should lose in bear market"
+        );
+        assert!(
+            short_r.final_equity > long_r.final_equity,
+            "Short equity should exceed long equity in a bearish trend"
+        );
+    }
+
+    /// Signal-driven short entry then signal exit must record exactly one trade.
+    #[test]
+    fn test_short_entry_and_signal_exit() {
+        let df = create_bearish_dataframe();
+        // Short bars 1-2, back to flat from bar 3
+        let signal = Series::new(
+            "signal",
+            vec![0.0f64, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        );
+
+        let bt = Backtester::new(10_000.0, 0.0, 0.0);
+        // Use wide trailing stop (50%) so it never triggers during this short test
+        let result = bt.run(&df, &signal, 0.50, 0.0).unwrap();
+
+        println!(
+            "Short entry/exit — trades: {}, final: ${:.2}",
+            result.total_trades, result.final_equity
+        );
+
+        assert_eq!(
+            result.total_trades, 1,
+            "Should record exactly one completed short trade"
+        );
+        // Entry at bar 1 close = 99, exit at bar 3 close = 97 → ~2% profit
+        assert!(result.final_equity > 10_000.0, "Brief short should profit");
+    }
+
+    /// Fees must be deducted from short trades.
+    #[test]
+    fn test_short_selling_fees_reduce_profit() {
+        let df = create_bearish_dataframe();
+        let signal = create_short_signal();
+
+        let bt_free = Backtester::new(10_000.0, 0.0, 0.0);
+        let bt_fee = Backtester::new(10_000.0, 0.001, 0.0);
+
+        let r_free = bt_free.run(&df, &signal, 0.05, 0.0).unwrap();
+        let r_fee = bt_fee.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        println!("No fees: ${:.2}", r_free.final_equity);
+        println!(
+            "Fees:    ${:.2} (paid ${:.2})",
+            r_fee.final_equity, r_fee.total_fees_paid
+        );
+
+        assert!(
+            r_fee.total_fees_paid > 0.0,
+            "Fees should be non-zero for short trades"
+        );
+        assert!(
+            r_fee.final_equity < r_free.final_equity,
+            "Fees must reduce profitability of short trades"
+        );
+    }
+
+    /// Slippage must reduce short-trade profitability (worse fill on entry & exit).
+    #[test]
+    fn test_short_selling_slippage_reduces_profit() {
+        let df = create_bearish_dataframe();
+        let signal = create_short_signal();
+
+        let bt_clean = Backtester::new(10_000.0, 0.0, 0.0);
+        let bt_slip = Backtester::new(10_000.0, 0.0, 10.0); // 10 bps
+
+        let r_clean = bt_clean.run(&df, &signal, 0.05, 0.0).unwrap();
+        let r_slip = bt_slip.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        println!("No slip: ${:.2}", r_clean.final_equity);
+        println!("Slip:    ${:.2}", r_slip.final_equity);
+
+        assert!(
+            r_slip.final_equity < r_clean.final_equity,
+            "Slippage should reduce profitability of short trades"
+        );
+    }
+
+    /// Position sizing must apply correctly to short trades.
+    #[test]
+    fn test_short_position_sizing_works() {
+        let df = create_bearish_dataframe();
+        let signal = create_short_signal();
+
+        let bt_full =
+            Backtester::with_defaults(10_000.0).with_position_sizing(PositionSizing::Full);
+        let bt_half = Backtester::with_defaults(10_000.0)
+            .with_position_sizing(PositionSizing::FixedFraction(0.5));
+
+        let r_full = bt_full.run(&df, &signal, 0.05, 0.0).unwrap();
+        let r_half = bt_half.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        println!("Full short: ${:.2}", r_full.final_equity);
+        println!("Half short: ${:.2}", r_half.final_equity);
+
+        assert!(r_full.final_equity > 10_000.0, "Full short should profit");
+        assert!(r_half.final_equity > 10_000.0, "Half short should profit");
+        assert!(
+            r_full.final_equity > r_half.final_equity,
+            "Full position should yield larger absolute profit than half position"
+        );
+        assert_eq!(r_full.average_position_size, 1.0);
+        assert_eq!(r_half.average_position_size, 0.5);
+    }
+
+    /// The mark-to-market equity curve must rise while holding a profitable short.
+    #[test]
+    fn test_short_equity_curve_rises_as_price_falls() {
+        let df = create_bearish_dataframe();
+        let signal = create_short_signal();
+
+        let bt = Backtester::new(10_000.0, 0.0, 0.0);
+        let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
+        let curve = &result.equity_curve;
+
+        // Bar 1 we just entered at ~99; bar 5 price has fallen to ~95.
+        let eq_entry = curve[1];
+        let eq_mid = curve[5];
+
+        println!(
+            "MTM — entry bar: ${:.2}, mid-trade: ${:.2}",
+            eq_entry, eq_mid
+        );
+
+        assert!(
+            eq_mid > eq_entry,
+            "MTM equity should increase as the short position gains value (price falls)"
+        );
+    }
+
+    // ── Trade journal tests ────────────────────────────────────────────────
+
+    #[test]
+    fn test_trade_journal_populated() {
+        let df = create_test_dataframe();
+        // Signal: enter long bar 1, exit bar 5 via signal
+        let signal = create_buy_signal();
+        let bt = Backtester::with_defaults(10_000.0);
+        let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        // At least one signal exit trade should be recorded
+        assert!(
+            !result.trades.is_empty(),
+            "trade journal should have at least 1 entry"
+        );
+        let t = &result.trades[0];
+        assert_eq!(t.direction, 1.0, "should be a long trade");
+        assert!(matches!(t.exit_reason, ExitReason::SignalExit));
+        assert!(t.entry_bar < t.exit_bar, "entry must come before exit");
+    }
+
+    #[test]
+    fn test_trade_journal_stop_loss_exit() {
+        // Build a dataframe where price drops sharply, triggering a stop
+        // Entry at 100, stop at 5% => 95. Price will drop to 90 on bar 3.
+        let closes = vec![100.0, 100.0, 90.0, 88.0, 86.0, 85.0, 85.0, 85.0];
+        let highs = vec![101.0, 101.0, 91.0, 89.0, 87.0, 86.0, 86.0, 86.0];
+        let lows = vec![99.0, 94.0, 89.0, 87.0, 85.0, 84.0, 84.0, 84.0];
+        let vols = vec![1000.0; 8];
+        let df = df!("close" => closes, "high" => highs, "low" => lows, "volume" => vols).unwrap();
+        // Hold long the whole time so stop must trigger
+        let signal = Series::new("signal", vec![1.0; 8]);
+
+        let bt = Backtester::new(10_000.0, 0.0, 0.0); // zero fees for clarity
+        let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        let stop_trades: Vec<_> = result
+            .trades
+            .iter()
+            .filter(|t| matches!(t.exit_reason, ExitReason::StopLoss))
+            .collect();
+
+        assert!(!stop_trades.is_empty(), "stop loss exit should be recorded");
+        let t = &stop_trades[0];
+        assert_eq!(t.direction, 1.0, "long stop trade");
+        assert!(t.pnl_pct < 0.0, "stop loss should be a losing trade");
+    }
+
+    #[test]
+    fn test_trade_journal_take_profit_exit() {
+        // Price rises 15%+ so 10% TP is hit
+        let closes = vec![100.0, 100.0, 105.0, 108.0, 112.0, 115.0, 115.0];
+        let highs = vec![101.0, 101.0, 106.0, 109.0, 113.0, 116.0, 116.0];
+        let lows = vec![99.0, 99.0, 104.0, 107.0, 111.0, 114.0, 114.0];
+        let vols = vec![1000.0; 7];
+        let df = df!("close" => closes, "high" => highs, "low" => lows, "volume" => vols).unwrap();
+        let signal = Series::new("signal", vec![1.0; 7]);
+
+        let bt = Backtester::new(10_000.0, 0.0, 0.0);
+        let result = bt.run(&df, &signal, 0.30, 0.10); // 30% stop, 10% TP
+
+        let result = result.unwrap();
+        let tp_trades: Vec<_> = result
+            .trades
+            .iter()
+            .filter(|t| matches!(t.exit_reason, ExitReason::TakeProfit))
+            .collect();
+
+        assert!(!tp_trades.is_empty(), "take profit exit should be recorded");
+        let t = &tp_trades[0];
+        assert!(t.pnl_pct > 0.0, "TP trade should be profitable");
+        assert_eq!(t.direction, 1.0, "long TP trade");
+    }
+
+    #[test]
+    fn test_trade_journal_duration_bars() {
+        let df = create_test_dataframe();
+        let signal = create_buy_signal();
+        let bt = Backtester::with_defaults(10_000.0);
+        let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        for trade in &result.trades {
+            assert!(
+                trade.duration_bars() > 0,
+                "every trade should last at least 1 bar"
+            );
+            assert_eq!(trade.duration_bars(), trade.exit_bar - trade.entry_bar);
+        }
+    }
+
+    #[test]
+    fn test_trade_journal_total_matches_aggregate() {
+        let df = create_test_dataframe();
+        let signal = create_buy_signal();
+        let bt = Backtester::with_defaults(10_000.0);
+        let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        // Trade count in journal should match aggregate
+        assert_eq!(
+            result.trades.len(),
+            result.total_trades,
+            "trade journal length should match total_trades"
+        );
+
+        // Sum of PnL amounts should roughly equal final equity minus initial
+        let journal_pnl: f64 = result.trades.iter().map(|t| t.pnl_amount).sum();
+        let engine_pnl = result.final_equity - 10_000.0;
+        let diff = (journal_pnl - engine_pnl).abs();
+        assert!(diff < 1.0, "journal PnL sum ({journal_pnl:.2}) should match engine PnL ({engine_pnl:.2}), diff={diff:.4}");
+    }
+
+    #[test]
+    fn test_trades_to_csv() {
+        let df = create_test_dataframe();
+        let signal = create_buy_signal();
+        let bt = Backtester::with_defaults(10_000.0);
+        let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        let csv = result.trades_to_csv();
+        let lines: Vec<&str> = csv.lines().collect();
+
+        // Header + one row per trade
+        assert!(lines.len() > 1, "CSV should have header + data rows");
+        assert!(
+            lines[0].contains("entry_bar"),
+            "header should have entry_bar"
+        );
+        assert!(
+            lines[0].contains("exit_reason"),
+            "header should have exit_reason"
+        );
+
+        // Each data row should parse correctly
+        for line in &lines[1..] {
+            let cols: Vec<&str> = line.split(',').collect();
+            assert_eq!(cols.len(), 10, "each row should have 10 columns");
+            // entry_bar and exit_bar should be valid integers
+            assert!(cols[0].parse::<usize>().is_ok(), "entry_bar should be int");
+            assert!(cols[1].parse::<usize>().is_ok(), "exit_bar should be int");
+            // direction should be long or short
+            assert!(
+                cols[2] == "long" || cols[2] == "short",
+                "direction should be long/short"
+            );
+        }
+    }
+
+    #[test]
+    fn test_max_bars_exit() {
+        // Create data where we hold for 6 bars
+        let closes = vec![100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0];
+        let highs = vec![101.0; 8];
+        let lows = vec![99.0; 8];
+        let vols = vec![1000.0; 8];
+        let df = df!("close" => closes, "high" => highs, "low" => lows, "volume" => vols).unwrap();
+
+        // Hold long the whole time (signal never changes)
+        let signal = Series::new("signal", vec![1.0; 8]);
+
+        // Without max_bars: position stays open to the end
+        let bt_no_limit = Backtester::new(10_000.0, 0.0, 0.0);
+        let result_no_limit = bt_no_limit.run(&df, &signal, 0.10, 0.0).unwrap();
+        // No trades because signal never flipped and stop never hit
+        assert!(
+            result_no_limit.trades.is_empty(),
+            "without max_bars, no exit should occur"
+        );
+
+        // With max_bars = 4: forced exit after 4 bars
+        let bt_max_bars = Backtester::new(10_000.0, 0.0, 0.0).with_max_bars(4);
+        let result_max_bars = bt_max_bars.run(&df, &signal, 0.10, 0.0).unwrap();
+
+        assert!(
+            !result_max_bars.trades.is_empty(),
+            "max_bars should force an exit"
+        );
+        let t = &result_max_bars.trades[0];
+        assert!(
+            matches!(t.exit_reason, ExitReason::MaxBars),
+            "exit reason should be MaxBars"
+        );
+        assert_eq!(
+            t.entry_bar, 1,
+            "entry at bar 1 (signal[0] triggers at bar 1)"
+        );
+        assert_eq!(
+            t.exit_bar, 5,
+            "exit at bar 5 (entry + 4 bars = max_bars reached)"
+        );
+        assert_eq!(t.duration_bars(), 4, "should have held for exactly 4 bars");
+    }
+
+    #[test]
+    fn test_max_bars_respects_stop_and_tp() {
+        // Stop should trigger before max_bars
+        let closes = vec![100.0, 100.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0];
+        let highs = vec![101.0, 101.0, 91.0, 91.0, 91.0, 91.0, 91.0, 91.0];
+        let lows = vec![99.0, 94.0, 89.0, 89.0, 89.0, 89.0, 89.0, 89.0];
+        let vols = vec![1000.0; 8];
+        let df = df!("close" => closes, "high" => highs, "low" => lows, "volume" => vols).unwrap();
+
+        let signal = Series::new("signal", vec![1.0; 8]);
+
+        // With 5% stop and max_bars = 10, stop should trigger first
+        let bt = Backtester::new(10_000.0, 0.0, 0.0).with_max_bars(10);
+        let result = bt.run(&df, &signal, 0.05, 0.0).unwrap();
+
+        assert!(!result.trades.is_empty(), "should have an exit");
+        let t = &result.trades[0];
+        // Stop triggers at bar 2 (low 94 < 95.05 stop price), not max_bars
+        assert!(
+            matches!(t.exit_reason, ExitReason::StopLoss),
+            "stop should trigger before max_bars"
+        );
+        assert!(
+            t.exit_bar < 10,
+            "stop exit should occur before max_bars limit"
+        );
+    }
+}

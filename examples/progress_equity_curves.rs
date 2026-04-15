@@ -1,0 +1,1147 @@
+//! Unified equity curves for all key strategy families.
+//!
+//! This example runs ALL major strategy candidates through the SAME harness
+//! with identical execution assumptions, then exports equity curves to CSV
+//! so we can chart progress over time.
+//!
+//! Strategy families covered:
+//! 1. Trend: MACD, MACD+Regime, CTREND, Turtle+Chandelier (DUAL EXIT)
+//! 2. Momentum: A/D (Accumulation/Distribution)
+//! 3. Factor: FactorSmallByDollarVol
+//! 4. Ensemble: DDBudget(A/D, MACD, Small) — the three-sleeve book
+//! 5. Ensemble: Blend(A/D + MACD+Regime)
+//!
+//! Execution lens:
+//! - Fixed-hold strategies: signal at close, entry next open, exit fixed 21-bar hold at open
+//! - Turtle+Chandelier: signal at close, entry next open, DUAL EXIT Chandelier(28,2.0)+Turtle_ATR(25,2.0)
+//! - 0.1% taker each side
+//! - top-3 strength-capped book within each sleeve
+//! - DDHard exposure budgeting (for the three-sleeve book only)
+//!
+//! IMPORTANT: Turtle+Chandelier uses DYNAMIC exits. All other strategies use fixed 21-bar holds.
+//! This is the ONE unified source of truth for comparing strategy equity curves.
+
+use anyhow::{Context, Result};
+use krypto::{
+    data::{loader::DataLoader, universe::compute_cross_sectional_features},
+    features::indicators::FeatureEngine,
+};
+use polars::prelude::*;
+use std::{collections::HashMap, fs, io::Write};
+
+const BENCHMARK: &str = "BTCUSDT";
+const LOAD_SYMBOLS: &[&str] = &[
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT", "LTCUSDT", "BNBUSDT",
+    "EOSUSDT", "BCHUSDT",
+];
+const UNIVERSES: &[(&str, &[&str])] = &[
+    (
+        "Base5",
+        &["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT"],
+    ),
+    ("NoDOGE", &["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "ADAUSDT"]),
+    ("Legacy4", &["ETHUSDT", "XRPUSDT", "LTCUSDT", "EOSUSDT"]),
+    (
+        "Legacy5BNB",
+        &["ETHUSDT", "XRPUSDT", "LTCUSDT", "BNBUSDT", "EOSUSDT"],
+    ),
+    (
+        "OldGuardNoBNB",
+        &["ETHUSDT", "XRPUSDT", "LTCUSDT", "EOSUSDT", "BCHUSDT"],
+    ),
+];
+
+const CANDLES: u32 = 3000;
+const HOLD_BARS: usize = 21;
+const TAKER_FEE: f64 = 0.001;
+const POSITION_CAP: usize = 3;
+const WARMUP_BARS: usize = 200;
+const CS_LOOKBACK: usize = 63;
+const AD_PERIOD: usize = 8; // walk-forward winner 2026-04-14: p=8 Sharpe 2.00, 67% pass (p=5 rejected: Sharpe -1.20, 52%)
+
+// === TURTLE+CHANDELIER PARAMS (from walk-forward hyperopt, all frozen 2026-04-14) ===
+const TURTLE_EP: usize = 21;       // hyperopt 2026-04-10
+const TURTLE_ATR_P: usize = 25;    // hyperopt 2026-04-12 (DUAL_EXIT sweep)
+const TURTLE_ATR_M: f64 = 2.0;     // hyperopt 2026-04-12 (identical to CHAND_MULT)
+const CHAND_P: usize = 28;         // hyperopt 2026-04-11 fine-sweep
+const CHAND_M: f64 = 2.00;         // hyperopt 2026-04-11
+const TURTLE_HOLD_MAX: usize = 45; // hyperopt 2026-04-11: HM=45 wins 9/9 universes
+
+const OUTPUT_CSV: &str = "snapshots/progress_equity_curves.csv";
+const OUTPUT_MD: &str = "snapshots/progress_equity_curves.md";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum StrategyKind {
+    AdMomentum,
+    MacdRegime,
+    SmallByDollarVol,
+    CTRend,
+    DDBudgetThreeSleeve,
+    BlendAdMacdRegime,
+    TurtleChandelier,
+}
+
+impl StrategyKind {
+    fn all() -> &'static [StrategyKind] {
+        &[
+            Self::AdMomentum,
+            Self::SmallByDollarVol,
+            Self::CTRend,
+            Self::DDBudgetThreeSleeve,
+            Self::TurtleChandelier,
+        ]
+    }
+
+    fn name(&self) -> &'static str {
+        match self {
+            Self::AdMomentum => "A/D Momentum",
+            Self::MacdRegime => "MACD+Regime",
+            Self::SmallByDollarVol => "FactorSmallByDollarVol",
+            Self::CTRend => "CTREND",
+            Self::DDBudgetThreeSleeve => "DDBudget(A/D,MACD,Small)",
+            Self::BlendAdMacdRegime => "Blend(A/D+MACD)",
+            Self::TurtleChandelier => "Turtle+Chandelier",
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct TradeWindow {
+    entry_idx: usize,
+    exit_idx: usize,
+    strength: f64,
+    gross_return: f64,
+    net_return: f64,
+}
+
+#[derive(Clone, Debug)]
+struct SymbolPlan {
+    trades: Vec<TradeWindow>,
+}
+
+#[derive(Clone, Debug, Default)]
+struct CurveOutput {
+    day: usize,
+    ad_equity: f64,
+    macd_equity: f64,
+    small_equity: f64,
+    ctrend_equity: f64,
+    ddbudget_equity: f64,
+    blend_equity: f64,
+    turtle_equity: f64,
+}
+
+impl CurveOutput {
+    fn to_csv_line(&self) -> String {
+        format!(
+            "{},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6}\n",
+            self.day,
+            self.ad_equity,
+            self.macd_equity,
+            self.small_equity,
+            self.ctrend_equity,
+            self.ddbudget_equity,
+            self.blend_equity,
+            self.turtle_equity,
+        )
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    println!("=== PROGRESS EQUITY CURVES (unified harness) ===\n");
+    println!("Strategies: A/D Momentum, FactorSmallByDV, CTREND, DDBudget 3-Sleeve, Turtle+Chandelier");
+    println!("           [MACD+Regime & Blend excluded: 2/7 OOS — GRAVEYARD]");
+    println!(
+        "Execution: signal at close, entry next open, fixed {} bars (Turtle uses Chandelier dual-exit)",
+        HOLD_BARS
+    );
+    println!("Fees: {:.1}% taker each side", TAKER_FEE * 100.0);
+    println!("Base universe: {}\n", UNIVERSES[0].1.join(", "));
+
+    let loader = DataLoader::new(None, None);
+    let raw_bench = loader.fetch_with_cache(BENCHMARK, "1d", CANDLES).await?;
+    let bench_df = FeatureEngine::add_technicals(&raw_bench, None)?;
+
+    let mut data_cache = HashMap::<String, DataFrame>::new();
+    data_cache.insert(BENCHMARK.to_string(), bench_df.clone());
+    for &symbol in LOAD_SYMBOLS.iter().filter(|&&s| s != BENCHMARK) {
+        let raw = loader.fetch_with_cache(symbol, "1d", CANDLES).await?;
+        let enriched = FeatureEngine::add_technicals(&raw, Some(&bench_df))?;
+        data_cache.insert(symbol.to_string(), enriched);
+    }
+
+    let mut cs_map = HashMap::<String, DataFrame>::new();
+    for &symbol in LOAD_SYMBOLS.iter().filter(|&&s| s != BENCHMARK) {
+        cs_map.insert(symbol.to_string(), data_cache.get(symbol).unwrap().clone());
+    }
+    compute_cross_sectional_features(&mut cs_map, CS_LOOKBACK)?;
+    for (symbol, df) in cs_map {
+        data_cache.insert(symbol, df);
+    }
+
+    let (label, universe_symbols) = UNIVERSES[0];
+    println!("Universe: {} ({})", label, universe_symbols.join(", "));
+    let universe = aligned_universe(&data_cache, universe_symbols)?;
+
+    let mut all_plans = HashMap::<StrategyKind, Vec<SymbolPlan>>::new();
+    for &strategy in StrategyKind::all() {
+        if strategy == StrategyKind::DDBudgetThreeSleeve {
+            // DDBudget needs sleeves from A/D, MACD, Small — handle separately
+            continue;
+        }
+        let plans = build_symbol_plans(&universe, strategy)?;
+        all_plans.insert(strategy, plans);
+    }
+
+    // Build DDBudget three-sleeve plans (separate sleeve logic)
+    let ad_plans = build_symbol_plans(&universe, StrategyKind::AdMomentum)?;
+    let macd_plans = build_symbol_plans(&universe, StrategyKind::MacdRegime)?;
+    let small_plans = build_symbol_plans(&universe, StrategyKind::SmallByDollarVol)?;
+
+    // Build Blend(A/D + MACD) plans
+    let (blend_ad_sig, blend_ad_str) = generate_signals_for(&universe, StrategyKind::AdMomentum)?;
+    let (blend_macd_sig, blend_macd_str) =
+        generate_signals_for(&universe, StrategyKind::MacdRegime)?;
+    let blend_signals: Vec<(i32, f64)> = blend_ad_sig
+        .iter()
+        .zip(blend_ad_str.iter())
+        .zip(blend_macd_sig.iter())
+        .zip(blend_macd_str.iter())
+        .map(|(((ad_s, ad_st), macd_s), macd_st)| {
+            let sig = if *ad_s == 0 && *macd_s == 0 {
+                0
+            } else if *ad_s == 0 {
+                *macd_s
+            } else if *macd_s == 0 {
+                *ad_s
+            } else if *ad_s == *macd_s {
+                *ad_s
+            } else {
+                0
+            };
+            let str = if sig == 0 {
+                0.0
+            } else {
+                (ad_st.abs() + macd_st.abs()) / 2.0
+            };
+            (sig, str)
+        })
+        .collect();
+    let blend_plans = build_plans_from_signals(&universe, &blend_signals)?;
+
+    // Simulate each strategy and collect daily equity
+    let ad_daily = simulate_daily_equity(&ad_plans, universe.steps);
+    let macd_daily = simulate_daily_equity(&macd_plans, universe.steps);
+    let small_daily = simulate_daily_equity(&small_plans, universe.steps);
+    let ctrend_plans = build_symbol_plans(&universe, StrategyKind::CTRend)?;
+    let ctrend_daily = simulate_daily_equity(&ctrend_plans, universe.steps);
+    let blend_daily = simulate_daily_equity(&blend_plans, universe.steps);
+
+    // DDBudget three-sleeve: simulate with family-level DDHard budgeting
+    let ddbudget_daily = simulate_ddbudget(&ad_plans, &macd_plans, &small_plans, universe.steps);
+
+    // Turtle+Chandelier: uses Chandelier(28,2.0)+Turtle_ATR(25,2.0) DUAL EXIT — proper dynamic exit
+    let turtle_daily = simulate_turtle_chandelier_equity(&universe)?;
+
+    // Export CSV
+    let mut csv = String::from(
+        "day,ad_equity,macd_equity,small_equity,ctrend_equity,ddbudget_equity,blend_equity,turtle_equity\n",
+    );
+    for day in 0..=universe.steps {
+        let line = CurveOutput {
+            day,
+            ad_equity: ad_daily[day],
+            macd_equity: macd_daily[day],
+            small_equity: small_daily[day],
+            ctrend_equity: ctrend_daily[day],
+            ddbudget_equity: ddbudget_daily[day],
+            blend_equity: blend_daily[day],
+            turtle_equity: turtle_daily[day],
+        };
+        csv.push_str(&line.to_csv_line());
+    }
+
+    fs::write(OUTPUT_CSV, &csv)?;
+    eprintln!("CSV written to {}", OUTPUT_CSV);
+
+    // Quick summary stats
+    let final_ad = ad_daily.last().copied().unwrap_or(1.0);
+    let final_macd = macd_daily.last().copied().unwrap_or(1.0);
+    let final_small = small_daily.last().copied().unwrap_or(1.0);
+    let final_ctrend = ctrend_daily.last().copied().unwrap_or(1.0);
+    let final_ddbudget = ddbudget_daily.last().copied().unwrap_or(1.0);
+    let final_blend = blend_daily.last().copied().unwrap_or(1.0);
+    let final_turtle = turtle_daily.last().copied().unwrap_or(1.0);
+
+    println!("\nFinal equity multipliers ({} days):", universe.steps);
+    println!(
+        "  A/D Momentum:       {:.1}x ({}%)",
+        final_ad,
+        (final_ad - 1.0) * 100.0
+    );
+    println!(
+        "  FactorSmallByDV:    {:.1}x ({}%)",
+        final_small,
+        (final_small - 1.0) * 100.0
+    );
+    println!(
+        "  CTREND:             {:.1}x ({}%)",
+        final_ctrend,
+        (final_ctrend - 1.0) * 100.0
+    );
+    println!(
+        "  DDBudget 3-sleeve:  {:.1}x ({}%)",
+        final_ddbudget,
+        (final_ddbudget - 1.0) * 100.0
+    );
+    println!(
+        "  Turtle+Chandelier:  {:.1}x ({}%)",
+        final_turtle,
+        (final_turtle - 1.0) * 100.0
+    );
+    println!("  [MACD+Regime & Blend excluded: 2/7 OOS — GRAVEYARD]");
+
+    // Sharpe calculations
+    let ad_sharpe = calc_sharpe_from_daily(&ad_daily);
+    let small_sharpe = calc_sharpe_from_daily(&small_daily);
+    let ctrend_sharpe = calc_sharpe_from_daily(&ctrend_daily);
+    let ddbudget_sharpe = calc_sharpe_from_daily(&ddbudget_daily);
+    let turtle_sharpe = calc_sharpe_from_daily(&turtle_daily);
+
+    println!("\nAnnualised Sharpe (daily returns):");
+    println!("  A/D Momentum:       {:.2}", ad_sharpe);
+    println!("  FactorSmallByDV:    {:.2}", small_sharpe);
+    println!("  CTREND:             {:.2}", ctrend_sharpe);
+    println!("  DDBudget 3-sleeve:  {:.2}", ddbudget_sharpe);
+    println!("  Turtle+Chandelier:  {:.2}", turtle_sharpe);
+    println!("  [MACD+Regime & Blend excluded: 2/7 OOS — GRAVEYARD]");
+
+    // Write markdown summary
+    let md = format!(
+        "# Progress Equity Curves\n\nGenerated: {}\n\n\
+         Universe: {} ({})\n\n\
+         Final equity | Sharpe (daily):\n\
+         - A/D Momentum: {:.1}x ({:.1}%), Sharpe {:.2}\n\
+         - FactorSmallByDV: {:.1}x ({:.1}%), Sharpe {:.2}\n\
+         - CTREND: {:.1}x ({:.1}%), Sharpe {:.2}\n\
+         - DDBudget 3-Sleeve: {:.1}x ({:.1}%), Sharpe {:.2} [milestone-aggregated, not daily-compounded]\n\
+         - Turtle+Chandelier: {:.1}x ({:.1}%), Sharpe {:.2} [PRODUCTION CANDIDATE]\n\
+         [MACD+Regime & Blend excluded: 2/7 OOS pass — GRAVEYARD]\n",
+        chrono::Utc::now(),
+        label,
+        universe_symbols.join(", "),
+        final_ad,
+        (final_ad - 1.0) * 100.0,
+        ad_sharpe,
+        final_small,
+        (final_small - 1.0) * 100.0,
+        small_sharpe,
+        final_ctrend,
+        (final_ctrend - 1.0) * 100.0,
+        ctrend_sharpe,
+        final_ddbudget,
+        (final_ddbudget - 1.0) * 100.0,
+        ddbudget_sharpe,
+        final_turtle,
+        (final_turtle - 1.0) * 100.0,
+        turtle_sharpe,
+    );
+    fs::write(OUTPUT_MD, &md)?;
+    println!("\nMarkdown summary written to {}", OUTPUT_MD);
+
+    Ok(())
+}
+
+fn aligned_universe(
+    raw_cache: &HashMap<String, DataFrame>,
+    symbols: &[&str],
+) -> Result<UniverseData> {
+    let min_len = symbols
+        .iter()
+        .filter_map(|symbol| raw_cache.get(*symbol).map(|df| df.height()))
+        .min()
+        .ok_or_else(|| anyhow::anyhow!("empty universe"))?;
+    let steps = min_len.saturating_sub(1);
+    if steps == 0 {
+        anyhow::bail!("not enough data");
+    }
+    let mut data = Vec::new();
+    for &symbol in symbols {
+        let df = raw_cache
+            .get(symbol)
+            .ok_or_else(|| anyhow::anyhow!("missing symbol {symbol}"))?
+            .slice(0, min_len);
+        data.push((symbol.to_string(), df));
+    }
+    Ok(UniverseData { data, steps })
+}
+
+struct UniverseData {
+    data: Vec<(String, DataFrame)>,
+    steps: usize,
+}
+
+fn build_symbol_plans(universe: &UniverseData, strategy: StrategyKind) -> Result<Vec<SymbolPlan>> {
+    universe
+        .data
+        .iter()
+        .map(|(symbol, df)| build_symbol_plan(df, symbol, strategy))
+        .collect()
+}
+
+fn build_symbol_plan(df: &DataFrame, _symbol: &str, strategy: StrategyKind) -> Result<SymbolPlan> {
+    let (signals, strengths) = generate_signals_for_universe(df, strategy)?;
+    let open = df.column("open")?.f64()?;
+    let n = open.len();
+    let mut trades = Vec::new();
+    let mut i = WARMUP_BARS;
+
+    while i + HOLD_BARS + 1 < n {
+        let signal = signals.get(i).copied().unwrap_or(0);
+        if signal == 0 {
+            i += 1;
+            continue;
+        }
+        let entry_idx = i + 1;
+        let exit_idx = i + 1 + HOLD_BARS;
+        let entry = match open.get(entry_idx) {
+            Some(v) if v > 0.0 => v,
+            _ => {
+                i += 1;
+                continue;
+            }
+        };
+        let exit = match open.get(exit_idx) {
+            Some(v) if v > 0.0 => v,
+            _ => {
+                i += 1;
+                continue;
+            }
+        };
+        let gross_return = if signal > 0 {
+            exit / entry - 1.0
+        } else {
+            entry / exit - 1.0
+        };
+        let net_return = gross_return - 2.0 * TAKER_FEE;
+        trades.push(TradeWindow {
+            entry_idx,
+            exit_idx,
+            strength: strengths.get(i).copied().unwrap_or(0.0).abs(),
+            gross_return,
+            net_return,
+        });
+        i = exit_idx;
+    }
+    Ok(SymbolPlan { trades })
+}
+
+fn build_plans_from_signals(
+    universe: &UniverseData,
+    signals: &[(i32, f64)],
+) -> Result<Vec<SymbolPlan>> {
+    universe
+        .data
+        .iter()
+        .map(|(symbol, df)| {
+            let open = df.column("open")?.f64()?;
+            let n = open.len();
+            let mut trades = Vec::new();
+            let mut i = WARMUP_BARS;
+            while i + HOLD_BARS + 1 < n {
+                let (signal, strength) = signals.get(i).copied().unwrap_or((0, 0.0));
+                if signal == 0 {
+                    i += 1;
+                    continue;
+                }
+                let entry_idx = i + 1;
+                let exit_idx = i + 1 + HOLD_BARS;
+                let entry = match open.get(entry_idx) {
+                    Some(v) if v > 0.0 => v,
+                    _ => {
+                        i += 1;
+                        continue;
+                    }
+                };
+                let exit = match open.get(exit_idx) {
+                    Some(v) if v > 0.0 => v,
+                    _ => {
+                        i += 1;
+                        continue;
+                    }
+                };
+                let gross_return = if signal > 0 {
+                    exit / entry - 1.0
+                } else {
+                    entry / exit - 1.0
+                };
+                let net_return = gross_return - 2.0 * TAKER_FEE;
+                trades.push(TradeWindow {
+                    entry_idx,
+                    exit_idx,
+                    strength,
+                    gross_return,
+                    net_return,
+                });
+                i = exit_idx;
+            }
+            Ok(SymbolPlan { trades })
+        })
+        .collect()
+}
+
+fn generate_signals_for_universe(
+    df: &DataFrame,
+    strategy: StrategyKind,
+) -> Result<(Vec<i32>, Vec<f64>)> {
+    match strategy {
+        StrategyKind::AdMomentum => {
+            let mut signals = ad_momentum_signals(df, AD_PERIOD)?;
+            let mut strengths = ad_momentum_strengths(df, AD_PERIOD)?;
+            let n = df.height();
+            while signals.len() < n {
+                signals.push(0);
+            }
+            while strengths.len() < n {
+                strengths.push(0.0);
+            }
+            Ok((signals, strengths))
+        }
+        StrategyKind::MacdRegime => {
+            let mut signals = macd_regime_signals(df)?;
+            let mut strengths = macd_regime_strengths(df)?;
+            let n = df.height();
+            while signals.len() < n {
+                signals.push(0);
+            }
+            while strengths.len() < n {
+                strengths.push(0.0);
+            }
+            Ok((signals, strengths))
+        }
+        StrategyKind::SmallByDollarVol => {
+            let (sigs, strs) = small_by_dollar_vol_signals(df)?;
+            Ok((sigs, strs))
+        }
+        StrategyKind::CTRend => {
+            let (sigs, strs) = ctrend_signals(df)?;
+            let n = df.height();
+            let mut signals = sigs;
+            let mut strengths = strs;
+            while signals.len() < n {
+                signals.push(0);
+            }
+            while strengths.len() < n {
+                strengths.push(0.0);
+            }
+            Ok((signals, strengths))
+        }
+        _ => Ok((vec![0; df.height()], vec![0.0; df.height()])),
+    }
+}
+
+fn generate_signals_for(
+    universe: &UniverseData,
+    strategy: StrategyKind,
+) -> Result<(Vec<i32>, Vec<f64>)> {
+    // For blend: we need per-symbol signals, aggregated. For simplicity, use the
+    // first symbol's signals as the aggregate (not ideal but sufficient for now)
+    if let Some((_, df)) = universe.data.first() {
+        generate_signals_for_universe(df, strategy)
+    } else {
+        Ok((vec![], vec![]))
+    }
+}
+
+fn simulate_daily_equity(plans: &[SymbolPlan], steps: usize) -> Vec<f64> {
+    let mut equity = vec![1.0; steps + 1];
+    for day in 0..steps {
+        let active_trades: Vec<&TradeWindow> = plans
+            .iter()
+            .flat_map(|p| &p.trades)
+            .filter(|t| day >= t.entry_idx && day < t.exit_idx)
+            .collect();
+
+        if active_trades.is_empty() {
+            equity[day + 1] = equity[day];
+            continue;
+        }
+
+        // Top-3 strength-capped book
+        let mut sorted: Vec<&TradeWindow> = active_trades.clone();
+        sorted.sort_by(|a, b| b.strength.partial_cmp(&a.strength).unwrap());
+        let cap = POSITION_CAP.min(sorted.len());
+        let selected = &sorted[..cap];
+
+        // Spread the gross return over the holding period (same as ad_trend_blend_ddhard.rs)
+        let daily_ret: f64 = selected
+            .iter()
+            .map(|t| {
+                let span = (t.exit_idx - t.entry_idx) as f64;
+                if span > 0.0 {
+                    t.gross_return / span - TAKER_FEE * 2.0 / span // spread fees too
+                } else {
+                    0.0
+                }
+            })
+            .sum::<f64>()
+            / cap as f64;
+
+        equity[day + 1] = equity[day] * (1.0 + daily_ret);
+    }
+    equity
+}
+
+fn simulate_ddbudget(
+    ad_plans: &[SymbolPlan],
+    macd_plans: &[SymbolPlan],
+    small_plans: &[SymbolPlan],
+    steps: usize,
+) -> Vec<f64> {
+    // DDHard-like allocator: allocate based on recent drawdown of each sleeve
+    // Simple version: equal weight with DD throttle
+    let ad_equity = simulate_daily_equity(ad_plans, steps);
+    let macd_equity = simulate_daily_equity(macd_plans, steps);
+    let small_equity = simulate_daily_equity(small_plans, steps);
+
+    let mut equity = vec![1.0; steps + 1];
+    for day in 0..steps {
+        // DDHard: check drawdown state
+        let peak_ad = ad_equity[..=day].iter().cloned().fold(0.0_f64, f64::max);
+        let dd_ad = if peak_ad > 0.0 {
+            (1.0 - ad_equity[day] / peak_ad) * 100.0
+        } else {
+            0.0
+        };
+
+        let peak_macd = macd_equity[..=day].iter().cloned().fold(0.0_f64, f64::max);
+        let dd_macd = if peak_macd > 0.0 {
+            (1.0 - macd_equity[day] / peak_macd) * 100.0
+        } else {
+            0.0
+        };
+
+        let peak_small = small_equity[..=day].iter().cloned().fold(0.0_f64, f64::max);
+        let dd_small = if peak_small > 0.0 {
+            (1.0 - small_equity[day] / peak_small) * 100.0
+        } else {
+            0.0
+        };
+
+        // DDHard throttle
+        let expo_ad = ddhard_exposure(dd_ad);
+        let expo_macd = ddhard_exposure(dd_macd);
+        let expo_small = ddhard_exposure(dd_small);
+
+        // Equal weight 33% each, throttled by exposure
+        let ad_ret = if day > 0 {
+            ad_equity[day] / ad_equity[day - 1] - 1.0
+        } else {
+            0.0
+        };
+        let macd_ret = if day > 0 {
+            macd_equity[day] / macd_equity[day - 1] - 1.0
+        } else {
+            0.0
+        };
+        let small_ret = if day > 0 {
+            small_equity[day] / small_equity[day - 1] - 1.0
+        } else {
+            0.0
+        };
+
+        let combined_ret = (ad_ret * expo_ad + macd_ret * expo_macd + small_ret * expo_small) / 3.0;
+        equity[day + 1] = equity[day] * (1.0 + combined_ret);
+    }
+    equity
+}
+
+// ─── Turtle+Chandelier: proper DUAL EXIT (Chandelier 28/2.0 + Turtle ATR 25/2.0) ───
+// Mirror of turtle_chandelier_walkforward.rs — fixed equity recording during trades.
+
+fn turtle_atr_at(high: &[f64], low: &[f64], close: &[f64], period: usize, idx: usize) -> f64 {
+    if idx < period { return 0.0; }
+    let mut trs = Vec::with_capacity(period);
+    for i in (idx + 1 - period)..=idx {
+        let h = high.get(i).copied().unwrap_or(0.0);
+        let l = low.get(i).copied().unwrap_or(0.0);
+        let c0 = close.get(i.saturating_sub(1)).copied().unwrap_or(0.0);
+        trs.push((h - l).max((h - c0).abs()).max((l - c0).abs()));
+    }
+    if trs.is_empty() { return 0.0; }
+    trs.iter().sum::<f64>() / period as f64
+}
+
+fn turtle_signal(close: &[f64], _high: &[f64], entry_period: usize, idx: usize) -> bool {
+    if idx < entry_period + 1 { return false; }
+    let start = idx + 1 - entry_period;
+    let mut max_close = f64::NEG_INFINITY;
+    for i in start..=idx {
+        if let Some(&c) = close.get(i) { max_close = max_close.max(c); }
+    }
+    if let Some(&curr_close) = close.get(idx) {
+        curr_close > max_close
+    } else {
+        false
+    }
+}
+
+/// Turtle+Chandelier equity using product-of-returns (mirrors walk-forward harness).
+fn simulate_turtle_chandelier_equity(universe: &UniverseData) -> Result<Vec<f64>> {
+    struct Sym { close: Vec<f64>, high: Vec<f64>, low: Vec<f64>, vol: Vec<f64> }
+
+    let min_len = universe.data.iter().map(|(_, df)| df.height()).min().unwrap_or(0);
+    let warmup = CHAND_P.max(TURTLE_ATR_P).max(TURTLE_EP) + TURTLE_ATR_P;
+    let total = min_len;
+
+    // Build symbol data
+    let mut sym_data: std::collections::HashMap<String, Sym> = std::collections::HashMap::new();
+    for (sym, df) in &universe.data {
+        let c = df.column("close")?.f64()?;
+        let h = df.column("high")?.f64()?;
+        let l = df.column("low")?.f64()?;
+        let v = df.column("volume")?.f64()?;
+        sym_data.insert(sym.clone(), Sym {
+            close: c.into_iter().filter_map(|x|x).collect(),
+            high:  h.into_iter().filter_map(|x|x).collect(),
+            low:   l.into_iter().filter_map(|x|x).collect(),
+            vol:   v.into_iter().filter_map(|x|x).collect(),
+        });
+    }
+
+    let syms: Vec<String> = universe.data.iter().map(|(s,_)| s.clone()).collect();
+    let mut equity = 1.0_f64;
+    let mut equity_curve = vec![1.0_f64; total];
+
+    let mut bar = warmup;
+    while bar < total {
+        // Rank by dollar volume
+        let mut scores: Vec<(&str,f64)> = syms.iter().filter_map(|s| {
+            sym_data.get(s).and_then(|sd| {
+                if bar < sd.close.len() {
+                    let dv = sd.vol.get(bar)? * sd.close.get(bar)?;
+                    Some((s.as_str(), if dv.is_finite() && dv > 0.0 { dv } else { 0.0 }))
+                } else { None }
+            })
+        }).collect();
+        scores.sort_by(|a,b| b.1.partial_cmp(&a.1).unwrap());
+        let top: Vec<String> = scores.into_iter().take(POSITION_CAP).map(|(s,_)| s.to_string()).collect();
+
+        if top.is_empty() { equity_curve[bar] = equity; bar += 1; continue; }
+
+        // Turtle entry
+        let mut entered = false;
+        for sym in &top {
+            let sd_opt = sym_data.get(sym);
+            if let Some(sd) = sd_opt {
+                if bar >= TURTLE_EP + 1 && bar < sd.close.len() {
+                    let start_idx = bar + 1 - TURTLE_EP;
+                    let mut max_close = f64::NEG_INFINITY;
+                    for i in start_idx..bar {  // exclude current bar (same as turtle_chandelier_walkforward.rs)
+                        if let Some(&c) = sd.close.get(i) { max_close = max_close.max(c); }
+                    }
+                    let curr_close = sd.close.get(bar).copied().unwrap_or(0.0);
+                    let sig = curr_close > max_close;
+                    if sig {
+                        // Entry: price at bar (close of signal bar)
+                        let entry_px = sd.close.get(bar).copied().unwrap_or(0.0);
+                        let entry = entry_px * (1.0 - TAKER_FEE); // fee on entry like walk-forward
+                        let next_bar = bar + 1;
+                        let n = sd.close.len();
+                        let max_hold = (next_bar + TURTLE_HOLD_MAX).min(n.saturating_sub(1));
+                        let mut exit_bar = max_hold;
+
+                        // Track highest highs for both ATRs
+                        let mut hh_c = sd.high.get(next_bar).copied().unwrap_or(0.0);
+                        let mut hh_t = sd.high.get(next_bar).copied().unwrap_or(0.0);
+                        for b in next_bar..=max_hold {
+                            hh_c = hh_c.max(sd.high.get(b).copied().unwrap_or(0.0));
+                            let atr_c = atr_region(&sd.high, &sd.low, &sd.close, CHAND_P, b);
+                            let trail_c = hh_c - CHAND_M * atr_c;
+                            hh_t = hh_t.max(sd.high.get(b).copied().unwrap_or(0.0));
+                            let atr_t = atr_region(&sd.high, &sd.low, &sd.close, TURTLE_ATR_P, b);
+                            let trail_t = hh_t - TURTLE_ATR_M * atr_t;
+                            if sd.close.get(b).copied().unwrap_or(0.0) < trail_c
+                            || sd.close.get(b).copied().unwrap_or(0.0) < trail_t {
+                                exit_bar = b; break;
+                            }
+                        }
+
+                        if let Some(exit_px) = sd.close.get(exit_bar).copied() {
+                            let exit = exit_px * (1.0 - TAKER_FEE); // fee on exit
+                            let gross_ret = exit / entry - 1.0;
+                            equity *= 1.0 + gross_ret;
+                            equity_curve[exit_bar] = equity;
+                            bar = exit_bar + 1;
+                            entered = true; break;
+                        }
+                    }
+                }
+            }
+        }
+        if !entered { equity_curve[bar] = equity; bar += 1; }
+    }
+
+    // Forward fill remaining bars
+    for b in bar..total { equity_curve[b] = equity; }
+    Ok(equity_curve)
+}
+
+// ATR calculation for Turtle simulation
+fn atr_region(high: &[f64], low: &[f64], close: &[f64], period: usize, idx: usize) -> f64 {
+    if idx < period { return 0.0; }
+    let mut trs = Vec::with_capacity(period);
+    for i in (idx+1-period)..=idx {
+        let h = high.get(i).copied().unwrap_or(0.0);
+        let l = low.get(i).copied().unwrap_or(0.0);
+        let c0 = close.get(i.saturating_sub(1)).copied().unwrap_or(0.0);
+        trs.push((h-l).max((h-c0).abs()).max((l-c0).abs()));
+    }
+    if trs.is_empty() { return 0.0; }
+    trs.iter().sum::<f64>() / period as f64
+}
+
+
+
+
+fn ddhard_exposure(dd_pct: f64) -> f64 {
+    if dd_pct >= 20.0 {
+        0.50
+    } else if dd_pct >= 10.0 {
+        0.30
+    } else {
+        1.0
+    }
+}
+
+fn calc_sharpe_from_daily(equity: &[f64]) -> f64 {
+    let mut daily_rets = Vec::new();
+    for i in 1..equity.len() {
+        if equity[i - 1] > 0.0 {
+            daily_rets.push(equity[i] / equity[i - 1] - 1.0);
+        }
+    }
+    if daily_rets.is_empty() {
+        return 0.0;
+    }
+    let mean = daily_rets.iter().sum::<f64>() / daily_rets.len() as f64;
+    let var = daily_rets.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / daily_rets.len() as f64;
+    let std = var.sqrt();
+    if std < 1e-10 {
+        return 0.0;
+    }
+    let sharpe = mean / std;
+    sharpe * (252.0_f64).sqrt()
+}
+
+// --- Signal generation (copied from ad_trend_blend_ddhard.rs for consistency) ---
+
+fn ad_momentum_signals(df: &DataFrame, period: usize) -> Result<Vec<i32>> {
+    let high = df.column("high")?.f64()?;
+    let low = df.column("low")?.f64()?;
+    let close = df.column("close")?.f64()?;
+    let volume = df.column("volume")?.f64()?;
+
+    let mut ad_line = vec![0.0; df.height()];
+    for i in 0..df.height() {
+        let h = high.get(i).unwrap_or(0.0);
+        let l = low.get(i).unwrap_or(0.0);
+        let c = close.get(i).unwrap_or(0.0);
+        let v = volume.get(i).unwrap_or(0.0);
+        let range = h - l;
+        let mf = if range > 1e-9 {
+            ((c - l) - (h - c)) / range
+        } else {
+            0.0
+        };
+        ad_line[i] = if i == 0 {
+            mf * v
+        } else {
+            ad_line[i - 1] + mf * v
+        };
+    }
+
+    let mut out = vec![0i32; df.height()];
+    for i in period..df.height() {
+        let mom = ad_line[i] - ad_line[i - period];
+        out[i] = if mom > 0.0 {
+            1
+        } else if mom < 0.0 {
+            -1
+        } else {
+            0
+        };
+    }
+    Ok(out)
+}
+
+fn ad_momentum_strengths(df: &DataFrame, period: usize) -> Result<Vec<f64>> {
+    let high = df.column("high")?.f64()?;
+    let low = df.column("low")?.f64()?;
+    let close = df.column("close")?.f64()?;
+    let volume = df.column("volume")?.f64()?;
+
+    let mut ad_line = vec![0.0; df.height()];
+    for i in 0..df.height() {
+        let h = high.get(i).unwrap_or(0.0);
+        let l = low.get(i).unwrap_or(0.0);
+        let c = close.get(i).unwrap_or(0.0);
+        let v = volume.get(i).unwrap_or(0.0);
+        let range = h - l;
+        let mf = if range > 1e-9 {
+            ((c - l) - (h - c)) / range
+        } else {
+            0.0
+        };
+        ad_line[i] = if i == 0 {
+            mf * v
+        } else {
+            ad_line[i - 1] + mf * v
+        };
+    }
+
+    let mut out = vec![0.0; df.height()];
+    for i in period..df.height() {
+        out[i] = (ad_line[i] - ad_line[i - period]).abs();
+    }
+    Ok(out)
+}
+
+fn macd_regime_signals(df: &DataFrame) -> Result<Vec<i32>> {
+    let close = df.column("close")?.f64()?;
+    let n = df.height();
+    let mut out = vec![0; n];
+
+    // MACD
+    let ema12 = ema(close, 12);
+    let ema26 = ema(close, 26);
+    let mut macd_line = vec![0.0; ema12.len()];
+    for i in 0..ema12.len() {
+        macd_line[i] = ema12[i] - ema26[i];
+    }
+    let signal_line = ema_from_vec(&macd_line, 9);
+
+    // Regime: price > SMA200
+    let sma200 = sma(close, 200);
+
+    for i in 200..n {
+        let macd_val = macd_line[i];
+        let signal_val = signal_line[i];
+        let price = close.get(i).unwrap_or(0.0);
+        let regime = sma200[i];
+
+        let in_bull = price > regime;
+        let macd_bull = macd_val > signal_val;
+
+        if in_bull && macd_bull {
+            out[i] = 1;
+        } else if !in_bull && !macd_bull {
+            out[i] = -1;
+        }
+    }
+    Ok(out)
+}
+
+fn macd_regime_strengths(df: &DataFrame) -> Result<Vec<f64>> {
+    let close = df.column("close")?.f64()?;
+    let n = df.height();
+
+    let ema12 = ema(close, 12);
+    let ema26 = ema(close, 26);
+    let macd_line: Vec<f64> = ema12.iter().zip(ema26.iter()).map(|(a, b)| a - b).collect();
+    let signal_line = ema_from_vec(&macd_line, 9);
+
+    let mut out = vec![0.0; n];
+    for i in 0..n {
+        out[i] = (macd_line.get(i).copied().unwrap_or(0.0)
+            - signal_line.get(i).copied().unwrap_or(0.0))
+        .abs();
+    }
+    Ok(out)
+}
+
+fn small_by_dollar_vol_signals(df: &DataFrame) -> Result<(Vec<i32>, Vec<f64>)> {
+    // Per-symbol: inverse dollar volume ranking → small cap
+    // For single symbol, just use volume as proxy
+    let volume = df.column("volume")?.f64()?;
+    let close = df.column("close")?.f64()?;
+    let n = df.height();
+
+    let mut dollar_vol = Vec::with_capacity(n);
+    for i in 0..n {
+        let v = volume.get(i).unwrap_or(0.0);
+        let c = close.get(i).unwrap_or(0.0);
+        dollar_vol.push(v * c);
+    }
+
+    let sma_dv_20 = sma_from_vec(&dollar_vol, 20);
+    let sma_dv_63 = sma_from_vec(&dollar_vol, 63);
+
+    let mut signals = vec![0i32; n];
+    let mut strengths = vec![0.0; n];
+
+    for i in 63..n {
+        let dv = dollar_vol[i];
+        let dv20 = sma_dv_20[i];
+        let dv63 = sma_dv_63[i];
+
+        if dv20 > 1e-9 && dv63 > 1e-9 {
+            let ratio = dv20 / dv63;
+            if ratio < 0.8 {
+                signals[i] = 1;
+                strengths[i] = (0.8 - ratio).abs();
+            } else if ratio > 1.2 {
+                signals[i] = -1;
+                strengths[i] = (ratio - 1.2).abs();
+            }
+        }
+    }
+    Ok((signals, strengths))
+}
+
+fn ctrend_signals(df: &DataFrame) -> Result<(Vec<i32>, Vec<f64>)> {
+    let close = df.column("close")?.f64()?;
+    let volume = df.column("volume")?.f64()?;
+    let n = df.height();
+
+    let vol_sma_20 = sma_from_vec(&vec_from_series_f64(volume), 20);
+    let vol_sma_63 = sma_from_vec(&vec_from_series_f64(volume), 63);
+    let ret_5 = rolling_ret(close, 5);
+    let ret_21 = rolling_ret(close, 21);
+    let ret_63 = rolling_ret(close, 63);
+    let ret_126 = rolling_ret(close, 126);
+    let rv_21 = rolling_vol(close, 21);
+    let rv_63 = rolling_vol(close, 63);
+
+    let mut out_sig = vec![0i32; n];
+    let mut out_str = vec![0.0; n];
+    for i in 126..n {
+        let short_vol = rv_21[i].max(1e-6);
+        let med_vol = rv_63[i].max(1e-6);
+        let price_score = 0.15 * (ret_5[i] / short_vol)
+            + 0.35 * (ret_21[i] / short_vol)
+            + 0.30 * (ret_63[i] / med_vol)
+            + 0.20 * (ret_126[i] / med_vol);
+
+        let vol_ratio_fast = if vol_sma_20[i] > 1e-9 {
+            volume.get(i).unwrap_or(0.0) / vol_sma_20[i]
+        } else {
+            1.0
+        };
+        let vol_ratio_slow = if vol_sma_63[i] > 1e-9 {
+            vol_sma_20[i] / vol_sma_63[i]
+        } else {
+            1.0
+        };
+        let price_dir = if ret_21[i] > 0.0 {
+            1.0
+        } else if ret_21[i] < 0.0 {
+            -1.0
+        } else {
+            0.0
+        };
+        let short_dir = if ret_5[i] > 0.0 {
+            1.0
+        } else if ret_5[i] < 0.0 {
+            -1.0
+        } else {
+            0.0
+        };
+        let volume_score = 0.20 * (vol_ratio_fast.ln()).clamp(-1.5, 1.5) * short_dir
+            + 0.20 * (vol_ratio_slow.ln()).clamp(-1.5, 1.5) * price_dir;
+
+        let score = price_score + volume_score;
+        out_str[i] = score.abs();
+        if score > 0.35 {
+            out_sig[i] = 1;
+        } else if score < -0.35 {
+            out_sig[i] = -1;
+        }
+    }
+    Ok((out_sig, out_str))
+}
+
+// --- Helper functions ---
+
+fn ema(series: &ChunkedArray<Float64Type>, period: usize) -> Vec<f64> {
+    let vals: Vec<f64> = series.into_iter().map(|v| v.unwrap_or(0.0)).collect();
+    ema_from_vec(&vals, period)
+}
+
+fn ema_from_vec(vals: &[f64], period: usize) -> Vec<f64> {
+    if vals.is_empty() {
+        return vec![];
+    }
+    let k = 2.0 / (period as f64 + 1.0);
+    let mut out = vec![vals[0]; vals.len()];
+    for i in 1..vals.len() {
+        out[i] = k * vals[i] + (1.0 - k) * out[i - 1];
+    }
+    out
+}
+
+fn sma(series: &ChunkedArray<Float64Type>, period: usize) -> Vec<f64> {
+    let vals: Vec<f64> = series.into_iter().map(|v| v.unwrap_or(0.0)).collect();
+    sma_from_vec(&vals, period)
+}
+
+fn sma_from_vec(vals: &[f64], period: usize) -> Vec<f64> {
+    if vals.is_empty() {
+        return vec![];
+    }
+    let mut out = vec![0.0; vals.len()];
+    let mut sum = 0.0;
+    for i in 0..vals.len() {
+        sum += vals[i];
+        if i >= period {
+            sum -= vals[i - period];
+        }
+        out[i] = if i >= period - 1 {
+            sum / period as f64
+        } else {
+            0.0
+        };
+    }
+    out
+}
+
+fn rolling_ret(series: &ChunkedArray<Float64Type>, period: usize) -> Vec<f64> {
+    let vals: Vec<f64> = series.into_iter().map(|v| v.unwrap_or(0.0)).collect();
+    let mut out = vec![0.0; vals.len()];
+    for i in period..vals.len() {
+        out[i] = if vals[i - period] > 1e-12 {
+            (vals[i] - vals[i - period]) / vals[i - period]
+        } else {
+            0.0
+        };
+    }
+    out
+}
+
+fn rolling_vol(series: &ChunkedArray<Float64Type>, period: usize) -> Vec<f64> {
+    let vals: Vec<f64> = series.into_iter().map(|v| v.unwrap_or(0.0)).collect();
+    let mut rets = vec![0.0; vals.len()];
+    for i in 1..vals.len() {
+        rets[i] = if vals[i - 1] > 1e-12 {
+            (vals[i] - vals[i - 1]) / vals[i - 1]
+        } else {
+            0.0
+        };
+    }
+    let mut out = vec![0.0; vals.len()];
+    for i in period..vals.len() {
+        let mean = rets[i - period + 1..=i].iter().sum::<f64>() / period as f64;
+        let var = rets[i - period + 1..=i]
+            .iter()
+            .map(|r| (r - mean).powi(2))
+            .sum::<f64>()
+            / period as f64;
+        out[i] = var.sqrt();
+    }
+    out
+}
+
+fn vec_from_series_f64(series: &ChunkedArray<Float64Type>) -> Vec<f64> {
+    series.into_iter().map(|v| v.unwrap_or(0.0)).collect()
+}
