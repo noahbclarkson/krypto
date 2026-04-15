@@ -60,6 +60,7 @@
 - [x] **A/D Static Sleeve: REJECTED.** Only 46% win rate. Turtle-only is production.
 - [x] **EXECUTION MODEL AUDIT (2026-04-15):** Live Binance BTCUSDT perp maker rate 63% (vs 70% assumption — slightly conservative). USDT-M fees: Maker 0.02%, Taker 0.05%. 70% assumption is slightly conservative; strategy remains viable.
 - [x] **BTC Trend Scalar: REJECTED (2026-04-15).** Baseline wins 6/6, Sharpe 5.46. No scalar config adds value.
+- [x] **Progress equity curves regenerated (2026-04-15).** Turtle: 120.8x, Sharpe 2.24 (daily equity, full 2073-day history). MACD+Regime and Blend excluded (2/7 OOS — GRAVEYARD).
 - [x] **HALL_OF_FAME STALE MACD TABLES (2026-04-15):** Archived 9,458 chars of sessions 18-27 MACD+Regime composite ranking tables (all stale). Replaced with brief archive note + GRAVEYARD verdict. Walk-forward MACD section (Session 31) also replaced with GRAVEYARD verdict (2/7 pass). File reduced 30% (35K→24K chars).
 
 ---
@@ -92,7 +93,9 @@ ALL Turtle+Chandelier params FROZEN as of 2026-04-14:
 
 **Track C CLOSED PERMANENTLY 2026-04-15.** 1h MR kill test: 0/6 symbols pass on full 6-7yr history. Prior 5/5 was a 1-year data artifact.
 
-**Track C is CLOSED.** Every non-trend strategy is dead or borderline. The reliable crypto edge is directional trend-following.
+**Track C CLOSED — DEFINITIVE KILL 2026-04-15:** 288-config × 6-symbol full walk-forward on 1h data (2,834 days). ALL negative Sharpe: BTC -2.03, ETH -1.27, SOL -0.31, XRP -0.60, DOGE -0.90, ADA -1.05. Previous ETH-only "4/4" was from short ETHFDUSD cache (417 days). On full history, 1h MR is structurally dead — not fee-sensitive.
+
+**All non-trend strategies dead.** Every strategy family tested and killed (BollingerRev 0/288, BOCPD 0%, 4h MR 0/4, FDUSD carry 19%, Funding MR 43%, 1h MR 0/6, cross-sectional 60%, vol-rank 60.5%, BTC scalar 0/8 configs). The reliable crypto edge is directional trend-following only.
 
 ---
 
