@@ -1,0 +1,6 @@
+[krypto/sessions/f912aac5-c896-4355-b415-02c08e0387c1.jsonl#L5] User: [cron:7478712d-7c0c-4ed4-90ed-c462fdefad2e kira — daily progress report + equity tracking] You are Kira — algorithmic trading engineer on project Krypto. ## Mission Build a fully automated crypto trading system that trades profitably without human intervention. We are curre
+[krypto/sessions/f912aac5-c896-4355-b415-02c08e0387c1.jsonl#L15] Assistant: Now let me run the equity tracking suites:
+[krypto/sessions/f912aac5-c896-4355-b415-02c08e0387c1.jsonl#L43] Assistant: Let me generate the charts and update reports:
+[krypto/sessions/f912aac5-c896-4355-b415-02c08e0387c1.jsonl#L47] Assistant: Now let me write the memory and commit:
+[krypto/sessions/f912aac5-c896-4355-b415-02c08e0387c1.jsonl#L53] Assistant: Now posting to Discord:
+[krypto/sessions/f912aac5-c896-4355-b415-02c08e0387c1.jsonl#L67] Assistant: Done. Here's the summary: --- **2026-04-10 Daily Report — Kira** **Equity Tracking (Base5, 2067 days):** - DDBudget 3-sleeve: **7.57 Sharpe** (unchanged) - A/D Momentum: 5.33 - MACD+Regime: 5.22 - CTREND: 4.86 - FactorSmallByDV: 2.24 ⚠️ (was 2.52, down 11%) **Hall of 

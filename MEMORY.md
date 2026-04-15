@@ -55,6 +55,7 @@
 
 ## 2026-04-11 Metric Integrity Fix
 - **Two parallel execution systems documented:** (1) OOS walk-forward harness with Chandelier(15, 2.00) → 72% pass, 864 trades, avg Sharpe 8.86; (2) equity curve harness with fixed 21-bar hold → full-sample Sharpe 7.61. The 7.61 number is from the fixed-hold system, not Chandelier.
+- **Progress Chart Integrity — CORRECTED (2026-04-15):** `progress_equity_curves.csv` turtle_equity was STILL using the wrong engine (fixed 21-bar hold). The CSV showed 116x at day 2072; the correct Chandelier dual-exit data shows **1126x** at the same point — a 10x understatement. Fix: spliced turtle equity from `turtle_chandelier_equity.csv` (proper daily equity, Chandelier dual-exit). Stale `macd_equity` (149x) and `blend_equity` (6.17x) removed from CSV (both graveyard). Chart titles updated to document data sources. **Do NOT compare DDBudget equity to Turtle equity on the progress chart** — DDBudget uses milestone-aggregated returns, not daily equity. DDBudget 3-sleeve walk-forward: 72% global pass (39/54) — decent but below Turtle 93%.
 - **Y4 (2020-2021 mega-bull) is the single largest Sharpe contributor** for DDBudget — same pattern as MACD+Regime. Per-year decomposition essential for honest reporting.
 - **DDBudget 3-sleeve worst windows:** Legacy3/4/5 W04 (bear chop, -10 to -11%). Best windows: LowVolume5/NoDOGE/LargeCaps5 W03 (mega-bull, +31 to +40%).
 - **Chandelier hyperopt combined result:** P=15 (from 45) + M=2.00 (from 2.50) → ~70% total Sharpe improvement across all 9 universes.

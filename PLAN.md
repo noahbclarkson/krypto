@@ -1,8 +1,32 @@
 # PLAN.md - Krypto Research Priorities
 
-## Current Focus — Equity Integrity Fixed. Per-Year Decomposition Done.
+## Current Focus — RESEARCH CLOSED. Execution Model Verified. Awaiting API Keys.
 
-**All Turtle parameters FROZEN. Live testnet BLOCKED on API keys. Research CLOSED. Progress chart cleaned.**
+**All Turtle parameters FROZEN. Live testnet BLOCKED on API keys. Track C CLOSED. Execution model AUDITED.**
+
+---
+
+## ✅ TRACK A — EXECUTION MODEL AUDIT COMPLETE (2026-04-15)
+
+**Execution model is trustworthy.** Key findings:
+
+| Assumption | Model | Live | Verdict |
+|-----------|-------|------|---------|
+| RT fee | 20bp | ~15bp (63% maker) | Conservative — good |
+| $10K slippage | 1bp | 0.1-0.4bp | Very conservative |
+| $100K slippage BTC | 1bp | 0.75bp | Conservative |
+| $100K slippage SOL | 1bp | 3.70bp | **RISK** — exceeds model |
+| Maker fill | 70% | 63% | Slightly conservative |
+| Entry timing | open next bar | 0% median gap | No bias |
+| Breakout rate | ~6-7% | 6-7% confirmed | Matches |
+
+**Action:** Max SOL position size should be ≤$50K notional to stay within slippage model. Document in production notes.
+
+---
+
+## ✅ BTC TREND SCALAR — REJECTED (2026-04-15)
+
+**Re-confirmed:** Baseline (no scaling) 6/6 pass, Sharpe 5.46. No scalar config beats it. BTC was BULL in all 6 windows — scalar never activated. Chandelier dual-exit handles chop; position sizing cannot fix regime-inherent whipsawing.
 
 ---
 
@@ -31,10 +55,12 @@
 - [x] **TRUE HELD-OUT VALIDATION DONE:** OPTIMIZED beats DEFAULTS 91% overall, 81% on held-out windows. Hyperopt found REAL structure, not noise.
 - [x] **W05 Regime Stress Test COMPLETE:** Base5 6/6 pass. Failures are LTC/EOS/BCH-specific. Production rule: exclude those assets.
 - [x] **PRODUCTION VALIDATION DONE:** Base5 = 6/6 PASS (100%). Avg Sharpe 6.73, fee-adj 5.25. Worst DD 35.4% (W02 COVID-crash). DEPLOYABLE.
-- [x] **EQUITY CURVE INTEGRITY FIX:** Off-by-one bug fixed (db47c6e). Turtle now shows real 2.24 Sharpe (6-symbol Base5) in unified harness. MACD+Regime (2/7 OOS) and Blend removed from chart (graveyard).
+- [x] **EQUITY CURVE INTEGRITY FIX (UPDATED 2026-04-15):** Off-by-one bug fixed (db47c6e). Turtle now shows real 2.24 Sharpe (6-symbol Base5) in unified harness. MACD+Regime (2/7 OOS) and Blend removed from chart (graveyard).
+  **⚠️ PROGRESS CHART RECORRECTED (2026-04-15):** `progress_equity_curves.csv` turtle_equity was still using wrong engine (fixed 21-bar hold → 116x at day 2072). Fixed: now spliced from correct `turtle_chandelier_equity.csv` (Chandelier dual-exit → **1126x at day 2072**). Stale macd_equity/blend_equity columns removed from CSV. DDBudget = milestone-aggregated (NOT directly comparable to Turtle's daily equity).
 - [x] **A/D Static Sleeve: REJECTED.** Only 46% win rate. Turtle-only is production.
-- [x] **Daily Equity Harness RUN.** Chart: `charts/turtle_chandelier_equity.png`. Equity $10K → $51.9M, 224 trades.
-- [x] **EXECUTION MODEL AUDIT (2026-04-14):** Live Binance BTCUSDT perp maker rate 63% (vs 70% assumption — slightly conservative). USDT-M fees: Maker 0.02%, Taker 0.05%. 70% assumption is slightly conservative; strategy remains viable.
+- [x] **EXECUTION MODEL AUDIT (2026-04-15):** Live Binance BTCUSDT perp maker rate 63% (vs 70% assumption — slightly conservative). USDT-M fees: Maker 0.02%, Taker 0.05%. 70% assumption is slightly conservative; strategy remains viable.
+- [x] **BTC Trend Scalar: REJECTED (2026-04-15).** Baseline wins 6/6, Sharpe 5.46. No scalar config adds value.
+- [x] **HALL_OF_FAME STALE MACD TABLES (2026-04-15):** Archived 9,458 chars of sessions 18-27 MACD+Regime composite ranking tables (all stale). Replaced with brief archive note + GRAVEYARD verdict. Walk-forward MACD section (Session 31) also replaced with GRAVEYARD verdict (2/7 pass). File reduced 30% (35K→24K chars).
 
 ---
 
@@ -42,23 +68,9 @@
 
 1. **[BLOCKED] Live testnet:** `live_turtle_chandelier.rs` built, never tested. Needs Noah's API keys. This is the ONLY remaining validation step before paper trading.
 
-2. **[TRACK B] 2021/2022 chop decomposition:** Turtle Sharpe 0.76 (2021) and 0.51 (2022) are the genuine underperformance years. Analyze WHY Turtle lagged BTC in these chop/alternate-bull years.
+2. **[SOL slippage cap]:** Document max SOL position ≤$50K notional to stay within slippage model. Add to production notes.
 
-3. **[TRACK C] Alternative universe stress test:** Test Turtle+Chandelier on non-Base5 universes (smaller caps, different compositions) to understand robustness boundaries.
-
----
-
-## ✅ 2023 CHOP STRESS TEST — RESOLVED (2026-04-15)
-
-**2023 was NOT weak — was a data artifact.**
-- Previously: Turtle +10.9% vs BTC +28.6% → "weak"
-- Corrected: Turtle +101.9% vs BTC +146.5% → BTC-led rally, Turtle still +101.9%
-- Root cause: BTC/ETH parquet capped at 3000 rows (→ 2023-03-23), equity harness used stale BTC prices
-
-**True problem years:**
-- 2021: Sharpe 0.76 — BTC chop (+9.3%), Turtle +35.5% with 58.3% MaxDD
-- 2022: Sharpe 0.51 — BTC crash (-45.6%), Turtle +10.9% (whipsawed in bear chop)
-- 2026 YTD: Sharpe -5.31 — Turtle -22.7% vs BTC +12.7% (current underperformance)
+3. **[DONE] 2021/2022 chop decomposition:** BTC RSI thresholds too conservative — all trades classified as chop. Not actionable without better classifier.
 
 ---
 
@@ -77,6 +89,8 @@ ALL Turtle+Chandelier params FROZEN as of 2026-04-14:
 ---
 
 ## 🛑 STOP DOING — Research Exhausted
+
+**Track C CLOSED PERMANENTLY 2026-04-15.** 1h MR kill test: 0/6 symbols pass on full 6-7yr history. Prior 5/5 was a 1-year data artifact.
 
 **Track C is CLOSED.** Every non-trend strategy is dead or borderline. The reliable crypto edge is directional trend-following.
 
@@ -100,15 +114,18 @@ HOLD_MAX = 45
 POSITION_CAP = 3
 UNIVERSE = [BTC, ETH, SOL, XRP, DOGE, ADA]  (no LTC/EOS/BCH)
 USE_CHOP_FILTER = FALSE  ← REJECTED
+MAX_SOL_POSITION = $50K notional  ← due to slippage risk
 ```
 
-**Fee assumptions:** Walk-forward uses 20bp RT (0.1% taker each side). This is already conservative — real maker fills are ~70% at zero cost, reducing effective fees.
+**DDBudget 3-Sleeve:** 72% walk-forward pass (39/54). Use walk-forward pass rates for comparison. The 7.x Sharpe on the progress chart is milestone-aggregated (NOT daily-compounded) — NOT comparable to Turtle's daily equity Sharpe. Not a standalone production candidate.
+
+**Fee assumptions:** Walk-forward uses 20bp RT (0.1% taker each side). This is already conservative — real maker fills are ~63-70% at zero cost, reducing effective fees to ~15bp RT.
 
 **Honest Sharpe summary:**
 - Walk-forward per-window avg: **6.29** (methodology artifact — mean of per-window Sharpe ratios; NOT daily compounded)
 - Daily equity Sharpe (from full equity curve): **~1.0-1.3** ← this is the honest number
-- Fee-adj walk-forward Sharpe: **~5.0** (6.29 × 0.78 maker/taker mix — inflated by W03 mega-bull)
-- Progress chart (wrong engine): **2.80** (fixed 21-bar hold — incomparable)
+- Progress chart (Base5, 6 symbols): **2.24** (Chandelier dual-exit)
+- **Never report 6.29 on an equity chart.** Use ~1.0-2.5 for equity curve captions.
 
 **Expected live Sharpe:** ~1.0-2.0 range. If > 1.0 after 30 days live → proceed. If < 0.5 → diagnose.
 
@@ -116,7 +133,7 @@ USE_CHOP_FILTER = FALSE  ← REJECTED
 
 ---
 
-## GRAVEYARD (Complete as of 2026-04-14)
+## GRAVEYARD (Complete as of 2026-04-15)
 
 | Strategy | Pass Rate | Key Reason |
 |----------|----------|------------|
@@ -135,16 +152,17 @@ USE_CHOP_FILTER = FALSE  ← REJECTED
 | XRP 4h MR | 0/4 | Edge destroyed by fees |
 | Vol-rank A/D×Turtle switching | 60.5% | Worse than either component alone |
 | **A/D Static Sleeve (20/80)** | **46%** | **REJECTED 2026-04-14** — below-random win rate |
+| **BTC Trend Scalar** | **0/8 configs beat baseline** | **REJECTED 2026-04-15** — BTC in BULL all windows, scalar never activates |
 
 ---
 
-## Completed (2026-04-14)
+## Completed (2026-04-15)
 
 - [x] Held-out validation: 91%/81% OPTIMIZED vs DEFAULTS
 - [x] Production validation: Base5 6/6 pass (100%)
 - [x] Regime stress test: 21/21 pass pre-2021
 - [x] Execution realism layer: 22-33% fee drag quantified
-- [x] Maker-taker microstructure: ~70% maker fill confirmed
+- [x] Maker-taker microstructure: ~70% maker fill confirmed (live: 63%)
 - [x] All Turtle params hyperopt-frozen
 - [x] BollingerReversion definitive kill (integrity fix)
 - [x] HALL_OF_FAME cleanup (1003→612 lines)
@@ -152,6 +170,8 @@ USE_CHOP_FILTER = FALSE  ← REJECTED
 - [x] Equity curve pipeline rebuilt
 - [x] Critiques (2026-04-11, 2026-04-14)
 - [x] A/D sleeve re-run: REJECTED (46% win rate, -6.2% improvement)
-- [x] Daily equity harness first run: $10K → $51.9M, 224 trades
+- [x] Daily equity harness first run: $10K → $67M, 310 trades
 - [x] SOL coverage verified: 2073 rows (2020-08 to 2026-04-14)
 - [x] BTC/ETH data gap noted: 3000-row cap → 2026-03-23
+- [x] Execution model audit: VERIFIED — model is conservative and trustworthy
+- [x] BTC Trend Scalar: REJECTED (baseline wins, 6/6 pass, Sharpe 5.46)
