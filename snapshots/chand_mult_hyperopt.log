@@ -1,0 +1,120 @@
+warning: unused import: `rayon::prelude`
+  --> examples/turtle_chand_mult_hyperopt.rs:23:5
+   |
+23 | use rayon::prelude::*;
+   |     ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `label`
+   --> examples/turtle_chand_mult_hyperopt.rs:247:11
+    |
+247 |     for &(label, symbols) in SWEEP_UNIVERSES {
+    |           ^^^^^ help: if this is intentional, prefix it with an underscore: `_label`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `label`
+   --> examples/turtle_chand_mult_hyperopt.rs:276:11
+    |
+276 |     for &(label, symbols) in FULL_UNIVERSES {
+    |           ^^^^^ help: if this is intentional, prefix it with an underscore: `_label`
+
+warning: field `win_rate` is never read
+   --> examples/turtle_chand_mult_hyperopt.rs:117:20
+    |
+115 | struct SimResult {
+    |        --------- field in this struct
+116 |     ret: f64, sharpe: f64, max_dd: f64,
+117 |     trades: usize, win_rate: f64, pass: bool,
+    |                    ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `krypto` (example "turtle_chand_mult_hyperopt") generated 4 warnings (run `cargo fix --example "turtle_chand_mult_hyperopt" -p krypto` to apply 2 suggestions)
+    Finished `sweep` profile [optimized] target(s) in 0.27s
+warning: the following packages contain code that will be rejected by a future version of Rust: binance-rs-async v1.3.3
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running `target/sweep/examples/turtle_chand_mult_hyperopt`
+==== Turtle+Chandelier CHAND_MULT Fine Hyperopt ====
+CHAND_PERIOD=28, sweeping M from 1.50 to 3.00 step 0.05 = 31 values
+3 sweep universes for coarse scan, then full 9-universe validation of top-3 + baseline
+
+Loading data for sweep universes...
+Loaded 9 symbols, 2074 bars
+
+==== Phase 1: Fine Sweep (3 universes, 31 M values) ====
+  M=1.50 | Sharpe=2.2898 | pass=12/18 ( 66.7%) | ret=  +80.0% | DD= 34.1% | 362t
+  M=1.55 | Sharpe=2.2857 | pass=12/18 ( 66.7%) | ret=  +76.2% | DD= 33.1% | 350t
+  M=1.60 | Sharpe=2.4667 | pass=12/18 ( 66.7%) | ret=  +84.0% | DD= 33.1% | 344t
+  M=1.65 | Sharpe=2.4483 | pass=13/18 ( 72.2%) | ret=  +81.8% | DD= 34.6% | 335t
+  M=1.70 | Sharpe=2.1499 | pass=12/18 ( 66.7%) | ret=  +62.1% | DD= 34.7% | 328t
+  M=1.75 | Sharpe=3.0342 | pass=14/18 ( 77.8%) | ret=  +68.9% | DD= 33.4% | 312t
+  M=1.80 | Sharpe=3.2794 | pass=14/18 ( 77.8%) | ret=  +63.6% | DD= 31.9% | 296t
+  M=1.85 | Sharpe=3.0863 | pass=15/18 ( 83.3%) | ret=  +62.6% | DD= 31.4% | 290t
+  M=1.90 | Sharpe=3.3238 | pass=14/18 ( 77.8%) | ret=  +64.2% | DD= 31.1% | 275t
+  M=1.95 | Sharpe=3.5392 | pass=15/18 ( 83.3%) | ret=  +65.9% | DD= 31.3% | 271t
+  M=2.00 | Sharpe=3.3866 | pass=15/18 ( 83.3%) | ret=  +62.7% | DD= 32.0% | 268t
+  M=2.05 | Sharpe=3.2621 | pass=15/18 ( 83.3%) | ret=  +56.6% | DD= 32.3% | 268t
+  M=2.10 | Sharpe=4.0825 | pass=15/18 ( 83.3%) | ret= +106.2% | DD= 31.1% | 262t
+  M=2.15 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.20 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.25 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.30 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.35 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.40 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.45 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.50 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.55 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.60 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.65 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.70 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.75 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.80 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.85 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.90 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=2.95 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+  M=3.00 | Sharpe=4.6392 | pass=15/18 ( 83.3%) | ret= +112.7% | DD= 31.1% | 260t
+
+==== TOP 10 (3-universe coarse, by Sharpe) ====
+Rank | M      | Sharpe    | Pass%   | Ret%    | DD%    | Trades
+   1 |   2.15 |    4.6392 |  83.3% |  +112.7% |  31.1% | 260
+   2 |   2.20 |    4.6392 |  83.3% |  +112.7% |  31.1% | 260
+   3 |   2.25 |    4.6392 |  83.3% |  +112.7% |  31.1% | 260
+   4 |   2.30 |    4.6392 |  83.3% |  +112.7% |  31.1% | 260
+   5 |   2.35 |    4.6392 |  83.3% |  +112.7% |  31.1% | 260
+   6 |   2.40 |    4.6392 |  83.3% |  +112.7% |  31.1% | 260
+   7 |   2.45 |    4.6392 |  83.3% |  +112.7% |  31.1% | 260
+   8 |   2.50 |    4.6392 |  83.3% |  +112.7% |  31.1% | 260
+   9 |   2.55 |    4.6392 |  83.3% |  +112.7% |  31.1% | 260
+  10 |   2.60 |    4.6392 |  83.3% |  +112.7% |  31.1% | 260
+
+==== Phase 2: Equity Curves (top-3 + baseline) ====
+  M=2.15: 1875 equity points → snapshots/chand_mult_2.15_equity.csv
+  M=2.20: 1875 equity points → snapshots/chand_mult_2.20_equity.csv
+  M=2.25: 1875 equity points → snapshots/chand_mult_2.25_equity.csv
+  M=2.00 [BASELINE]: 1916 equity points → snapshots/chand_mult_2.00_equity.csv
+
+==== Phase 3: Full 9-Universe Validation ====
+Loaded 10 symbols, 2074 bars
+
+  M=2.15 | 9U Sharpe=4.8636 | pass=45/54 ( 83.3%) | ret=  +95.5% | DD= 29.4% | 721t
+  M=2.20 | 9U Sharpe=4.8636 | pass=45/54 ( 83.3%) | ret=  +95.5% | DD= 29.4% | 721t
+  M=2.25 | 9U Sharpe=4.8636 | pass=45/54 ( 83.3%) | ret=  +95.5% | DD= 29.4% | 721t
+  M=2.00 [BASELINE] | 9U Sharpe=3.8748 | pass=45/54 ( 83.3%) | ret=  +70.6% | DD= 30.8% | 741t
+
+==== FULL VALIDATION RANKING (9 universes) ====
+Rank | M      | Sharpe    | Pass%   | Ret%    | DD%    | Trades | Note
+   1 |   2.15 |    4.8636 |  83.3% |   +95.5% |  29.4% | 721 | SWEPT_WINNER
+   2 |   2.20 |    4.8636 |  83.3% |   +95.5% |  29.4% | 721 | 
+   3 |   2.25 |    4.8636 |  83.3% |   +95.5% |  29.4% | 721 | 
+   4 |   2.00 |    3.8748 |  83.3% |   +70.6% |  30.8% | 741 | BASELINE
+
+==== WINNER vs BASELINE ====
+  Winner M=2.15: Sharpe=4.8636, pass=45/54 (83.33333333333333%), ret=+95.5%, DD=29.4%
+  Baseline M=2.00: Sharpe=3.8748, pass=45/54 (83.33333333333333%), ret=+70.6%, DD=30.8%
+  Delta Sharpe: +0.9888 (+25.5%)
+  Delta Pass Rate: +0.0pp
+
+Total runtime: 12.1s
+Output: snapshots/chand_mult_sweep.csv, chand_mult_full_validation.csv, chand_mult_*_equity.csv
