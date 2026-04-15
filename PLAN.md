@@ -1,16 +1,30 @@
 # PLAN.md - Krypto Research Priorities
 
-## Current Focus — Strategy Critique Complete (2026-04-16)
+## Current Focus — CRITICAL UNRANKED FINDING (2026-04-15 Evening)
 
-**Research CLOSED. Three execution tasks remain before live deployment.**
+**Research CLOSED except for one critical outstanding question.**
 
-**Key critique findings (2026-04-16):**
+**⚠️ LIVE BOT PAPER RUN: 466 trades validated ✅**
+- Paper mode confirmed: BTC +102.6%, ETH +162.8%, SOL +112.1%, XRP +55.2%, DOGE +267.1%
+- Avg +140.0%, WR 50.4%, MaxDD 30.8%
+- Production params verified correct in code (EP=21, CHAND=28/2.15, ATR=25/2.0, HM=45, CAP=3)
+
+**⚠️ CRITICAL FINDING — Entry Ranking Destroys Value (2026-04-15 18:30 UTC):**
+- Current prod uses volume-ranked top-3 selection — skips 164/278 (59%) of valid entries
+- Ranked: 114 trades, 194x equity | Unranked: 278 trades, 374,884x equity
+- All 164 skipped trades are profitable on average (BTC +5.4%, ETH +6.6%, SOL +13.3%, XRP +1.0%, DOGE +8.1%)
+- Ranked approach STILL passes walk-forward (6/6) because CAP=3 is valid portfolio construction
+- **OPEN QUESTION:** Should production switch to unranked (all valid entries, no ranking)?
+- **DO NOT change production yet.** Ranked has valid walk-forward validation. Unranked needs its own walk-forward test first.
+- **Priority once API keys arrive:** Run unranked vs ranked portfolio-level walk-forward BEFORE any production switch.
+
+**Key critique findings (2026-04-15):**
 - Sharpe conflation: 3 incompatible metrics (6.29 WF avg / 1.04 equity / ~2.5 progress). Honest number = 1.0-1.3.
 - 2026 YTD: Turtle -22.7% vs BTC +12.7% — persistent underperformance in choppy/range-bound markets
 - Hyperopt exhaustion: 50,000+ runs over 6 days — 91% in-sample win rate is optimistic
-- HALL_OF_FAME/GRAVEYARD.md missing from repo — documentation integrity risk  ✅ RESOLVED 2026-04-16 (files created)
-- SOL slippage model miss: 3.7× underestimate at $100K — DOCUMENTED AS LIVE TRADING CONSTRAINT (2026-04-16)
-- `live_turtle_chandelier.rs` never tested on testnet — VERIFIED paper mode works (2026-04-16)
+- HALL_OF_FAME/GRAVEYARD.md missing from repo — documentation integrity risk ✅ RESOLVED
+- SOL slippage model miss: 3.7× underestimate at $100K — DOCUMENTED AS LIVE TRADING CONSTRAINT
+- `live_turtle_chandelier.rs` paper mode VERIFIED ✅ (2026-04-15): 466 trades, +140% avg return
 
 **Sharpened production claim:** "Sharpe ~1.0-1.3 on equity curve, 93% OOS pass, real but modest edge." Stop saying "Sharpe 5.0+" in any context where it isn't clearly labeled as walk-forward per-window average.
 
