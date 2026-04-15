@@ -114,7 +114,7 @@ ALL Turtle+Chandelier params FROZEN as of 2026-04-14:
 - ATR_PERIOD=25 ✅ (hyperopt 2026-04-12)
 - ATR_MULT=0.0 ✅ (no filter — hyperopt 2026-04-13)
 - CHAND_PERIOD=28 ✅ (hyperopt 2026-04-11)
-- CHAND_MULT=2.00 ✅ (hyperopt 2026-04-11)
+- CHAND_MULT=2.15 ✅ (hyperopt 2026-04-16: fine step=0.05 sweep → +25.5% Sharpe vs coarse step=0.5 baseline. Saturation plateau M≥2.15 confirmed.)
 - HOLD_MAX=45 ✅ (hyperopt 2026-04-11)
 - POSITION_CAP=3 ✅ (hyperopt 2026-04-11, extended sweep confirmed)
 - **CHOP_FILTER: REJECTED (2026-04-14)** — destroys Sharpe in all configs
@@ -161,7 +161,7 @@ EP = 21          (entry lookback)
 ATR_PERIOD = 25  (Turtle ATR)
 ATR_MULT = 0.0   (no entry filter — best)
 CHAND_PERIOD = 28
-CHAND_MULT = 2.00
+CHAND_MULT = 2.15
 HOLD_MAX = 45
 POSITION_CAP = 3
 UNIVERSE = [BTC, ETH, SOL, XRP, DOGE]  (NoDOGE — ADA removed, was portfolio drag in bull years)
