@@ -97,6 +97,8 @@ All PLAN items from 2026-04-16 critique are now RESOLVED:
 
 4. **[✅ VERIFIED] Live testnet** — `live_turtle_chandelier.rs` paper mode verified (2026-04-16): 501 trades, +145% avg return, all 5 symbols positive. **BLOCKED ON API KEYS.** Code is production-ready; just needs testnet credentials.
 
+5. **[✅ DONE] Unranked Walk-Forward Validation (2026-04-15):** `unranked_turtle_walkforward.rs` — 6-window walk-forward comparing ranked (top-3 DV gate) vs unranked (all symbols). Results: ranked 6/6 pass / Sharpe 5.46 / +96% ret / 49% DD; unranked 5/6 pass (fails W02) / Sharpe 4.00 / +117% ret / 28% DD. **Verdict: KEEP ranked in production.** Unranked has higher return + lower DD but fails W02 (COVID chop). Pass rate dominance (6/6) is decisive for production. The full-history finding (164 skipped trades) does NOT survive OOS validation.
+
 ---
 
 *Prior sessions (deprecated — retain for history):*
