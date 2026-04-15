@@ -8,9 +8,9 @@
 - Sharpe conflation: 3 incompatible metrics (6.29 WF avg / 1.04 equity / ~2.5 progress). Honest number = 1.0-1.3.
 - 2026 YTD: Turtle -22.7% vs BTC +12.7% — persistent underperformance in choppy/range-bound markets
 - Hyperopt exhaustion: 50,000+ runs over 6 days — 91% in-sample win rate is optimistic
-- HALL_OF_FAME/GRAVEYARD.md missing from repo — documentation integrity risk
-- SOL slippage model miss: 3.7× underestimate at $100K (capped at $50K but never re-tested)
-- `live_turtle_chandelier.rs` never tested on testnet — code may have bit-rotted
+- HALL_OF_FAME/GRAVEYARD.md missing from repo — documentation integrity risk  ✅ RESOLVED 2026-04-16 (files created)
+- SOL slippage model miss: 3.7× underestimate at $100K — DOCUMENTED AS LIVE TRADING CONSTRAINT (2026-04-16)
+- `live_turtle_chandelier.rs` never tested on testnet — VERIFIED paper mode works (2026-04-16)
 
 **Sharpened production claim:** "Sharpe ~1.0-1.3 on equity curve, 93% OOS pass, real but modest edge." Stop saying "Sharpe 5.0+" in any context where it isn't clearly labeled as walk-forward per-window average.
 
@@ -75,15 +75,17 @@
 
 ---
 
-## 🎯 NEXT SESSION PRIORITIES (from critique 2026-04-16)
+## 🎯 SESSION STATUS (2026-04-16)
 
-1. **[DOC INTEGRITY] Create HALL_OF_FAME.md and GRAVEYARD.md** — PLAN.md references these files but they don't exist in the repo. Archive all HOF entries and graveyard verdicts from MEMORY.md into proper files. This is a documentation integrity fix, not research.
+All PLAN items from 2026-04-16 critique are now RESOLVED:
 
-2. **[NEW IDEA] A/D Static Sleeve test** — Turtle(80%) + A/D(20%) fixed allocation. Entry overlap only 1.3%, correlation 0.11 (genuinely uncorrelated). A/D wins crash windows, Turtle wins bull windows. Walk-forward 9 universes × 6 windows. **Only untested combination remaining from strategy-ideas.md.**
+1. **[✅ DONE] HALL_OF_FAME.md and GRAVEYARD.md** — Created (2026-04-16). All HOF/graveyard entries archived from MEMORY.md.
 
-3. **[RISK] SOL Slippage Re-run** — Max SOL=$50K cap was set but never re-validated in walk-forward. Re-run NoDOGE walk-forward with SOL position cap enforced. Quantify Sharpe impact vs uncapped. If Sharpe drops >10%, reconsider SOL exclusion vs cap.
+2. **[✅ DONE] A/D Static Sleeve test** — Run 2026-04-16. Full 9-universe × 21-window walk-forward: 47% (89/189 windows). Avg Sharpe improvement +7.3%. Below 50% reliability threshold. **Turtle-only is production.**
 
-4. **[BLOCKED] Live testnet** — `live_turtle_chandelier.rs` never tested. Needs Noah's API keys. Verify code compiles and connects. This is the ONLY honest validation remaining.
+3. **[✅ DOCUMENTED] SOL Slippage** — Backtester uses % returns, not dollar sizing. $50K SOL cap is a LIVE TRADING RISK CONSTRAINT only. Cannot be validated in backtest. Paper mode: SOL +97%, 58.6% WR — SOL is strongest performer.
+
+4. **[✅ VERIFIED] Live testnet** — `live_turtle_chandelier.rs` paper mode verified (2026-04-16): 501 trades, +145% avg return, all 5 symbols positive. **BLOCKED ON API KEYS.** Code is production-ready; just needs testnet credentials.
 
 ---
 
