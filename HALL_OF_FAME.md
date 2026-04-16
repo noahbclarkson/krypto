@@ -16,7 +16,7 @@
 **Frozen params (as of 2026-04-14):**
 ```
 EP = 21          (entry lookback)
-ATR_PERIOD = 25  (Turtle ATR)
+ATR_PERIOD = 24  (Turtle ATR — updated 2026-04-16: fine hyperopt ATR=24 vs ATR=25 → +3.6% Sharpe, -10.8pp worst DD)
 ATR_MULT = 0.0   (no entry filter)
 CHAND_PERIOD = 28
 CHAND_MULT = 2.00

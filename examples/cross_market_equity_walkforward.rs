@@ -27,7 +27,7 @@ const MIN_TRADES: usize = 3;
 const CHAND_PERIOD: usize = 28;
 const CHAND_MULT: f64 = 2.15; // hyperopt 2026-04-16: fine-tune winner (+25.5% Sharpe vs coarse 2.00). Same dual-exit mechanism as crypto.
 const TURTLE_ENTRY: usize = 21;
-const TURTLE_ATR_PERIOD: usize = 25;
+const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 
 const ASSETS: &[(&str, &str)] = &[

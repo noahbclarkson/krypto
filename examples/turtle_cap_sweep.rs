@@ -30,7 +30,7 @@ const MIN_TRADES: usize = 3;
 const CHAND_PERIOD: usize = 28;
 const CHAND_MULT: f64 = 2.00;
 const TURTLE_ENTRY: usize = 21;
-const TURTLE_ATR_PERIOD: usize = 25;
+const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 
 // The CAP values to test — previous sweep tested {1,2,3,4,5}

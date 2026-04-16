@@ -32,7 +32,7 @@ const MIN_TRADES: usize = 3;
 const CHAND_PERIOD: usize = 28;
 const CHAND_MULT: f64 = 2.00;
 const TURTLE_ENTRY: usize = 21;
-const TURTLE_ATR_PERIOD: usize = 25;
+const TURTLE_ATR_PERIOD: usize = 24;
 
 // THE SWEEP PARAMETER
 const TURTLE_ATR_MULT_VALS: &[f64] = &[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];

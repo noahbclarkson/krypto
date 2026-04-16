@@ -15,7 +15,7 @@ const TAKER_FEE: f64 = 0.001;
 const TURTLE_ENTRY: usize = 21;
 const CHAND_PERIOD: usize = 28;
 const CHAND_MULT: f64 = 2.00;
-const TURTLE_ATR_PERIOD: usize = 25;
+const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 const HOLD_MAX: usize = 45;
 

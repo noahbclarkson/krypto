@@ -31,7 +31,7 @@ const POSITION_CAP: usize = 3;
 const CHAND_PERIOD: usize = 28;
 const CHAND_MULT: f64 = 2.00;
 const TURTLE_ENTRY: usize = 21;
-const TURTLE_ATR_PERIOD: usize = 25;
+const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 
 const VOL_LOOKBACK_VALS: &[usize] = &[1, 2, 3, 5, 7, 10, 14, 21];

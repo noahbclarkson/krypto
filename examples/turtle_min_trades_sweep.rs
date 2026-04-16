@@ -34,7 +34,7 @@ const POSITION_CAP: usize = 3;
 const EP: usize = 21;
 const CHAND_PERIOD: usize = 28;
 const CHAND_MULT: f64 = 2.00;
-const TURTLE_ATR_PERIOD: usize = 25;
+const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 
 // MIN_TRADES values to sweep

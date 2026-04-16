@@ -35,7 +35,7 @@ const POSITION_CAP: usize = 3;
 const MIN_TRADES: usize = 3;
 const CHAND_PERIOD: usize = 28; // production value — not being changed
 const TURTLE_ENTRY: usize = 21;
-const TURTLE_ATR_PERIOD: usize = 25;
+const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 
 const BASELINE_M: f64 = 2.00;
