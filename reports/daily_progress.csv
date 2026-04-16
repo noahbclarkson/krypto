@@ -49,3 +49,8 @@ date,strategy,return_pct,sharpe,max_dd_pct,trades,win_rate,best_universe,worst_u
 2026-04-15,FactorSmallByDV_Base5,1447.4,2.00,30.0,500,50.0,Base5,Base5
 2026-04-15,CTREND_Base5,88491.1,4.86,23.3,420,52.6,Base5,Base5
 2026-04-15,DDBudget_3sleeve_Base5,5723.1,7.00,9.9,864,57.5,Base5,Base5
+2026-04-16,Turtle_Chandelier_Base5,27131.1,2.50,62.6,310,50.0,Base5,Base5
+2026-04-16,AD_Momentum_Base5,3933.4,3.62,21.1,420,52.1,Base5,Base5
+2026-04-16,FactorSmallByDV_Base5,1431.4,2.00,30.0,500,50.0,Base5,Base5
+2026-04-16,CTREND_Base5,143731.2,5.17,23.3,420,52.6,Base5,Base5
+2026-04-16,DDBudget_3sleeve_Base5,5727.1,7.07,9.9,864,57.5,Base5,Base5
