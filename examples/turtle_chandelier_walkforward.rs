@@ -24,6 +24,7 @@ const POSITION_CAP: usize = 3; // hyperopt 2026-04-11: CAP=3 wins over CAP=2 (+1
 // Degradation begins at MT=7 (−1.9pp), MT=10 (−11.1pp), MT=15 (−53.7pp).
 // Only window sensitive to MT=3 vs MT=7 is Legacy5BNB W04 (6 trades → PASS at MT=3, FAIL at MT=7).
 // MIN_TRADES does NOT affect strategy returns — only pass/fail label and statistical reliability.
+const MIN_TRADES: usize = 3;
 const CHAND_PERIOD: usize = 28; // hyperopt 2026-04-11: P=28 fine-sweep winner at M=2.00 (Sharpe 9.011 vs P=15=7.785, +15.7%). Full 5-50 step-1 sweep, 9/9 universes positive.
 // Extended fine-sweep 2026-04-16: CP=15-50 step=1 on Base5. CP=17 emerged with best Sharpe (5.83 vs CP=28=5.76 on Base5).
 // However, 9-way robustness check (all 9 universes): CP=20 slightly edges CP=17 (45/54=83% vs 44/54=81% global pass, Sharpe 4.51 vs 4.38).
