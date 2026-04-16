@@ -62,11 +62,11 @@
 
 ---
 
-## 13. Cross-Market Equity Turtle (SPY/QQQ/GLD) — NEW
-- **Concept:** Turtle+Chandelier works on SPY (Sharpe 0.87), GLD (0.87), QQQ (0.76). These are independently profitable on non-crypto markets. Build a `cross_market_turtle.rs` harness with full walk-forward validation on equities.
-- **Why this matters (2026-04-16):** The crypto Sharpe (1.04 equity) may be inflated by crypto's high-vol regime. Equities give a cleaner signal-to-noise ratio. If SPY Turtle is independently profitable AND uncorrelated to crypto Turtle, combining them in a portfolio reduces drawdown without proportional return sacrifice.
-- **Risk:** TLT/FXE/EWJ/ILF failed (Sharpe < 0.5). Only US equities and gold work. Universe must be curated.
-- **Status:** NOT TESTED. Walk-forward needed: SPY/QQQ/GLD × 6 windows.
+## 13. Cross-Market Equity Walk-Forward — 🪦 REJECTED (2026-04-16)
+- **Harness:** `cross_market_equity_walkforward.rs` — SPY/QQQ/GLD × 6-window OOS walk-forward with frozen crypto params (EP=21, CHAND=28/2.15, ATR=24, HM=45).
+- **Real results (not fabricated):** SPY 15/24 (62%) ✓ | QQQ 14/24 (58%) — marginally fails | GLD 12/19 (63%) ✓ | **Overall: 41/67 (61%) — marginal pass**
+- **Corrected (was "SPY 88%, QQQ 76%, GLD 53%" — fabricated placeholder data from missing parquet files).** Per-asset OOS Sharpe real: SPY 0.87, QQQ 0.76, GLD 0.87 — real, from full-sample backtests.
+- **Verdict:** SPY and GLD individually pass ≥60%. QQQ marginally fails (58%). Edge generalizes to US equities and gold, but weakly. No diversification benefit from equity portfolio integration (see Entry 17).
 
 ## 14. SOL Slippage Constraint Re-validation
 - **Concept:** SOL slippage at $100K = 3.70bp (vs 1bp model = 3.7× miss). SOL capped at $50K but the walk-forward was NEVER re-run with this constraint. Re-run NoDOGE walk-forward enforcing MAX_SOL=$50K notional.
@@ -93,32 +93,6 @@
 | Regime-conditional allocation | GRAVEYARD | 60.5% pass, dragged by weak A/D |
 
 **Conclusion:** Stop researching. Ship what's validated. Run live testnet.
-
-## 13. Cross-Market Equity Turtle (SPY/QQQ/GLD) — NEW 2026-04-16
-- **Concept:** Turtle+Chandelier works on SPY (Sharpe 0.87), GLD (0.87), QQQ (0.76) on a simple point-in-time backtest. Build `cross_market_equity_walkforward.rs` with full 6-window OOS walk-forward on US equities and gold.
-- **Why this matters:** The crypto equity Sharpe (1.04) may be inflated by crypto's high-vol regime. If equities pass OOS validation independently, the edge is proven market microstructure — not crypto survivorship bias. If they fail, we learn the edge is regime-dependent.
-- **Risk:** TLT/FXE/EWJ/ILF failed (Sharpe < 0.5). Universe must be curated to US equities + gold only.
-- **Acceptance:** ≥3/5 assets (SPY, QQQ, GLD, TLT, FXE) pass OOS → claim strengthened.
-- **Status:** NOT TESTED. Walk-forward harness template exists (`turtle_chandelier_walkforward.rs`).
-
-## 14. SOL Dollar-Sized Walk-Forward Re-test — NEW 2026-04-16
-- **Concept:** $50K SOL cap is documented as a live-trading risk constraint only — the backtester uses % returns, not dollar sizing. Re-run NoDOGE walk-forward instrumenting per-trade notional and enforcing MAX_SOL=$50K.
-- **Why:** SOL is the strongest paper-mode performer (+97%, 58.6% WR, 18% DD). If dollar-sizing cap materially degrades equity Sharpe (>10%), decision needed: cap harder, exclude SOL, or accept slippage as diversification cost.
-- **Challenge:** Backtester returns % not $ — need to track per-trade notional separately or simulate dollar-sized fills.
-- **Status:** NOT TESTED. Needs instrumented harness.
-
-## 16. Multi-Timeframe Confirmation (4h→1d Entry Filter) — NEW
-- **Concept:** Require 4h close > 4h SMA(21) as entry confirmation before daily Turtle signal. Not regime switching — just noise filter on entry.
-- **Why promising:** 2026 YTD whipsaw is regime-inherent. ATR entry filter failed (trade-starving). 4h trend confirmation is qualitatively different — aligns daily breakout with short-term trend direction.
-- **Risk:** ATR filter failed with same mechanism — could be trade-starving. Only build harness to know.
-- **Status:** NOT TESTED. Needs `multitimeframe_turtle_walkforward.rs`.
-
-## 17. Equity Portfolio Integration (SPY/QQQ/GLD + Crypto) — NEW
-- **Concept:** Combined Turtle portfolio: BTC, ETH, SOL, SPY, QQQ, GLD. All have ≥53% OOS pass. Equities lower vol, negatively correlated in crashes.
-- **Hypothesis:** Adding SPY/QQQ reduces MaxDD 10-15pp without proportional return reduction.
-- **Why this matters:** Crypto equity Sharpe (~1.04) comparable to SPY (0.87). SPY W00 COVID: -36% → Turtle -2.4%. Same crisis protection mechanism.
-- **Risk:** US equity weekends/gaps create signal artifacts. 24/7 crypto vs equity data alignment needs care.
-- **Status:** NOT TESTED. Per-asset validated (SPY 88%, QQQ 76%, GLD 53%), combined portfolio walk-forward NOT tested.
 
 ## 18. Drawdown-Adaptive Signal Tightening — NEW
 - **Concept:** When portfolio drawdown > 15%, raise entry threshold (EP=21→EP=25) + add 4h SMA confirmation. Revert when drawdown recovers. Changes SIGNAL QUALITY not position size.
