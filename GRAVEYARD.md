@@ -43,3 +43,13 @@ Everything else has failed OOS validation.
 ---
 
 *Full graveyard entries and session context: see PLAN.md (Graveyard section) and MEMORY.md*
+
+## Equity Portfolio Integration — REJECTED (2026-04-16)
+- Hypothesis: Adding SPY/QQQ/GLD reduces MaxDD without proportional return sacrifice
+- Test: Combined 6-asset (BTC/ETH/SOL/SPY/QQQ/GLD) walk-forward vs crypto-only, 4 windows 2020-2026
+- Result: REJECTED. Combined underperforms crypto-only in all metrics:
+  - Sharpe: 1.05 vs 4.00 (-2.94)
+  - MaxDD: 22.5% vs 5.4% (+17.1pp worse)
+  - Return: +4.1% vs +28.8% (-24.7pp)
+- Mechanism: BTC dominates DV ranking → CAP=3 excludes SPY/QQQ/GLD in most windows
+- Verdict: Equities hurt Turtle portfolio. Keep crypto-only production.
