@@ -25,7 +25,7 @@ use std::collections::VecDeque;
 // Strategy params (validated)
 // =============================================================================
 const EP: usize = 21;       // Turtle entry lookback
-const CHAND_P: usize = 28;  // Chandelier ATR period
+const CHAND_P: usize = 20;  // Chandelier ATR period (updated 2026-04-16 from CP=28 — see turtle_chandelier_walkforward.rs)
 const CHAND_M: f64 = 2.15;   // Chandelier ATR multiplier (fine-tuned 2026-04-16: +25.5% Sharpe vs coarse 2.0)
 const ATR_P: usize = 24;     // Turtle ATR period (2026-04-16: fine hyperopt 18-35 step=1, ATR=24 +3.6% Sharpe, -10.8pp DD vs ATR=25)
 const ATR_M: f64 = 2.0;     // Turtle ATR multiplier
