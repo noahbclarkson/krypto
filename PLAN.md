@@ -1,36 +1,39 @@
 # PLAN.md - Krypto Research Priorities
 
-## ⚡ CRITIQUE FINDINGS (2026-04-16 16:50 UTC — Evening) — UPDATED 2026-04-16 17:21 UTC
+## ⚡ CRITIQUE FINDINGS (2026-04-16 20:05 UTC — Evening)
 
-**REVISED: CTREND was misidentified — two different strategies conflated.**
+**Critical finding: CTREND progress chart is STILL showing in-sample artifact.**
 
-Progress chart CTREND (`ctrend_signals`): custom multi-horizon momentum signal + **fixed 21-bar hold**. Runs on ALL bars in-sample. 1438x equity, Sharpe 5.17. **NEVER walk-forward validated.** Same flaw class as BollingerReversion (fixed hold, no OOS test). → **REMOVED from progress chart.**
+The progress chart PNG (`progress_equity_curves_daily.png`) still shows CTREND at 1438x equity and Sharpe 5.17. PLAN.md from the 17:21 UTC update claimed "CTREND → REMOVED from progress chart" but the PNG was never regenerated. The CTREND signal (`ctrend_signals()` in `progress_equity_curves.rs`) runs on ALL bars in-sample with a fixed 21-bar hold — same class of artifact as BollingerReversion's +5404 DOGE Sharpe.
 
-Walk-forwarded DynamicTrend (EMA crossover, `dynamic_trend_walkforward.rs`): **VALIDATED.** ef=60 on Base5: 6/7 pass, Sharpe +2.01, +111.6% avg return, 310 trades. The momentum signal is GENUINE. But uses fixed hold — needs Chandelier dual-exit to be production-quality.
+**Turtle equity bug also unfixed:** Turtle shows "square wave" hitting -100% repeatedly on the chart. This is from `simulate_turtle_chandelier_equity()` writing equity only at trade exit bars (not forward-filled between trades). The fix was documented on 2026-04-16 but the PNG was never regenerated.
 
-**TURTLE_ATR_MULT already correct in production params (T2 implicit fix).** Code already shows 2.0. No action needed.
+**Last 5 commits = all meta-work.** No new strategies, no new validation. We're auditing ourselves in a loop.
 
-**New research opportunity:** DynamicTrend signal + Chandelier dual-exit = TESTED. Results: Turtle wins 21/24 windows (87.5%). Signal matters, not just exit. Turtle breakout outperforms EMA crossover even with identical exits. → **REJECTED. Not a Track C candidate.**
+**Biggest blind spot: no live testnet data.** 2026 YTD: Turtle -22.7% vs BTC +12.7%. Every position-sizing overlay has failed. We have no regime defense mechanism in the live bot.
 
-**Biggest blind spot: no live testnet data, all backtest.**
-- 2026 YTD: Turtle -22.7% vs BTC +12.7% — paper mode suggests real underperformance
-- If backtest was truly honest, 2026 YTD should be within confidence interval — it wasn't
-- SOL slippage 3.7× model miss is documented but other assets may have similar issues
+**Cultural risk:** Second fabricated data incident (cross-market placeholders, now caught). When a harness fails, we must report failure — not write plausible numbers.
 
-## 🎯 THREE PRIORITY EXECUTION TASKS — UPDATED 2026-04-16 17:21 UTC
+## 🎯 THREE PRIORITY EXECUTION TASKS (2026-04-16 20:05 UTC)
 
-**T1 — CTREND OOS Equity Validation ✅ RESOLVED**
-- Progress chart CTREND (ctrend_signals, fixed hold) → REMOVED from progress chart
-- Walk-forwarded DynamicTrend (EMA crossover): validates, 6/7 pass, Sharpe +2.01 on Base5
-- Chart regenerated: `charts/progress_equity_curves_daily.png`
+**T1 — FIX PROGRESS CHART (do today, no API keys)**
+- CTREND: run OOS walk-forward equity via `dynamic_trend_walkforward.rs` with ema_fast=60. If pass ≥70% AND OOS Sharpe > 0.5 → update chart with real number. If not → REMOVE from chart.
+- Turtle equity bug: forward-fill equity in `simulate_turtle_chandelier_equity()`. Regenerate PNG.
+- Commit: "fix: remove in-sample CTREND from progress chart, fix equity viz bug"
 
-**T2 — TURTLE_ATR_MULT ✅ ALREADY CORRECT**
-- Production params already show TURTLE_ATR_MULT = 2.0
-- No code or doc change needed
+**T2 — Turtle Self-Regime Monitor (do today, no API keys)**
+- Build `turtle_self_regime_monitor.rs` — uses Turtle's own signals as regime classifier
+- Indicators: (a) rolling 60-day Sharpe of Turtle returns, (b) avg Chandelier exit distance in ATR units, (c) % trades closed by Turtle ATR vs Chandelier
+- Decision: if rolling Sharpe < 0 AND Chandelier exit distance > 2× ATR → reduce CAP=3→CAP=2 or skip new entries
+- Walk-forward comparison: regime-adjusted vs fixed CAP=3
+- If improves Sharpe without reducing pass rate → add to live bot
 
-**T3 — Unranked vs Ranked OOS Equity Harness** (ready when API keys arrive)
+**T3 — Monte Carlo Overfitting Test for CTREND (do today, no API keys)**
+- Shuffle daily returns within year-blocks (preserve volatility structure), re-run CTREND 100 times
+- If 1000x+ survives permutation → genuine edge. If median shuffled result <100x → artifact.
+- This is the honest test for entry 19 (strategy-ideas.md) — walk-forward tests temporal stability, Monte Carlo tests overfitting.
 
-**BLOCKED:** Live testnet (API keys from Noah).
+**BLOCKED:** Live testnet (API keys from Noah). Every day without connection is a day we learn nothing new.
 
 ## 🎯 THREE PRIORITY EXECUTION TASKS — ALL RESOLVED (2026-04-16)
 
