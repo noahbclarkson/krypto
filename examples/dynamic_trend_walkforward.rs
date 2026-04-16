@@ -307,9 +307,9 @@ fn run_window(
     if let Some((sym, entry_px)) = pos {
         if let Some(opens) = open_cache.get(&sym) {
             let last_bar = (end - 1).min(opens.len().saturating_sub(1));
-            let exit_px = opens.get(last_bar).copied().unwrap_or(entry_px);
-            if entry_px > 0.0 && exit_px > 0.0 {
-                let gross = (exit_px / entry_px - 1.0) - TAKER_FEE;
+            let exit_px = opens.get(last_bar).copied().unwrap_or(*entry_px);
+            if *entry_px > 0.0 && exit_px > 0.0 {
+                let gross = (exit_px / *entry_px - 1.0) - TAKER_FEE;
                 equity *= 1.0 + gross;
                 trades += 1;
                 if gross > 0.0 { wins += 1; }
@@ -534,7 +534,7 @@ fn build_chart_script_string(p0: usize, p1: usize, p2: usize, p3: usize) -> Stri
     out
 }
 
-fn write_summary_md(sorted: &[(&usize, &GlobalAgg)], winner: usize, baseline: usize, n_uni: usize) -> Result<()> {
+fn write_summary_md(sorted: &[(usize, &GlobalAgg)], winner: usize, baseline: usize, n_uni: usize) -> Result<()> {
     let winner_agg = sorted.iter().find(|(ef, _)| **ef == winner).map(|(_, a)| *a);
     let baseline_agg = sorted.iter().find(|(ef, _)| **ef == baseline).map(|(_, a)| *a);
 
@@ -552,18 +552,18 @@ fn write_summary_md(sorted: &[(&usize, &GlobalAgg)], winner: usize, baseline: us
     writeln!(f, "**Baseline (ema_fast=50):**")?;
     if let Some(agg) = baseline_agg {
         writeln!(f, "- Pass rate: {:.1}% ({}/{})", agg.pass_rate()*100.0, agg.total_passes, agg.total_windows)?;
-        writeln!(f, "- Avg Sharpe: {:.3}", agg.avg_sharpe())?;
-        writeln!(f, "- Avg DD: {:.2}%", agg.avg_dd())?;
-        writeln!(f, "- Avg Return: {:.2}%", agg.avg_ret())?;
+        writeln!(f, "- Avg Sharpe: {:.3f}", agg.avg_sharpe())?;
+        writeln!(f, "- Avg DD: {:.2f}%", agg.avg_dd())?;
+        writeln!(f, "- Avg Return: {:.2f}%", agg.avg_ret())?;
         writeln!(f, "- Total Trades: {}", agg.total_trades)?;
     }
     writeln!(f, "")?;
     writeln!(f, "**Winner (ema_fast={}):**", winner)?;
     if let Some(agg) = winner_agg {
         writeln!(f, "- Pass rate: {:.1}% ({}/{})", agg.pass_rate()*100.0, agg.total_passes, agg.total_windows)?;
-        writeln!(f, "- Avg Sharpe: {:.3}", agg.avg_sharpe())?;
-        writeln!(f, "- Avg DD: {:.2}%", agg.avg_dd())?;
-        writeln!(f, "- Avg Return: {:.2}%", agg.avg_ret())?;
+        writeln!(f, "- Avg Sharpe: {:.3f}", agg.avg_sharpe())?;
+        writeln!(f, "- Avg DD: {:.2f}%", agg.avg_dd())?;
+        writeln!(f, "- Avg Return: {:.2f}%", agg.avg_ret())?;
         writeln!(f, "- Total Trades: {}", agg.total_trades)?;
     }
     if let (Some(w), Some(b)) = (winner_agg, baseline_agg) {
@@ -572,7 +572,7 @@ fn write_summary_md(sorted: &[(&usize, &GlobalAgg)], winner: usize, baseline: us
         } else { 0.0 };
         let delta_dd = w.avg_dd() - b.avg_dd();
         writeln!(f, "")?;
-        writeln!(f, "**Delta vs baseline:** Sharpe {:.1}%, DD {:.1}pp", delta_sharpe, delta_dd)?;
+        writeln!(f, "**Delta vs baseline:** Sharpe {:+.1}, DD {:+.1}pp", delta_sharpe, delta_dd)?;
     }
     writeln!(f, "")?;
     writeln!(f, "**Charts:** `charts/dynamic_trend_comparison.png`, `charts/dynamic_trend_sweep_overview.png`")?;
@@ -583,7 +583,7 @@ fn write_summary_md(sorted: &[(&usize, &GlobalAgg)], winner: usize, baseline: us
     writeln!(f, "|---|------|--------|-----|------|--------|")?;
     for (i, (ef, agg)) in sorted.iter().enumerate() {
         if i >= 10 { break; }
-        writeln!(f, "| {} | {:.1} | {:.3} | {:.1} | {:.1} | {} |",
+        writeln!(f, "| {} | {:.1} | {:+.3} | {:+.1} | {:+.1} | {} |",
                  ef, agg.pass_rate()*100.0, agg.avg_sharpe(), agg.avg_dd(), agg.avg_ret(), agg.total_trades)?;
     }
     println!("  Written: {}", path);

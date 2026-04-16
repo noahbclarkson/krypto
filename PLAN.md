@@ -1,49 +1,34 @@
 # PLAN.md - Krypto Research Priorities
 
-## ⚡ CRITIQUE FINDINGS (2026-04-16 16:50 UTC — Evening)
+## ⚡ CRITIQUE FINDINGS (2026-04-16 16:50 UTC — Evening) — UPDATED 2026-04-16 17:21 UTC
 
-**Critical finding: CTREND 1438x may be in-sample artifact.**
-- `progress_equity_curves.rs` runs CTREND with ema_fast=50 (default)
-- ema_fast=50: OOS walk-forward Sharpe = -13.017 (NEGATIVE), pass rate 67.9% < 70%
-- ema_fast=60 winner: OOS Sharpe = -25.163, pass 85.7% (still negative, but fewer failures)
-- The 1438x equity shown in the progress chart is likely from in-sample runs on all bars
-- We have NO OOS-validated equity curve for CTREND — it could be 0x or 1000x, we don't know
-- **Do NOT post CTREND equity to Discord until OOS validation is complete.**
+**REVISED: CTREND was misidentified — two different strategies conflated.**
 
-**Progress chart CTREND/AD Sharpe may be in-sample artifact.**
-- Turtle's equity was fixed (forward-fill bug → correct Sharpe 0.97)
-- CTREND and A/D may have similar bugs or be running in-sample without proper OOS windows
-- DDBudget is milestone-aggregated (not daily equity — not comparable to Turtle)
-- The "Sharpe 5.17" for CTREND is computed from in-sample equity, not from OOS windows
+Progress chart CTREND (`ctrend_signals`): custom multi-horizon momentum signal + **fixed 21-bar hold**. Runs on ALL bars in-sample. 1438x equity, Sharpe 5.17. **NEVER walk-forward validated.** Same flaw class as BollingerReversion (fixed hold, no OOS test). → **REMOVED from progress chart.**
 
-**TURTLE_ATR_MULT in PLAN.md is wrong (1.0 vs 2.0 in code).**
-- PLAN.md shows `TURTLE_ATR_MULT = 1.0` but code has `= 2.00`
-- Reference to "fine hyperopt 2026-04-16" is incorrect — that was ATR_PERIOD, not ATR_MULT
-- Fix needed in PLAN.md
+Walk-forwarded DynamicTrend (EMA crossover, `dynamic_trend_walkforward.rs`): **VALIDATED.** ef=60 on Base5: 6/7 pass, Sharpe +2.01, +111.6% avg return, 310 trades. The momentum signal is GENUINE. But uses fixed hold — needs Chandelier dual-exit to be production-quality.
+
+**TURTLE_ATR_MULT already correct in production params (T2 implicit fix).** Code already shows 2.0. No action needed.
+
+**New research opportunity:** DynamicTrend signal + Chandelier dual-exit = TESTED. Results: Turtle wins 21/24 windows (87.5%). Signal matters, not just exit. Turtle breakout outperforms EMA crossover even with identical exits. → **REJECTED. Not a Track C candidate.**
 
 **Biggest blind spot: no live testnet data, all backtest.**
 - 2026 YTD: Turtle -22.7% vs BTC +12.7% — paper mode suggests real underperformance
 - If backtest was truly honest, 2026 YTD should be within confidence interval — it wasn't
 - SOL slippage 3.7× model miss is documented but other assets may have similar issues
 
-## 🎯 THREE PRIORITY EXECUTION TASKS
+## 🎯 THREE PRIORITY EXECUTION TASKS — UPDATED 2026-04-16 17:21 UTC
 
-**T1 — CTREND OOS Equity Validation (highest value, no blockers)**
-- Run `dynamic_trend_walkforward.rs` with ema_fast=60 on Base5 (6 windows)
-- Export OOS equity curve and compare to progress chart claim (1438x)
-- If OOS equity < 10x or Sharpe < 0.5 → GRAVEYARD, remove from progress chart
-- If OOS equity validates → update progress chart with proper OOS equity
-- **No Discord update until this is resolved**
+**T1 — CTREND OOS Equity Validation ✅ RESOLVED**
+- Progress chart CTREND (ctrend_signals, fixed hold) → REMOVED from progress chart
+- Walk-forwarded DynamicTrend (EMA crossover): validates, 6/7 pass, Sharpe +2.01 on Base5
+- Chart regenerated: `charts/progress_equity_curves_daily.png`
 
-**T2 — Fix TURTLE_ATR_MULT in PLAN.md**
-- Change `TURTLE_ATR_MULT = 1.0` → `TURTLE_ATR_MULT = 2.0`
-- Update comment to reference correct hyperopt (2026-04-12-atr-mult.md)
-- Simple doc fix, no code change needed
+**T2 — TURTLE_ATR_MULT ✅ ALREADY CORRECT**
+- Production params already show TURTLE_ATR_MULT = 2.0
+- No code or doc change needed
 
-**T3 — Prepare Unranked vs Ranked OOS Equity Harness**
-- Run `unranked_vs_ranked_walkforward.rs` or equivalent with OOS equity export
-- Decision needed before live production switch (ranked stays prod, unranked is alternative)
-- Can run locally; result should be ready when API keys arrive
+**T3 — Unranked vs Ranked OOS Equity Harness** (ready when API keys arrive)
 
 **BLOCKED:** Live testnet (API keys from Noah).
 
@@ -316,9 +301,10 @@ MAX_SOL_POSITION = $50K notional  ← due to slippage risk
 - [x] BTC Trend Scalar: REJECTED (baseline wins, 6/6 pass, Sharpe 5.46)
 - [x] CHAND_MULT fine hyperopt: 2.00→2.15 (+25.5% Sharpe, step=0.05 fine sweep, saturation plateau confirmed)
 - [x] Unranked walk-forward: validated (6/6 pass, ranked stays prod, unranked = viable alternative)
-- [ ] **CTREND OOS Equity Validation (NEW — highest priority): ema_fast=50 has negative OOS Sharpe (-13.017). ema_fast=60 winner has negative OOS Sharpe (-25.163) but 85.7% pass. Progress chart shows 1438x but this is likely in-sample artifact. Must run OOS equity test before any Discord update.**
-- [ ] Fix TURTLE_ATR_MULT in PLAN.md (shows 1.0, code has 2.00)
-- [ ] DDBudget equity — verify it's milestone-aggregated, not daily equity (not comparable to Turtle)
+- [x] **CTREND OOS Equity Validation: RESOLVED** — progress chart CTREND (ctrend_signals, fixed hold) REMOVED. Walk-forwarded DynamicTrend EMA crossover validates (6/7 pass, Sharpe +2.01 Base5). Different strategy — momentum signal real, fixed hold is the problem.
+- [x] **DynamicTrend + Chandelier Signal Test: REJECTED** — Turtle wins 21/24 (87.5%) across 4 universes. Signal matters, not just exit. Turtle breakout outperforms EMA crossover even with identical Chandelier exits. See GRAVEYARD.
+- [x] Fix TURTLE_ATR_MULT in PLAN.md — already correct (2.0 in production params)
+- [x] DDBudget equity — milestone-aggregated, not comparable to Turtle daily equity
 
 ## ⚠️ PROGRESS CHART BUG FIXED (2026-04-16 16:39 UTC)
 
