@@ -58,3 +58,18 @@ Everything else has failed OOS validation.
 - **Result:** 5/6 pass, Sharpe=0.97, DD=40.3%, WR=42.7% (vs ranked 6/6, Sharpe=2.54, DD=59.3%, WR=52.7%)
 - **Key Reason:** The 2026-04-15 "374,884x equity" claim was a simulation artifact. `entry_ranking_audit.rs` did not properly track concurrent position overlap. Ranked concentrates capital in top DV symbols — the opposite of what was claimed. Concentration beats diversification in Turtle trend-following.
 - **VERDICT:** Unranked portfolio construction is graveyard. Ranked (production) is validated.
+
+## DynamicTrend EMA Signal + Chandelier Exit — REJECTED (2026-04-16)
+
+**Hypothesis:** If Chandelier dual-exit is the quality driver, EMA(60/100) crossover signal might be equivalent to Turtle breakout when paired with the same exit.
+
+**Method:** Side-by-side 4-universe, 24-window walk-forward. Both use Chandelier(28, 2.15) + ATR(24, 2.0) dual exit.
+
+**Result:** Turtle wins 21/24 (87.5%) windows. DynamicTrend wins only in specific regimes:
+- Base5 W01: DT +362% vs Turtle +217% (momentum peak)
+- Legacy4 W00: DT +385% vs Turtle +243% (crisis window)
+- Legacy4 W03: DT +155% vs Turtle +106% (specific chop regime)
+
+**Verdict:** Signal matters, not just exit. Turtle breakout captures break-of-structure dynamics that EMA smoothing misses. Earlier entry in trending markets = better risk-adjusted returns.
+
+**Evidence file:** `examples/dynamic_trend_chandelier_walkforward.rs`, `snapshots/dynamic_trend_chandelier_wf.csv`
