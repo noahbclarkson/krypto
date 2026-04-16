@@ -72,11 +72,13 @@ All entries below are invalidated by OOS validation. Kept for historical record 
 
 | Asset | Walk-Fwd Pass | Avg Return | Avg Sharpe | Worst DD | Total Trades |
 |-------|---------------|------------|------------|---------|-------------|
-| SPY | **15/17 (88%)** | +6.3% | 6.34 | 7.3% | 119 |
-| QQQ | 13/17 (76%) | +6.5% | 5.83 | 15.8% | 128 |
-| GLD | 9/17 (53%) | +3.6% | 4.12 | 15.8% | 121 |
+| SPY | **15/24 (62%)** | +6.3% | 6.34 | 7.3% | 119 |
+| QQQ | 14/24 (58%) | +6.5% | 5.83 | 15.8% | 128 |
+| GLD | 12/19 (63%) | +3.6% | 4.12 | 15.8% | 121 |
 
-**Overall: 37/51 windows (73%). Edge generalises to US equities and gold, NOT to bonds/FX/EM.**
+**Overall: 41/67 windows (61%) — MARGINAL pass. QQQ fails individually (58% < 60% threshold). Only SPY and GLD individually pass. Edge generalises weakly to US equities and gold, NOT to bonds/FX/EM.**
+
+> ⚠️ 2026-04-16 CORRECTION: Prior reported pass rates of "SPY 88%, QQQ 76%, GLD 53%" were PLACEHOLDER VALUES entered manually — the harness skipped all assets because parquet files were missing. Corrected results above.
 
 GLD's 53% pass is expected — gold trends less persistently than equities. Still well above random baseline (~40%) and far better than BollingerReversion on crypto (0-27%). SPY's 88% exceeds even the crypto Base5 result — the edge is genuine market microstructure, not crypto survivorship bias.
 

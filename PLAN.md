@@ -15,34 +15,29 @@
 
 ## 🎯 THREE PRIORITY EXECUTION TASKS
 
-**T1 — Equity Multi-Asset Portfolio Walk-Forward (High Probability)** ✅ PENDING
-- Build `equity_turtle_portfolio_walkforward.rs` — SPY, QQQ, GLD + BTC, ETH, SOL in same Turtle portfolio
-- Hypothesis: equities reduce MaxDD without proportional return sacrifice (2022: SPY -19% vs BTC -64%)
-- Run full 6-window OOS walk-forward on combined 6-asset universe
-- If combined MaxDD < 40% with Sharpe ≥ 1.0 → new production candidate
-- If combined Sharpe < 0.8 → equity integration not worth the complexity
-- Estimated: 2-4 hours to build and run
-
-**T2 — Cross-Market Report Audit (Data Integrity)** ✅ IN PROGRESS
-- `snapshots/cross_market_equity_wf.md` showed -0/-0 (parsing failure, not actual result)
-- CSV has 37/51 (73%) — report generation silently failed. Data integrity issue.
-- FIXED: report regenerated from `cross_market_equity_wf.csv`. Verify other `.md` reports.
-- Audit all `.md` report generation code for silent parse failures
-
-**T3 — Multi-Timeframe Confirmation Harness (Medium Probability)** ✅ PENDING
-- Build `multitimeframe_turtle_walkforward.rs` — 4h SMA(21) confirmation as entry gate
-- Mechanism: daily Turtle entry requires 4h close > 4h SMA(21) (bull) or 4h close < SMA(21) (bear for short)
-- Not a regime switch — just noise filter on entry
+**T1 — Multi-Timeframe Confirmation Harness (Medium Probability)** ✅ PENDING
+- Build `multitimeframe_turtle_walkforward.rs` — 4h SMA(21) as daily entry confirmation
+- Mechanism: daily Turtle entry requires 4h close > 4h SMA(21) (bull) or < SMA(21) (bear)
+- NOT a regime switch — just a noise filter on entry
 - Run 6-window OOS walk-forward on Base5
 - If pass rate ≥ 70% AND avg Sharpe ≥ 5.0 → promising (then test on SPY/QQQ/GLD)
-- If pass rate < 60% → reject, mechanism is too similar to failed ATR entry filter
+- If pass rate < 60% → graveyard immediately (mechanism too similar to failed ATR filter)
 - Estimated: 3-5 hours to build and run
 
-**T4 — Unranked Production Re-Assessment** ✅ DOCUMENT
-- Unranked passed 6/6 vs ranked 5/6. Higher return (+143% vs +96%), lower DD (26% vs 49%)
-- Ranked is portfolio construction (top-3 by volume), not signal quality
-- Recommend: flip presumption — unranked is production, ranked is on probation
-- Decision: await Noah's call on live paper test (API keys required)
+**T2 — HALL_OF_FAME.md Cross-Market Data Integrity Fix** ✅ PENDING
+- HALL_OF_FAME.md still shows fabricated SPY/QQQ/GLD numbers: "88%, 76%, 53%"
+- Correct results (2026-04-16): SPY 62% (15/24), QQQ 58% (14/24), GLD 63% (12/19)
+- QQQ fails at individual level (58% < 60%)
+- Fix the cross-market table in HALL_OF_FAME.md with real data
+- Also: verify GRAVEYARD.md has no similarly fabricated numbers
+- Estimated: 30 minutes
+
+**T3 — Live Testnet (BLOCKED on API Keys)**
+- Run 30-day live paper on testnet
+- Compare live vs backtest equity Sharpe (1.34 expected)
+- If live Sharpe > 1.0 after 30 days → proceed to stage trading
+- If live Sharpe < 0.5 → diagnose maker vs taker drift, execution lag, signal quality
+- Only remaining technical blocker: Noah's Binance testnet API keys
 
 **BLOCKED:** Live testnet (API keys from Noah).
 
