@@ -107,8 +107,21 @@
 - **Challenge:** Backtester returns % not $ — need to track per-trade notional separately or simulate dollar-sized fills.
 - **Status:** NOT TESTED. Needs instrumented harness.
 
-## 15. Regime Monitor for Live Bot — NEW 2026-04-16
-- **Concept:** Add a simple regime display to `live_turtle_chandelier.rs`: BTC 21d SMA vs 200d SMA (trend/bear) + ATR(14) z-score vs 252d median (high/low vol). Log regime state each bar, display in bot status output.
-- **Why:** Every position-sizing/regime overlay has failed (USDT hedge, BTC scalar, chop filter, drawdown trigger). We have no regime detection. We cannot reduce exposure when the strategy is in a hostile chop environment. The monitor doesn't fix this — it just makes it VISIBLE.
-- **Note:** Not a trading signal. Not a position sizing trigger. Pure transparency.
-- **Status:** NOT BUILT. Needs ~20 lines added to live_turtle_chandelier.rs.
+## 16. Multi-Timeframe Confirmation (4h→1d Entry Filter) — NEW
+- **Concept:** Require 4h close > 4h SMA(21) as entry confirmation before daily Turtle signal. Not regime switching — just noise filter on entry.
+- **Why promising:** 2026 YTD whipsaw is regime-inherent. ATR entry filter failed (trade-starving). 4h trend confirmation is qualitatively different — aligns daily breakout with short-term trend direction.
+- **Risk:** ATR filter failed with same mechanism — could be trade-starving. Only build harness to know.
+- **Status:** NOT TESTED. Needs `multitimeframe_turtle_walkforward.rs`.
+
+## 17. Equity Portfolio Integration (SPY/QQQ/GLD + Crypto) — NEW
+- **Concept:** Combined Turtle portfolio: BTC, ETH, SOL, SPY, QQQ, GLD. All have ≥53% OOS pass. Equities lower vol, negatively correlated in crashes.
+- **Hypothesis:** Adding SPY/QQQ reduces MaxDD 10-15pp without proportional return reduction.
+- **Why this matters:** Crypto equity Sharpe (~1.04) comparable to SPY (0.87). SPY W00 COVID: -36% → Turtle -2.4%. Same crisis protection mechanism.
+- **Risk:** US equity weekends/gaps create signal artifacts. 24/7 crypto vs equity data alignment needs care.
+- **Status:** NOT TESTED. Per-asset validated (SPY 88%, QQQ 76%, GLD 53%), combined portfolio walk-forward NOT tested.
+
+## 18. Drawdown-Adaptive Signal Tightening — NEW
+- **Concept:** When portfolio drawdown > 15%, raise entry threshold (EP=21→EP=25) + add 4h SMA confirmation. Revert when drawdown recovers. Changes SIGNAL QUALITY not position size.
+- **Why different from failed overlays:** USDT hedge/BTC scalar/drawdown trigger all changed risk budget (position size). This changes entry quality — tighten requirements when already underwater.
+- **Risk:** ATR entry filter (similar concept) destroyed pass rate. Cautious — one test then graveyard if it fails.
+- **Status:** NOT TESTED. Needs dedicated walk-forward harness.
