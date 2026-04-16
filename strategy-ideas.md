@@ -100,13 +100,19 @@
 - **Risk:** ATR entry filter (similar concept) destroyed pass rate. Cautious — one test then graveyard if it fails.
 - **Status:** NOT TESTED. Needs dedicated walk-forward harness.
 
-## 19. CTREND OOS Equity Validation — URGENT (2026-04-16)
-- **Concept:** `progress_equity_curves.rs` shows CTREND 1438x, Sharpe 5.17. This is likely an IN-SAMPLE artifact. The harness runs `StrategyKind::CTRend` with default ema_fast=50, but:
-  - ema_fast=50: OOS walk-forward Sharpe = -13.017 (NEGATIVE), 67.9% pass < 70%
-  - ema_fast=60 winner: OOS Sharpe = -25.163 (still negative), 85.7% pass
-- The 1438x equity is computed from running on ALL bars (in-sample), not from OOS windows
-- **The concern:** Like BollingerReversion's +5404 Sharpe before we killed it — an impressive number with no OOS validation
-- **Why critical:** If we post CTREND 1438x to Noah in Discord, we may be showing a mirage
-- **Test:** Run `dynamic_trend_walkforward.rs` with ema_fast=60 on Base5, export OOS equity curve
-- **Pass criteria:** OOS equity > 10x AND Sharpe > 0.5 → valid candidate. Otherwise → GRAVEYARD.
-- **Status:** READY TO RUN (no API keys needed)
+## 19. CTREND OOS Equity Validation — URGENT (2026-04-16) — PARTIALLY RESOLVED
+- **Concept:** `progress_equity_curves.rs` shows CTREND 1438x, Sharpe 5.17. This is an IN-SAMPLE artifact. The harness runs `StrategyKind::CTRend` with fixed 21-bar hold on ALL bars — no OOS windows.
+- **What was done:** `dynamic_trend_walkforward.rs` with ema_fast=60 tested on Base5. Result: 6/7 pass (85.7%), Sharpe +2.01. The EMA crossover signal is GENUINE.
+- **Critical problem (evening critique):** PLAN.md claimed "CTREND → REMOVED from progress chart" but the PNG was NEVER regenerated. The chart STILL shows 1438x. **The fix was documented but not executed.**
+- **Remaining action:** Remove CTREND from progress chart OR run proper OOS equity for the momentum signal version. Do NOT let another day pass with an in-sample artifact (1438x) displayed as if validated.
+- **Status:** INCOMPLETE — chart fix not executed.
+
+## 20. Monte Carlo Overfitting Test for CTREND — NEW (2026-04-16)
+- **Concept:** CTREND's 1438x equity might be overfitted to specific price patterns in the data. Run Monte Carlo permutation test:
+  1. Shuffle daily returns within each year-block (preserve volatility structure per year)
+  2. Re-run CTREND signal on shuffled data 100 times
+  3. If median shuffled result < 100x → artifact. If 1000x+ survives → genuine edge.
+- **Why this vs walk-forward:** Walk-forward tests temporal stability. Monte Carlo tests overfitting to price pattern structure. This is the honest test — it's what caught BollingerReversion (+5404 DOGE was look-ahead contamination).
+- **Method:** Generate synthetic price series via block-wise random permutation of returns. Run CTREND signal on synthetic series. Compare distribution of outcomes to real outcome (1438x).
+- **Status:** NOT TESTED. No API keys needed.
+- **File:** `examples/ctrend_monte_carlo.rs` (new)
