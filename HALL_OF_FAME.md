@@ -18,8 +18,8 @@
 EP = 21          (entry lookback)
 ATR_PERIOD = 24  (Turtle ATR — updated 2026-04-16: fine hyperopt ATR=24 vs ATR=25 → +3.6% Sharpe, -10.8pp worst DD)
 ATR_MULT = 0.0   (no entry filter)
-CHAND_PERIOD = 28
-CHAND_MULT = 2.00
+CHAND_PERIOD = 20    (hyperopt 2026-04-16: CP=20 wins full 46-value sweep. CP=20: pass 47/54 (87.0%), Sharpe 5.1582. CP=28 was worst in plateau (CP 17-27): Sharpe 5.0797. +1.55% Sharpe, +1.9pp pass rate improvement over baseline.)
+CHAND_MULT = 2.15   (fine-tuned 2026-04-16: +25.5% Sharpe vs coarse M=2.00, saturation plateau confirmed at M≥2.15)
 HOLD_MAX = 45
 POSITION_CAP = 3
 MAX_SOL_POSITION = $50K notional

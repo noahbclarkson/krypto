@@ -28,8 +28,8 @@ const TEST_BARS: usize = 252;
 const HOLD_MAX: usize = 45;
 const TAKER_FEE: f64 = 0.001;
 const POSITION_CAP: usize = 3;
-const CHAND_PERIOD: usize = 28;
-const CHAND_MULT: f64 = 2.00;
+const CHAND_PERIOD: usize = 20;  // hyperopt 2026-04-16: full sweep, +1.55% Sharpe vs CP=28
+const CHAND_MULT: f64 = 2.15;     // hyperopt 2026-04-16: fine sweep, saturation plateau M≥2.15
 const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;

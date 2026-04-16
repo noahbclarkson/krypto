@@ -375,8 +375,10 @@ async fn main() -> Result<()> {
                  cp, gp, gs, gr, gdd, pp, gt, marker);
     }
 
-    // Find winner
-    let best = summary.iter().max_by_key(|r| r.1).map(|r| r.0).unwrap_or(28);
+    // Find winner — primary: max Sharpe (best performance), secondary: max pass count (robustness tiebreaker)
+    let mut sorted_by_sharpe = summary.clone();
+    sorted_by_sharpe.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap().then(b.1.cmp(&a.1)));
+    let best = sorted_by_sharpe.first().map(|r| r.0).unwrap_or(28);
     let baseline_sharpe = summary.iter().find(|r| r.0 == 28).map(|r| r.2).unwrap_or(0.0);
     let winner_sharpe = summary.iter().find(|r| r.0 == best).map(|r| r.2).unwrap_or(0.0);
     let winner_pass = summary.iter().find(|r| r.0 == best).map(|r| r.1).unwrap_or(0);
@@ -396,13 +398,14 @@ async fn main() -> Result<()> {
     }
     eprintln!("\nCSV: {}", CSV_OUT);
 
-    // Equity curve CSV for chart candidates
-    let mut runner_ups: Vec<usize> = cp_vals.iter().copied().collect();
-    runner_ups.sort_by_key(|&cp| (cp as i64 - best as i64).abs() as i64);
-    let runner_ups: Vec<usize> = runner_ups.into_iter().filter(|&cp| cp != best).take(2).collect();
+    // Equity curve CSV for chart candidates — select by Sharpe (performance), not distance
+    // Sort all non-best CPs by global Sharpe descending, take top 2 as runner-ups
+    let mut perf_sorted: Vec<(usize, f64, usize)> = summary.iter().map(|r| (r.0, r.2, r.1)).collect();
+    perf_sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap().then(b.2.cmp(&a.2)));
+    let runner_ups: Vec<usize> = perf_sorted.iter().filter(|&&(cp, _, _)| cp != best).take(2).map(|(cp, _, _)| *cp).collect();
 
     let mut chart_cps = vec![best, 28];
-    chart_cps.extend(runner_ups);
+    chart_cps.extend(runner_ups.iter().copied());
     chart_cps.sort(); chart_cps.dedup();
 
     let mut ef = File::create(EQUITY_CSV)?;
