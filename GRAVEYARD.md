@@ -53,3 +53,8 @@ Everything else has failed OOS validation.
   - Return: +4.1% vs +28.8% (-24.7pp)
 - Mechanism: BTC dominates DV ranking → CAP=3 excludes SPY/QQQ/GLD in most windows
 - Verdict: Equities hurt Turtle portfolio. Keep crypto-only production.
+
+## Unranked Portfolio Construction (2026-04-16)
+- **Result:** 5/6 pass, Sharpe=0.97, DD=40.3%, WR=42.7% (vs ranked 6/6, Sharpe=2.54, DD=59.3%, WR=52.7%)
+- **Key Reason:** The 2026-04-15 "374,884x equity" claim was a simulation artifact. `entry_ranking_audit.rs` did not properly track concurrent position overlap. Ranked concentrates capital in top DV symbols — the opposite of what was claimed. Concentration beats diversification in Turtle trend-following.
+- **VERDICT:** Unranked portfolio construction is graveyard. Ranked (production) is validated.
