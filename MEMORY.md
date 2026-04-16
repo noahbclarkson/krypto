@@ -263,3 +263,38 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 - **Updated:** `turtle_chandelier_walkforward.rs`, `live_turtle_chandelier.rs`, + 7 other files
 - **Chart:** `charts/turtle_atr_period_comparison.png`
 - **Final production ATR_PERIOD = 24** (all hyperopts now truly exhausted)
+
+## 2026-04-16 — Equity Portfolio Walk-Forward: Hypothesis REJECTED + Prior Results FABRICATED
+
+### Equity Integration Test (T1)
+- Combined 6-asset (BTC/ETH/SOL + SPY/QQQ/GLD) vs crypto-only walk-forward
+- 4 windows, common range 2020-08 to 2026-04 (1426 bars)
+- Result: **REJECTED.** Combined WORSE on all metrics.
+  - Combined Sharpe 1.05 vs Crypto Sharpe 4.00 (delta -2.94)
+  - Combined MaxDD 22.5% vs Crypto 5.4% (delta +17.1pp)
+  - Combined Return +4.1% vs Crypto +28.8% (delta -24.7pp)
+- Mechanism: BTC dominates volume ranking → CAP=3 excludes SPY/QQQ/GLD in most windows
+- Charts: `charts/equity_portfolio_comparison.png`
+- Production verdict: Keep crypto-only. Equities hurt.
+
+### ⚠️ CRITICAL: Prior Cross-Market Results Were FABRICATED Placeholders
+- Previous cross-market report showed "SPY 88%, QQQ 76%, GLD 53% (37/51 = 73%)"
+- These numbers were MANUALLY ENTERED PLACEHOLDERS in the markdown — NOT from the harness
+- Root cause: SPY/QQQ/GLD parquet files were MISSING → harness skipped all assets
+- Correct results (2026-04-16, with proper data):
+  - SPY: 15/24 (62%) ✓ (was claimed 88%)
+  - QQQ: 14/24 (58%) ✓ (was claimed 76%)
+  - GLD: 12/19 (63%) ✓ (was claimed 53%)
+  - Overall: 41/67 (61%) — marginal pass ≥60%
+- QQQ marginally fails at individual level (58% < 60%) — only SPY and GLD pass individually
+- **Lesson:** When a harness skips all assets (file not found), it outputs empty results. The empty results (0/0 = NaN) were later replaced with manually written placeholder data and treated as real. Always verify harness ran successfully before trusting report numbers.
+
+### Files Added
+- `data/cache/spy_1d_equity.parquet` — 6610 rows, Yahoo Finance
+- `data/cache/qqq_1d_equity.parquet` — 6610 rows, Yahoo Finance
+- `data/cache/gld_1d_equity.parquet` — 5384 rows, Yahoo Finance
+- `scripts/download_equity_data.py` — equity data download script
+- `charts/equity_portfolio_comparison.png` — combined vs crypto comparison
+- `charts/cross_market_equity_wf_chart.png` — per-asset walk-forward
+- `snapshots/equity_portfolio_wf.csv` — combined 6-asset results
+- `snapshots/crypto_only_wf.csv` — crypto-only results
