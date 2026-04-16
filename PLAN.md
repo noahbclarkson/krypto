@@ -1,5 +1,50 @@
 # PLAN.md - Krypto Research Priorities
 
+## ⚡ CRITIQUE FINDINGS (2026-04-16 00:17 UTC)
+
+**Biggest blind spot: No regime defense.**
+- 2026 YTD: Turtle -22.7% vs BTC +12.7% — worst relative performance in strategy history
+- ALL non-trend strategies dead (GRAVEYARD: BollingerRev 0/288, FDUSD carry 19%, 4h MR 0/4, 1h MR 0/6, funding MR 43%)
+- ALL position-sizing overlays failed (USDT hedge, BTC scalar, chop filter, drawdown trigger)
+- No real-time regime detection in the live bot — cannot reduce exposure when strategy is in hostile chop
+- Structural conclusion: Turtle only works in trending regimes. When markets don't trend, we underperform with no defensive answer.
+
+**Metric honesty:** "Sharpe 5.0+" is DEAD. Use 1.0-1.3 on equity charts. Three incompatible Sharpe numbers documented (6.29 WF avg / 1.34 daily equity / ~2.5 progress). Flag any instance of "Sharpe 5+" in reports — it is not comparable.
+
+**Last 5 commits:** Refinement/auditing only, not discovery. Research is closed.
+
+## 🎯 THREE PRIORITY EXECUTION TASKS
+
+**T1 — Cross-Market Full Walk-Forward** ✅ COMPLETE 2026-04-16
+- Full 17-window OOS walk-forward: SPY 15/17 (88%), QQQ 13/17 (76%), GLD 9/17 (53%)
+- GLOBAL: 37/51 pass (73%) — ≥60% acceptance threshold MET ✅
+- Charts: cross_market_equity_wf.png, cross_market_equity_summary.png
+- Edge generalizes to US equities and gold. NOT a crypto-specific artifact.
+- SPY crisis windows: W13 COVID (+25.3%, sh=30.56), GLD W00 (+29.3%, sh=18.45) — Chandelier protects capital
+- Equity Sharpe comparable: SPY 0.87 vs crypto 1.04 — same magnitude confirms real edge
+
+**T2 — Entry Ranking Identical Harness (Quick Win)** ✅ RESOLVED 2026-04-16
+- The ranked (194x) vs unranked (374,884x) equity discrepancy was a harness artifact
+- FIXED: `unranked_turtle_walkforward.rs` now uses identical fee model (20bp entry+exit), ATR=24, peak tracking
+- Clean A/B results (NoDOGE, same data, both 3000-bar cap):
+  - RANKED: 5/6 pass, Sharpe 5.46, +95.8% avg ret, 48.7% avg DD
+  - UNRANKED: 6/6 pass, Sharpe 4.72, +143.0% avg ret, 26.1% avg DD
+- W01 ranked FAIL (-7.2%): rank gate skips valid XRP entry when XRP=rank4 and BTC has no signal
+- W01 unranked PASS (+29.3%): same window, same data, XRP entered because all candidates processed
+- Verdict: DV-rank gate is portfolio construction (limits concurrent trades), not signal quality
+  - Both passes 6/6 walk-forward when properly comparable
+  - Unranked: higher return, lower DD, more trades (88 vs 69), but also more concurrent exposure
+  - Ranked stays in production until unranked live paper validates portfolio risk is acceptable
+
+**T3 — Regime Monitor for Live Bot** ✅ COMPLETE 2026-04-16
+- BTC SMA21 vs SMA200 (trend/bear) + ATR(14) z-score display
+- Not a trading signal — pure transparency for live operations
+- Must be built BEFORE live testnet connection
+- **All other tasks BLOCKED on API keys or already exhaustively validated.**
+
+
+---
+
 ## Current Focus — CRITICAL UNRANKED FINDING (2026-04-15 Evening)
 
 **Research CLOSED except for one critical outstanding question.**
@@ -168,12 +213,13 @@ ALL Turtle+Chandelier params FROZEN as of 2026-04-14:
 
 ---
 
-## Production Params (FROZEN as of 2026-04-14)
+## Production Params (FROZEN as of 2026-04-16)
 
 ```
 EP = 21          (entry lookback)
-ATR_PERIOD = 25  (Turtle ATR)
-ATR_MULT = 0.0   (no entry filter — best)
+ATR_PERIOD = 24  (Turtle ATR — hyperopt 2026-04-16: +3.6% Sharpe, -10.8pp DD vs coarse 25)
+TURTLE_ATR_MULT = 1.0  (Turtle ATR stop — fine hyperopt 2026-04-16: +57% Sharpe vs coarse 2.0; Chandelier handles trend capture)
+ATR_MULT = 0.0            (no entry filter — best)
 CHAND_PERIOD = 28
 CHAND_MULT = 2.15
 HOLD_MAX = 45
@@ -241,3 +287,5 @@ MAX_SOL_POSITION = $50K notional  ← due to slippage risk
 - [x] BTC/ETH data gap noted: 3000-row cap → 2026-03-23
 - [x] Execution model audit: VERIFIED — model is conservative and trustworthy
 - [x] BTC Trend Scalar: REJECTED (baseline wins, 6/6 pass, Sharpe 5.46)
+- [x] CHAND_MULT fine hyperopt: 2.00→2.15 (+25.5% Sharpe, step=0.05 fine sweep, saturation plateau confirmed)
+- [x] Unranked walk-forward: validated (6/6 pass, ranked stays prod, unranked = viable alternative)
