@@ -1,6 +1,6 @@
-# Strategy Ideas — Updated 2026-04-16
+# Strategy Ideas — Updated 2026-04-16 (Evening Critique)
 
-*2026-04-16 critique: Research CLOSED. Three honest execution tasks remain. All non-trend strategies GRAVEYARD'd. Turtle+Chandelier params FROZEN. **Stop auditing. Ship HALL_OF_FAME.md/GRAVEYARD.md, test A/D sleeve, re-run SOL slippage constraint, then live testnet.** The "Sharpe 5.0+" claim is dead — use 1.0-1.3 (daily equity).*
+*2026-04-16 evening critique: **CRITICAL** — CTREND 1438x on progress chart is likely in-sample artifact. ema_fast=50 default has negative OOS Sharpe (-13.017). ema_fast=60 winner still negative (-25.163) but 85.7% pass. The progress chart runs strategies on all bars without proper OOS windows. **Do NOT post CTREND equity to Discord until OOS validation completes.** See memory/2026-04-16-evening-critique.md for full critique.*
 
 ---
 
@@ -99,3 +99,14 @@
 - **Why different from failed overlays:** USDT hedge/BTC scalar/drawdown trigger all changed risk budget (position size). This changes entry quality — tighten requirements when already underwater.
 - **Risk:** ATR entry filter (similar concept) destroyed pass rate. Cautious — one test then graveyard if it fails.
 - **Status:** NOT TESTED. Needs dedicated walk-forward harness.
+
+## 19. CTREND OOS Equity Validation — URGENT (2026-04-16)
+- **Concept:** `progress_equity_curves.rs` shows CTREND 1438x, Sharpe 5.17. This is likely an IN-SAMPLE artifact. The harness runs `StrategyKind::CTRend` with default ema_fast=50, but:
+  - ema_fast=50: OOS walk-forward Sharpe = -13.017 (NEGATIVE), 67.9% pass < 70%
+  - ema_fast=60 winner: OOS Sharpe = -25.163 (still negative), 85.7% pass
+- The 1438x equity is computed from running on ALL bars (in-sample), not from OOS windows
+- **The concern:** Like BollingerReversion's +5404 Sharpe before we killed it — an impressive number with no OOS validation
+- **Why critical:** If we post CTREND 1438x to Noah in Discord, we may be showing a mirage
+- **Test:** Run `dynamic_trend_walkforward.rs` with ema_fast=60 on Base5, export OOS equity curve
+- **Pass criteria:** OOS equity > 10x AND Sharpe > 0.5 → valid candidate. Otherwise → GRAVEYARD.
+- **Status:** READY TO RUN (no API keys needed)

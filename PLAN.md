@@ -1,43 +1,71 @@
 # PLAN.md - Krypto Research Priorities
 
-## ⚡ CRITIQUE FINDINGS (2026-04-16 00:17 UTC)
+## ⚡ CRITIQUE FINDINGS (2026-04-16 16:50 UTC — Evening)
 
-**Biggest blind spot: No regime defense.**
-- 2026 YTD: Turtle -22.7% vs BTC +12.7% — worst relative performance in strategy history
-- ALL non-trend strategies dead (GRAVEYARD: BollingerRev 0/288, FDUSD carry 19%, 4h MR 0/4, 1h MR 0/6, funding MR 43%)
-- ALL position-sizing overlays failed (USDT hedge, BTC scalar, chop filter, drawdown trigger)
-- No real-time regime detection in the live bot — cannot reduce exposure when strategy is in hostile chop
-- Structural conclusion: Turtle only works in trending regimes. When markets don't trend, we underperform with no defensive answer.
+**Critical finding: CTREND 1438x may be in-sample artifact.**
+- `progress_equity_curves.rs` runs CTREND with ema_fast=50 (default)
+- ema_fast=50: OOS walk-forward Sharpe = -13.017 (NEGATIVE), pass rate 67.9% < 70%
+- ema_fast=60 winner: OOS Sharpe = -25.163, pass 85.7% (still negative, but fewer failures)
+- The 1438x equity shown in the progress chart is likely from in-sample runs on all bars
+- We have NO OOS-validated equity curve for CTREND — it could be 0x or 1000x, we don't know
+- **Do NOT post CTREND equity to Discord until OOS validation is complete.**
 
-**Metric honesty:** "Sharpe 5.0+" is DEAD. Use 1.0-1.3 on equity charts. Three incompatible Sharpe numbers documented (6.29 WF avg / 1.34 daily equity / ~2.5 progress). Flag any instance of "Sharpe 5+" in reports — it is not comparable.
+**Progress chart CTREND/AD Sharpe may be in-sample artifact.**
+- Turtle's equity was fixed (forward-fill bug → correct Sharpe 0.97)
+- CTREND and A/D may have similar bugs or be running in-sample without proper OOS windows
+- DDBudget is milestone-aggregated (not daily equity — not comparable to Turtle)
+- The "Sharpe 5.17" for CTREND is computed from in-sample equity, not from OOS windows
 
-**Last 5 commits:** Refinement/auditing only, not discovery. Research is closed.
+**TURTLE_ATR_MULT in PLAN.md is wrong (1.0 vs 2.0 in code).**
+- PLAN.md shows `TURTLE_ATR_MULT = 1.0` but code has `= 2.00`
+- Reference to "fine hyperopt 2026-04-16" is incorrect — that was ATR_PERIOD, not ATR_MULT
+- Fix needed in PLAN.md
+
+**Biggest blind spot: no live testnet data, all backtest.**
+- 2026 YTD: Turtle -22.7% vs BTC +12.7% — paper mode suggests real underperformance
+- If backtest was truly honest, 2026 YTD should be within confidence interval — it wasn't
+- SOL slippage 3.7× model miss is documented but other assets may have similar issues
 
 ## 🎯 THREE PRIORITY EXECUTION TASKS
 
-**T1 — Multi-Timeframe Confirmation Harness (Medium Probability)** ✅ PENDING
-- Build `multitimeframe_turtle_walkforward.rs` — 4h SMA(21) as daily entry confirmation
-- Mechanism: daily Turtle entry requires 4h close > 4h SMA(21) (bull) or < SMA(21) (bear)
-- NOT a regime switch — just a noise filter on entry
-- Run 6-window OOS walk-forward on Base5
-- If pass rate ≥ 70% AND avg Sharpe ≥ 5.0 → promising (then test on SPY/QQQ/GLD)
-- If pass rate < 60% → graveyard immediately (mechanism too similar to failed ATR filter)
-- Estimated: 3-5 hours to build and run
+**T1 — CTREND OOS Equity Validation (highest value, no blockers)**
+- Run `dynamic_trend_walkforward.rs` with ema_fast=60 on Base5 (6 windows)
+- Export OOS equity curve and compare to progress chart claim (1438x)
+- If OOS equity < 10x or Sharpe < 0.5 → GRAVEYARD, remove from progress chart
+- If OOS equity validates → update progress chart with proper OOS equity
+- **No Discord update until this is resolved**
 
-**T2 — HALL_OF_FAME.md Cross-Market Data Integrity Fix** ✅ PENDING
-- HALL_OF_FAME.md still shows fabricated SPY/QQQ/GLD numbers: "88%, 76%, 53%"
-- Correct results (2026-04-16): SPY 62% (15/24), QQQ 58% (14/24), GLD 63% (12/19)
-- QQQ fails at individual level (58% < 60%)
-- Fix the cross-market table in HALL_OF_FAME.md with real data
-- Also: verify GRAVEYARD.md has no similarly fabricated numbers
-- Estimated: 30 minutes
+**T2 — Fix TURTLE_ATR_MULT in PLAN.md**
+- Change `TURTLE_ATR_MULT = 1.0` → `TURTLE_ATR_MULT = 2.0`
+- Update comment to reference correct hyperopt (2026-04-12-atr-mult.md)
+- Simple doc fix, no code change needed
+
+**T3 — Prepare Unranked vs Ranked OOS Equity Harness**
+- Run `unranked_vs_ranked_walkforward.rs` or equivalent with OOS equity export
+- Decision needed before live production switch (ranked stays prod, unranked is alternative)
+- Can run locally; result should be ready when API keys arrive
+
+**BLOCKED:** Live testnet (API keys from Noah).
+
+## 🎯 THREE PRIORITY EXECUTION TASKS — ALL RESOLVED (2026-04-16)
+
+**T1 — Multi-Timeframe Confirmation Harness** 🪦 REJECTED (2026-04-16)
+- `multitimeframe_turtle_walkforward.rs`: 4h SMA(21) filter destroys Turtle edge
+- Baseline: 6/7 pass (86%), Sharpe 2.00. +4h filter: 5/7 pass (71%), Sharpe 1.86
+- Same mechanism as failed ATR entry filter — entry confirmation filters are trade-starving
+- strategy-ideas.md entry 16 updated. No further entry-filter ideas remain untested.
+
+**T2 — HALL_OF_FAME.md Cross-Market Data Integrity** ✅ VERIFIED OK
+- HALL_OF_FAME.md shows per-asset OOS Sharpe only (SPY 0.87, GLD 0.87, QQQ 0.76) — correct
+- Fabricated pass-rate percentages ("SPY 88%, QQQ 76%, GLD 53%") were ONLY in `cross_market_equity_wf.md` report (not in HALL_OF_FAME.md)
+- Real cross-market walk-forward results (2026-04-16): SPY 62% (15/24), QQQ 58% (14/24), GLD 63% (12/19)
+- QQQ marginally fails at individual level (58% < 60%). Overall 41/67 (61%) — marginal pass.
+- strategy-ideas.md entries 13 and 17 updated with correct numbers and REJECTED status.
 
 **T3 — Live Testnet (BLOCKED on API Keys)**
 - Run 30-day live paper on testnet
-- Compare live vs backtest equity Sharpe (1.34 expected)
-- If live Sharpe > 1.0 after 30 days → proceed to stage trading
-- If live Sharpe < 0.5 → diagnose maker vs taker drift, execution lag, signal quality
-- Only remaining technical blocker: Noah's Binance testnet API keys
+- Compare live vs backtest equity Sharpe (~1.0-1.3 honest)
+- Only remaining blocker: Noah's Binance testnet API keys
 
 **BLOCKED:** Live testnet (API keys from Noah).
 
@@ -217,7 +245,7 @@ ALL Turtle+Chandelier params FROZEN as of 2026-04-14:
 ```
 EP = 21          (entry lookback)
 ATR_PERIOD = 24  (Turtle ATR — hyperopt 2026-04-16: +3.6% Sharpe, -10.8pp DD vs coarse 25)
-TURTLE_ATR_MULT = 1.0  (Turtle ATR stop — fine hyperopt 2026-04-16: +57% Sharpe vs coarse 2.0; Chandelier handles trend capture)
+TURTLE_ATR_MULT = 2.0  (Turtle ATR stop — hyperopt 2026-04-12: M=2.0 optimal, Sharpe 6.17, 93% pass. M<2.0 degrades Sharpe, M>=2.5 never fires first. See memory/hyperopt-2026-04-12-atr-mult.md.)
 ATR_MULT = 0.0            (no entry filter — best)
 CHAND_PERIOD = 28
 CHAND_MULT = 2.15
@@ -288,3 +316,16 @@ MAX_SOL_POSITION = $50K notional  ← due to slippage risk
 - [x] BTC Trend Scalar: REJECTED (baseline wins, 6/6 pass, Sharpe 5.46)
 - [x] CHAND_MULT fine hyperopt: 2.00→2.15 (+25.5% Sharpe, step=0.05 fine sweep, saturation plateau confirmed)
 - [x] Unranked walk-forward: validated (6/6 pass, ranked stays prod, unranked = viable alternative)
+- [ ] **CTREND OOS Equity Validation (NEW — highest priority): ema_fast=50 has negative OOS Sharpe (-13.017). ema_fast=60 winner has negative OOS Sharpe (-25.163) but 85.7% pass. Progress chart shows 1438x but this is likely in-sample artifact. Must run OOS equity test before any Discord update.**
+- [ ] Fix TURTLE_ATR_MULT in PLAN.md (shows 1.0, code has 2.00)
+- [ ] DDBudget equity — verify it's milestone-aggregated, not daily equity (not comparable to Turtle)
+
+## ⚠️ PROGRESS CHART BUG FIXED (2026-04-16 16:39 UTC)
+
+`progress_equity_curves.rs` `simulate_turtle_chandelier_equity()` had equity tracking bug:
+- Equity only written at trade exit bars; ~1258/2075 bars showed equity=1.0 (reset between trades)
+- Sharpe was computed from daily returns between 1.0 and real equity → **Sharpe 2.50 was WRONG**
+- **Corrected Turtle: Sharpe 0.97, MaxDD 41.5%** (honest daily equity — matches walk-forward harness ~1.04)
+- Fix: forward-fill `equity_curve[bar] = equity` at start of every bar
+- All other strategy Sharpe values (A/D 3.62, CTREND 5.17, DDBudget 7.07) were correct (different engine)
+- Final equity unchanged at 271x (last trade happened to be a big winner by coincidence)
