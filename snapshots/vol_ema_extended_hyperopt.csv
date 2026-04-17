@@ -1,0 +1,4 @@
+vl,method,avg_sharpe_nodoge,pass_rate_nodoge,total_windows,9way_avg_sharpe,9way_avg_ret,9way_pass_sum,9way_total_sum
+55,SMA,11.4468,100.0,6,6.9993,123.5,45,54
+53,SMA,11.4468,100.0,6,6.9179,122.7,44,54
+54,SMA,11.4468,100.0,6,6.9013,122.6,44,54
