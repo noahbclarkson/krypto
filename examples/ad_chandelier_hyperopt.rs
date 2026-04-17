@@ -9,8 +9,11 @@
 //!   - Hold 54 bars max
 //!
 //! TARGET: Chandelier(period, mult) for A/D dual-hat
-//!   - A/D currently uses CHAND_PERIOD=45, CHAND_MULT=2.5 (untested legacy default)
-//!   - Turtle+Chandelier production uses P=28, M=2.0 (validated)
+//!   - A/D currently uses CHAND_PERIOD=50, CHAND_MULT=3.5 (winner from sweep)
+//!     PRIOR LEGACY DEFAULT (P=45, M=2.5): untested baseline — confirmed suboptimal
+//!   - Turtle+Chandelier production uses P=20, M=2.15 (validated)
+//!   - A/D dual-hat uses DIFFERENT Chandelier params from Turtle-only (P=50 vs P=20)
+//!     Mechanism difference: A/D ranks by momentum → different entry set → different exit optimal
 //!   - Question: should A/D dual-hat use the SAME exit params as Turtle+Chandelier?
 //!
 //! SWEEP:
