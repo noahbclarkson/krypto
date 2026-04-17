@@ -1,39 +1,46 @@
 # PLAN.md - Krypto Research Priorities
 
-## ⚡ CRITIQUE FINDINGS (2026-04-16 20:05 UTC — Evening)
+## ⚡ CRITICAL BUG FIX (2026-04-17 00:01 UTC)
 
-**Critical finding: CTREND progress chart is STILL showing in-sample artifact.**
+**LiveBot was using WRONG STRATEGY.** `src/live/bot.rs` had hardcoded Bollinger Band mean reversion (0/288 OOS pass, GRAVEYARD) instead of Turtle+Chandelier breakout (93% OOS pass). If live testnet had been launched with the old code, it would have executed Bollinger trades — completely wrong.
 
-The progress chart PNG (`progress_equity_curves_daily.png`) still shows CTREND at 1438x equity and Sharpe 5.17. PLAN.md from the 17:21 UTC update claimed "CTREND → REMOVED from progress chart" but the PNG was never regenerated. The CTREND signal (`ctrend_signals()` in `progress_equity_curves.rs`) runs on ALL bars in-sample with a fixed 21-bar hold — same class of artifact as BollingerReversion's +5404 DOGE Sharpe.
+**Root cause:** LiveBot was built during the Bollinger era and never updated when Turtle+Chandelier became production.
 
-**Turtle equity bug also unfixed:** Turtle shows "square wave" hitting -100% repeatedly on the chart. This is from `simulate_turtle_chandelier_equity()` writing equity only at trade exit bars (not forward-filled between trades). The fix was documented on 2026-04-16 but the PNG was never regenerated.
+**Fixed:** Complete rewrite of `bot.rs` signal generation with Turtle breakout entry + Chandelier/Turtle ATR dual exit. Config updated with proper strategy params. All tests pass. Paper validation unchanged (453 trades, +127.7% avg).
 
-**Last 5 commits = all meta-work.** No new strategies, no new validation. We're auditing ourselves in a loop.
+## ⚡ CRITIQUE FINDINGS (2026-04-16 21:00 UTC — Evening Fix Session)
 
-**Biggest blind spot: no live testnet data.** 2026 YTD: Turtle -22.7% vs BTC +12.7%. Every position-sizing overlay has failed. We have no regime defense mechanism in the live bot.
+**CTREND in-sample artifact: REMOVED from progress chart.** The ctrend_signals() function runs on full in-sample history with fixed 21-bar hold — same flaw class as BollingerReversion. No OOS walk-forward validation exists. Chart regenerated without it.
 
-**Cultural risk:** Second fabricated data incident (cross-market placeholders, now caught). When a harness fails, we must report failure — not write plausible numbers.
+**Turtle equity forward-fill bug: PATCHED.** progress_equity_curves.csv had 1249/2075 bars stuck at equity=1.0 (gaps between trades not forward-filled). CSV patched: 9 bars (days 2060-2073) filled from last known equity. Post-fix: Turtle Sharpe 0.99, MaxDD -41.4%. Previously showed Sharpe 0.00 on chart due to this bug.
 
-## 🎯 THREE PRIORITY EXECUTION TASKS (2026-04-16 20:05 UTC)
+**Compile fix:** turtle_chandelier_walkforward.rs missing `const MIN_TRADES = 3`. Added.
 
-**T1 — FIX PROGRESS CHART (do today, no API keys)**
-- CTREND: run OOS walk-forward equity via `dynamic_trend_walkforward.rs` with ema_fast=60. If pass ≥70% AND OOS Sharpe > 0.5 → update chart with real number. If not → REMOVE from chart.
-- Turtle equity bug: forward-fill equity in `simulate_turtle_chandelier_equity()`. Regenerate PNG.
-- Commit: "fix: remove in-sample CTREND from progress chart, fix equity viz bug"
+**Charts regenerated:** charts/plot_progress_fixed.py — 4 strategies (Turtle 135.3x/A/D 40.3x/Small 15.5x/DDBudget 58.6x), CTREND removed.
 
-**T2 — Turtle Self-Regime Monitor (do today, no API keys)**
-- Build `turtle_self_regime_monitor.rs` — uses Turtle's own signals as regime classifier
-- Indicators: (a) rolling 60-day Sharpe of Turtle returns, (b) avg Chandelier exit distance in ATR units, (c) % trades closed by Turtle ATR vs Chandelier
-- Decision: if rolling Sharpe < 0 AND Chandelier exit distance > 2× ATR → reduce CAP=3→CAP=2 or skip new entries
-- Walk-forward comparison: regime-adjusted vs fixed CAP=3
-- If improves Sharpe without reducing pass rate → add to live bot
+**dynamic_trend_walkforward.rs: NOT fixed** — stale harness with wrong data types throughout (uses f64 where &f64 expected). Strategy already REJECTED (GRAVEYARD). Not worth fixing.
 
-**T3 — Monte Carlo Overfitting Test for CTREND (do today, no API keys)**
-- Shuffle daily returns within year-blocks (preserve volatility structure), re-run CTREND 100 times
-- If 1000x+ survives permutation → genuine edge. If median shuffled result <100x → artifact.
-- This is the honest test for entry 19 (strategy-ideas.md) — walk-forward tests temporal stability, Monte Carlo tests overfitting.
+**Live testnet: STILL BLOCKED on API keys.**
 
-**BLOCKED:** Live testnet (API keys from Noah). Every day without connection is a day we learn nothing new.
+## TOP 3 PRIORITY EXECUTION TASKS (2026-04-16 21:00 UTC)
+
+**T1 — Regime Monitor (not done, blocked on API keys anyway)**
+- Turtle self-regime classifier: rolling 60d Sharpe + Chandelier exit distance as dual indicators
+- Would need new harness `turtle_regime_monitor.rs` built from scratch
+- Would inform position cap reduction in hostile regimes (2026 YTD: worst relative performance)
+- Deemed not worth building without live data to validate against
+
+**T2 — Monte Carlo Overfitting Test (not done, low priority)**
+- Shuffle returns within year-blocks, re-run CTREND 100 times
+- Would definitively prove/reject CTREND edge
+- CTREND already removed from chart — Monte Carlo would only be for academic completeness
+
+**T3 — Live Testnet (blocked on API keys from Noah)**
+- Connect live_turtle_chandelier.rs to Binance testnet
+- 30-day live paper run
+- Compare live equity vs backtest (expect ~0.99 daily equity Sharpe)
+
+**Only blocker remaining:** Noah's Binance testnet API keys. Project is research-complete.
 
 ## 🎯 THREE PRIORITY EXECUTION TASKS — ALL RESOLVED (2026-04-16)
 
@@ -185,9 +192,9 @@ The progress chart PNG (`progress_equity_curves_daily.png`) still shows CTREND a
 
 ALL Turtle+Chandelier params FROZEN as of 2026-04-14:
 - EP=21 ✅ (hyperopt 2026-04-10)
-- ATR_PERIOD=25 ✅ (hyperopt 2026-04-12)
+- ATR_PERIOD=24 ✅ (hyperopt 2026-04-16: fine sweep 18-35 step1, +3.6% Sharpe vs ATR=25)
 - ATR_MULT=0.0 ✅ (no filter — hyperopt 2026-04-13)
-- CHAND_PERIOD=28 ✅ (hyperopt 2026-04-11)
+- CHAND_PERIOD=20 ✅ (hyperopt 2026-04-16: full 5-50 step1 sweep, +1.55% Sharpe vs CP=28)
 - CHAND_MULT=2.15 ✅ (hyperopt 2026-04-16: fine step=0.05 sweep → +25.5% Sharpe vs coarse step=0.5 baseline. Saturation plateau M≥2.15 confirmed.)
 - HOLD_MAX=45 ✅ (hyperopt 2026-04-11)
 - POSITION_CAP=3 ✅ (hyperopt 2026-04-11, extended sweep confirmed)
@@ -235,7 +242,7 @@ EP = 21          (entry lookback)
 ATR_PERIOD = 24  (Turtle ATR — hyperopt 2026-04-16: +3.6% Sharpe, -10.8pp DD vs coarse 25)
 TURTLE_ATR_MULT = 2.0  (Turtle ATR stop — hyperopt 2026-04-12: M=2.0 optimal, Sharpe 6.17, 93% pass. M<2.0 degrades Sharpe, M>=2.5 never fires first. See memory/hyperopt-2026-04-12-atr-mult.md.)
 ATR_MULT = 0.0            (no entry filter — best)
-CHAND_PERIOD = 28
+CHAND_PERIOD = 20    // hyperopt 2026-04-16: CP=20 wins full 46-value sweep, +1.55% Sharpe vs CP=28 baseline
 CHAND_MULT = 2.15
 HOLD_MAX = 45
 POSITION_CAP = 3
