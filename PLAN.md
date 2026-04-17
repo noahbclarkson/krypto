@@ -252,7 +252,7 @@ ALL Turtle+Chandelier params FROZEN as of 2026-04-17:
 - CHAND_MULT=2.15 ✅ (hyperopt 2026-04-16: fine step=0.05 sweep → +25.5% Sharpe vs coarse step=0.5 baseline. Saturation plateau M≥2.15 confirmed.)
 - HOLD_MAX=45 ✅ (hyperopt 2026-04-11)
 - POSITION_CAP=3 ✅ (hyperopt 2026-04-11, extended sweep confirmed)
-- VOL_LOOKBACK=55 ✅ (hyperopt 2026-04-17: extensive 1-100 step1 sweep. Prior VL=2 sweep (1-14) was insufficient range — true optimum at VL=55 (+40% Sharpe vs VL=1). EMA never beats SMA. Plateau at VL=53-61. See memory/hyperopt-2026-04-17-vol-lookback-extended.md.)
+- VOL_LOOKBACK=55 → REVERTED to 2 (2026-04-17): Held-out test on W04/W05: VL=2 wins Base5 (+77.3%/+43.6%) vs VL=55 (+51.0%/+26.2%). NoDOGE same. VL=55 was overfitting to non-held-out windows in the global optimization. Reverted. See memory/2026-04-17.md.
 - **CHOP_FILTER: REJECTED (2026-04-14)** — destroys Sharpe in all configs
 
 ---
@@ -305,6 +305,8 @@ UNIVERSE = [BTC, ETH, SOL, XRP, DOGE]  (NoDOGE — ADA removed, was portfolio dr
 USE_CHOP_FILTER = FALSE  ← REJECTED
 MAX_SOL_POSITION = $50K notional  ← due to slippage risk
 ```
+
+VOL_LOOKBACK = 2  (2026-04-17 held-out test: VL=55 overfits on W04/W05 — reverted from VL=55)
 
 **DDBudget 3-Sleeve:** 72% walk-forward pass (39/54). Use walk-forward pass rates for comparison. The 7.x Sharpe on the progress chart is milestone-aggregated (NOT daily-compounded) — NOT comparable to Turtle's daily equity Sharpe. Not a standalone production candidate.
 
