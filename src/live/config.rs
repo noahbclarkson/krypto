@@ -2,6 +2,15 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Turtle+Chandelier strategy params (validated walk-forward, frozen 2026-04-16).
+pub const TURTLE_EP: usize = 21;
+pub const CHAND_PERIOD: usize = 20;
+pub const CHAND_MULT: f64 = 2.15;
+pub const TURTLE_ATR_PERIOD: usize = 24;
+pub const TURTLE_ATR_MULT: f64 = 2.0;
+pub const HOLD_MAX: usize = 45;
+pub const POSITION_CAP: usize = 3;
+
 /// Configuration for live trading bot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LiveConfig {
@@ -9,7 +18,7 @@ pub struct LiveConfig {
     pub api_key: Option<String>,
     /// API secret for Binance (set via environment variable in production)
     pub api_secret: Option<String>,
-    /// Trading symbols (e.g., ["BTCFDUSD", "ETHFDUSD"])
+    /// Trading symbols (e.g., ["BTCUSDT", "ETHUSDT"])
     pub symbols: Vec<String>,
     /// Kline interval (e.g., "1d", "4h", "1h")
     pub interval: String,
@@ -23,29 +32,58 @@ pub struct LiveConfig {
     pub use_testnet: bool,
     /// Dry run mode - no real orders placed
     pub dry_run: bool,
-    /// Stop loss multiplier for ATR (e.g., 0.3)
-    pub atr_stop_mult: f64,
-    /// Bollinger band period
+    // --- Turtle+Chandelier strategy params (frozen) ---
+    /// Turtle entry lookback (default: 21)
+    pub ep: usize,
+    /// Chandelier ATR period (default: 20)
+    pub chand_period: usize,
+    /// Chandelier ATR multiplier (default: 2.15)
+    pub chand_mult: f64,
+    /// Turtle ATR stop period (default: 24)
+    pub atr_period: usize,
+    /// Turtle ATR stop multiplier (default: 2.0)
+    pub atr_mult: f64,
+    /// Max hold bars (default: 45)
+    pub hold_max: usize,
+    /// Max concurrent positions (default: 3)
+    pub position_cap: usize,
+    // --- Legacy fields (kept for backward compat, unused by signal logic) ---
+    #[serde(default = "default_bb_period")]
     pub bb_period: usize,
-    /// Bollinger band standard deviation
+    #[serde(default = "default_bb_std")]
     pub bb_std: f64,
+    #[serde(default = "default_atr_stop_mult")]
+    pub atr_stop_mult: f64,
 }
+
+fn default_bb_period() -> usize { TURTLE_EP }
+fn default_bb_std() -> f64 { CHAND_MULT }
+fn default_atr_stop_mult() -> f64 { TURTLE_ATR_MULT }
 
 impl Default for LiveConfig {
     fn default() -> Self {
         Self {
             api_key: None,
             api_secret: None,
-            symbols: vec!["BTCFDUSD".to_string()],
+            symbols: vec!["BTCUSDT".to_string()],
             interval: "1d".to_string(),
             initial_capital: 10_000.0,
-            max_position_size: 1.0,
-            fee_pct: 0.0, // 0% maker on FDUSD
+            max_position_size: 1.0 / POSITION_CAP as f64,
+            fee_pct: 0.0004, // ~0.04% RT (conservative taker)
             use_testnet: true,
             dry_run: true,
-            atr_stop_mult: 0.3,
-            bb_period: 20,
-            bb_std: 2.0,
+            // Turtle+Chandelier (frozen 2026-04-16)
+            ep: TURTLE_EP,
+            chand_period: CHAND_PERIOD,
+            chand_mult: CHAND_MULT,
+            atr_period: TURTLE_ATR_PERIOD,
+            atr_mult: TURTLE_ATR_MULT,
+            hold_max: HOLD_MAX,
+            position_cap: POSITION_CAP,
+            // Legacy
+            bb_period: TURTLE_EP,
+            bb_std: CHAND_MULT,
+            atr_stop_mult: TURTLE_ATR_MULT,
         }
     }
 }

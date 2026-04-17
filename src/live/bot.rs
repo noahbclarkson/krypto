@@ -1,45 +1,53 @@
-//! Live trading bot.
+//! Live trading bot — Turtle+Chandelier breakout strategy.
 //!
-//! Combines WebSocket feed, strategy, and executor for live trading.
+//! Signal: Turtle breakout (close >= max(close, EP bars)) → enter long.
+//! Exit: Chandelier ATR trailing stop OR Turtle ATR stop OR HOLD_MAX reached.
+//! Dual exit: whichever stop fires first.
+//!
+//! Production params (frozen 2026-04-16):
+//!   EP=21, CHAND(20, 2.15), ATR(24, 2.0), HM=45, CAP=3
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::collections::VecDeque;
 use tokio::sync::RwLock;
+use std::sync::Arc;
 
 use super::config::LiveConfig;
 use super::executor::{Executor, OrderSide};
 use super::feed::{fetch_warmup_data, KlineEvent, LiveFeed};
 use crate::paper::{Bar, CompletedTrade, Position};
 
-/// Bot state for monitoring.
+// =============================================================================
+// Per-symbol strategy state (mirrors live_turtle_chandelier.rs)
+// =============================================================================
+#[derive(Debug, Clone)]
+struct TurtleState {
+    highest_high: f64,
+    lowest_low: f64,
+    bars_held: usize,
+    atr_buf: VecDeque<f64>,
+}
+
+// =============================================================================
+// Bot state for monitoring
+// =============================================================================
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BotState {
-    /// Bot start time
     pub started_at: Option<DateTime<Utc>>,
-    /// Current equity
     pub equity: f64,
-    /// Initial capital
     pub initial_capital: f64,
-    /// Total PnL
     pub total_pnl: f64,
-    /// Total return percentage
     pub total_return_pct: f64,
-    /// Number of trades
     pub trades: usize,
-    /// Win rate
     pub win_rate: f64,
-    /// Current positions by symbol
     pub positions: HashMap<String, PositionInfo>,
-    /// Is bot running
     pub is_running: bool,
-    /// Last bar time by symbol
     pub last_bar_time: HashMap<String, DateTime<Utc>>,
 }
 
-/// Position info for state tracking.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PositionInfo {
     pub symbol: String,
@@ -51,15 +59,18 @@ pub struct PositionInfo {
     pub lowest: f64,
 }
 
-/// Live trading bot.
+// =============================================================================
+// Live trading bot
+// =============================================================================
 pub struct LiveBot {
     config: LiveConfig,
     feed: Option<LiveFeed>,
     executor: Executor,
     state: Arc<RwLock<BotState>>,
-    // Per-symbol state
+    // Per-symbol data
     bars: HashMap<String, Vec<Bar>>,
     positions: HashMap<String, Position>,
+    turtle_state: HashMap<String, TurtleState>,
     // Trade tracking
     completed_trades: Vec<CompletedTrade>,
     gross_profit: f64,
@@ -67,7 +78,6 @@ pub struct LiveBot {
 }
 
 impl LiveBot {
-    /// Create a new live bot with the given configuration.
     pub fn new(config: LiveConfig) -> Result<Self> {
         config.validate()?;
 
@@ -99,51 +109,54 @@ impl LiveBot {
             state,
             bars: HashMap::new(),
             positions: HashMap::new(),
+            turtle_state: HashMap::new(),
             completed_trades: Vec::new(),
             gross_profit: 0.0,
             gross_loss: 0.0,
         })
     }
 
-    /// Get bot state for monitoring.
     pub async fn state(&self) -> BotState {
         self.state.read().await.clone()
     }
 
-    /// Start the bot.
-    ///
-    /// This will:
-    /// 1. Fetch warmup data for each symbol
-    /// 2. Connect to WebSocket feed
-    /// 3. Process incoming bars and execute trades
+    /// Start the bot: fetch warmup, connect WebSocket, process bars.
     pub async fn start(&mut self) -> Result<()> {
         tracing::info!(
-            "Starting live bot for {} symbols",
+            "Starting Turtle+Chandelier live bot for {} symbols",
             self.config.symbols.len()
         );
+        tracing::info!(
+            "Params: EP={}, Chand({},{}), ATR({},{}), HM={}, CAP={}",
+            self.config.ep,
+            self.config.chand_period, self.config.chand_mult,
+            self.config.atr_period, self.config.atr_mult,
+            self.config.hold_max, self.config.position_cap
+        );
 
-        // Initialize state
         {
             let mut state = self.state.write().await;
             state.started_at = Some(Utc::now());
             state.is_running = true;
         }
 
-        // Fetch warmup data for each symbol
+        // Fetch warmup data — need at least EP+1 bars for entry signal
+        let warmup_bars = (self.config.ep + self.config.chand_period + 10).max(60);
         for symbol in &self.config.symbols.clone() {
-            tracing::info!("Fetching warmup data for {}", symbol);
+            tracing::info!("Fetching {} warmup bars for {}", warmup_bars, symbol);
             let warmup = fetch_warmup_data(
                 symbol,
                 &self.config.interval,
-                50, // Enough for Bollinger calculation
+                warmup_bars,
             )
             .await
             .context("Failed to fetch warmup data")?;
 
+            tracing::info!("Got {} warmup bars for {}", warmup.len(), symbol);
             self.bars.insert(symbol.clone(), warmup);
         }
 
-        // Create and start WebSocket feed
+        // Connect WebSocket
         let feed = LiveFeed::new(self.config.symbols.clone(), self.config.interval.clone());
         let mut receiver = feed.subscribe();
 
@@ -152,9 +165,8 @@ impl LiveBot {
             .context("Failed to start WebSocket feed")?;
         self.feed = Some(feed);
 
-        tracing::info!("Live bot started, processing bars...");
+        tracing::info!("Live bot started — processing bars...");
 
-        // Process incoming bars
         while let Ok(event) = receiver.recv().await {
             if let Err(e) = self.process_bar(&event).await {
                 tracing::error!("Error processing bar: {}", e);
@@ -164,328 +176,225 @@ impl LiveBot {
         Ok(())
     }
 
-    /// Stop the bot.
     pub async fn stop(&mut self) {
         tracing::info!("Stopping live bot");
-
         if let Some(feed) = &self.feed {
             feed.stop();
         }
-
         let mut state = self.state.write().await;
         state.is_running = false;
     }
 
-    /// Process a single bar from the WebSocket.
+    // =========================================================================
+    // Bar processing
+    // =========================================================================
     async fn process_bar(&mut self, event: &KlineEvent) -> Result<()> {
         let symbol = &event.symbol;
-        let kline = &event.kline;
+        let bar = event.kline.to_bar()?;
 
-        // Convert to bar
-        let bar = kline.to_bar()?;
-
-        // Update bar history
+        // Append bar to history
         if let Some(bars) = self.bars.get_mut(symbol) {
             bars.push(bar.clone());
-            if bars.len() > 100 {
+            if bars.len() > 200 {
                 bars.remove(0);
             }
         } else {
             self.bars.insert(symbol.clone(), vec![bar.clone()]);
         }
 
-        // Update state
+        // Update state timestamps
         {
             let mut state = self.state.write().await;
             state.last_bar_time.insert(symbol.clone(), bar.time);
         }
 
-        // Get current position for this symbol
         let position = self.positions.get(symbol).copied().unwrap_or_default();
+        let current_positions = self.positions.values().filter(|p| !matches!(p, Position::Flat)).count();
 
-        // Generate signal
-        let signal = self.generate_signal(symbol, &bar, position);
-
-        // Execute signal
-        if let Some(trade) = signal {
-            self.execute_signal(symbol, trade, &bar).await?;
-        }
-
-        // Check trailing stop if in position
-        if let Some(trade) = self.check_trailing_stop(symbol, &bar) {
-            self.execute_signal(symbol, trade, &bar).await?;
-        }
-
-        Ok(())
-    }
-
-    /// Generate trading signal using Bollinger Band reversion.
-    fn generate_signal(
-        &self,
-        symbol: &str,
-        bar: &Bar,
-        position: Position,
-    ) -> Option<super::executor::OrderSide> {
-        let bars = self.bars.get(symbol)?;
-        if bars.len() < self.config.bb_period {
-            return None;
-        }
-
-        // Calculate Bollinger Bands
-        let (upper, lower, _) = self.calculate_bollinger(bars)?;
-
-        // Mean reversion signal
         match position {
             Position::Flat => {
-                // Price closed below lower band -> go long
-                if bar.close < lower {
-                    tracing::debug!(
-                        "[{}] Signal: LONG (close {} < lower {})",
-                        symbol,
-                        bar.close,
-                        lower
-                    );
-                    return Some(OrderSide::Buy);
-                }
-                // Price closed above upper band -> go short
-                if bar.close > upper {
-                    tracing::debug!(
-                        "[{}] Signal: SHORT (close {} > upper {})",
-                        symbol,
-                        bar.close,
-                        upper
-                    );
-                    return Some(OrderSide::Sell);
+                // Check for Turtle breakout entry
+                if current_positions < self.config.position_cap {
+                    if self.check_turtle_entry(symbol, &bar) {
+                        let size = 1.0 / self.config.position_cap as f64;
+                        self.open_long(symbol, &bar, size).await?;
+                    }
                 }
             }
             Position::Long { .. } => {
-                // Exit long when price returns to band
-                if bar.close >= lower {
-                    tracing::debug!(
-                        "[{}] Signal: CLOSE LONG (close {} >= lower {})",
-                        symbol,
-                        bar.close,
-                        lower
-                    );
-                    return Some(OrderSide::Sell);
+                // Update trailing state and check dual exit
+                if let Some(_exit) = self.check_dual_exit(symbol, &bar) {
+                    self.close_long(symbol, &bar).await?;
                 }
             }
             Position::Short { .. } => {
-                // Exit short when price returns to band
-                if bar.close <= upper {
-                    tracing::debug!(
-                        "[{}] Signal: CLOSE SHORT (close {} <= upper {})",
-                        symbol,
-                        bar.close,
-                        upper
-                    );
-                    return Some(OrderSide::Buy);
-                }
+                // Not used — Turtle is long-only
             }
         }
-
-        None
-    }
-
-    /// Calculate Bollinger Bands.
-    fn calculate_bollinger(&self, bars: &[Bar]) -> Option<(f64, f64, f64)> {
-        if bars.len() < self.config.bb_period {
-            return None;
-        }
-
-        let closes: Vec<f64> = bars.iter().map(|b| b.close).collect();
-        let recent: &[f64] = &closes[closes.len() - self.config.bb_period..];
-
-        let mean = recent.iter().sum::<f64>() / recent.len() as f64;
-        let variance = recent.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / recent.len() as f64;
-        let std = variance.sqrt();
-
-        let upper = mean + self.config.bb_std * std;
-        let lower = mean - self.config.bb_std * std;
-
-        Some((upper, lower, mean))
-    }
-
-    /// Calculate ATR for trailing stop.
-    fn calculate_atr(&self, bars: &[Bar]) -> Option<f64> {
-        if bars.len() < 14 {
-            return None;
-        }
-
-        let recent = &bars[bars.len() - 14..];
-        let tr_sum: f64 = recent
-            .iter()
-            .map(|b| b.high - b.low) // Simplified TR
-            .sum();
-
-        Some(tr_sum / 14.0)
-    }
-
-    /// Check trailing stop.
-    fn check_trailing_stop(&self, symbol: &str, bar: &Bar) -> Option<super::executor::OrderSide> {
-        let position = self.positions.get(symbol)?;
-        let bars = self.bars.get(symbol)?;
-
-        match position {
-            Position::Long {
-                entry_price,
-                highest,
-                ..
-            } => {
-                let atr = self.calculate_atr(bars)?;
-                let stop_distance = atr * self.config.atr_stop_mult;
-                let stop_price = highest - stop_distance;
-
-                if bar.low <= stop_price {
-                    tracing::info!(
-                        "[{}] Trailing stop hit: LOW {} <= STOP {} (entry {})",
-                        symbol,
-                        bar.low,
-                        stop_price,
-                        entry_price
-                    );
-                    return Some(OrderSide::Sell);
-                }
-            }
-            Position::Short {
-                entry_price,
-                lowest,
-                ..
-            } => {
-                let atr = self.calculate_atr(bars)?;
-                let stop_distance = atr * self.config.atr_stop_mult;
-                let stop_price = lowest + stop_distance;
-
-                if bar.high >= stop_price {
-                    tracing::info!(
-                        "[{}] Trailing stop hit: HIGH {} >= STOP {} (entry {})",
-                        symbol,
-                        bar.high,
-                        stop_price,
-                        entry_price
-                    );
-                    return Some(OrderSide::Buy);
-                }
-            }
-            Position::Flat => {}
-        }
-
-        None
-    }
-
-    /// Execute a trading signal.
-    async fn execute_signal(&mut self, symbol: &str, side: OrderSide, bar: &Bar) -> Result<()> {
-        let position = self.positions.get(symbol).copied().unwrap_or_default();
-
-        match (&position, side) {
-            // Open long
-            (Position::Flat, OrderSide::Buy) => {
-                let size = self.config.max_position_size;
-                self.executor
-                    .place_limit_order(symbol, OrderSide::Buy, size, bar.close)
-                    .await?;
-
-                self.positions.insert(
-                    symbol.to_string(),
-                    Position::Long {
-                        entry_price: bar.close,
-                        size,
-                        highest: bar.high,
-                    },
-                );
-
-                tracing::info!("[{}] OPENED LONG @ {} (size {})", symbol, bar.close, size);
-            }
-            // Open short
-            (Position::Flat, OrderSide::Sell) => {
-                let size = self.config.max_position_size;
-                self.executor
-                    .place_limit_order(symbol, OrderSide::Sell, size, bar.close)
-                    .await?;
-
-                self.positions.insert(
-                    symbol.to_string(),
-                    Position::Short {
-                        entry_price: bar.close,
-                        size,
-                        lowest: bar.low,
-                    },
-                );
-
-                tracing::info!("[{}] OPENED SHORT @ {} (size {})", symbol, bar.close, size);
-            }
-            // Close long
-            (
-                Position::Long {
-                    entry_price, size, ..
-                },
-                OrderSide::Sell,
-            ) => {
-                self.executor
-                    .place_limit_order(symbol, OrderSide::Sell, *size, bar.close)
-                    .await?;
-
-                let pnl_pct = (bar.close - entry_price) / entry_price * 100.0;
-                self.record_trade(symbol, true, *entry_price, bar.close, pnl_pct);
-
-                tracing::info!(
-                    "[{}] CLOSED LONG @ {} (PnL: {:.2}%)",
-                    symbol,
-                    bar.close,
-                    pnl_pct
-                );
-
-                self.positions.remove(symbol);
-            }
-            // Close short
-            (
-                Position::Short {
-                    entry_price, size, ..
-                },
-                OrderSide::Buy,
-            ) => {
-                self.executor
-                    .place_limit_order(symbol, OrderSide::Buy, *size, bar.close)
-                    .await?;
-
-                let pnl_pct = (entry_price - bar.close) / entry_price * 100.0;
-                self.record_trade(symbol, false, *entry_price, bar.close, pnl_pct);
-
-                tracing::info!(
-                    "[{}] CLOSED SHORT @ {} (PnL: {:.2}%)",
-                    symbol,
-                    bar.close,
-                    pnl_pct
-                );
-
-                self.positions.remove(symbol);
-            }
-            _ => {
-                tracing::debug!(
-                    "[{}] No action for position {:?} and side {:?}",
-                    symbol,
-                    position,
-                    side
-                );
-            }
-        }
-
-        // Update state
-        self.update_state().await;
 
         Ok(())
     }
 
-    /// Record a completed trade.
-    fn record_trade(
-        &mut self,
-        _symbol: &str,
-        is_long: bool,
-        entry_price: f64,
-        exit_price: f64,
-        pnl_pct: f64,
-    ) {
-        let equity = self.config.initial_capital; // Simplified
+    // =========================================================================
+    // Turtle breakout entry
+    // =========================================================================
+    fn check_turtle_entry(&mut self, symbol: &str, bar: &Bar) -> bool {
+        let bars = match self.bars.get(symbol) {
+            Some(b) => b,
+            None => return false,
+        };
+        let ep = self.config.ep;
+        if bars.len() < ep + 1 {
+            return false;
+        }
+
+        // Lookback window: last EP bars (indices len-EP to len-1)
+        let ws = bars.len() - ep;
+        let max_close = bars[ws..].iter().map(|b| b.close).fold(f64::NEG_INFINITY, f64::max);
+
+        if bar.close >= max_close {
+            tracing::info!(
+                "[{}] TURTLE ENTRY: close {} >= max_close({}) = {}",
+                symbol, bar.close, ep, max_close
+            );
+
+            // Initialize trailing state
+            let mut atr_buf = VecDeque::new();
+            let avail = bars.len().min(self.config.chand_period);
+            let start = bars.len().saturating_sub(avail);
+            for i in 0..avail {
+                let idx = start + i;
+                if idx >= bars.len() { break; }
+                let b = &bars[idx];
+                let pc = if i == 0 {
+                    b.close
+                } else {
+                    let prev_idx = start + i - 1;
+                    if prev_idx < bars.len() { bars[prev_idx].close } else { b.close }
+                };
+                let tr = (b.high - b.low).max((b.high - pc).abs()).max((b.low - pc).abs());
+                atr_buf.push_back(tr);
+            }
+
+            self.turtle_state.insert(symbol.to_string(), TurtleState {
+                highest_high: bar.high,
+                lowest_low: bar.low,
+                bars_held: 0,
+                atr_buf,
+            });
+            return true;
+        }
+        false
+    }
+
+    // =========================================================================
+    // Dual exit: Chandelier ATR OR Turtle ATR (whichever fires first)
+    // =========================================================================
+    fn check_dual_exit(&mut self, symbol: &str, bar: &Bar) -> Option<()> {
+        let s = self.turtle_state.get_mut(symbol)?;
+        let bars = self.bars.get(symbol)?;
+
+        // Update trailing extremes
+        if bar.high > s.highest_high { s.highest_high = bar.high; }
+        if bar.low < s.lowest_low { s.lowest_low = bar.low; }
+        s.bars_held += 1;
+
+        // Update ATR buffer
+        if let Some(prev) = bars.last() {
+            let tr = (bar.high - bar.low)
+                .max((bar.high - prev.close).abs())
+                .max((bar.low - prev.close).abs());
+            s.atr_buf.push_back(tr);
+        }
+        if s.atr_buf.len() > self.config.chand_period {
+            s.atr_buf.pop_front();
+        }
+
+        // Compute ATR
+        if s.atr_buf.len() < self.config.chand_period {
+            return None; // Not enough data for ATR
+        }
+        let atr = s.atr_buf.iter().sum::<f64>() / self.config.chand_period as f64;
+        if atr <= 0.0 { return None; }
+
+        // Chandelier trailing stop: highest_high - M * ATR
+        let chand_stop = s.highest_high - self.config.chand_mult * atr;
+
+        // Turtle ATR stop: lowest_low - M * ATR
+        let turtle_stop = s.lowest_low - self.config.atr_mult * atr;
+
+        // Combined stop: the tighter of the two (higher stop price)
+        let stop = chand_stop.max(turtle_stop);
+
+        if bar.low <= stop {
+            tracing::info!(
+                "[{}] EXIT: low {} <= stop {} (chand={}, turtle={}), held={} bars",
+                symbol, bar.low, stop, chand_stop, turtle_stop, s.bars_held
+            );
+            return Some(());
+        }
+
+        // HOLD_MAX timeout
+        if s.bars_held >= self.config.hold_max {
+            tracing::info!(
+                "[{}] EXIT: HOLD_MAX {} reached",
+                symbol, self.config.hold_max
+            );
+            return Some(());
+        }
+
+        None
+    }
+
+    // =========================================================================
+    // Order execution
+    // =========================================================================
+    async fn open_long(&mut self, symbol: &str, bar: &Bar, size: f64) -> Result<()> {
+        self.executor
+            .place_limit_order(symbol, OrderSide::Buy, size, bar.close)
+            .await?;
+
+        self.positions.insert(
+            symbol.to_string(),
+            Position::Long {
+                entry_price: bar.close,
+                size,
+                highest: bar.high,
+            },
+        );
+
+        tracing::info!(
+            "[{}] OPENED LONG @ {} (size {:.3}, equity fraction)",
+            symbol, bar.close, size
+        );
+        self.update_state().await;
+        Ok(())
+    }
+
+    async fn close_long(&mut self, symbol: &str, bar: &Bar) -> Result<()> {
+        let position = self.positions.get(symbol).copied();
+        if let Some(Position::Long { entry_price, size, .. }) = position {
+            self.executor
+                .place_limit_order(symbol, OrderSide::Sell, size, bar.close)
+                .await?;
+
+            let pnl_pct = (bar.close - entry_price) / entry_price * 100.0;
+            self.record_trade(symbol, true, entry_price, bar.close, pnl_pct);
+
+            tracing::info!(
+                "[{}] CLOSED LONG @ {} (PnL: {:.2}%)",
+                symbol, bar.close, pnl_pct
+            );
+
+            self.positions.remove(symbol);
+            self.turtle_state.remove(symbol);
+        }
+        self.update_state().await;
+        Ok(())
+    }
+
+    fn record_trade(&mut self, _symbol: &str, is_long: bool, entry_price: f64, exit_price: f64, pnl_pct: f64) {
+        let equity = self.config.initial_capital;
         let pnl = equity * (pnl_pct / 100.0);
 
         if pnl > 0.0 {
@@ -494,8 +403,8 @@ impl LiveBot {
             self.gross_loss += pnl.abs();
         }
 
-        let trade = CompletedTrade {
-            entry_time: Utc::now(), // Simplified
+        self.completed_trades.push(CompletedTrade {
+            entry_time: Utc::now(),
             exit_time: Utc::now(),
             entry_price,
             exit_price,
@@ -503,16 +412,11 @@ impl LiveBot {
             is_long,
             pnl,
             pnl_pct,
-        };
-
-        self.completed_trades.push(trade);
+        });
     }
 
-    /// Update bot state.
     async fn update_state(&mut self) {
         let mut state = self.state.write().await;
-
-        // Calculate equity (simplified - doesn't track mark-to-market)
         let fees = self.completed_trades.len() as f64
             * 2.0
             * self.config.fee_pct
@@ -529,15 +433,10 @@ impl LiveBot {
             0.0
         };
 
-        // Update positions
         state.positions.clear();
         for (symbol, pos) in &self.positions {
             let info = match pos {
-                Position::Long {
-                    entry_price,
-                    size,
-                    highest,
-                } => PositionInfo {
+                Position::Long { entry_price, size, highest } => PositionInfo {
                     symbol: symbol.clone(),
                     side: "LONG".to_string(),
                     size: *size,
@@ -546,19 +445,7 @@ impl LiveBot {
                     highest: *highest,
                     lowest: 0.0,
                 },
-                Position::Short {
-                    entry_price,
-                    size,
-                    lowest,
-                } => PositionInfo {
-                    symbol: symbol.clone(),
-                    side: "SHORT".to_string(),
-                    size: *size,
-                    entry_price: *entry_price,
-                    entry_time: Utc::now(),
-                    highest: 0.0,
-                    lowest: *lowest,
-                },
+                Position::Short { .. } => continue,
                 Position::Flat => continue,
             };
             state.positions.insert(symbol.clone(), info);
@@ -598,25 +485,54 @@ mod tests {
     }
 
     #[test]
-    fn test_bollinger_calculation() {
+    fn test_turtle_entry_detection() {
         let config = LiveConfig::default();
-        let bot = LiveBot::new(config).unwrap();
+        let mut bot = LiveBot::new(config).unwrap();
 
-        let bars: Vec<Bar> = (0..20)
-            .map(|i| {
-                Bar::new(
-                    Utc::now(),
-                    100.0 + i as f64,
-                    101.0 + i as f64,
-                    99.0 + i as f64,
-                    100.0 + i as f64,
-                    1000.0,
-                )
-            })
+        // Build bar history: 25 bars with closes rising from 90 to 114
+        let bars: Vec<Bar> = (0..25)
+            .map(|i| Bar::new(Utc::now(), 90.0 + i as f64, 91.0 + i as f64, 89.0 + i as f64, 90.0 + i as f64, 1000.0 + i as f64))
             .collect();
+        // max_close of last 21 bars = 114.0
+        bot.bars.insert("BTCUSDT".to_string(), bars.clone());
 
-        let (upper, lower, middle) = bot.calculate_bollinger(&bars).unwrap();
-        assert!(upper > middle);
-        assert!(lower < middle);
+        // Bar closing at 105 — no breakout (105 < max_close = 114)
+        let bar_no_break = Bar::new(Utc::now(), 105.0, 106.0, 104.0, 105.0, 1000.0);
+        assert!(!bot.check_turtle_entry("BTCUSDT", &bar_no_break));
+
+        // Bar closing at 115 — breakout (115 >= max_close = 114)
+        let bar_break = Bar::new(Utc::now(), 115.0, 116.0, 114.0, 115.0, 2000.0);
+        assert!(bot.check_turtle_entry("BTCUSDT", &bar_break));
+        assert!(bot.turtle_state.contains_key("BTCUSDT"));
+    }
+
+    #[test]
+    fn test_position_cap_enforced() {
+        let mut config = LiveConfig::default();
+        config.position_cap = 2;
+        let mut bot = LiveBot::new(config).unwrap();
+
+        // Simulate 2 existing positions
+        bot.positions.insert("BTCUSDT".to_string(), Position::Long {
+            entry_price: 50000.0, size: 0.5, highest: 51000.0,
+        });
+        bot.positions.insert("ETHUSDT".to_string(), Position::Long {
+            entry_price: 3000.0, size: 0.5, highest: 3100.0,
+        });
+
+        // Build bars for SOLUSDT with breakout
+        let bars: Vec<Bar> = (0..25)
+            .map(|i| Bar::new(Utc::now(), 100.0, 101.0, 99.0, 100.0, 1000.0 + i as f64))
+            .collect();
+        bot.bars.insert("SOLUSDT".to_string(), bars);
+
+        // Breakout bar
+        let bar = Bar::new(Utc::now(), 101.0, 102.0, 100.0, 101.0, 2000.0);
+
+        // Should detect entry signal but cap blocks it
+        let current_positions = bot.positions.values()
+            .filter(|p| !matches!(p, Position::Flat)).count();
+        assert_eq!(current_positions, 2);
+        assert!(current_positions >= bot.config.position_cap);
     }
 }

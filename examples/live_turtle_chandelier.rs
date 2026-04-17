@@ -302,9 +302,14 @@ fn main() -> Result<()> {
             fee_pct,
             use_testnet: true,
             dry_run: false,
-            atr_stop_mult: ATR_M,
-            bb_period: EP,
-            bb_std: CHAND_M,
+            // Turtle+Chandelier params (frozen)
+            ep: EP,
+            chand_period: CHAND_P,
+            chand_mult: CHAND_M,
+            atr_period: ATR_P,
+            atr_mult: ATR_M,
+            hold_max: HOLD_MAX,
+            position_cap: POS_CAP,
             ..Default::default()
         };
         let mut bot = LiveBot::new(config)?;
