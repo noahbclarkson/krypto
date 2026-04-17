@@ -1,46 +1,42 @@
 # PLAN.md - Krypto Research Priorities
 
-## ⚡ CRITICAL BUG FIX (2026-04-17 00:01 UTC)
+## ⚡ CRITIQUE FINDINGS (2026-04-17 00:29 UTC — Evening Critique)
 
-**LiveBot was using WRONG STRATEGY.** `src/live/bot.rs` had hardcoded Bollinger Band mean reversion (0/288 OOS pass, GRAVEYARD) instead of Turtle+Chandelier breakout (93% OOS pass). If live testnet had been launched with the old code, it would have executed Bollinger trades — completely wrong.
+**5-last-commits assessment:** 2 real fixes (LiveBot strategy bug, turtle equity forward-fill), 3 refinement. "LiveBot rewrite" was 50-line find+replace. Project in documentation loop.
 
-**Root cause:** LiveBot was built during the Bollinger era and never updated when Turtle+Chandelier became production.
+**CTREND progress chart STILL BROKEN (unfixed since 18:30 UTC — 6 hours):**
+- PLAN.md claims "CTREND → REMOVED from progress chart" — fix was documented but NEVER executed
+- `charts/progress_equity_curves_daily.png` (updated 21:08) still shows CTREND 1438x
+- `progress_equity_curves.rs` line 237: `build_symbol_plans(&universe, StrategyKind::CTRend)?` → uses fixed 21-bar hold in `simulate_daily_equity` — no OOS windows
+- Actual OOS validated strategy = DynamicTrend EMA crossover (6/7 pass, Sharpe +2.01) — DIFFERENT mechanism, being conflated with CTREND
+- **This is same artifact-class as BollingerReversion.**
 
-**Fixed:** Complete rewrite of `bot.rs` signal generation with Turtle breakout entry + Chandelier/Turtle ATR dual exit. Config updated with proper strategy params. All tests pass. Paper validation unchanged (453 trades, +127.7% avg).
+**Monte Carlo test NOT BUILT:** strategy-ideas.md #20 "URGENT" — 50-line harness, no API keys needed. 6+ hours with no action.
 
-## ⚡ CRITIQUE FINDINGS (2026-04-16 21:00 UTC — Evening Fix Session)
+**Entry 18 (Drawdown-Adaptive Signal Tightening):** Conceptually dead on arrival — same trade-starving mechanism as 2 killed filters (ATR entry filter, 4h SMA confirmation). Chandelier dual-exit already manages adverse positions.
 
-**CTREND in-sample artifact: REMOVED from progress chart.** The ctrend_signals() function runs on full in-sample history with fixed 21-bar hold — same flaw class as BollingerReversion. No OOS walk-forward validation exists. Chart regenerated without it.
+**Data gaps unfixed:** BTC/ETH parquet capped at 3000 rows (~2026-03-23). 2026 YTD for BTC/ETH is incomplete.
 
-**Turtle equity forward-fill bug: PATCHED.** progress_equity_curves.csv had 1249/2075 bars stuck at equity=1.0 (gaps between trades not forward-filled). CSV patched: 9 bars (days 2060-2073) filled from last known equity. Post-fix: Turtle Sharpe 0.99, MaxDD -41.4%. Previously showed Sharpe 0.00 on chart due to this bug.
+**Biggest blind spot:** One-trick pony. ALL edge in Turtle+Chandelier. No backup strategy if mechanism breaks. Every non-trend strategy dead.
 
-**Compile fix:** turtle_chandelier_walkforward.rs missing `const MIN_TRADES = 3`. Added.
+## TOP 3 PRIORITY EXECUTION TASKS (2026-04-17)
 
-**Charts regenerated:** charts/plot_progress_fixed.py — 4 strategies (Turtle 135.3x/A/D 40.3x/Small 15.5x/DDBudget 58.6x), CTREND removed.
+**T1 — Fix CTREND progress chart (IMMEDIATE):**
+- Remove CTREND from `progress_equity_curves.rs` → regenerate chart without it
+- OR build proper OOS equity for DynamicTrend momentum signal (different from ctrend_signals fixed hold)
+- Do NOT let an in-sample artifact (1438x) remain on a published chart
+- This is same priority as "BollingerReversion definitive kill" — a known artifact must be removed
 
-**dynamic_trend_walkforward.rs: NOT fixed** — stale harness with wrong data types throughout (uses f64 where &f64 expected). Strategy already REJECTED (GRAVEYARD). Not worth fixing.
+**T2 — Build Monte Carlo test for CTREND (IMMEDIATE):**
+- `examples/ctrend_monte_carlo.rs` — shuffle returns within year-blocks, re-run 100 times
+- Will definitively prove/reject whether CTREND momentum signal is real or overfitted to price patterns
+- 50-line harness, no API keys needed
+- Currently sitting as "URGENT" unbuilt for 6+ hours
 
-**Live testnet: STILL BLOCKED on API keys.**
-
-## TOP 3 PRIORITY EXECUTION TASKS (2026-04-16 21:00 UTC)
-
-**T1 — Regime Monitor (not done, blocked on API keys anyway)**
-- Turtle self-regime classifier: rolling 60d Sharpe + Chandelier exit distance as dual indicators
-- Would need new harness `turtle_regime_monitor.rs` built from scratch
-- Would inform position cap reduction in hostile regimes (2026 YTD: worst relative performance)
-- Deemed not worth building without live data to validate against
-
-**T2 — Monte Carlo Overfitting Test (not done, low priority)**
-- Shuffle returns within year-blocks, re-run CTREND 100 times
-- Would definitively prove/reject CTREND edge
-- CTREND already removed from chart — Monte Carlo would only be for academic completeness
-
-**T3 — Live Testnet (blocked on API keys from Noah)**
+**T3 — Live Testnet (BLOCKED on API keys from Noah):**
 - Connect live_turtle_chandelier.rs to Binance testnet
 - 30-day live paper run
-- Compare live equity vs backtest (expect ~0.99 daily equity Sharpe)
-
-**Only blocker remaining:** Noah's Binance testnet API keys. Project is research-complete.
+- Compare live equity vs backtest (expect ~1.0-1.3 daily equity Sharpe)
 
 ## 🎯 THREE PRIORITY EXECUTION TASKS — ALL RESOLVED (2026-04-16)
 
