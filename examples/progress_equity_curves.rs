@@ -93,11 +93,8 @@ const OUTPUT_MD: &str = "snapshots/progress_equity_curves.md";
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum StrategyKind {
     AdMomentum,
-    MacdRegime,
-    SmallByDollarVol,
-    CTRend,
+    MacdRegime,    SmallByDollarVol,
     DDBudgetThreeSleeve,
-    BlendAdMacdRegime,
     TurtleChandelier,
 }
 
@@ -106,7 +103,6 @@ impl StrategyKind {
         &[
             Self::AdMomentum,
             Self::SmallByDollarVol,
-            Self::CTRend,
             Self::DDBudgetThreeSleeve,
             Self::TurtleChandelier,
         ]
@@ -117,9 +113,8 @@ impl StrategyKind {
             Self::AdMomentum => "A/D Momentum",
             Self::MacdRegime => "MACD+Regime",
             Self::SmallByDollarVol => "FactorSmallByDollarVol",
-            Self::CTRend => "CTREND",
+
             Self::DDBudgetThreeSleeve => "DDBudget(A/D,MACD,Small)",
-            Self::BlendAdMacdRegime => "Blend(A/D+MACD)",
             Self::TurtleChandelier => "Turtle+Chandelier",
         }
     }
@@ -143,25 +138,19 @@ struct SymbolPlan {
 struct CurveOutput {
     day: usize,
     ad_equity: f64,
-    macd_equity: f64,
     small_equity: f64,
-    ctrend_equity: f64,
     ddbudget_equity: f64,
-    blend_equity: f64,
     turtle_equity: f64,
 }
 
 impl CurveOutput {
     fn to_csv_line(&self) -> String {
         format!(
-            "{},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6}\n",
+            "{},{:.6},{:.6},{:.6},{:.6}\n",
             self.day,
             self.ad_equity,
-            self.macd_equity,
             self.small_equity,
-            self.ctrend_equity,
             self.ddbudget_equity,
-            self.blend_equity,
             self.turtle_equity,
         )
     }
@@ -170,7 +159,7 @@ impl CurveOutput {
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("=== PROGRESS EQUITY CURVES (unified harness) ===\n");
-    println!("Strategies: A/D Momentum, FactorSmallByDV, CTREND, DDBudget 3-Sleeve, Turtle+Chandelier");
+    println!("Strategies: A/D Momentum, FactorSmallByDV, DDBudget 3-Sleeve, Turtle+Chandelier");
     println!("           [MACD+Regime & Blend excluded: 2/7 OOS — GRAVEYARD]");
     println!(
         "Execution: signal at close, entry next open, fixed {} bars (Turtle uses Chandelier dual-exit)",
@@ -254,9 +243,6 @@ async fn main() -> Result<()> {
     let ad_daily = simulate_daily_equity(&ad_plans, universe.steps);
     let macd_daily = simulate_daily_equity(&macd_plans, universe.steps);
     let small_daily = simulate_daily_equity(&small_plans, universe.steps);
-    let ctrend_plans = build_symbol_plans(&universe, StrategyKind::CTRend)?;
-    let ctrend_daily = simulate_daily_equity(&ctrend_plans, universe.steps);
-    let blend_daily = simulate_daily_equity(&blend_plans, universe.steps);
 
     // DDBudget three-sleeve: simulate with family-level DDHard budgeting
     let ddbudget_daily = simulate_ddbudget(&ad_plans, &macd_plans, &small_plans, universe.steps);
@@ -267,17 +253,14 @@ async fn main() -> Result<()> {
 
     // Export CSV
     let mut csv = String::from(
-        "day,ad_equity,macd_equity,small_equity,ctrend_equity,ddbudget_equity,blend_equity,turtle_equity\n",
+        "day,ad_equity,small_equity,ddbudget_equity,turtle_equity\n",
     );
     for day in 0..=universe.steps {
         let line = CurveOutput {
             day,
             ad_equity: ad_daily[day],
-            macd_equity: macd_daily[day],
             small_equity: small_daily[day],
-            ctrend_equity: ctrend_daily[day],
             ddbudget_equity: ddbudget_daily[day],
-            blend_equity: blend_daily[day],
             turtle_equity: turtle_daily[day],
         };
         csv.push_str(&line.to_csv_line());
@@ -288,11 +271,8 @@ async fn main() -> Result<()> {
 
     // Quick summary stats
     let final_ad = ad_daily.last().copied().unwrap_or(1.0);
-    let final_macd = macd_daily.last().copied().unwrap_or(1.0);
     let final_small = small_daily.last().copied().unwrap_or(1.0);
-    let final_ctrend = ctrend_daily.last().copied().unwrap_or(1.0);
     let final_ddbudget = ddbudget_daily.last().copied().unwrap_or(1.0);
-    let final_blend = blend_daily.last().copied().unwrap_or(1.0);
     let final_turtle = turtle_daily.last().copied().unwrap_or(1.0);
 
     println!("\nFinal equity multipliers ({} days):", universe.steps);
@@ -307,9 +287,6 @@ async fn main() -> Result<()> {
         (final_small - 1.0) * 100.0
     );
     println!(
-        "  CTREND:             {:.1}x ({}%)",
-        final_ctrend,
-        (final_ctrend - 1.0) * 100.0
     );
     println!(
         "  DDBudget 3-sleeve:  {:.1}x ({}%)",
@@ -326,14 +303,12 @@ async fn main() -> Result<()> {
     // Sharpe calculations
     let ad_sharpe = calc_sharpe_from_daily(&ad_daily);
     let small_sharpe = calc_sharpe_from_daily(&small_daily);
-    let ctrend_sharpe = calc_sharpe_from_daily(&ctrend_daily);
     let ddbudget_sharpe = calc_sharpe_from_daily(&ddbudget_daily);
     let turtle_sharpe = calc_sharpe_from_daily(&turtle_daily);
 
     println!("\nAnnualised Sharpe (daily returns):");
     println!("  A/D Momentum:       {:.2}", ad_sharpe);
     println!("  FactorSmallByDV:    {:.2}", small_sharpe);
-    println!("  CTREND:             {:.2}", ctrend_sharpe);
     println!("  DDBudget 3-sleeve:  {:.2}", ddbudget_sharpe);
     println!("  Turtle+Chandelier:  {:.2}", turtle_sharpe);
     println!("  [MACD+Regime & Blend excluded: 2/7 OOS — GRAVEYARD]");
@@ -345,7 +320,6 @@ async fn main() -> Result<()> {
          Final equity | Sharpe (daily):\n\
          - A/D Momentum: {:.1}x ({:.1}%), Sharpe {:.2}\n\
          - FactorSmallByDV: {:.1}x ({:.1}%), Sharpe {:.2}\n\
-         - CTREND: {:.1}x ({:.1}%), Sharpe {:.2}\n\
          - DDBudget 3-Sleeve: {:.1}x ({:.1}%), Sharpe {:.2} [milestone-aggregated, not daily-compounded]\n\
          - Turtle+Chandelier: {:.1}x ({:.1}%), Sharpe {:.2} [PRODUCTION CANDIDATE]\n\
          [MACD+Regime & Blend excluded: 2/7 OOS pass — GRAVEYARD]\n",
@@ -358,9 +332,6 @@ async fn main() -> Result<()> {
         final_small,
         (final_small - 1.0) * 100.0,
         small_sharpe,
-        final_ctrend,
-        (final_ctrend - 1.0) * 100.0,
-        ctrend_sharpe,
         final_ddbudget,
         (final_ddbudget - 1.0) * 100.0,
         ddbudget_sharpe,
@@ -544,19 +515,6 @@ fn generate_signals_for_universe(
         StrategyKind::SmallByDollarVol => {
             let (sigs, strs) = small_by_dollar_vol_signals(df)?;
             Ok((sigs, strs))
-        }
-        StrategyKind::CTRend => {
-            let (sigs, strs) = ctrend_signals(df)?;
-            let n = df.height();
-            let mut signals = sigs;
-            let mut strengths = strs;
-            while signals.len() < n {
-                signals.push(0);
-            }
-            while strengths.len() < n {
-                strengths.push(0.0);
-            }
-            Ok((signals, strengths))
         }
         _ => Ok((vec![0; df.height()], vec![0.0; df.height()])),
     }

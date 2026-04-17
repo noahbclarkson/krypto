@@ -1,6 +1,65 @@
 # PLAN.md - Krypto Research Priorities
 
-## ⚡ CRITIQUE FINDINGS (2026-04-17 04:18 UTC — Morning Critique, 2nd cycle)
+## ⚡ CRITIQUE FINDINGS (2026-04-17 13:24 UTC — Afternoon Critique, 3rd cycle)
+
+### ⚠️ CRITICAL: Progress Chart Data Pipeline is BROKEN (Same bug as BollingerReversion)
+
+**The progress chart is plotting wrong data for each strategy.**
+
+**Root cause:**
+1. `progress_equity_curves.rs` writes 5 CSV columns but the actual CSV on disk has 8 columns (from an older run that included CTREND/MACD/blend). The CSV was never regenerated after cleanup.
+2. `plot_progress.py` (one commit, never updated) reads: Turtle→index4 (reads CTREND 1143x), A/D→index1 (reads MACD), Small→index2 (reads CTREND), DDBudget→index3 (correct)
+3. `cttrend_signals()` function is dead code in progress_equity_curves.rs (line 982+) — never called but remains.
+4. Chart last regenerated Apr 17 06:37 UTC — shows CTREND data as "Turtle+Chandelier"
+
+**This is an in-sample artifact presented as validated result — same class as BollingerReversion 5404x DOGE.**
+
+**Fix (T1 below) is non-negotiable.**
+
+### ⚠️ CRITICAL: VOL_LOOKBACK=55 Overfitting Red Flag
+
+**The VL=2→VL=55 jump across two different sweep ranges is suspicious.**
+- Coarse sweep (step=5, 5-100): VL=2 wins
+- Fine sweep (step=1, 1-100): VL=55 wins
+- After coarse sweep identifies VL=2 in range 1-14, the fine sweep expanding to 1-100 is a different experiment, not a refinement
+- +40% Sharpe improvement may be partially real, but VL=55 could also be noise-fitting
+- **Held-out test (T2 below) is URGENT.** If VL=55 fails W04/W05 held-out → revert to VL=2.
+
+### Biggest Blind Spot: Single-Strategy All-In + No Regime Defense
+
+- 2026 YTD: Turtle -22.7% vs BTC +12.7% — worst relative performance ever
+- Every defensive overlay failed (USDT hedge, BTC scalar, chop filter, drawdown trigger)
+- Live bot has ZERO mechanism to reduce exposure in hostile chop
+- This will recur every chop year (2021, 2022, 2026)
+- **Single-strategy vulnerability is structural.** No backup exists (A/D 52%, DDBudget 72% — too weak).
+
+### Last 5 Commits: Documentation Loop
+
+2/5 are real work (A/D Chandelier hyperopt, VOL_LOOKBACK sweep). 3/5 are documentation refinement. Project is auditing itself rather than building new validation.
+
+## TOP 3 PRIORITY EXECUTION TASKS (2026-04-17, afternoon — UPDATED)
+
+**T1 — Fix progress chart pipeline (IMMEDIATE, non-negotiable):**
+- Delete `cttrend_signals()` function from `progress_equity_curves.rs` (dead code, line 982+)
+- Fix `println!` string (line 162: still mentions CTREND)
+- `cargo run --example progress_equity_curves --profile sweep` → regenerates CSV (5 columns)
+- Verify CSV: `day,ad_equity,small_equity,ddbudget_equity,turtle_equity` (5 columns, NOT 8)
+- Fix `plot_progress.py`: Turtle index should be 4, DDBudget index 3 (was reading wrong columns)
+- `python3 charts/plot_progress.py` → regenerate PNG
+- Verify: Turtle final equity ~120x (not 1143x CTREND artifact)
+
+**T2 — VOL_LOOKBACK=55 held-out audit (URGENT):**
+- Run Turtle walk-forward with VL=55 vs VL=2 on last 2 windows only (W04, W05)
+- If VL=55 significantly worse on held-out → overfitting signal, revert to VL=2
+- If VL=55 holds → confidence increased
+
+**T3 — CTREND Monte Carlo test:**
+- `examples/ctrend_monte_carlo.rs` — block-permutation of returns within year-blocks
+- Run 100 MC iterations on CTREND (ema_fast=60, fixed 21-bar hold)
+- If median shuffled result < 100x → artifact → GRAVEYARD
+- If 1000x+ survives → genuine edge → needs proper OOS walk-forward
+
+**BLOCKED:** Live testnet (API keys from Noah).
 
 **5-last-commits assessment:** ALL documentation/refinement. Zero real discoveries. LiveBot fix = 50-line find+replace. VOL_LOOKBACK sweep = 50-line find+replace. Project in self-referential loop.
 

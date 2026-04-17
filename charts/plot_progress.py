@@ -9,9 +9,9 @@ OUTDIR = '/home/ubuntu/.openclaw/workspace-krypto/krypto/charts'
 os.makedirs(OUTDIR, exist_ok=True)
 
 df = pd.read_csv('/home/ubuntu/.openclaw/workspace-krypto/krypto/snapshots/progress_equity_curves.csv')
-# Fix: first row header parsing issue — day col is actually first col name
-df.columns = ['day', 'ad_equity', 'macd_equity', 'small_equity', 'ctrend_equity', 'ddbudget_equity', 'blend_equity', 'turtle_equity']
-# Recompute from raw CSV directly
+# CTREND removed 2026-04-17 — was an in-sample artifact (fixed 21-bar hold, no OOS walk-forward).
+# MACD+Regime and Blend excluded: 2/7 OOS — GRAVEYARD.
+# CSV columns: day, ad_equity, small_equity, ddbudget_equity, turtle_equity
 import csv
 rows = []
 with open('/home/ubuntu/.openclaw/workspace-krypto/krypto/snapshots/progress_equity_curves.csv') as f:
@@ -22,13 +22,11 @@ with open('/home/ubuntu/.openclaw/workspace-krypto/krypto/snapshots/progress_equ
 
 days = [r[0] for r in rows]
 equities = {
-    'Turtle+Chandelier': [r[7] for r in rows],  # index 7
-    'A/D Momentum':     [r[1] for r in rows],  # index 1
-    'FactorSmallByDV':   [r[3] for r in rows],  # index 3
-    'CTREND':           [r[4] for r in rows],  # index 4
-    'DDBudget 3-Sleeve': [r[5] for r in rows],  # index 5
+    'Turtle+Chandelier': [r[4] for r in rows],  # index 4 (was 7)
+    'A/D Momentum':       [r[1] for r in rows],  # index 1
+    'FactorSmallByDV':   [r[2] for r in rows],  # index 2 (was 3)
+    'DDBudget 3-Sleeve': [r[3] for r in rows],  # index 3 (was 5)
 }
-# macd (r[2]) and blend (r[6]) are GRAVEYARD — excluded
 
 # Skip macd_equity and blend_equity (graveyard)
 
@@ -37,7 +35,7 @@ fig, axes = plt.subplots(2, 1, figsize=(14, 10))
 # Panel 1: Log-scale equity
 ax = axes[0]
 colors = {'Turtle+Chandelier': '#2196F3', 'A/D Momentum': '#4CAF50', 
-          'FactorSmallByDV': '#FF9800', 'CTREND': '#9C27B0', 'DDBudget 3-Sleeve': '#F44336'}
+          'FactorSmallByDV': '#FF9800', 'DDBudget 3-Sleeve': '#F44336'}
 for name, eq in equities.items():
     ax.plot(days, eq, label=name, color=colors[name], linewidth=1.5)
 ax.set_yscale('log')
