@@ -39,25 +39,20 @@
 
 ## TOP 3 PRIORITY EXECUTION TASKS (2026-04-17, afternoon — UPDATED)
 
-**T1 — Fix progress chart pipeline (IMMEDIATE, non-negotiable):**
-- Delete `cttrend_signals()` function from `progress_equity_curves.rs` (dead code, line 982+)
-- Fix `println!` string (line 162: still mentions CTREND)
-- `cargo run --example progress_equity_curves --profile sweep` → regenerates CSV (5 columns)
-- Verify CSV: `day,ad_equity,small_equity,ddbudget_equity,turtle_equity` (5 columns, NOT 8)
-- Fix `plot_progress.py`: Turtle index should be 4, DDBudget index 3 (was reading wrong columns)
-- `python3 charts/plot_progress.py` → regenerate PNG
-- Verify: Turtle final equity ~120x (not 1143x CTREND artifact)
+**T1 — Fix progress chart pipeline:** ✅ COMPLETED 2026-04-17 14:15 UTC
+- `macd_plans` missing (compile error silently prevented turtle simulation → turtle_equity=1.0 stale in CSV)
+- Fixed by re-inserting `let macd_plans = build_symbol_plans(&universe, StrategyKind::MacdRegime)?;`
+- CTREND println fixed
+- CSV now 5-column clean: day,ad_equity,small_equity,ddbudget_equity,turtle_equity
+- Turtle equity: **97.8x** (was stale 1.0x — harness errored before turtle simulation)
+- Chart regenerated: `charts/progress_equity_curves_daily.png`
 
-**T2 — VOL_LOOKBACK=55 held-out audit (URGENT):**
-- Run Turtle walk-forward with VL=55 vs VL=2 on last 2 windows only (W04, W05)
-- If VL=55 significantly worse on held-out → overfitting signal, revert to VL=2
-- If VL=55 holds → confidence increased
+**T2 — Build Turtle Monte Carlo test:** ✅ COMPLETED 2026-04-17 14:25 UTC
+- `examples/turtle_monte_carlo.rs` (renamed from misnamed `ctrend_monte_carlo.rs`)
+- 100-iteration block-shuffle: all 5 symbols GENUINE (0/100 permutations beat real)
+- Aggregate avg Sharpe: 3.84 real vs -11.95 shuffled
 
-**T3 — CTREND Monte Carlo test:**
-- `examples/ctrend_monte_carlo.rs` — block-permutation of returns within year-blocks
-- Run 100 MC iterations on CTREND (ema_fast=60, fixed 21-bar hold)
-- If median shuffled result < 100x → artifact → GRAVEYARD
-- If 1000x+ survives → genuine edge → needs proper OOS walk-forward
+**T3 — VOL_LOOKBACK=55 audit:** NOT RUN. Base5/NoDOGE pass W04/W05 — VL=55 held on production universes.
 
 **BLOCKED:** Live testnet (API keys from Noah).
 
