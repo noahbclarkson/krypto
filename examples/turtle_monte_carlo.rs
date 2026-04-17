@@ -1,4 +1,5 @@
 //! Monte Carlo overfitting test for Turtle+Chandelier
+//! NOTE: Renamed from ctrend_monte_carlo.rs — tests Turtle, not CTREND
 //! Block-shuffle returns within year blocks to break strategy edge while preserving market structure.
 //! Run N permutations per symbol. If real Sharpe > 95th percentile of shuffles → genuine edge.
 //!
