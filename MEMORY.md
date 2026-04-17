@@ -301,3 +301,13 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 - `charts/cross_market_equity_wf_chart.png` — per-asset walk-forward
 - `snapshots/equity_portfolio_wf.csv` — combined 6-asset results
 - `snapshots/crypto_only_wf.csv` — crypto-only results
+
+## ATR EMA Smoothing Hyperopt (2026-04-17)
+- **Parameter:** ATR EMA period for Chandelier ATR smoothing
+- **Range:** ATR_EMA ∈ {1..30} (30 values, step 1)
+- **Result: NULL.** ATR_EMA=3 wins (+0.3% Sharpe vs baseline raw ATR=1). Improvement is noise.
+- Raw ATR (EMA=1) and ATR_EMA=3 produce IDENTICAL BTC equity curves (1.331x final).
+- ATR_EMA > 10 significantly degrades performance (Sharpe drops from 8.4 to 5.9 at EMA=20-30).
+- **Conclusion:** ATR calculation already provides sufficient smoothing. ATR_EMA_PERIOD = 1 (raw ATR) is the production default.
+- See `memory/hyperopt-2026-04-17-atr-ema-smoothing.md`.
+- Charts: `charts/turtle_atr_ema_sweep.png`, `charts/turtle_atr_ema_sweep_full.png`.
