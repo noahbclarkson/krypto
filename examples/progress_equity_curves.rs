@@ -59,13 +59,33 @@ const WARMUP_BARS: usize = 200;
 const CS_LOOKBACK: usize = 63;
 const AD_PERIOD: usize = 8; // walk-forward winner 2026-04-14: p=8 Sharpe 2.00, 67% pass (p=5 rejected: Sharpe -1.20, 52%)
 
-// === TURTLE+CHANDELIER PARAMS (from walk-forward hyperopt, all frozen 2026-04-14) ===
+// CHAND_P = 20 (hyperopt 2026-04-16 full 46-value sweep: wins all 9 universes, +1.55% Sharpe vs CP=28)
+const CHAND_P: usize = 20;         // hyperopt 2026-04-16
+
+// CHAND_M = 2.15 (hyperopt 2026-04-16: saturation plateau M≥2.15 confirmed)
+const CHAND_M: f64 = 2.15;         // hyperopt 2026-04-16
+
+// TURTLE_ATR_P = 24 (hyperopt 2026-04-17: fine sweep 18-35 step1: +3.6% Sharpe, -10.8pp DD vs coarse 25)
+const TURTLE_ATR_P: usize = 24;    // hyperopt 2026-04-17
+
+const TURTLE_ATR_M: f64 = 2.0;     // hyperopt 2026-04-12
+
 const TURTLE_EP: usize = 21;       // hyperopt 2026-04-10
-const TURTLE_ATR_P: usize = 25;    // hyperopt 2026-04-12 (DUAL_EXIT sweep)
-const TURTLE_ATR_M: f64 = 2.0;     // hyperopt 2026-04-12 (identical to CHAND_MULT)
-const CHAND_P: usize = 28;         // hyperopt 2026-04-11 fine-sweep
-const CHAND_M: f64 = 2.00;         // hyperopt 2026-04-11
-const TURTLE_HOLD_MAX: usize = 45; // hyperopt 2026-04-11: HM=45 wins 9/9 universes
+
+const TURTLE_HOLD_MAX: usize = 45; // hyperopt 2026-04-11
+
+// === DOLLAR-VOLUME RANKING: 2-bar rolling average (hyperopt 2026-04-17: VL=2 wins, +24% Sharpe vs VL=1) ===
+const VOL_LOOKBACK: usize = 2;
+
+fn rolling_dv(close: &[f64], vol: &[f64], lookback: usize, bar: usize) -> f64 {
+    let mut sum = 0.0_f64;
+    let count = lookback.min(bar + 1);
+    let start = bar + 1 - count;
+    for i in start..=bar {
+        sum += vol.get(i).copied().unwrap_or(0.0) * close.get(i).copied().unwrap_or(0.0);
+    }
+    sum / count as f64
+}
 
 const OUTPUT_CSV: &str = "snapshots/progress_equity_curves.csv";
 const OUTPUT_MD: &str = "snapshots/progress_equity_curves.md";
@@ -241,7 +261,8 @@ async fn main() -> Result<()> {
     // DDBudget three-sleeve: simulate with family-level DDHard budgeting
     let ddbudget_daily = simulate_ddbudget(&ad_plans, &macd_plans, &small_plans, universe.steps);
 
-    // Turtle+Chandelier: uses Chandelier(28,2.0)+Turtle_ATR(25,2.0) DUAL EXIT — proper dynamic exit
+    // Turtle+Chandelier: uses CHAND(20,2.15)+ATR(24,2.0) DUAL EXIT — updated 2026-04-17
+    // Params: CHAND_P=20, CHAND_M=2.15, TURTLE_ATR_P=24, TURTLE_ATR_M=2.0, VOL_LOOKBACK=2
     let turtle_daily = simulate_turtle_chandelier_equity(&universe)?;
 
     // Export CSV
@@ -720,7 +741,8 @@ fn simulate_turtle_chandelier_equity(universe: &UniverseData) -> Result<Vec<f64>
         let mut scores: Vec<(&str,f64)> = syms.iter().filter_map(|s| {
             sym_data.get(s).and_then(|sd| {
                 if bar < sd.close.len() {
-                    let dv = sd.vol.get(bar)? * sd.close.get(bar)?;
+                    // VOL_LOOKBACK=2: 2-bar rolling avg dollar volume (hyperopt 2026-04-17)
+                    let dv = rolling_dv(&sd.close, &sd.vol, VOL_LOOKBACK, bar);
                     Some((s.as_str(), if dv.is_finite() && dv > 0.0 { dv } else { 0.0 }))
                 } else { None }
             })
