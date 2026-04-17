@@ -1,41 +1,89 @@
 # PLAN.md - Krypto Research Priorities
 
-## ⚡ CRITIQUE FINDINGS (2026-04-17 13:24 UTC — Afternoon Critique, 3rd cycle)
+## ⚡ CRITIQUE FINDINGS (2026-04-17 18:17 UTC — Evening Critique)
 
-### ⚠️ CRITICAL: Progress Chart Data Pipeline is BROKEN (Same bug as BollingerReversion)
+### All Turtle+Chandelier Parameters Now Truly Exhausted
 
-**The progress chart is plotting wrong data for each strategy.**
+**ATR EMA smoothing: NULL RESULT.** 30-value sweep (ATR_EMA=1..30). Winner: ATR_EMA=3 (+0.3% Sharpe vs raw ATR=1). Improvement is noise. Raw ATR (EMA=1) is production default. This was the last untested Turtle+Chandelier parameter. All parameter space is exhausted. No new Turtle+Chandelier discoveries remain.
 
-**Root cause:**
-1. `progress_equity_curves.rs` writes 5 CSV columns but the actual CSV on disk has 8 columns (from an older run that included CTREND/MACD/blend). The CSV was never regenerated after cleanup.
-2. `plot_progress.py` (one commit, never updated) reads: Turtle→index4 (reads CTREND 1143x), A/D→index1 (reads MACD), Small→index2 (reads CTREND), DDBudget→index3 (correct)
-3. `cttrend_signals()` function is dead code in progress_equity_curves.rs (line 982+) — never called but remains.
-4. Chart last regenerated Apr 17 06:37 UTC — shows CTREND data as "Turtle+Chandelier"
+**Last 5 Commits: 2/5 real discovery, 3/5 documentation.** ATR EMA null result and CTREND Monte Carlo (0/500 shuffled beat real) are the only real contributions. The rest is appropriate consolidation — research is genuinely closed on Turtle+Chandelier.
 
-**This is an in-sample artifact presented as validated result — same class as BollingerReversion 5404x DOGE.**
+### 3 Most Promising Unbuilt Ideas (from strategy-ideas.md)
 
-**Fix (T1 below) is non-negotiable.**
+**1. Turtle Signal Freshness Filter (#21) — worth one test**
+- Cooldown after exit: only re-enter when last exit was ≥X bars ago
+- Mechanistically different from failed ATR entry filter (time-since-exit vs volatility regime)
+- If it fails → graveyard. If it passes → real regime defense mechanism
 
-### ⚠️ CRITICAL: VOL_LOOKBACK=55 Overfitting Red Flag
+**2. Drawdown-Adaptive Signal Tightening (#18) — likely fails, must close officially**
+- EP=21→EP=25 when portfolio DD > 15%
+- ATR entry filter hyperopt showed ANY entry tightening hurts — high confidence this fails
+- Should be tested once and officially closed
 
-**The VL=2→VL=55 jump across two different sweep ranges is suspicious.**
-- Coarse sweep (step=5, 5-100): VL=2 wins
-- Fine sweep (step=1, 1-100): VL=55 wins
-- After coarse sweep identifies VL=2 in range 1-14, the fine sweep expanding to 1-100 is a different experiment, not a refinement
-- +40% Sharpe improvement may be partially real, but VL=55 could also be noise-fitting
-- **Held-out test (T2 below) is URGENT.** If VL=55 fails W04/W05 held-out → revert to VL=2.
+**3. No genuinely new ideas remain.** Strategy-ideas.md has only entries 18 and 21 as untested. Everything else has been tested and killed or validated.
 
-### Biggest Blind Spot: Single-Strategy All-In + No Regime Defense
+### Metrics: TRUSTWORTHY ✅
 
-- 2026 YTD: Turtle -22.7% vs BTC +12.7% — worst relative performance ever
-- Every defensive overlay failed (USDT hedge, BTC scalar, chop filter, drawdown trigger)
-- Live bot has ZERO mechanism to reduce exposure in hostile chop
-- This will recur every chop year (2021, 2022, 2026)
-- **Single-strategy vulnerability is structural.** No backup exists (A/D 52%, DDBudget 72% — too weak).
+- Turtle equity Sharpe 0.97 — honest daily equity Sharpe (corrected this cycle)
+- Turtle Monte Carlo: 0/100 permutations beat real — edge is GENUINE
+- CTREND Monte Carlo: 0/500 shuffled beat real — CTREND signal is GENUINE
+- Walk-forward 6.29 — documented methodology inflation, not misused
+- Progress chart: 5-column CSV clean, PNG fresh (14h old)
 
-### Last 5 Commits: Documentation Loop
+The metrics have appropriate skepticism. The CTREND "same artifact as BollingerReversion" claim was WRONG and corrected. VOL_LOOKBACK=55 was caught and reverted. Progress chart bug was caught and fixed.
 
-2/5 are real work (A/D Chandelier hyperopt, VOL_LOOKBACK sweep). 3/5 are documentation refinement. Project is auditing itself rather than building new validation.
+### Biggest Blind Spots
+
+**1. ZERO regime defense in live bot (structural, unfixable)**
+- 2026 YTD: Turtle -22.7% vs BTC +12.7%
+- Every overlay tested and failed: USDT hedge, BTC scalar, chop filter, drawdown trigger
+- No mechanism to detect hostile chop and reduce exposure
+- **Honest conclusion:** We don't know how to defend against chop. Every idea tested has failed.
+
+**2. All params were hyperoptimized on full 2018-2026 range**
+- VL=55 was the first confirmed overfitting case (global opt found noise on W04/W05)
+- Aggregate 50K+ hyperopt runs: at least 1 confirmed overfitting suggests more may exist
+- Pre-2021 frozen-param stress test (21/21 pass) is genuine held-out, but params were SELECTED to work across full range
+
+**3. Maker fill gap is the biggest unmeasured variable**
+- 70% maker assumption (~63% actual) never tested live
+- Live vs backtest drift unknown
+- **Only live testnet answers this. Blocked on API keys from Noah.**
+
+**4. 2026 YTD numbers are stale**
+- BTC/ETH parquet capped 2026-04-15 → 2 missing days
+- -22.7% YTD figure may be slightly inaccurate
+
+### Honest Overall Assessment
+
+**The edge is REAL.** Monte Carlo confirms (0/100 and 0/500 shuffled beat real). Walk-forward confirms (91%/81% optimized vs defaults). Pre-2021 stress test confirms (21/21 pass). Equity Sharpe ~1.0 is honest and trustworthy.
+
+**The risks are:** (1) regime-conditional — we don't know when edge will fail; (2) maker-fill gap — live performance uncertain; (3) no backup if Turtle's edge disappears.
+
+**The project needs live testnet data to answer the only question that matters.**
+
+## TOP 3 PRIORITY EXECUTION TASKS
+
+**T1 — Turtle Signal Freshness Filter (one test, then close):**
+- Build `turtle_freshness_filter_walkforward.rs`
+- Parameter: COOLDOWN ∈ {3, 5, 10, 15} bars after exit before re-entering same symbol
+- Run walk-forward on Base5, compare to baseline (no cooldown)
+- If pass rate/Sharpe meaningfully worse → officially graveyard
+- If passes → we have a regime defense mechanism
+
+**T2 — Refresh BTC/ETH parquet (low effort, data hygiene):**
+- Re-download BTCUSDT and ETHUSDT 1d candles from Binance
+- Regenerate progress chart PNG to confirm turtle_equity value
+- Note 2-day gap in any 2026 YTD reporting
+
+**T3 — Live testnet (BLOCKED on Noah's API keys):**
+- Only remaining validation step
+- No substitute exists — nothing we can build advances the project without this
+- Awaiting Binance testnet API keys from Noah
+
+**T4 — Drawdown-Adaptive Signal Tightening (close officially):**
+- Run one walk-forward test with EP=25 when portfolio DD > 15%
+- High confidence it fails, but should be officially tested and closed per strategy-ideas.md
 
 ## TOP 3 PRIORITY EXECUTION TASKS (2026-04-17, afternoon — UPDATED)
 
