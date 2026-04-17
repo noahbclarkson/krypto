@@ -186,7 +186,7 @@
 
 ## ⚡ ALL TURTLE HYPEROPTS COMPLETE — No Params Remain
 
-ALL Turtle+Chandelier params FROZEN as of 2026-04-14:
+ALL Turtle+Chandelier params FROZEN as of 2026-04-17:
 - EP=21 ✅ (hyperopt 2026-04-10)
 - ATR_PERIOD=24 ✅ (hyperopt 2026-04-16: fine sweep 18-35 step1, +3.6% Sharpe vs ATR=25)
 - ATR_MULT=0.0 ✅ (no filter — hyperopt 2026-04-13)
@@ -194,6 +194,7 @@ ALL Turtle+Chandelier params FROZEN as of 2026-04-14:
 - CHAND_MULT=2.15 ✅ (hyperopt 2026-04-16: fine step=0.05 sweep → +25.5% Sharpe vs coarse step=0.5 baseline. Saturation plateau M≥2.15 confirmed.)
 - HOLD_MAX=45 ✅ (hyperopt 2026-04-11)
 - POSITION_CAP=3 ✅ (hyperopt 2026-04-11, extended sweep confirmed)
+- VOL_LOOKBACK=55 ✅ (hyperopt 2026-04-17: extensive 1-100 step1 sweep. Prior VL=2 sweep (1-14) was insufficient range — true optimum at VL=55 (+40% Sharpe vs VL=1). EMA never beats SMA. Plateau at VL=53-61. See memory/hyperopt-2026-04-17-vol-lookback-extended.md.)
 - **CHOP_FILTER: REJECTED (2026-04-14)** — destroys Sharpe in all configs
 
 ---

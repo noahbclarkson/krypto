@@ -123,7 +123,7 @@
 - **Chandelier exit mostly taker (~25% maker):** Stop always below market → fast declines trigger market sell.
 - **Actionable for live bot:** Place entry limit at bar close, Post Only flag, sell limit 1-2 ticks above Chandelier stop.
 - **Key insight:** The fee gap is the biggest unmeasured variable. Live testnet paper trading is the only honest test remaining.
-- **All param sweeps confirmed optimal** (MIN_TRADES, VOL_LOOKBACK, HOLD_MAX, ATR mult) — no more tuning needed.
+- **VOL_LOOKBACK=55 (2026-04-17):** Extended sweep VL=1-100 step 1 (both SMA+EMA) found VL=55 as winner — not VL=2 from prior 1-14 sweep. 9-way Sharpe 7.23 (+40% vs VL=1), pass 45/54 (83%). EMA never beats SMA. Plateau at VL=53-61 confirmed. Prior VL=2 was insufficient range. See memory/hyperopt-2026-04-17-vol-lookback-extended.md.
 - **Files:** `charts/execution_gap_analysis.py`, `charts/execution_gap_analysis.png`
 - **State:** Research complete. Only Binance testnet API keys needed to proceed.
 
