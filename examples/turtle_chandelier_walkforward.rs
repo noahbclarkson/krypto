@@ -33,8 +33,10 @@ const CHAND_PERIOD: usize = 20; // hyperopt 2026-04-16: CP=20 wins full 46-value
 const CHAND_MULT: f64 = 2.15; // hyperopt 2026-04-16: M=2.15 fine-sweep winner (31 values step=0.05, 3→9 universe validation). M=2.00 was step=0.5 coarse. Delta Sharpe +25.5% (3.87→4.86), same 83.3% pass rate. Saturation plateau M=2.15 to 3.00 (identical performance — dual exit means Turtle ATR fires first at M≥2.15). See memory/hyperopt-2026-04-16-chand-mult.md.
 const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. Dual exit: Chandelier OR Turtle ATR fires first. See hyperopt-2026-04-16-atr-period.md.
-// hyperopt 2026-04-17: VOL_LOOKBACK=55 SMA — extensive sweep 1-100 step1, both SMA and EMA. 9-universe validation: Sharpe 6.9993 (+35.7% vs single-bar VL=1), pass 45/54 (83%). Extended range (1-100) confirmed plateau at VL=53-61. EMA never beats SMA. Prior VL=2 sweep (1-14) was insufficient range — true optimum is 55. See memory/hyperopt-2026-04-17-vol-lookback-extended.md.
-const VOL_LOOKBACK: usize = 55; // dollar-volume smoothing window (rolling SMA of vol*price)
+// hyperopt 2026-04-17: VOL_LOOKBACK=55 found in 1-100 step1 sweep, BUT overfits on held-out W04/W05.
+// Held-out test (2026-04-17): VL=2 wins Base5 (+77.3%/+43.6%) vs VL=55 (+51.0%/+26.2%).
+// Reverted to VL=2. VL=55 was noise-fitting non-held-out windows in global optimization.
+const VOL_LOOKBACK: usize = 2; // dollar-volume smoothing window (rolling SMA of vol*price)
 const TURTLE_ATR_MULT: f64 = 2.00; // hyperopt 2026-04-12: TURTLE_ATR_MULT sweep {1.0-5.0 step 0.5}. M=2.0 is optimal (Sharpe 6.17, 93% pass). M<2.0 degrades Sharpe (M=1.0: 3.06). M>=2.5: Turtle ATR never fires first (Chandelier dominates). Current value matches CHAND_MULT by design — Turtle ATR is the faster secondary exit, not an independent mechanism. See memory/hyperopt-2026-04-12-atr-mult.md.
 
 const UNIVERSES: &[(&str, &[&str])] = &[

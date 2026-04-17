@@ -75,7 +75,7 @@ const TURTLE_EP: usize = 21;       // hyperopt 2026-04-10
 const TURTLE_HOLD_MAX: usize = 45; // hyperopt 2026-04-11
 
 // === DOLLAR-VOLUME RANKING: 55-bar rolling SMA (hyperopt 2026-04-17: VL=55 wins, +40% Sharpe vs VL=1, extended range 1-100 confirmed) ===
-const VOL_LOOKBACK: usize = 55; // hyperopt 2026-04-17: VL=55 wins extensive 1-100 sweep, +40% Sharpe vs VL=1, pass 45/54 (83%). Plateau at VL=53-61. EMA never beats SMA.
+const VOL_LOOKBACK: usize = 2; // hyperopt 2026-04-17: VL=55 REVERTED (overfits W04/W05). Production: VL=2.
 
 fn rolling_dv(close: &[f64], vol: &[f64], lookback: usize, bar: usize) -> f64 {
     let mut sum = 0.0_f64;
@@ -248,7 +248,7 @@ async fn main() -> Result<()> {
     let ddbudget_daily = simulate_ddbudget(&ad_plans, &macd_plans, &small_plans, universe.steps);
 
     // Turtle+Chandelier: uses CHAND(20,2.15)+ATR(24,2.0) DUAL EXIT — updated 2026-04-17
-    // Params: CHAND_P=20, CHAND_M=2.15, TURTLE_ATR_P=24, TURTLE_ATR_M=2.0, VOL_LOOKBACK=55
+    // Params: CHAND_P=20, CHAND_M=2.15, TURTLE_ATR_P=24, TURTLE_ATR_M=2.0, VOL_LOOKBACK=2 (VL=55 REVERTED 2026-04-17)
     let turtle_daily = simulate_turtle_chandelier_equity(&universe)?;
 
     // Export CSV
@@ -699,7 +699,7 @@ fn simulate_turtle_chandelier_equity(universe: &UniverseData) -> Result<Vec<f64>
         let mut scores: Vec<(&str,f64)> = syms.iter().filter_map(|s| {
             sym_data.get(s).and_then(|sd| {
                 if bar < sd.close.len() {
-                    // VOL_LOOKBACK=55: 55-bar SMA dollar volume (hyperopt 2026-04-17 extended sweep)
+                    // VOL_LOOKBACK=2: 2-bar SMA dollar volume (production default after 2026-04-17 overfitting revert)
                     let dv = rolling_dv(&sd.close, &sd.vol, VOL_LOOKBACK, bar);
                     Some((s.as_str(), if dv.is_finite() && dv > 0.0 { dv } else { 0.0 }))
                 } else { None }
