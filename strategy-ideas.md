@@ -118,8 +118,32 @@
 - **Status:** NOT TESTED. No API keys needed. 6+ hours since marked URGENT.
 - **File:** `examples/ctrend_monte_carlo.rs` (new)
 
-## 21. Turtle Signal Freshness Filter — NEW (2026-04-17)
+## 21. Turtle Signal Freshness Filter — NOT TESTED (2026-04-17)
 - **Concept:** Only enter a new Turtle position when the last exit (stop or HOLD_MAX) was at least X bars ago (e.g., X=5). Reduces re-entry whipsaw in chop — after a stop-out, require a cooldown period before re-entering the same symbol.
 - **Why different from ATR entry filter:** ATR filter requires volatility above median — it FILTERS entries based on market conditions. Freshness filter requires TIME after exit — it FILTERS re-entries based on trade history. Mechanistically different.
-- **Risk:** Trade-starving. If cooldown is too long, missed opportunities. Test X ∈ {3, 5, 10, 15}.
-- **Status:** NOT TESTED. Needs dedicated walk-forward harness.
+- **Risk:** ATR entry filter hyperopt definitively showed ANY entry-side tightening HURTS (mult=0.25 → 87% pass from 92.6%). Freshness filter is entry filtering by a different mechanism but likely to also hurt. Test once then close.
+- **Status:** NOT TESTED.
+
+---
+
+## ⚠️ 2026-04-17 Afternoon Critique Additions
+
+### CTREND Status: In-Sample Artifact, Progress Chart Broken
+
+**Critical finding:** The `progress_equity_curves.csv` (8 columns: day,ad,macd,small,ctrend,ddbudget,blend,turtle) is STALE. The Rust harness (`progress_equity_curves.rs`) writes 5 columns but was never regenerated after CTREND/MACD/blend removal (last run: Apr 17 03:55 UTC). The Python script (`plot_progress.py`) reads:
+- `r[4]` as "Turtle" → actually reads CTREND column (1143x final value)
+- `r[1]` as "A/D" → actually reads MACD column
+- `r[7]` is the real turtle_equity but the script never reads it
+
+**This means the most-viewed chart in the project shows CTREND data labeled as Turtle+Chandelier.** Same artifact class as BollingerReversion 5404x DOGE. Fix: see PLAN.md T1.
+
+**Monte Carlo test (#20) is the definitive answer** — 50-line block-permutation harness. 100 MC runs on CTREND signal. If median result <100x → in-sample artifact → GRAVEYARD.
+
+### VOL_LOOKBACK=55 Overfitting Risk
+
+**The VL=2→VL=55 jump across different sweep ranges is a red flag.**
+- Coarse sweep (step=5, 5-100): VL=2 wins
+- Fine sweep (step=1, 1-100): VL=55 wins (+40% Sharpe vs VL=1)
+- After coarse identifies VL=2 as optimal in range 1-14, expanding to 1-100 is a different experiment
+- Expected real improvement: +10-20%, not +40%
+- Held-out test on W04/W05 is URGENT (see PLAN.md T2)
