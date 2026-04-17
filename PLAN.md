@@ -1,42 +1,46 @@
 # PLAN.md - Krypto Research Priorities
 
-## ⚡ CRITIQUE FINDINGS (2026-04-17 00:29 UTC — Evening Critique)
+## ⚡ CRITIQUE FINDINGS (2026-04-17 04:18 UTC — Morning Critique, 2nd cycle)
 
-**5-last-commits assessment:** 2 real fixes (LiveBot strategy bug, turtle equity forward-fill), 3 refinement. "LiveBot rewrite" was 50-line find+replace. Project in documentation loop.
+**5-last-commits assessment:** ALL documentation/refinement. Zero real discoveries. LiveBot fix = 50-line find+replace. VOL_LOOKBACK sweep = 50-line find+replace. Project in self-referential loop.
 
-**CTREND progress chart STILL BROKEN (unfixed since 18:30 UTC — 6 hours):**
-- PLAN.md claims "CTREND → REMOVED from progress chart" — fix was documented but NEVER executed
-- `charts/progress_equity_curves_daily.png` (updated 21:08) still shows CTREND 1438x
-- `progress_equity_curves.rs` line 237: `build_symbol_plans(&universe, StrategyKind::CTRend)?` → uses fixed 21-bar hold in `simulate_daily_equity` — no OOS windows
-- Actual OOS validated strategy = DynamicTrend EMA crossover (6/7 pass, Sharpe +2.01) — DIFFERENT mechanism, being conflated with CTREND
-- **This is same artifact-class as BollingerReversion.**
+**CTREND progress chart STILL BROKEN (unfixed since 18:30 UTC yesterday — 10+ hours):**
+- PLAN.md claims "CTREND → REMOVED" — fix was documented but NEVER executed
+- `progress_equity_curves.csv` STILL has `ctrend_equity` column (1438x final value)
+- `plot_progress.py` STILL plots CTREND (line 13+)
+- `progress_equity_curves.rs` line 257: STILL calls `build_symbol_plans(StrategyKind::CTRend)`
+- Chart regenerated at 03:54 UTC today — CTREND still in output
+- **Same artifact-class as BollingerReversion. Fix was documented but not executed.**
 
-**Monte Carlo test NOT BUILT:** strategy-ideas.md #20 "URGENT" — 50-line harness, no API keys needed. 6+ hours with no action.
+**Monte Carlo test NOT BUILT (6+ hours since written):** 50-line harness, no API keys needed. Zero excuses.
 
-**Entry 18 (Drawdown-Adaptive Signal Tightening):** Conceptually dead on arrival — same trade-starving mechanism as 2 killed filters (ATR entry filter, 4h SMA confirmation). Chandelier dual-exit already manages adverse positions.
+**VOL_LOOKBACK=55 SUSPECT:** Coarse sweep (step=5, 5-100): VL=2 wins. Fine sweep (step=1, 1-100): VL=55 wins. Jump from 2→55 across different sweep ranges is a red flag — plausible that coarse missed optimum, but also plausible fine is overfitting. No held-out test run.
 
-**Data gaps unfixed:** BTC/ETH parquet capped at 3000 rows (~2026-03-23). 2026 YTD for BTC/ETH is incomplete.
+**BTC/ETH data gap:** 3000-row cap → ends 2026-04-15. Today is 04-17. 2 missing days. SOL is full.
 
-**Biggest blind spot:** One-trick pony. ALL edge in Turtle+Chandelier. No backup strategy if mechanism breaks. Every non-trend strategy dead.
+**Biggest blind spot:** Single-strategy vulnerability. Turtle+Chandelier is ALL edge. 50K+ hyperopt runs across 7 days — aggregate overfitting risk is real even if each individual sweep was valid.
 
-## TOP 3 PRIORITY EXECUTION TASKS (2026-04-17)
+## TOP 3 PRIORITY EXECUTION TASKS (2026-04-17, updated)
 
-**T1 — Fix CTREND progress chart (IMMEDIATE):**
-- Remove CTREND from `progress_equity_curves.rs` → regenerate chart without it
-- OR build proper OOS equity for DynamicTrend momentum signal (different from ctrend_signals fixed hold)
-- Do NOT let an in-sample artifact (1438x) remain on a published chart
-- This is same priority as "BollingerReversion definitive kill" — a known artifact must be removed
+**T1 — Fix CTREND progress chart (IMMEDIATE, non-negotiable):**
+- Remove CTREND from `progress_equity_curves.rs` → remove `ctrend_equity` column from CSV → update `plot_progress.py` → regenerate PNG
+- Do NOT let in-sample artifact (1438x) remain on a published chart
+- This is the same artifact-class as BollingerReversion — fix it today
 
 **T2 — Build Monte Carlo test for CTREND (IMMEDIATE):**
 - `examples/ctrend_monte_carlo.rs` — shuffle returns within year-blocks, re-run 100 times
-- Will definitively prove/reject whether CTREND momentum signal is real or overfitted to price patterns
+- Definitively proves whether CTREND 1438x is real or overfitted to price patterns
 - 50-line harness, no API keys needed
-- Currently sitting as "URGENT" unbuilt for 6+ hours
 
-**T3 — Live Testnet (BLOCKED on API keys from Noah):**
-- Connect live_turtle_chandelier.rs to Binance testnet
-- 30-day live paper run
-- Compare live equity vs backtest (expect ~1.0-1.3 daily equity Sharpe)
+**T3 — VOL_LOOKBACK=55 held-out audit (IMMEDIATE):**
+- Run Turtle walk-forward with VL=55 vs VL=2 on last 2 windows only (W04, W05)
+- If VL=55 significantly worse on held-out → overfitting signal, revert to VL=2
+- If VL=55 holds → confidence increased
+
+**T4 — Refresh BTC/ETH parquet data:**
+- Re-download to get current (or accept 2-day gap and note it in all YTD reporting)
+
+**BLOCKED:** Live testnet (API keys from Noah).
 
 ## 🎯 THREE PRIORITY EXECUTION TASKS — ALL RESOLVED (2026-04-16)
 
