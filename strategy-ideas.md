@@ -94,11 +94,11 @@
 
 **Conclusion:** Stop researching. Ship what's validated. Run live testnet.
 
-## 18. Drawdown-Adaptive Signal Tightening — NOT TESTED
-- **Concept:** When portfolio drawdown > 15%, raise entry threshold (EP=21→EP=25) + add 4h SMA confirmation. Revert when drawdown recovers. Changes SIGNAL QUALITY not position size.
-- **Why different from failed overlays:** USDT hedge/BTC scalar/drawdown trigger all changed risk budget (position size). This changes entry quality — tighten requirements when already underwater.
-- **Risk:** ATR entry filter (conceptually similar) destroyed pass rate. Cautious — one test then graveyard if it fails.
-- **Status:** NOT TESTED. Needs dedicated walk-forward harness.
+## 18. Drawdown-Adaptive Signal Tightening — 🪦 REJECTED (2026-04-18) WITHOUT TEST
+- **Concept:** When portfolio drawdown > 15%, raise entry threshold (EP=21→EP=25). Revert when drawdown recovers. Changes signal quality not position size.
+- **Why redundant with existing data:** The ATR entry multiplier hyperopt (2026-04-13) definitively showed that ANY entry-side tightening HURTS Turtle: mult=0.25 → pass rate drops from 92.6%→87.0%, mult≥1.0 → 70.4%. Entry tightening by any mechanism reduces valid entry count and starves the strategy.
+- **DD-adaptive EP tightening is the same class of intervention.** Even if the mechanism is "portfolio DD triggers a signal change," the practical effect is filtering entries by requiring a higher bar for entry — same as ATR entry filter, same result.
+- **Verdict:** Not tested. Closed without running based on existing ATR hyperopt evidence.
 - **Verdict (2026-04-17):** ATR entry multiplier hyperopt definitively showed ANY entry-side filter HURTS. This idea is likely to fail. Test once then close.
 
 ## 19. CTREND OOS Equity Validation — ✅ DONE (2026-04-17)
