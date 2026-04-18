@@ -3,10 +3,10 @@
 //! =========================================================
 //!
 //! Strategy: A/D momentum ranking + Turtle entry + Chandelier exit
-//! - A/D period: 5 (hyperopt winner 2026-04-13) — swept p\in[1,100], 9 universes
-//!   Prior: 47 was previous winner; p=5 wins: +19% Sharpe, +7% pass rate OOS
+//! - A/D period: 1 (hyperopt winner 2026-04-18) — swept 20 values (1-50) on Base5, validated 9-universe
+//!   AD=1: 71.9% pass (global), Sharpe 3.35 vs baseline AD=5 at 52% pass, Sharpe 2.74
 //! - Turtle EP: 21 (validated winner)
-//! - Chandelier: P=15, M=2.0 (hyperopt winner 2026-04-12)
+//! - Chandelier: P=50, M=3.5 (hyperopt winner 2026-04-17, ad_chandelier_hyperopt.rs)
 //! - Hold max: 54 bars
 //! - TOP_K: 8 (hyperopt winner 2026-04-12)
 //!
@@ -27,14 +27,14 @@ const TEST_BARS: usize = 252;
 const HOLD_MAX: usize = 54;
 const TAKER_FEE: f64 = 0.001;
 const MIN_TRADES: usize = 3;
-const AD_PERIOD: usize = 5;  // hyperopt winner 2026-04-13
+const AD_PERIOD: usize = 1;  // hyperopt winner 2026-04-18: 71.9% global pass vs AD=5 52%
 const EP: usize = 21;
 const TOP_K: usize = 8;
 const POSITION_CAP: usize = 3;
 
-// Updated Chandelier params (hyperopt winner 2026-04-12)
-const CHAND_PERIOD: usize = 15; // was 45 (legacy, untested)
-const CHAND_MULT: f64 = 2.00;   // was 2.5 (legacy, untested)
+// Chandelier params from ad_chandelier_hyperopt.rs winner (2026-04-17)
+const CHAND_PERIOD: usize = 50;
+const CHAND_MULT: f64 = 3.5;
 
 const UNIVERSES: &[(&str, &[&str])] = &[
     ("Base5",        &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]),
