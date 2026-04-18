@@ -1,0 +1,9 @@
+rank,strategy,score,full_return_pct,full_trades,full_win_rate_pct,wf_passed,wf_total,wf_avg_return_pct,wf_avg_trades,resample_passed,resample_total,resample_avg_return_pct,resample_avg_trades,universe_first_place,universe_total,loo_first_place,loo_total,bootstrap_first_place,bootstrap_total
+1,Turtle+Regime,0.956316,3174.2,397,53.15,4,4,668.0,72.2,15,15,917.5,95.7,9,9,6,6,59,64
+2,Turtle20,0.497403,2735.3,446,50.00,4,4,562.4,81.0,14,15,788.0,107.3,0,9,0,6,2,64
+3,MaCross50,0.469772,1734.1,300,52.67,4,4,325.0,53.5,14,15,443.4,68.0,0,9,0,6,0,64
+4,Turtle+MACD,0.432215,1594.3,172,52.91,2,4,373.0,29.8,15,15,454.1,39.7,0,9,0,6,0,64
+5,MACD+Regime,0.429513,994.7,444,45.95,3,4,216.3,79.8,13,15,309.5,104.0,0,9,0,6,3,64
+6,MomentumBreakout,0.409031,2785.3,269,50.93,3,4,534.5,47.5,12,15,699.2,62.0,0,9,0,6,0,64
+7,MACD,0.387402,660.7,688,45.06,2,4,150.8,124.5,12,15,177.7,162.0,0,9,0,6,0,64
+8,Turtle+Regime+MACD,0.334526,1464.9,157,52.23,1,4,351.0,27.8,12,15,420.9,36.7,0,9,0,6,0,64
