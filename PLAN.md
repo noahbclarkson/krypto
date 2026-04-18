@@ -1,5 +1,70 @@
 # PLAN.md - Krypto Research Priorities
 
+## ⚡ CRITIQUE FINDINGS (2026-04-18 14:16 UTC — Strategy Research & Critique)
+
+### Last 5 Commits Assessment
+- `6bde5724` (2026-04-18): Parquet refresh + 677.9x equity claim — GOOD, data hygiene
+- `1246943d` (2026-04-18): Freshness filter in live bot ✅ + A/D AD_PERIOD hyperopt (71.9% pass — below 80% threshold)
+- `961cdd47` (2026-04-18): Freshness filter walk-forward — cd=3 wins, +8pp pass rate ✅
+- `0583cb45` (2026-04-17): Critique and plan update
+- Prior: MEMORY/PLAN/VL revert/Atr EMA null result
+
+**2/5 genuine new work, 3/5 documentation/hyperopt.** Freshness filter is the real find.
+
+### Critical Integrity Issue: VOL_LOOKBACK Ambiguity
+
+```bash
+grep "VOL_LOOKBACK" src/strategies.rs → NO OUTPUT
+grep "VOL_LOOKBACK" examples/live_turtle_chandelier.rs → NO OUTPUT
+grep "vol_lookback" examples/turtle_freshness_filter_walkforward.rs → NO OUTPUT
+```
+
+**VOL_LOOKBACK does NOT exist in Turtle+Chandelier production code.** It only exists in DDBudget.
+
+- HALL_OF_FAME.md shows `VOL_LOOKBACK=55` under Turtle+Chandelier params — this is WRONG or STALE
+- The VL revert narrative (55→2) in PLAN/MEMORY was about DDBudget, NOT Turtle ATR
+- Turtle ATR calculation does NOT use VOL_LOOKBACK — this is a documentation error in HALL_OF_FAME
+
+### Critical: Freshness Filter Not in Production Documentation
+
+- Commit 1246943d adds cd=3 to `src/live/bot.rs` ✅
+- HALL_OF_FAME.md still shows Turtle+Chandelier WITHOUT the COOLDOWN parameter
+- Production params are stale relative to live bot code
+
+### 677.9x Equity Claim Unverified
+
+- Commit message claims updated equity 677.9x from parquet refresh
+- Previous progress chart showed 1126x (Chandelier dual-exit) and 97.8x (daily equity)
+- 677.9x appears to be from a different harness/date range — unverified
+- Must run `cargo run --example progress_equity_curves` to confirm
+
+### Reports CSV Integrity Risk
+
+- `reports/daily_progress.csv` contains stale prototype results (BollingerRev DOGE Sharpe 19.01, etc.)
+- These are NOT comparable to production walk-forward results
+- Risk: misinterpretation if read without context
+
+### 3 Priority Execution Tasks
+
+**T1 — Fix VOL_LOOKBACK documentation (HIGH PRIORITY, 30 min):**
+- Audit `src/` for all VOL_LOOKBACK usage → confirm it belongs to DDBudget, NOT Turtle
+- Remove VOL_LOOKBACK=55 from HALL_OF_FAME.md Turtle+Chandelier params
+- Update PLAN/MEMORY to clarify VL is a DDBudget-only parameter
+
+**T2 — Propagate freshness filter to production params (LOW EFFORT, 15 min):**
+- Add COOLDOWN=3 to HALL_OF_FAME.md production params
+- Verify `src/live/bot.rs` cd=3 implementation matches walk-forward
+
+**T3 — Verify 677.9x equity claim (LOW EFFORT, 15 min):**
+- Run `cargo run --example progress_equity_curves --profile sweep`
+- Compare CSV output to commit 6bde5724 claim
+- Correct if mismatched
+
+**T4 — Live testnet (BLOCKED on Noah):**
+- Only remaining validation step. No research advances project without live data.
+
+---
+
 ## ⚡ CRITIQUE FINDINGS (2026-04-17 18:17 UTC — Evening Critique)
 
 ### All Turtle+Chandelier Parameters Now Truly Exhausted

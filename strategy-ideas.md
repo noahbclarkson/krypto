@@ -1,6 +1,6 @@
-# Strategy Ideas — Updated 2026-04-16 (Evening Critique)
+# Strategy Ideas — Updated 2026-04-18 (Strategy Research & Critique)
 
-*2026-04-16 evening critique: **CRITICAL** — CTREND 1438x on progress chart is likely in-sample artifact. ema_fast=50 default has negative OOS Sharpe (-13.017). ema_fast=60 winner still negative (-25.163) but 85.7% pass. The progress chart runs strategies on all bars without proper OOS windows. **Do NOT post CTREND equity to Discord until OOS validation completes.** See memory/2026-04-16-evening-critique.md for full critique.*
+*2026-04-18 critique: Freshness filter #21 CLOSED. 677.9x equity claim unverified. VOL_LOOKBACK removed from Turtle+Chandelier (DDBudget-only parameter). Research loop closed. Only live testnet matters now.*
 
 ---
 
@@ -155,3 +155,51 @@
 - After coarse identifies VL=2 as optimal in range 1-14, expanding to 1-100 is a different experiment
 - Expected real improvement: +10-20%, not +40%
 - Held-out test on W04/W05 is URGENT (see PLAN.md T2)
+
+---
+
+### ⚠️ 2026-04-18 Afternoon Critique Additions
+
+**## Critical: VOL_LOOKBACK Does NOT Exist in Turtle+Chandelier Code**
+
+```bash
+grep "VOL_LOOKBACK" src/strategies.rs → NO OUTPUT
+grep "VOL_LOOKBACK" examples/live_turtle_chandelier.rs → NO OUTPUT
+grep "vol_lookback" examples/turtle_freshness_filter_walkforward.rs → NO OUTPUT
+```
+
+**The VOL_LOOKBACK parameter belongs to DDBudget, NOT Turtle+Chandelier.** HALL_OF_FAME.md incorrectly lists `VOL_LOOKBACK=55` under Turtle+Chandelier production params. The "VL=55→2 revert" narrative in PLAN/MEMORY refers to DDBudget dollar-volume ranking, not Turtle ATR. Turtle ATR does NOT use VOL_LOOKBACK. **HALL_OF_FAME.md must be corrected to remove VOL_LOOKBACK from Turtle params.**
+
+**## Freshness Filter #21 CLOSED ✅**
+- cd=3 wins: +8pp pass rate (58.9%→66.7% Base5, 70%→80% NoDOGE)
+- Implemented in `src/live/bot.rs` (commit 1246943d)
+- NOT YET propagated to HALL_OF_FAME.md production params (T2 in new PLAN)
+- **Status: CLOSED — first real parameter improvement since all params were frozen**
+
+**## 677.9x Equity Claim Unverified**
+- Commit 6bde5724: "refresh Binance parquet cache + updated Turtle equity 677.9x"
+- Prior known values: $10K→$67M (310 trades ≈ 670x), progress chart 1126x (Chandelier), daily equity 97.8x
+- 677.9x appears to be from a specific harness run — must verify via `cargo run --example progress_equity_curves --profile sweep`
+
+**## Reports CSV Contains Stale Prototype Results**
+- `reports/daily_progress.csv` has BollingerRev DOGE Sharpe 19.01, XRP Sharpe 14.64, etc.
+- These are from early prototype runs, NOT production walk-forward harnesses
+- Risk: misinterpretation if read without context
+
+**## All Strategy Ideas Truly Exhausted**
+- No genuinely untested ideas remain
+- #18 (drawdown-adaptive tightening): likely fails (ATR entry filter already showed ANY entry filter hurts)
+- #21 (freshness filter): CLOSED ✅, implemented in live bot
+- Research loop is closed. **Only live testnet advances the project.**
+
+**## New Concept: Maker-Fill Adaptive Slippage**
+- Observation: maker fill is ~63% (vs 70% assumption) in live trading
+- 37% of entries fill as taker at higher cost
+- Concept: detect when maker order unlikely to fill → switch to aggressive execution
+- Status: NOT TESTED. Low priority until live data available.
+
+**## New Concept: Regime-Contingent Cooldown**
+- cd=3 is a fixed cooldown regardless of market regime
+- Observation: in chop (high ATR), fixed 3-bar cooldown may be too lenient
+- Concept: cd = f(ATR_percentile_rank) — longer cooldown in high-vol regimes
+- Status: NOT TESTED. Likely overfits like all other regime-contingent ideas.

@@ -1,6 +1,6 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-*Last updated: 2026-04-16. Archive of validated production candidates.*
+*Last updated: 2026-04-18. Critical: VOL_LOOKBACK=55 removed from Turtle params (harness-only, not in production code). Freshness filter cd=3 confirmed in live bot.*
 
 ## PRODUCTION — DEPLOYABLE
 
@@ -13,18 +13,20 @@
 - **Max DD:** 35.4% (W02 COVID-crash)
 - **Total trades (full history):** 310, $10K → $67M
 
-**Frozen params (as of 2026-04-17):**
+**Frozen params (as of 2026-04-18):**
 ```
-EP = 21          (entry lookback)
-ATR_PERIOD = 24  (Turtle ATR — updated 2026-04-16: fine hyperopt ATR=24 vs ATR=25 → +3.6% Sharpe, -10.8pp worst DD)
-ATR_MULT = 0.0   (no entry filter)
-CHAND_PERIOD = 20    (hyperopt 2026-04-16: CP=20 wins full 46-value sweep. CP=20: pass 45/54 (83%), Sharpe 7.23 with VL=55. CP=28 was worst in plateau (CP 17-27): Sharpe 5.0797. +1.55% Sharpe improvement over baseline.)
-CHAND_MULT = 2.15   (fine-tuned 2026-04-16: +25.5% Sharpe vs coarse M=2.00, saturation plateau confirmed at M≥2.15)
+EP = 21              (entry lookback)
+ATR_PERIOD = 24      (Turtle ATR — fine hyperopt ATR=24 vs ATR=25 → +3.6% Sharpe, -10.8pp worst DD)
+ATR_MULT = 0.0       (no entry filter)
+CHAND_PERIOD = 20     (hyperopt 2026-04-16: CP=20 wins full 46-value sweep, +1.55% Sharpe vs CP=28)
+CHAND_MULT = 2.15     (fine-tuned 2026-04-16: +25.5% Sharpe vs coarse M=2.00, saturation plateau M≥2.15)
 HOLD_MAX = 45
 POSITION_CAP = 3
-VOL_LOOKBACK = 55    (dollar-volume rolling SMA window — hyperopt 2026-04-17: extensive 1-100 step1 sweep. VL=55 wins: 9-way Sharpe 7.23 (+40% vs VL=1), pass 45/54 (83%). EMA never beats SMA. Plateau at VL=53-61. See memory/hyperopt-2026-04-17-vol-lookback-extended.md.)
+FRESHNESS_COOLDOWN = 3   (2026-04-18: cd=3 added — +8pp pass rate vs no cooldown. Live bot: src/live/bot.rs)
 MAX_SOL_POSITION = $50K notional
 ```
+
+**Note on VOL_LOOKBACK:** The walk-forward harness (`turtle_chandelier_walkforward.rs`) uses VOL_LOOKBACK for dollar-volume ranking (VL=2, reverted from hyperopt winner VL=55 which overfit on W04/W05). VOL_LOOKBACK is a HARNESS-ONLY parameter — it does NOT appear in `examples/live_turtle_chandelier.rs` or `src/live/bot.rs`. The production live bot does not implement DV ranking. Do NOT add VOL_LOOKBACK to production params.
 
 **Validation evidence:**
 - Held-out (optimized vs defaults): 91% win, 81% on last-3-windows
