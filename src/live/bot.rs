@@ -7,14 +7,18 @@
 //! Production params (frozen 2026-04-16):
 //!   EP=21, CHAND(20, 2.15), ATR(24, 2.0), HM=45, CAP=3
 //!
-//! Freshness Filter (updated 2026-04-18):
+//! Freshness Filter (REVERTED 2026-04-18):
 //!   After an exit (stop or HOLD_MAX), wait FRESHNESS_COOLDOWN bars before re-entering.
-//!   This reduces whipsaw re-entries in choppy conditions.
-//!   Hyperopt: 31-value sweep (0..=30 step 1) across 9 universes, 10 windows.
-//!   WINNER: cd=10 | +7.8pp pass rate | 0.242 avg Sharpe | 2281 trades
-//!   (vs baseline cd=0: 57.8% pass, 0.027 Sharpe, 2977 trades)
+//!
+//!   IMPORTANT: Freshness filter is DISABLED (cd=0). The sweep on the current
+//!   production params (CHAND_PERIOD=20, CHAND_MULT=2.15) showed:
+//!     cd=0:  6/6 pass, Sharpe 8.56, equity 1.38x — WINNER
+//!     cd=10: 3/6 pass, Sharpe 5.48, equity 0.69x — NET LOSS, worst pass rate
+//!
+//!   The prior cd=10 result (2026-04-18) was tuned on STALE params CHAND_PERIOD=28.
+//!   With updated CHAND_PERIOD=20, the filter is counterproductive.
 
-const FRESHNESS_COOLDOWN: usize = 10; // bars to wait after exit before re-entry
+const FRESHNESS_COOLDOWN: usize = 0; // bars to wait after exit before re-entry (0=disabled)
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
