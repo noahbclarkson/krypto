@@ -1,349 +1,244 @@
-# PLAN.md — Krypto Live Testnet Priority
+# PLAN.md — Krypto Live Testnet Readiness
 
-**Manager directive (2026-04-18):** Stop all historical hyperopt/doc loops. Research closed. Next useful outputs only:
-1. Minimal Binance testnet readiness checklist for Noah
-2. Exact env/API setup
-3. One dry-run/testnet launch plan
-4. Any code changes strictly required for safe first live shadow run
+## ⚡ CRITIQUE FINDINGS (2026-04-18 20:05 UTC — Strategy Research & Critique)
+
+### Last 8 Commits Assessment
+```
+f3d9135a chore:  TradingMode interlock + testnet PLAN              ← docs/infra
+1905c2c4 feat:   TradingMode safety interlock                      ← real (minimal)
+758a12f4 docs:   hyperopt session update (memory hygiene)          ← docs
+8153d5ce feat:   TURTLE_ATR_MULT extensive sweep + ATR period     ← redundant hyperopt
+25816f95 feat:   head-to-head benchmark + MACD + parquet          ← real (genuine)
+3ecd1a58 docs:   critique and plan update                          ← docs
+fbcb7847 chore:  daily progress tracking                           ← docs
+0b46f45f docs:   research loop closed                              ← docs
+```
+**2/8 genuine discoveries (head-to-head benchmark, parquet refresh). ATR_MULT/ATR_PERIOD re-sweeps are redundant — both params already frozen since 2026-04-12 and 2026-04-16 respectively.**
+
+### ATR_MULT and ATR_PERIOD Re-sweep: Redundant
+- **ATR_MULT=2.0** — already frozen since 2026-04-12. The 9-value sweep is identical to the original and confirms M=2.0. Not new knowledge.
+- **ATR_PERIOD=24** — already frozen since 2026-04-16. The 5-100 step=5 sweep confirms ATR=24. ATR=95 was already suspected as cap artifact. Not new knowledge.
+- **Pattern:** More sweeps on frozen params → illusion of progress, real risk of aggregate overfitting.
+
+### All Strategy Ideas Exhausted
+| # | Idea | Status |
+|---|------|--------|
+| 18 | DD-adaptive EP tightening | 🪦 REJECTED — ATR entry filter proved ANY entry tightening hurts |
+| 21 | Freshness filter cd=N | ✅ DONE — cd=10 implemented in live bot |
+
+### Reports CSV Stale Data: Known Limitation
+- `reports/daily_progress.csv` contains BollingerRev DOGE Sharpe 19.01 (0/288 OOS) and other prototype artifacts
+- Not fixable without report versioning system — noted as known limitation
+
+### Freshness Filter cd=10: Modest Improvement, Possible Overfit
+- cd=10 won 31-value sweep (+0.4pp pass rate vs cd=3)
+- Improvement is within noise. Live testnet is the only validation.
+- Risk: cd=10 might be overfit to 9-universe aggregate; cd=0 might perform identically in live
+
+### 3 Most Promising Unbuilt Ideas
+
+**1. Maker-Fill Adaptive Execution — NOT TESTABLE until live**
+- Detect low maker-fill probability → switch to aggressive execution
+- Mechanistically sound but needs live order flow data
+- **Status: WAIT for API keys**
+
+**2. Regime-Contingent Cooldown — LOW PRIORITY**
+- cd = f(ATR_percentile_rank)
+- Every regime-contingent idea has failed (USDT hedge, BTC scalar, chop filter, DD trigger)
+- **Status: DEFER until live data available**
+
+**3. No genuinely new ideas remain.** Strategy-ideas.md is exhausted.
+
+### Metrics: TRUSTWORTHY ✅
+- CTREND/Turtle Monte Carlo: 0/500 and 0/100 shuffled beat real — edge GENUINE
+- Freshness filter cd=10: small but documented improvement
+- Equity Sharpe ~1.0: honestly labeled
+
+### Biggest Blind Spots
+
+**1. No regime defense in live bot (structural, unfixable)**
+- 2026 YTD: Turtle -22.7% vs BTC +12.7%
+- Every overlay tested and failed: USDT hedge, BTC scalar, chop filter, drawdown trigger
+- **Honest conclusion:** We don't know how to defend against chop. Stay in the strategy and accept underperformance in non-trending regimes.
+
+**2. Maker fill gap is biggest unmeasured variable**
+- 70% maker assumption (~63% actual) never tested live
+- Live vs backtest drift unknown
+- **Only live testnet answers this. Blocked on API keys.**
+
+**3. cd=10 might be noise-range overfit**
+- Improvement over cd=0 is +0.4pp pass rate — within noise
+- If overfit, cd=0 (simpler) is equivalent or better
 
 ---
 
-## 📋 BINANCE TESTNET READINESS CHECKLIST — For Noah
+## TOP 3 PRIORITY EXECUTION TASKS
 
-### Step 1: Create Binance Testnet Account (5 minutes)
+**T1 — Live testnet (BLOCKED on Noah's Binance testnet API keys):**
+- `live_turtle_chandelier.rs` built, `TradingMode` interlock in place — ✅ READY
+- Only blocker: Noah's Binance testnet API keys
+- Once keys arrive: run `--live` (testnet shadow mode) for 48h to verify signals
+- Then: small real testnet trades (5-10, 1 symbol) to validate execution
+- Then: 30-day full universe testnet → compare live vs backtest Sharpe (~1.0 expected)
+- Metric to track: `live_vs_backtest_drift = (live_sharpe - 1.2_ref) / 1.2_ref`. Acceptable: -40% to +20%
 
-1. Go to **https://testnet.binancefuture.com/**
-2. Log in with your GitHub or email account
-3. Navigate to **Dashboard → API Keys → Create New**
-4. Label it `krypto-testnet` (or any name you prefer)
-5. **Save the API Key and Secret** — you will only see the secret once
-6. Enable "Enable Spot & Futures Trading" if not already enabled
-7. No IP restriction needed for first test
+**T2 — STOP ALL hyperopt, documentation, and research loops:**
+- ATR_MULT=2.0 ✅ confirmed (frozen 2026-04-12)
+- ATR_PERIOD=24 ✅ confirmed (frozen 2026-04-16)
+- cd=10 ✅ implemented
+- All Turtle+Chandelier params FROZEN. No more sweeps.
+- Any future hyperopt must be justified by a specific live trading failure, not curiosity
 
-**⚠️ Testnet funds are free.** Request testnet USDT from:
-- `https://testnet.binancefuture.com/en/futures/BTCUSDT` → click "Faucet" (top right)
-- Request at least 10,000 USDT test funds
-- Each symbol also needs test tokens (BTC, ETH, SOL, etc.) — faucet those too
-
-### Step 2: Verify Dry Run Works (before any real testnet orders)
-
-```bash
-# Verify the bot compiles and runs paper/dry-run mode first
-cd ~/.openclaw/workspace-krypto/krypto
-
-# Dry run — no API keys needed, simulates orders only
-cargo run --example live_turtle_chandelier --profile sweep
-```
-
-Expected output: paper backtest results for 5 symbols, no API errors.
-
-### Step 3: Set Environment Variables
-
-```bash
-# Add to your shell profile (~/.bashrc or ~/.zshrc) or run inline:
-export BINANCE_API_KEY="your_testnet_api_key_here"
-export BINANCE_API_SECRET="your_testnet_secret_here"
-```
-
-**Never put API keys in code or git.**
-
-### Step 4: Verify Testnet Connection (dry-run, then real)
-
-```bash
-# Dry run with testnet config (simulated orders, no real trades)
-BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy \
-  cargo run --example live_turtle_chandelier --profile sweep
-
-# Real testnet orders (shadow mode — bot logs signals but doesn't trade)
-BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy \
-  cargo run --example live_turtle_chandelier --profile sweep -- --live
-```
-
-Look for `[DRY RUN] BUY BTCUSDT ... on testnet` in the output. This confirms API keys work.
-
-### Step 5: Symbols to Fund for Testnet
-
-| Symbol | Why needed | Approx test funds |
-|--------|-----------|-----------------|
-| BTCUSDT | Primary trend | 0.5 BTC |
-| ETHUSDT | Primary trend | 5 ETH |
-| SOLUSDT | High slippage risk | 50 SOL |
-| XRPUSDT | Secondary trend | 5000 XRP |
-| DOGEUSDT | High vol trend | 50000 DOGE |
+**T3 — Document live trading risks formally (low effort, high value):**
+- Create `snapshots/live_trading_risks.md` with: SOL slippage cap ($50K notional), maker fill gap (63% vs 70%), no regime defense (2026 YTD -22.7% is cost of staying), all parameters frozen, expected live Sharpe ~1.0
+- One-page reference for Noah before testnet launch
 
 ---
 
-## 🧪 DRY-RUN / TESTNET LAUNCH PLAN
+## ✅ PREVIOUS PRIORITIES RESOLVED
 
-### Phase 0 — Verify (Do First)
+**Freshness filter #21 CLOSED ✅**
+- cd=10 implemented in `src/live/bot.rs`
+- Live bot: production-ready with cd=10
 
-```bash
-# 1. Compile check
-cargo build --example live_turtle_chandelier --profile sweep
+**VOL_LOOKBACK removed from Turtle+Chandelier ✅**
+- Parameter belongs to DDBudget only
+- HALL_OF_FAME.md stale entry removed from Turtle params
 
-# 2. Paper mode (no API keys needed)
-cargo run --example live_turtle_chandelier --profile sweep
+**ATR_MULT and ATR_PERIOD fully validated ✅**
+- Re-sweep (commit 8153d5ce) confirms both params — no change needed, no further sweeps warranted
 
-# 3. Dry-run with testnet API keys (simulates, no real orders)
-BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy \
-  cargo run --example live_turtle_chandelier --profile sweep
+**Research loop CLOSED ✅**
+- All strategy ideas tested or rejected
+- Project in live testnet readiness state
+
+---
+
+## Production Params (FROZEN as of 2026-04-18)
+
 ```
-Expected: `DRY RUN` prefix on all orders, no real order IDs returned.
+EP = 21             (entry lookback)
+ATR_PERIOD = 24     (Turtle ATR exit — fine hyperopt 2026-04-16)
+TURTLE_ATR_MULT = 2.0  (Turtle ATR stop)
+ATR_MULT = 0.0      (no entry filter — definitive, 2026-04-13)
+CHAND_PERIOD = 20   (Chandelier exit)
+CHAND_MULT = 2.15   (saturation plateau confirmed)
+HOLD_MAX = 45
+POSITION_CAP = 3
+FRESHNESS_COOLDOWN = 10  (bars after exit before same-symbol re-entry)
+UNIVERSE = [BTC, ETH, SOL, XRP, DOGE]  (NoDOGE — ADA removed)
+USE_CHOP_FILTER = FALSE  ← REJECTED
+MAX_SOL_POSITION = $50K notional  ← due to SOL slippage risk
+```
 
-### Phase 1 — Shadow Run (Live signals, observe only)
+**Honest Sharpe summary:**
+- Walk-forward per-window avg: **6.29** (NOT directly comparable — methodology artifact)
+- Daily equity Sharpe (NoDOGE): **~1.0** ← use this on equity chart captions
+- Progress chart (NoDOGE): **~2.5** (Chandelier dual-exit)
+- **Never report 6.29 on an equity chart. Use ~1.0.**
+- **Expected live Sharpe:** ~1.0-2.0. Acceptable drift: -40% to +20%.
 
+---
+
+## GRAVEYARD (Complete as of 2026-04-18)
+
+| Strategy | Status | Key Reason |
+|----------|--------|------------|
+| BollingerReversion | GRAVEYARD | Signal 0% OOS pass, worse than random |
+| BOCPD regime detector | GRAVEYARD | 0% breaks detected |
+| FDUSD basis carry | GRAVEYARD | Structural premium, autocorrelation 0.88 |
+| Funding rate MR | GRAVEYARD | 43% pass, highly autocorrelated |
+| Cross-sectional momentum | GRAVEYARD | 60% pass, short side noise |
+| Vol-contingent Chandelier | GRAVEYARD | All configs identical |
+| Vol-rank A/D×Turtle switching | GRAVEYARD | Worse than either component alone |
+| MACD+Regime | GRAVEYARD | 2/7 OOS pass |
+| 4h MR | GRAVEYARD | 0/4 pass, fees destroy edge |
+| Regime-conditional allocation | GRAVEYARD | 60.5% pass, dragged by weak A/D |
+| BTC Trend Scalar | GRAVEYARD | 0/8 configs beat baseline |
+| A/D Static Sleeve | GRAVEYARD | 47% pass |
+| ATR entry filter | GRAVEYARD | Any non-zero ATR filter hurts pass rate |
+| DD-adaptive EP tightening | GRAVEYARD | Same mechanism as ATR entry filter |
+| DynamicTrend+Chandelier | GRAVEYARD | Turtle wins 21/24 windows |
+| Cross-Market Equity Portfolio | GRAVEYARD | Combined worse than crypto-only |
+| SOL Dollar-Sized Re-test | GRAVEYARD | Cap never activates in walk-forward |
+
+---
+
+## Live Testnet Launch Plan
+
+### Phase 1: Dry-Run Verification (No API keys needed)
 ```bash
-# Bot starts, watches WebSocket, logs all signals but DOES NOT TRADE
-# The --live flag activates real executor but dry_run=true by default
-# from_env() + no --prod flag = testnet, dry_run=true (safe default)
+cargo run --example live_turtle_chandelier --profile sweep
+# Verify: compiles, loads parquet data, simulates signals, prints equity
+```
+**Status:** ✅ DONE. Build verified, dry-run mode works.
 
-BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy \
+### Phase 2: Testnet Shadow Mode (API keys required)
+```bash
+export BINANCE_TESTNET_API_KEY=<your_key>
+export BINANCE_TESTNET_API_SECRET=<your_secret>
 cargo run --example live_turtle_chandelier --profile sweep -- --live
 ```
+- **Effect:** Real market data, simulated orders (no real funds used on testnet)
+- **Duration:** 48h minimum to verify signal quality vs backtest
+- **Success criteria:** Signals fire at expected rate (~6-7% of bars per symbol)
 
-Look for:
-- `[DRY RUN] BUY BTCUSDT ... on testnet` = signal detected, simulated order placed ✅
-- WebSocket bar updates streaming in
-- `TURTLE ENTRY` log lines when breakout detected
-
-**Duration:** Run for 1-2 days. Verify signals fire correctly on live data.
-
-### Phase 2 — Small Real Testnet Trade (if shadow run looks correct)
-
-Once shadow run shows correct signals:
-
+### Phase 3: Small Real Testnet Trades (1-2 weeks in)
 ```bash
-# Edit examples/live_turtle_chandelier.rs to set dry_run=false for testnet
-# Change: dry_run: true → dry_run: false  (in the --live block)
-# Run again
+cargo run --example live_turtle_chandelier --profile sweep -- --live --small
 ```
+- **Effect:** Real testnet orders with minimal size ($50-100/notional)
+- **Purpose:** Validate maker fill rate, slippage vs model, order execution latency
+- **Success criteria:** Actual fees match model (63-70% maker), slippage within 2bp
 
-Start with **1 symbol only** (BTCUSDT). Monitor for:
-- Order placed on testnet exchange
-- Fill confirmation logged
-- PnL tracking correct
-
-**Duration:** 5-10 trades to validate execution quality.
-
-### Phase 3 — Full 5-Symbol Testnet Run
-
-After Phase 2 validates:
-- Maker fill rate ~60-70%
-- Slippage within model
-- Signal timing correct
-- PnL tracking correct
-
-Run full universe (BTC, ETH, SOL, XRP, DOGE) on testnet for **30 days**.
+### Phase 4: 30-Day Full Universe Run
+- All 5 symbols, full position sizing
+- Compare live equity Sharpe vs backtest ~1.0 reference
+- **Decision:** If Sharpe > 1.0 → proceed toward production. If < 0.5 → diagnose.
 
 ---
 
-## 🔒 REQUIRED CODE CHANGES — Safe First Live Shadow Run
+## Binance Testnet Readiness Checklist (Noah)
 
-### Safety Interlock: Block Mainnet Unless Explicitly Armed
-
-The current code allows a single misconfiguration to send real orders to mainnet. Add a hard interlock:
-
-**File: `src/live/config.rs`**
-
-Add a `Mode` enum and validate it:
-
-```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TradingMode {
-    DryRun,      // Simulated only, no orders
-    Testnet,     // Testnet orders, no real funds
-    Production,  // REAL MAINNET — requires explicit --prod flag
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LiveConfig {
-    // ... existing fields ...
-    #[serde(default)]
-    pub mode: TradingMode,
-}
-
-impl Default for LiveConfig {
-    fn default() -> Self {
-        Self {
-            // ...
-            mode: TradingMode::DryRun, // safe default
-        }
-    }
-}
-
-impl LiveConfig {
-    /// Validate configuration is safe to start.
-    pub fn validate_start(&self) -> Result<()> {
-        match self.mode {
-            TradingMode::Production => {
-                anyhow::bail!(
-                    "PRODUCTION MODE BLOCKED: Cannot start without explicit --prod flag.\n\
-                    To arm production: edit live_turtle_chandelier.rs and set mode: TradingMode::Production\n\
-                    This is a safety interlock — you must edit the code to proceed."
-                );
-            }
-            TradingMode::Testnet => {
-                tracing::warn!("⚠️  TESTNET MODE — real testnet orders will be placed");
-            }
-            TradingMode::DryRun => {
-                tracing::info!("DRY RUN MODE — no real orders will be placed");
-            }
-        }
-        Ok(())
-    }
-}
-```
-
-**File: `src/live/executor.rs`**
-
-Override `place_real_order` to check mode:
-
-```rust
-async fn place_real_order(&mut self, ...) -> Result<OrderResult> {
-    // Safety interlock: this should never be called in DryRun mode
-    // If called, something misconfigured — abort
-    anyhow::bail!(
-        "place_real_order called but executor is in DryRun mode. \
-        Check dry_run flag and mode configuration."
-    );
-}
-```
-
-Actually for production, we need the real path — let's instead add a compile-time check for Production mode in the example binary.
-
-### File: `examples/live_turtle_chandelier.rs`
-
-Add explicit `TradingMode` usage and compile-time guard:
-
-```rust
-use krypto::live::config::{LiveConfig, TradingMode};
-
-fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let force_live = args.contains(&"--live".to_string());
-    let is_production = args.contains(&"--prod".to_string()); // EXPLICIT opt-in for mainnet
-
-    let mode = if is_production {
-        TradingMode::Production
-    } else if force_live {
-        TradingMode::Testnet
-    } else {
-        TradingMode::DryRun
-    };
-
-    // Validate mode
-    if let Err(e) = validate_mode(mode) {
-        eprintln!("ERROR: {}", e);
-        std::process::exit(1);
-    }
-}
-
-fn validate_mode(mode: TradingMode) -> Result<()> {
-    match mode {
-        TradingMode::Production => {
-            // Must have explicit --prod flag to reach here
-            eprintln!("⚠️  PRODUCTION ARMED — real mainnet orders will be placed");
-            eprintln!("  To proceed: run again with --prod flag");
-            std::process::exit(1); // Double-confirm: require TWO --prod args or re-run
-        }
-        TradingMode::Testnet => {
-            eprintln!("⚠️  TESTNET MODE — real testnet orders will be placed");
-        }
-        TradingMode::DryRun => {
-            eprintln!("DRY RUN MODE — no real orders");
-        }
-    }
-    Ok(())
-}
-```
-
-Actually simpler: just require the `--prod` flag to be present to allow mainnet orders, and always use testnet for `--live` unless `--prod` is explicitly added.
-
-**Recommended: Change in `examples/live_turtle_chandelier.rs`**
-
-The `--live` flag already sets `use_testnet: true`. To add extra safety, change `--live` to mean "testnet live" (not mainnet), and require `--prod` to allow mainnet. This is a one-line change in the config:
-
-```rust
-// In the --live block, change:
-dry_run: false,    // ← keeps as testnet (use_testnet: true from config default)
-use_testnet: true,  // ← testnet explicit
-
-// For production (mainnet), Noah must add --prod and edit to remove use_testnet flag
-```
-
-**SAFER APPROACH:** Add explicit safety interlock that logs a prominent warning when real orders would be placed, requiring visible confirmation in logs.
-
-### Minimal Required Change (one file, ~15 lines)
-
-**`examples/live_turtle_chandelier.rs`** — modify the `--live` block to add a compile-time safety log:
-
-```rust
-// Around line 180-200 — add prominent warning in the --live block:
-println!();
-println!("{}", "╔════════════════════════════════════════════════════════════╗".bold().red());
-println!("{}", "║  ⚠️  LIVE TESTNET MODE — Real testnet orders will be placed  ║".bold().red());
-println!("{}", "║  Funds are testnet only — no real value lost               ║".bold().red());
-println!("{}", "╚════════════════════════════════════════════════════════════╝".bold().red());
-println!();
-```
-
-This is the only code change needed. Everything else (signal logic, parameter validation, freshness filter, dual exit) is already production-ready.
+1. **Create Binance testnet account:** https://testnet.binance.vision/
+2. **Generate API key + secret** (read permissions minimum, no withdrawal)
+3. **Faucet testnet funds:** https://testnet.binance.vision/fundatory/ — request BTC, ETH, SOL, XRP, DOGE
+4. **Set env vars:**
+   ```bash
+   export BINANCE_TESTNET_API_KEY=<your_key>
+   export BINANCE_TESTNET_API_SECRET=<your_secret>
+   ```
+5. **Verify connection:**
+   ```bash
+   cargo run --example live_turtle_chandelier --profile sweep -- --live
+   # Should print "TESTNET MODE" banner + start consuming live data
+   ```
 
 ---
 
-## ✅ CODE REVIEW: What's Already Safe
+## What's Already Safe
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Signal logic (Turtle+Chandelier) | ✅ Verified | Matches walk-forward harness exactly |
-| Freshness filter (cd=10) | ✅ In bot.rs | Line 17: `const FRESHNESS_COOLDOWN: usize = 10;` |
-| Dual exit (Chandelier + Turtle ATR) | ✅ In bot.rs | Lines 196-210: both stops checked, tighter wins |
-| Position cap (CAP=3) | ✅ Enforced | `check_dual_exit` only checks if in position; `process_bar` enforces cap |
-| Dry run default | ✅ Safe | `dry_run: true` is default in `LiveConfig::default()` |
-| Testnet default | ✅ Safe | `use_testnet: true` is default — won't hit mainnet accidentally |
-| API key env vars | ✅ Secure | Read from `BINANCE_API_KEY` / `BINANCE_API_SECRET`, never hardcoded |
-| Exit logging | ✅ Complete | All exits logged with symbol, price, PnL%, bars held |
-| Freshness tracking | ✅ In bot.rs | `last_exit_bar` HashMap tracks bar of last exit per symbol |
+✅ Signal logic — Monte Carlo validated (0/500 shuffled beat real)
+✅ Freshness filter cd=10 — implemented in live bot
+✅ Dual Chandelier(20,2.15)+Turtle_ATR(24,2.0) exit
+✅ Position cap = 3 symbols
+✅ `TradingMode` safety interlock (Production mode blocked without `--prod`)
+✅ Dry-run mode (simulated orders, no API keys needed)
+✅ 20bp conservative fee model (real fees ~15bp)
 
----
+## Known Live Trading Risks
 
-## ⚠️ KNOWN LIVE TRADING RISKS (document for Noah)
-
-1. **SOL slippage exceeds model** at >$50K notional. Cap SOL position at $50K or reduce to 0.5x size.
-2. **Maker fill ~63%** (actual) vs 70% (model). Slightly conservative — ok.
-3. **No regime defense.** Strategy will underperform badly in choppy 2026-type markets.
-4. **2026 YTD -22.7%** — if live markets stay choppy, live Sharpe could be negative.
-5. **No live stop-loss order** — exits are signaled on next bar open. Gap risk exists.
+⚠️ **SOL slippage:** Modeled 1bp, actual ~3.7bp at $100K. Cap SOL at $50K notional.
+⚠️ **Maker fill:** 63% actual vs 70% model assumption → slightly higher fee drag
+⚠️ **No regime defense:** Strategy underperforms in extended chop (2026 YTD: -22.7% vs BTC +12.7%)
+⚠️ **Maker vs taker slippage on exit:** Chandelier exit mostly taker (~25% maker fill)
+⚠️ **2026 YTD is regime-inherent whipsawing** — not a strategy failure
 
 ---
 
-## 🚫 STOP DOING
+## STOP DOING — Absolute Red Lines
 
-- No more walk-forward parameter optimization
-- No more hyperopt passes
-- No more strategy research
-- No more Monte Carlo on historical data
-- No more documentation loops
-
-**The only question live testnet can answer that history cannot:**
-- Does the signal fire correctly on current (live) market data?
-- Does the execution layer work (order placement, fill confirmation, PnL tracking)?
-- Is the maker fill rate in the expected range?
-
-All other questions have been answered. Ship it.
-
----
-
-## 📅 UPDATED TOP PRIORITY
-
-1. **Noah creates testnet account + faucets funds** (5 min, blocks on him)
-2. **Verify dry-run mode works** (10 min, no API keys needed)
-3. **Run shadow mode 48h** — verify live signals fire correctly
-4. **Run small real testnet trades** (5-10 trades, 1 symbol)
-5. **30-day full universe testnet run** → measure live Sharpe vs backtest Sharpe
-
-Once 30-day live data is in: compare actual Sharpe vs expected ~1.0-1.3. If > 0.5 → proceed. If < 0.5 → diagnose before any production.
-
----
-
-*Last updated: 2026-04-18 19:27 UTC — manager directive applied. Research closed. Live testnet only.*
+🚫 **No more hyperopt on Turtle+Chandelier params** — all frozen
+🚫 **No more research documentation loops** — research is closed
+🚫 **No pushing to main** — always `v2-rewrite`
+🚫 **No live trading with real funds** — testnet first, then Noah's explicit approval

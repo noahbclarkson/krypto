@@ -49,7 +49,6 @@ struct TurtleChandelier {
     ep: usize,
     chand_p: usize,
     chand_m: f64,
-    atr_p: usize,
     atr_m: f64,
     hold_max: usize,
 }
@@ -61,7 +60,6 @@ impl TurtleChandelier {
             ep: EP,
             chand_p: CHAND_P,
             chand_m: CHAND_M,
-            atr_p: ATR_P,
             atr_m: ATR_M,
             hold_max: HOLD_MAX,
         }
