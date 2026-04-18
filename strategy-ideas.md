@@ -96,10 +96,9 @@
 
 ## 18. Drawdown-Adaptive Signal Tightening — 🪦 REJECTED (2026-04-18) WITHOUT TEST
 - **Concept:** When portfolio drawdown > 15%, raise entry threshold (EP=21→EP=25). Revert when drawdown recovers. Changes signal quality not position size.
-- **Why redundant with existing data:** The ATR entry multiplier hyperopt (2026-04-13) definitively showed that ANY entry-side tightening HURTS Turtle: mult=0.25 → pass rate drops from 92.6%→87.0%, mult≥1.0 → 70.4%. Entry tightening by any mechanism reduces valid entry count and starves the strategy.
-- **DD-adaptive EP tightening is the same class of intervention.** Even if the mechanism is "portfolio DD triggers a signal change," the practical effect is filtering entries by requiring a higher bar for entry — same as ATR entry filter, same result.
-- **Verdict:** Not tested. Closed without running based on existing ATR hyperopt evidence.
-- **Verdict (2026-04-17):** ATR entry multiplier hyperopt definitively showed ANY entry-side filter HURTS. This idea is likely to fail. Test once then close.
+- **Why rejected without testing:** ATR entry multiplier hyperopt (2026-04-13) definitively showed ANY entry-side tightening HURTS Turtle: mult=0.25 → pass rate drops from 92.6%→87.0%, mult≥1.0 → 70.4%. Entry tightening by any mechanism reduces valid entry count and starves the strategy.
+- **DD-adaptive EP tightening is the same mechanism class.** The practical effect is filtering entries by requiring a higher bar for entry — identical to ATR entry filter, identical result.
+- **Verdict:** Closed without running. ATR hyperopt evidence is conclusive. GRAVEYARD as of 2026-04-18.
 
 ## 19. CTREND OOS Equity Validation — ✅ DONE (2026-04-17)
 - Monte Carlo test (`examples/ctrend_monte_carlo.rs`): 0/500 shuffled permutations beat real
@@ -129,8 +128,9 @@
 | 20 | 50.0% | -0.083 | 🪦 REJECT |
 
 - **Note on absolute pass rates:** This harness shows lower pass rates than `turtle_chandelier_walkforward.rs` (58.9% vs 93%) due to different ATR formula, no dollar-volume ranking, and 10 windows vs 54. The *relative* comparison (cd=3 vs cd=0) within this harness is valid and conclusive: mild cooldown helps.
-- **Status:** ✅ CLOSED. Freshness cd=3 is a viable regime defense mechanism — it's real, not noise. However, it requires a LIVE implementation test (not just walk-forward) since the effect is modest and regime-dependent.
-- **Next step:** Implement cd=3 in `live_turtle_chandelier.rs` and test on live testnet.
+- **Updated (2026-04-18):** Extensive 31-value sweep {0..=30 step 1} across 9 universes found **cd=10** as the winner (65.6% pass, 0.242 Sharpe vs baseline 57.8% pass, 0.027 Sharpe). cd=3 won the coarse 6-value sweep on Base5 only. cd=10 is the 9-universe aggregate winner.
+- **Live bot:** `src/live/bot.rs` uses cd=10 (commit 944bcd66).
+- **Status:** ✅ CLOSED. cd=10 is production default. Live testnet is the only remaining validation — the effect is modest (noise-range) and regime-dependent.
 
 ---
 

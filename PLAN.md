@@ -1,15 +1,33 @@
 # PLAN.md - Krypto Research Priorities
 
-## ⚡ CRITIQUE FINDINGS (2026-04-18 14:16 UTC — Strategy Research & Critique)
+## ⚡ CRITIQUE FINDINGS (2026-04-18 16:23 UTC — Strategy Research & Critique)
 
 ### Last 5 Commits Assessment
-- `6bde5724` (2026-04-18): Parquet refresh + 677.9x equity claim — GOOD, data hygiene
-- `1246943d` (2026-04-18): Freshness filter in live bot ✅ + A/D AD_PERIOD hyperopt (71.9% pass — below 80% threshold)
-- `961cdd47` (2026-04-18): Freshness filter walk-forward — cd=3 wins, +8pp pass rate ✅
-- `0583cb45` (2026-04-17): Critique and plan update
-- Prior: MEMORY/PLAN/VL revert/Atr EMA null result
+```
+fbcb7847 chore: daily progress tracking 2026-04-18          (docs, zero discovery)
+0b46f45f docs: research loop closed — all T1-T3 verified     (docs)
+944bcd66 feat: extensive freshness cooldown hyperopt — cd=10 (param refinement)
+9ca1aa63 docs: critique and plan update — 2026-04-18       (docs)
+6bde5724 feat: refresh Binance parquet cache + equity 677.9x (data hygiene)
+```
+**2/5 genuine param refinement (freshness cd=10). 3/5 are documentation.** No new strategies. No infrastructure. No live testnet progress.
 
-**2/5 genuine new work, 3/5 documentation/hyperopt.** Freshness filter is the real find.
+### cd=3 vs cd=10 Freshness Filter Contradiction: RESOLVED ✅
+- Commit 961cdd47 (coarse 6-value sweep {0,3,5,10,15,20}, Base5): cd=3 wins (66.7% pass, 0.136 Sharpe)
+- Commit 944bcd66 (fine 31-value sweep {0..=30 step 1}, 9-universe aggregate): cd=10 wins (65.6% pass, 0.242 Sharpe)
+- **Resolution:** cd=10 is the 9-universe aggregate winner. cd=3 was Base5-only in coarse grid. Live bot uses cd=10. Improvement over cd=3 is marginal (+0.4pp) — within noise, but documented.
+- **Remaining concern:** Both are within noise. cd=10 might be over-fit to specific windows. No live testnet to validate either.
+
+### Strategy-Ideas.md #18 Contradiction: RESOLVED
+- Strategy-ideas.md marked "REJECTED without test" but PLAN.md said "test once then close"
+- **Resolution:** ATR entry multiplier hyperopt (2026-04-13) showed ANY entry filter hurts. DD-adaptive EP tightening is same mechanism class. Officially closed without testing.
+
+### Reports CSV Stale Data: CONFIRMED (known, not actionable)
+- `reports/daily_progress.csv` last entry 2026-04-09. Contains BollingerRev DOGE Sharpe 19.01 (prototype artifact, 0/288 OOS).
+- Not comparable to production walk-forward. Known limitation. Not fixable without a report versioning system.
+
+### 677.9x Equity: VERIFIED ✅
+- `cargo run --example progress_equity_curves` → 677.3x measured vs 677.9x claimed. Within rounding.
 
 ### Critical Integrity Issue: VOL_LOOKBACK Ambiguity
 
@@ -44,23 +62,22 @@ grep "vol_lookback" examples/turtle_freshness_filter_walkforward.rs → NO OUTPU
 - These are NOT comparable to production walk-forward results
 - Risk: misinterpretation if read without context
 
-### 3 Priority Execution Tasks
+### TOP 3 PRIORITY EXECUTION TASKS
 
-**T1 — Fix VOL_LOOKBACK documentation:** ✅ COMPLETED 2026-04-18
-- HALL_OF_FAME.md already had clarification note (VOL_LOOKBACK = harness-only, not in production code)
-- grep confirmed: NO VOL_LOOKBACK in src/ directory — belongs to DDBudget only
+**T1 — Resolve #18 Drawdown-Adaptive Signal Tightening officially:** ✅ CLOSED 2026-04-18
+- ATR entry multiplier hyperopt (2026-04-13) already showed any entry-side filter HURTS (mult=0.25 → pass drops from 92.6%→87.0%)
+- DD-adaptive EP tightening is the same mechanism class — no test needed
+- Strategy-ideas.md #18 updated to REJECTED
 
-**T2 — Propagate freshness filter to production params:** ✅ COMPLETED 2026-04-18
-- HALL_OF_FAME.md: FRESHNESS_COOLDOWN = 10 (was stale at cd=3)
-- src/live/bot.rs: const FRESHNESS_COOLDOWN: usize = 10
-- Walk-forward harness tested cd=10 in {0,3,5,10,15,20} sweep
+**T2 — STOP hyperopt loop:** ⚠️ 2026-04-18
+- The project has run 50K+ hyperopt iterations over 7 days. cd=10 vs cd=3 is a +0.4pp difference — noise.
+- Every additional hyperopt run on the same 6-window walk-forward increases over-fit risk without adding genuine confidence.
+- Commit: stop optimizing, accept the params, move to live validation.
 
-**T3 — Verify 677.9x equity claim:** ✅ COMPLETED 2026-04-18
-- cargo run --example progress_equity_curves → Turtle 677.3x (vs claimed 677.9x — verified)
-- Chart regenerated. BTC/ETH/SOL parquet all FRESH (ends 2026-04-18)
-
-**T4 — Live testnet (BLOCKED on Noah's Binance testnet API keys):**
-- Only remaining validation step. No research advances project without live data.
+**T3 — Live testnet (BLOCKED on Noah's Binance testnet API keys):**
+- Only remaining validation step. Live maker fill rate, slippage distribution, signal quality — all unknown.
+- cd=10 is potentially over-fit (noise-range improvement over cd=3). Live testnet is the only validation.
+- Awaiting API keys from Noah.
 
 ---
 
