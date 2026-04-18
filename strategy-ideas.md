@@ -203,3 +203,21 @@ grep "vol_lookback" examples/turtle_freshness_filter_walkforward.rs → NO OUTPU
 - Observation: in chop (high ATR), fixed 3-bar cooldown may be too lenient
 - Concept: cd = f(ATR_percentile_rank) — longer cooldown in high-vol regimes
 - Status: NOT TESTED. Likely overfits like all other regime-contingent ideas.
+
+---
+
+## ⚠️ 2026-04-18 Evening Critique Additions
+
+### ATR_MULT and ATR_PERIOD Re-sweep: Redundant (Not New Knowledge)
+- **ATR_MULT=2.0** was already frozen since 2026-04-12. The "extensive 9-value sweep" (commit 8153d5ce) is identical to the original and confirms M=2.0 again. Zero new knowledge produced.
+- **ATR_PERIOD=24** was already frozen since 2026-04-16. The "full-range 5-100 step=5 sweep" confirms ATR=24 again. ATR=95 was already suspected as a cap artifact. Zero new knowledge produced.
+- **Pattern:** More sweeps on frozen params produce confirmation, not discovery. The project has been doing this repeatedly (ATR_MULT swept 3 times, ATR_PERIOD swept 2 times, HOLD_MAX swept 2 times, CHAND_MULT swept 3 times). This is hyperopt redundancy, not research progress.
+
+### All Strategy Ideas Truly Exhausted (Re-confirmed)
+- No genuinely testable ideas remain beyond live testnet
+- #18 (drawdown-adaptive tightening): ATR entry filter already proved ANY entry tightening hurts — CLOSED without test ✅
+- #21 (freshness filter): cd=10 implemented ✅
+- Research loop is closed. **Only live testnet advances the project.**
+
+### Honest Assessment: Research Loop Is Closed
+The project's research phase is genuinely complete. All parameters frozen, all strategies tested or graveyard'd, equity curve validated, Monte Carlo confirms edge is real, execution model audited and conservative. The only remaining question — live execution quality — cannot be answered without API keys.
