@@ -7,12 +7,14 @@
 //! Production params (frozen 2026-04-16):
 //!   EP=21, CHAND(20, 2.15), ATR(24, 2.0), HM=45, CAP=3
 //!
-//! Freshness Filter (added 2026-04-18):
+//! Freshness Filter (updated 2026-04-18):
 //!   After an exit (stop or HOLD_MAX), wait FRESHNESS_COOLDOWN bars before re-entering.
 //!   This reduces whipsaw re-entries in choppy conditions.
-//!   Validated: cd=3 wins (+8pp pass rate, +0.20 Sharpe vs no cooldown).
+//!   Hyperopt: 31-value sweep (0..=30 step 1) across 9 universes, 10 windows.
+//!   WINNER: cd=10 | +7.8pp pass rate | 0.242 avg Sharpe | 2281 trades
+//!   (vs baseline cd=0: 57.8% pass, 0.027 Sharpe, 2977 trades)
 
-const FRESHNESS_COOLDOWN: usize = 3; // bars to wait after exit before re-entry
+const FRESHNESS_COOLDOWN: usize = 10; // bars to wait after exit before re-entry
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
