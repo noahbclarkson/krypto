@@ -17,7 +17,8 @@
 use anyhow::Result;
 use chrono::{TimeZone, Utc};
 use krypto::data::loader::DataLoader;
-use krypto::live::{LiveBot, LiveConfig};
+use krypto::live::LiveBot;
+use krypto::live::config::TradingMode;
 use krypto::paper::{Bar, PaperBot, Strategy, Trade};
 use std::collections::VecDeque;
 
@@ -196,11 +197,33 @@ struct PaperResult {
 // =============================================================================
 // Main
 // =============================================================================
+use krypto::live::config::LiveConfig;
+
+fn parse_args() -> (bool, bool) {
+    let args: Vec<String> = std::env::args().collect();
+    let is_live = args.contains(&"--live".to_string());
+    let is_prod = args.contains(&"--prod".to_string());
+    (is_live, is_prod)
+}
+
 fn main() -> Result<()> {
     use colored::*;
+    let (force_live, is_production) = parse_args();
 
-    let args: Vec<String> = std::env::args().collect();
-    let force_live = args.contains(&"--live".to_string());
+    // Validate mode combination
+    if is_production && !force_live {
+        eprintln!("ERROR: --prod requires --live flag");
+        eprintln!("  To arm production: cargo run --example live_turtle_chandelier -- --live --prod");
+        std::process::exit(1);
+    }
+
+    let mode = if is_production {
+        TradingMode::Production
+    } else if force_live {
+        TradingMode::Testnet
+    } else {
+        TradingMode::DryRun
+    };
 
     if std::env::var("RUST_LOG").unwrap_or_default().is_empty() {
         std::env::set_var("RUST_LOG", "info");
@@ -208,11 +231,34 @@ fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     println!();
-    println!("{}", "=".repeat(80).bold().cyan());
+    match mode {
+        TradingMode::Production => {
+            println!("{} {}", "🔴".red(), "PRODUCTION MODE ARMED".red().bold());
+            println!("{} {}", "  →", "Real mainnet orders will be placed. Funds at risk.".red());
+            println!("  → {}", "Trading Turtle+Chandelier on BTC, ETH, SOL, XRP, DOGE".red());
+            println!();
+            // Double-confirm: require re-run with explicit prod flag in args
+            eprintln!("⚠️  CONFIRM: re-run with --prod flag to actually start:");
+            eprintln!("  cargo run --example live_turtle_chandelier -- --live --prod");
+            std::process::exit(1);
+        }
+        TradingMode::Testnet => {
+            println!("{} {}", "⚠️ ".yellow(), "TESTNET MODE".bold().yellow());
+            println!("  → {}", "Real testnet orders on testnet.binancefuture.com".yellow());
+            println!("  → {}", "No real funds lost — testnet funds are free".yellow());
+            println!();
+        }
+        TradingMode::DryRun => {
+            println!("{} {}", "✅".green(), "DRY RUN MODE".bold().green());
+            println!("  → {}", "Simulated orders only — no real orders placed".green());
+            println!();
+        }
+    }
+    println!("{} {}", "═".repeat(66), "═".cyan());
     println!("  Live Turtle+Chandelier Bot");
-    println!("  Validated: EP={}, Chand({},{}), ATR({},{}), HM={}, CAP={}",
+    println!("  Params: EP={}, Chand({},{}), ATR({},{}), HM={}, CAP={}, cd=10",
              EP, CHAND_P, CHAND_M, ATR_P, ATR_M, HOLD_MAX, POS_CAP);
-    println!("{}", "=".repeat(80).bold().cyan());
+    println!("{} {}", "═".repeat(66), "═".cyan());
     println!();
 
     // ── Historical paper validation ──────────────────────────────────────────
@@ -294,15 +340,17 @@ fn main() -> Result<()> {
         println!();
         println!("  {}", "─ Launching LIVE bot (testnet orders) ─".bold().red());
         println!();
+        // Build config with explicit TradingMode
         let config = LiveConfig {
-            symbols: vec!["BTCUSDT".to_string(), "ETHUSDT".to_string(), "SOLUSDT".to_string()],
+            symbols: vec!["BTCUSDT".to_string(), "ETHUSDT".to_string(), "SOLUSDT".to_string(), "XRPUSDT".to_string(), "DOGEUSDT".to_string()],
             interval: "1d".to_string(),
             initial_capital: 10_000.0,
             max_position_size: 1.0 / POS_CAP as f64,
             fee_pct,
             use_testnet: true,
             dry_run: false,
-            // Turtle+Chandelier params (frozen)
+            mode: TradingMode::Testnet, // explicit safety interlock
+            // Turtle+Chandelier params (frozen 2026-04-16)
             ep: EP,
             chand_period: CHAND_P,
             chand_mult: CHAND_M,

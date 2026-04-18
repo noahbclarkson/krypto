@@ -2,11 +2,30 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Trading mode — safety interlock for live execution.
+///
+/// ```text
+/// DryRun     → simulated orders only, no exchange connection
+/// Testnet    → real testnet orders (testnet.binancefuture.com)
+/// Production → REAL mainnet orders — MUST be explicitly opted in
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TradingMode {
+    DryRun,
+    Testnet,
+    Production,
+}
+
+impl Default for TradingMode {
+    fn default() -> Self { TradingMode::DryRun }
+}
+
 /// Turtle+Chandelier strategy params (validated walk-forward, frozen 2026-04-16).
 pub const TURTLE_EP: usize = 21;
 pub const CHAND_PERIOD: usize = 20;
 pub const CHAND_MULT: f64 = 2.15;
-pub const TURTLE_ATR_PERIOD: usize = 24;
+pub const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. See hyperopt-2026-04-16-atr-period.md.
 pub const TURTLE_ATR_MULT: f64 = 2.0;
 pub const HOLD_MAX: usize = 45;
 pub const POSITION_CAP: usize = 3;
@@ -32,6 +51,10 @@ pub struct LiveConfig {
     pub use_testnet: bool,
     /// Dry run mode - no real orders placed
     pub dry_run: bool,
+    // --- Safety: trading mode (prevents accidental mainnet orders) ---
+    /// Trading mode: DryRun (simulated), Testnet (real testnet), Production (real mainnet)
+    #[serde(default = "TradingMode::default")]
+    pub mode: TradingMode,
     // --- Turtle+Chandelier strategy params (frozen) ---
     /// Turtle entry lookback (default: 21)
     pub ep: usize,
@@ -72,6 +95,7 @@ impl Default for LiveConfig {
             fee_pct: 0.0004, // ~0.04% RT (conservative taker)
             use_testnet: true,
             dry_run: true,
+            mode: TradingMode::default(),
             // Turtle+Chandelier (frozen 2026-04-16)
             ep: TURTLE_EP,
             chand_period: CHAND_PERIOD,
@@ -105,6 +129,7 @@ impl LiveConfig {
         Self {
             symbols,
             initial_capital,
+            mode: TradingMode::Production,
             use_testnet: false,
             dry_run: false,
             ..Self::from_env()
@@ -116,24 +141,26 @@ impl LiveConfig {
         Self {
             symbols,
             initial_capital,
+            mode: TradingMode::DryRun,
             use_testnet: false,
             dry_run: true,
             ..Self::from_env()
         }
     }
 
-    /// Create config for testnet (test data, test orders).
+    /// Create config for testnet (test data, real testnet orders).
     pub fn testnet(symbols: Vec<String>, initial_capital: f64) -> Self {
         Self {
             symbols,
             initial_capital,
+            mode: TradingMode::Testnet,
             use_testnet: true,
             dry_run: false,
             ..Self::from_env()
         }
     }
 
-    /// Validate configuration.
+    /// Validate configuration is safe to start.
     pub fn validate(&self) -> anyhow::Result<()> {
         if self.symbols.is_empty() {
             anyhow::bail!("At least one symbol required");
@@ -147,6 +174,27 @@ impl LiveConfig {
         if !self.dry_run && (self.api_key.is_none() || self.api_secret.is_none()) {
             anyhow::bail!("API credentials required for live trading");
         }
+
+        // Safety interlock: Production mode requires explicit opt-in
+        if self.mode == TradingMode::Production && !self.dry_run {
+            if self.use_testnet {
+                anyhow::bail!(
+                    "CONFLICT: mode=Production but use_testnet=true. \
+                    Production mode requires use_testnet=false. \
+                    Edit live_turtle_chandelier.rs to set use_testnet: false before proceeding."
+                );
+            }
+            tracing::error!(
+                "🔴 PRODUCTION MODE ARMED — real mainnet orders will be placed. \
+                This is irreversible. Ensure you understand the risk."
+            );
+        }
+
+        // Warn when placing real testnet orders
+        if self.mode == TradingMode::Testnet && !self.dry_run {
+            tracing::warn!("⚠️  TESTNET MODE — real orders will be placed on testnet.binancefuture.com");
+        }
+
         Ok(())
     }
 }
