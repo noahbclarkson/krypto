@@ -328,13 +328,14 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 - **Critical gap found:** Walk-forward harness was using P=20/M=2.15 (stale), live bot already using P=15/M=1.50 (updated 2026-04-19). The 87% pass rate was for old params.
 - **Action:** Updated `turtle_chandelier_walkforward.rs` and `live_turtle_chandelier.rs` to P=15/M=1.50.
 - **Full 9-universe validation (P=15/M=1.50/HM=45):** 43/54 = 79.6% pass. Base5/NoDOGE: 100% pass. The 20% global failure is in LTC/EOS/BCH (non-trending assets). Production universe is clean.
-- **HOLD_MAX sweep (P=15/M=1.50, Base5, 6 windows):** 18 values {10-180}
-  - **WINNER: HM=15** — Sharpe 5.95 (+10.1% vs HM=45=5.40)
-  - **HM=25-180 plateau:** all identical (Chandelier fires first — HM is redundant)
-  - **Key insight:** With P=15/M=1.50, Chandelier fires ~bar 14-15. HM should match the Chandelier boundary, not exceed it. Prior HM=45 was always overkill for this Chandelier config.
-  - **⚠️ Caveat:** HM=15 sweep only on Base5. 9-universe validation uses HM=45. Production HOLD_MAX stays at 45. HM=15 is flagged as Sharpe+10% candidate (pending 9-universe confirmation).
-- **Files:** `examples/hm15_p15m150_sweep.rs`, `charts/hm_sweep_comparison.png`, `memory/hyperopt-2026-04-19-holdmax.md`
-- **Status:** Walk-forward harness now synced with live bot params. P=15/M=1.50 is validated. HOLD_MAX candidate HM=15 pending full validation.
+- **HOLD_MAX 9-Universe Validation CONFIRMED (2026-04-19):** Full sweep 19 values {5-180 step varied} × 9 universes × 54 windows = 756 window-runs.
+  - **WINNER: HM=15** — Sharpe 3.682 (+4.4% vs plateau HM=45=3.526), pass 77.8% (42/54)
+  - **HM=35-180 PLATEAU:** All produce IDENTICAL results (Sharpe 3.526, 43/54 pass, 79.6%) — Chandelier fires first at ~bar 14-15. HOLD_MAX is irrelevant above ~35.
+  - **Production default stays HM=45** (safe plateau). HM=15 is a Sharpe+ alternative for production universe (Base5/NoDOGE/LargeCaps5): +10-11% Sharpe improvement in those specific universes, but -1.8pp pass rate globally.
+  - **Only Base5 differs** in pass rate between HM=15 (5/6) and HM=45 (6/6). All other 8 universes are identical.
+  - **Key insight:** HOLD_MAX is a secondary safety parameter, not a primary driver. The Chandelier(P=15, M=1.50) is so tight it fires before HM can bind above ~30 bars.
+- **Files:** `examples/hold_max_9way_sweep.rs`, `snapshots/hold_max_9way_summary.csv`, `charts/hold_max_9way_comparison.png`, `memory/hyperopt-2026-04-19.md`
+- **Status:** HOLD_MAX validated. Production default unchanged (HM=45). HM=15 documented as production-universe Sharpe alternative.
 
 ## Entry Filter Sweep: ATR Entry × Volume Confirmation (2026-04-19)
 - **Sweep scope:** 10 ATR_mult values {0.0, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0} × 4 vol_confirm types {none, SMA20×1.0, SMA20×1.25, SMA10×1.0} × 9 universes × 7 windows = 40 configs
