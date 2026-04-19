@@ -277,9 +277,36 @@ HALL_OF_FAME needs a complete rewrite to match current live code (P=15/M=1.50). 
 
 ---
 
-## Post-Live-Testnet Concepts (For After 30-Day Live Validation)
+## 22. ATR Percentile Regime Filter — ONE CLEAN TEST
+- **Concept:** If BTC 20d ATR rank < 50th percentile of 252d history → skip new Turtle entries. Not position sizing, not stop modification. Pure market-regime entry gate.
+- **Why this is NOT the same as failed ATR entry filter (#9):**
+  - Previous tests: individual-symbol ATR vs its own 252d median → too granular, trade-starving
+  - This: single BTC-wide ATR rank signal applied uniformly → coarser, less noise
+  - Previous mechanism filtered each symbol independently; this filters the whole portfolio
+- **Why this is NOT the same as vol-contingent Chandelier (#4):**
+  - Vol-contingent Chandelier tried to CHANGE THE STOP dynamically based on vol
+  - This skips new entries entirely when regime is unfavorable — exits are unaffected
+- **Test:** 9 universes × 7 windows. Compare: Turtle with regime filter vs Turtle baseline.
+- **Risk:** 2026-04-14 BTC trend scalar showed regime classifiers (SMA21 vs SMA200) were 100% BULL in all test windows. BTC ATR rank may have the same problem.
+- **Status:** Untested. Medium priority (after equity CSV verification).
 
-These are ideas to research ONLY after live testnet confirms the maker-fill rate and signal quality in real market conditions.
+## 23. CTREND + Chandelier Exit Walk-Forward
+- **Problem:** CTREND signal confirmed genuine by Monte Carlo (0/500 shuffled beat real, 2026-04-17). But progress chart uses **fixed 21-bar hold** — the same flawed exit mechanism class as rejected DynamicTrend.
+- **Hypothesis:** If CTREND multi-horizon momentum signal is genuinely predictive, pairing it with Chandelier dual-exit should improve or maintain pass rate vs fixed hold.
+- **Test:** Reuse `turtle_chandelier_walkforward.rs` harness structure. Swap Turtle entry → CTREND `ctrend_signals()` function. Keep Chandelier(15,1.50) + ATR(24,2.0) dual exit. 9 universes × 7 windows.
+- **If result:** Pass rate > CTREND fixed-hold baseline → CTREND promoted to production signal family candidate. Walk-forward validate CTREND exit.
+- **Status:** Untested. Low priority — curiosity only. Live testnet is the real priority.
+
+## 24. Live Slippage Tracker — BUILD BEFORE LIVE
+- **Concept:** Structured logging of per-fill slippage: `{timestamp, symbol, side, expected_price, actual_price, slippage_bp, maker_vs_taker, notional_usd}`.
+- **Why build now:** SOL slippage is the biggest known live risk (3.7x model at $100K). We cannot measure or mitigate it without data. Building the logger before live means we capture data from the first fill.
+- **Implementation:** Add `struct FillLog { symbol, side, expected, actual, slippage_bp, notional, ts }` to `live_turtle_chandelier.rs`. Write to `logs/slippage_YYYY-MM-DD.csv`. Even dry-run mode can log expected fills.
+- **Post-live analysis:** After 30 days → compare SOL slippage vs model. If >2x model → reduce SOL cap to $25K.
+- **Status:** Unbuilt. **Do this before live.** Low effort, high value.
+
+---
+
+## Post-Live-Testnet Concepts (For After 30-Day Live Validation)
 
 ### S1. Maker-Fill Adaptive Position Sizing
 - **Concept:** After 30 days of live data: measure actual maker-fill rate per symbol. If maker-fill > 70% → full position size. If maker-fill < 50% → reduce position by 30%. The maker-fill rate is a market microstructure signal.
@@ -288,7 +315,7 @@ These are ideas to research ONLY after live testnet confirms the maker-fill rate
 
 ### S2. Live Slippage Tracker → Position Size Adjustment
 - **Concept:** Track realized slippage per symbol in live trading. If SOL slippage consistently exceeds 2x model → reduce SOL position or cap at $25K. Create a live slippage dashboard.
-- **Status:** Unbuilt. Requires live execution first.
+- **Status:** Superseded by #24 (build before live).
 - **Priority:** Medium
 
 ### S3. Multi-Strategy Live Sleeve (A/D as secondary)
