@@ -30,6 +30,7 @@ use std::sync::Arc;
 
 use super::config::LiveConfig;
 use super::executor::{Executor, OrderSide};
+use std::path::PathBuf;
 use super::feed::{fetch_warmup_data, KlineEvent, LiveFeed};
 use crate::paper::{Bar, CompletedTrade, Position};
 
@@ -78,7 +79,7 @@ pub struct PositionInfo {
 pub struct LiveBot {
     config: LiveConfig,
     feed: Option<LiveFeed>,
-    executor: Executor,
+    executor: std::sync::Mutex<Executor>,
     state: Arc<RwLock<BotState>>,
     // Per-symbol data
     bars: HashMap<String, Vec<Bar>>,
@@ -96,13 +97,23 @@ impl LiveBot {
     pub fn new(config: LiveConfig) -> Result<Self> {
         config.validate()?;
 
-        let executor = Executor::new(
+        let mut executor = Executor::new(
             config.api_key.clone(),
             config.api_secret.clone(),
             config.dry_run,
             config.use_testnet,
             config.fee_pct,
         );
+
+        // Enable slippage logging to logs/slippage_YYYY-MM-DD.csv
+        // Works in both dry_run (simulated fills) and live (real fills)
+        let log_date = Utc::now().format("%Y-%m-%d").to_string();
+        let log_path = PathBuf::from("logs").join(format!("slippage_{}.csv", log_date));
+        if let Err(e) = executor.enable_fill_log(log_path.clone()) {
+            tracing::warn!("Failed to enable fill log at {:?}: {}", log_path, e);
+        } else {
+            tracing::info!("Fill logging enabled: {:?}", log_path);
+        }
 
         let state = Arc::new(RwLock::new(BotState {
             started_at: None,
@@ -120,7 +131,7 @@ impl LiveBot {
         Ok(Self {
             config,
             feed: None,
-            executor,
+            executor: std::sync::Mutex::new(executor),
             state,
             bars: HashMap::new(),
             positions: HashMap::new(),
@@ -239,8 +250,13 @@ impl LiveBot {
             }
             Position::Long { .. } => {
                 // Update trailing state and check dual exit
-                if let Some(_exit) = self.check_dual_exit(symbol, &bar) {
+                if let Some(exit) = self.check_dual_exit(symbol, &bar) {
                     self.close_long(symbol, &bar).await?;
+                    // Log slippage summary after each trade cycle
+                    if let Ok(exec) = self.executor.lock() {
+                        exec.slippage_summary();
+                    }
+                    return Ok(());
                 }
             }
             Position::Short { .. } => {
@@ -378,9 +394,9 @@ impl LiveBot {
     // Order execution
     // =========================================================================
     async fn open_long(&mut self, symbol: &str, bar: &Bar, size: f64) -> Result<()> {
-        self.executor
-            .place_limit_order(symbol, OrderSide::Buy, size, bar.close)
-            .await?;
+        let mut exec = self.executor.lock().unwrap();
+        exec.place_limit_order(symbol, OrderSide::Buy, size, bar.close).await?;
+        drop(exec);
 
         self.positions.insert(
             symbol.to_string(),
@@ -402,9 +418,9 @@ impl LiveBot {
     async fn close_long(&mut self, symbol: &str, bar: &Bar) -> Result<()> {
         let position = self.positions.get(symbol).copied();
         if let Some(Position::Long { entry_price, size, .. }) = position {
-            self.executor
-                .place_limit_order(symbol, OrderSide::Sell, size, bar.close)
-                .await?;
+            let mut exec = self.executor.lock().unwrap();
+            exec.place_limit_order(symbol, OrderSide::Sell, size, bar.close).await?;
+            drop(exec);
 
             let pnl_pct = (bar.close - entry_price) / entry_price * 100.0;
             self.record_trade(symbol, true, entry_price, bar.close, pnl_pct);

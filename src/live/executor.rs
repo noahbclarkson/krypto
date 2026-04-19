@@ -4,11 +4,82 @@
 //! - Test order support (dry run)
 //! - Position size limits
 //! - Order tracking
+//! - Slippage logging (FillLog → CSV)
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs::{File, OpenOptions};
+use std::io::Write;
+use std::path::PathBuf;
+
+/// Logged fill record for slippage analysis.
+/// Captures expected vs actual fill price for every order, including dry-run.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FillLog {
+    /// ISO 8601 timestamp
+    pub timestamp: String,
+    /// Trading symbol (e.g. "BTCFDUSD")
+    pub symbol: String,
+    /// BUY or SELL
+    pub side: String,
+    /// Expected fill price (signal price / model price)
+    pub expected_price: f64,
+    /// Actual fill price (executed or simulated)
+    pub actual_price: f64,
+    /// Slippage in basis points (positive = better than expected)
+    pub slippage_bp: f64,
+    /// Order notional value in quote currency
+    pub notional: f64,
+    /// Quantity filled
+    pub quantity: f64,
+    /// Fee paid on this fill (estimated)
+    pub fee_paid: f64,
+    /// Was this a dry-run (no real exchange interaction)?
+    pub dry_run: bool,
+    /// Order type: MARKET, LIMIT, STOP_MARKET
+    pub order_type: String,
+}
+
+impl FillLog {
+    /// Create a new fill log with slippage calculation.
+    fn new(
+        symbol: &str,
+        side: &str,
+        expected_price: f64,
+        actual_price: f64,
+        quantity: f64,
+        fee_pct: f64,
+        dry_run: bool,
+        order_type: &str,
+    ) -> Self {
+        let slippage_bp = if expected_price > 0.0 {
+            (actual_price - expected_price).abs() / expected_price * 10_000.0
+        } else {
+            0.0
+        };
+        let notional = actual_price * quantity;
+        let fee_paid = notional * fee_pct;
+        Self {
+            timestamp: Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
+            symbol: symbol.to_string(),
+            side: side.to_string(),
+            expected_price,
+            actual_price,
+            slippage_bp,
+            notional,
+            quantity,
+            fee_paid,
+            dry_run,
+            order_type: order_type.to_string(),
+        }
+    }
+}
+
+/// CSV header for FillLog.
+pub const FILL_LOG_CSV_HEADER: &str =
+    "timestamp,symbol,side,expected_price,actual_price,slippage_bp,notional,quantity,fee_paid,dry_run,order_type";
 
 /// Result of an order placement.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,7 +117,7 @@ pub struct PositionInfo {
     pub liquidation_price: Option<f64>,
 }
 
-/// Order executor for Binance Futures.
+/// Order executor for Binance Futures with slippage logging.
 pub struct Executor {
     api_key: Option<String>,
     api_secret: Option<String>,
@@ -56,6 +127,9 @@ pub struct Executor {
     // Order tracking
     pending_orders: HashMap<String, OrderResult>,
     completed_orders: Vec<OrderResult>,
+    // Slippage tracking
+    fill_logs: Vec<FillLog>,
+    fill_log_path: Option<PathBuf>,
 }
 
 impl Executor {
@@ -75,6 +149,8 @@ impl Executor {
             fee_pct,
             pending_orders: HashMap::new(),
             completed_orders: Vec::new(),
+            fill_logs: Vec::new(),
+            fill_log_path: None,
         }
     }
 
@@ -83,9 +159,68 @@ impl Executor {
         Self::new(None, None, true, true, 0.0)
     }
 
+    /// Enable CSV logging to the given file path.
+    /// Creates the file with CSV header if it doesn't exist.
+    pub fn enable_fill_log(&mut self, path: PathBuf) -> Result<()> {
+        if !path.exists() {
+            let mut f = File::create(&path)?;
+            writeln!(f, "{}", FILL_LOG_CSV_HEADER)?;
+        }
+        self.fill_log_path = Some(path);
+        Ok(())
+    }
+
+    /// Get all fill logs collected so far.
+    pub fn fill_logs(&self) -> &[FillLog] {
+        &self.fill_logs
+    }
+
+    /// Print slippage summary (for debugging / live monitoring).
+    pub fn slippage_summary(&self) {
+        if self.fill_logs.is_empty() {
+            println!("  [Slippage] No fills logged yet.");
+            return;
+        }
+        let n = self.fill_logs.len() as f64;
+        let avg_bp = self.fill_logs.iter().map(|f| f.slippage_bp).sum::<f64>() / n;
+        let max_bp = self.fill_logs.iter().map(|f| f.slippage_bp).fold(0.0f64, f64::max);
+        let total_notional: f64 = self.fill_logs.iter().map(|f| f.notional).sum();
+        let buy_count = self.fill_logs.iter().filter(|f| f.side == "BUY").count();
+        let sell_count = self.fill_logs.iter().filter(|f| f.side == "SELL").count();
+        println!(
+            "  [Slippage] {} fills | avg {:.1}bp | max {:.1}bp | {} buy / {} sell | ${} total notional",
+            self.fill_logs.len(), avg_bp, max_bp, buy_count, sell_count, total_notional as i64
+        );
+    }
+
+    /// Write a fill log entry and flush to CSV.
+    fn log_fill(&mut self, fill: FillLog) {
+        self.fill_logs.push(fill.clone());
+        if let Some(ref path) = self.fill_log_path {
+            let entry = format!(
+                "{},{},{},{},{},{},{},{},{},{},{}\n",
+                fill.timestamp,
+                fill.symbol,
+                fill.side,
+                fill.expected_price,
+                fill.actual_price,
+                fill.slippage_bp,
+                fill.notional,
+                fill.quantity,
+                fill.fee_paid,
+                fill.dry_run,
+                fill.order_type
+            );
+            if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path) {
+                let _ = f.write_all(entry.as_bytes());
+            }
+        }
+    }
+
     /// Place a limit order.
     ///
     /// In dry-run mode, simulates the order without sending to exchange.
+    /// Logs the fill to slippage CSV (if enabled).
     pub async fn place_limit_order(
         &mut self,
         symbol: &str,
@@ -126,7 +261,11 @@ impl Executor {
                 dry_run: true,
             };
 
-            self.pending_orders.insert(client_order_id, result.clone());
+            self.pending_orders.insert(client_order_id.clone(), result.clone());
+            // Log fill: expected = price (limit order at bar close), actual = price (dry-run)
+            self.log_fill(FillLog::new(
+                symbol, side.as_str(), price, price, quantity, self.fee_pct, true, "LIMIT",
+            ));
             return Ok(result);
         }
 
@@ -136,6 +275,7 @@ impl Executor {
     }
 
     /// Place a market order.
+    /// Logs the fill to slippage CSV (if enabled).
     pub async fn place_market_order(
         &mut self,
         symbol: &str,
@@ -175,6 +315,10 @@ impl Executor {
             };
 
             self.completed_orders.push(result.clone());
+            // Log fill for market: expected (model price), actual (model price in dry-run)
+            self.log_fill(FillLog::new(
+                symbol, side.as_str(), 0.0, 0.0, quantity, self.fee_pct, true, "MARKET",
+            ));
             return Ok(result);
         }
 
@@ -184,6 +328,7 @@ impl Executor {
     }
 
     /// Place a stop-loss order.
+    /// Logs the fill to slippage CSV (if enabled).
     pub async fn place_stop_loss(
         &mut self,
         symbol: &str,
@@ -224,7 +369,11 @@ impl Executor {
                 dry_run: true,
             };
 
-            self.pending_orders.insert(client_order_id, result.clone());
+            self.pending_orders.insert(client_order_id.clone(), result.clone());
+            // Log fill: expected = stop_price (stop triggered), actual = stop_price (dry-run)
+            self.log_fill(FillLog::new(
+                symbol, side.as_str(), stop_price, stop_price, quantity, self.fee_pct, true, "STOP_MARKET",
+            ));
             return Ok(result);
         }
 
@@ -384,6 +533,21 @@ impl Executor {
             .await
             .context("Failed to place order")?;
 
+        // Actual fill price from exchange response
+        let avg_price = result.avg_price;
+        let expected_price = price.unwrap_or(avg_price);
+        let fill = FillLog::new(
+            symbol,
+            side.as_str(),
+            expected_price,
+            avg_price,
+            quantity,
+            self.fee_pct,
+            false,
+            &order_type_str,
+        );
+        self.log_fill(fill);
+
         let order_result = OrderResult {
             order_id: Some(result.order_id),
             client_order_id: result.client_order_id,
@@ -425,6 +589,10 @@ mod tests {
     #[tokio::test]
     async fn test_dry_run_limit_order() {
         let mut executor = Executor::dry_run();
+        // Enable logging to check fill logging
+        let tmp_path = std::env::temp_dir().join("test_fill_log.csv");
+        executor.enable_fill_log(tmp_path.clone()).unwrap();
+
         let result = executor
             .place_limit_order("BTCFDUSD", OrderSide::Buy, 0.01, 50000.0)
             .await
@@ -437,11 +605,25 @@ mod tests {
         assert!(executor
             .pending_orders()
             .contains_key(&result.client_order_id));
+
+        // Verify slippage log was created
+        executor.slippage_summary();
+        assert!(!executor.fill_logs().is_empty());
+        let log = &executor.fill_logs()[0];
+        assert_eq!(log.symbol, "BTCFDUSD");
+        assert_eq!(log.expected_price, 50000.0);
+        assert_eq!(log.actual_price, 50000.0);
+        assert_eq!(log.slippage_bp, 0.0);
+
+        let _ = std::fs::remove_file(tmp_path);
     }
 
     #[tokio::test]
     async fn test_dry_run_market_order() {
         let mut executor = Executor::dry_run();
+        let tmp_path = std::env::temp_dir().join("test_market_fill.csv");
+        executor.enable_fill_log(tmp_path.clone()).unwrap();
+
         let result = executor
             .place_market_order("ETHFDUSD", OrderSide::Sell, 0.1)
             .await
@@ -451,6 +633,8 @@ mod tests {
         assert_eq!(result.symbol, "ETHFDUSD");
         assert_eq!(result.side, "SELL");
         assert_eq!(result.status, "FILLED");
+
+        let _ = std::fs::remove_file(tmp_path);
     }
 
     #[test]
@@ -467,5 +651,20 @@ mod tests {
     fn test_order_side() {
         assert_eq!(OrderSide::Buy.as_str(), "BUY");
         assert_eq!(OrderSide::Sell.as_str(), "SELL");
+    }
+
+    #[test]
+    fn test_fill_log_slippage_calculation() {
+        // Normal case: actual = expected, 0 slippage
+        let log = FillLog::new("BTCFDUSD", "BUY", 50000.0, 50000.0, 0.1, 0.0004, false, "LIMIT");
+        assert_eq!(log.slippage_bp, 0.0);
+
+        // Slippage: actual worse by 5bp
+        let log2 = FillLog::new("BTCFDUSD", "BUY", 50000.0, 50025.0, 0.1, 0.0004, false, "LIMIT");
+        assert!((log2.slippage_bp - 5.0).abs() < 0.1);
+
+        // Slippage: actual better by 3bp
+        let log3 = FillLog::new("BTCFDUSD", "SELL", 50000.0, 49985.0, 0.1, 0.0004, false, "LIMIT");
+        assert!((log3.slippage_bp - 3.0).abs() < 0.1);
     }
 }
