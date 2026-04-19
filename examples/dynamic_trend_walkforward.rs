@@ -452,7 +452,7 @@ fn build_chart_script_string(p0: usize, p1: usize, p2: usize, p3: usize) -> Stri
     out.push_str("    y_min = max(all_vals.min() * 0.8, 0.01)\n");
     out.push_str("    y_max = all_vals.max() * 1.2\n");
     out.push_str("    ax1.set_ylim(y_min, y_max)\n");
-    out.push_str("    ax1.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))\n");
+    out.push_str("    ax1.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: '{:.2}'.format(x)))\n");
     out.push_str("    ax1.set_ylabel('Equity (log scale)', fontsize=11)\n");
     out.push_str("    ax1.legend(loc='upper left', fontsize=9, framealpha=0.9)\n");
     out.push_str("    ax1.grid(True, alpha=0.3, which='both')\n");
@@ -552,18 +552,18 @@ fn write_summary_md(sorted: &[(usize, &GlobalAgg)], winner: usize, baseline: usi
     writeln!(f, "**Baseline (ema_fast=50):**")?;
     if let Some(agg) = baseline_agg {
         writeln!(f, "- Pass rate: {:.1}% ({}/{})", agg.pass_rate()*100.0, agg.total_passes, agg.total_windows)?;
-        writeln!(f, "- Avg Sharpe: {:.3f}", agg.avg_sharpe())?;
-        writeln!(f, "- Avg DD: {:.2f}%", agg.avg_dd())?;
-        writeln!(f, "- Avg Return: {:.2f}%", agg.avg_ret())?;
+        writeln!(f, "- Avg Sharpe: {:.3}", agg.avg_sharpe())?;
+        writeln!(f, "- Avg DD: {:.2}%", agg.avg_dd())?;
+        writeln!(f, "- Avg Return: {:.2}%", agg.avg_ret())?;
         writeln!(f, "- Total Trades: {}", agg.total_trades)?;
     }
     writeln!(f, "")?;
     writeln!(f, "**Winner (ema_fast={}):**", winner)?;
     if let Some(agg) = winner_agg {
         writeln!(f, "- Pass rate: {:.1}% ({}/{})", agg.pass_rate()*100.0, agg.total_passes, agg.total_windows)?;
-        writeln!(f, "- Avg Sharpe: {:.3f}", agg.avg_sharpe())?;
-        writeln!(f, "- Avg DD: {:.2f}%", agg.avg_dd())?;
-        writeln!(f, "- Avg Return: {:.2f}%", agg.avg_ret())?;
+        writeln!(f, "- Avg Sharpe: {:.3}", agg.avg_sharpe())?;
+        writeln!(f, "- Avg DD: {:.2}%", agg.avg_dd())?;
+        writeln!(f, "- Avg Return: {:.2}%", agg.avg_ret())?;
         writeln!(f, "- Total Trades: {}", agg.total_trades)?;
     }
     if let (Some(w), Some(b)) = (winner_agg, baseline_agg) {

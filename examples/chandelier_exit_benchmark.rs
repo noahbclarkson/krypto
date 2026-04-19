@@ -277,7 +277,7 @@ fn main() -> Result<()> {
             );
 
             println!(
-                "  {}: ret={:.1f}%, Sharpe={:.2f}, DD={:.1f}%, trades={}, WR={:.0f}%, early_exits={}, avg_bars={:.1f}",
+                "  {}: ret={:.1}%, Sharpe={:.2}, DD={:.1}%, trades={}, WR={:.0}%, early_exits={}, avg_bars={:.1}",
                 exit_mode.name(),
                 result.return_pct,
                 result.sharpe,
@@ -310,7 +310,7 @@ fn main() -> Result<()> {
     let mut csv = String::from("universe,exit_mode,return_pct,sharpe,max_dd_pct,trades,win_rate_pct,avg_active_positions,avg_exposure,dd20_days_pct,chandelier_early_exits,avg_trade_bars\n");
     for r in &rows {
         csv.push_str(&format!(
-            "{},{},{:.2f},{:.3f},{:.2f},{},{:.1f},{:.2f},{:.3f},{:.2f},{},{:.1f}\n",
+            "{},{},{:.2},{:.3},{:.2},{},{:.1},{:.2},{:.3},{:.2},{},{:.1}\n",
             r.universe,
             r.exit_mode,
             r.return_pct,

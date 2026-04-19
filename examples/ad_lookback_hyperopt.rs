@@ -376,7 +376,7 @@ fn main() -> Result<()> {
         let mut file = File::create(CSV_OUT)?;
         writeln!(file, "universe,lookback,avg_sharpe,avg_return_pct,avg_max_dd_pct,trades,pass_rate_pct")?;
         for (univ, lb, sharpe, ret, dd, trades, passes) in &all_results {
-            writeln!(file, "{},{},{:.4f},{:.4f},{:.4f},{},{}", univ, lb, sharpe, ret, dd, trades, passes)?;
+            writeln!(file, "{},{},{:.4},{:.4},{:.4},{},{}", univ, lb, sharpe, ret, dd, trades, passes)?;
         }
     }
 
@@ -409,17 +409,17 @@ fn main() -> Result<()> {
         writeln!(file, "  \"n_values\": {},", ranked.len())?;
         writeln!(file, "  \"ranked_by_avg_sharpe\": [")?;
         for (i, (lb, sharpe, ret, dd, trades, passes)) in ranked.iter().take(20).enumerate() {
-            writeln!(file, "    {{\"rank\":{},\"lookback\":{},\"avg_sharpe\":{:.4f},\"avg_return_pct\":{:.4f},\"avg_dd_pct\":{:.4f},\"total_trades\":{},\"avg_pass_pct\":{:.1f}}}{}",
+            writeln!(file, "    {{\"rank\":{},\"lookback\":{},\"avg_sharpe\":{:.4},\"avg_return_pct\":{:.4},\"avg_dd_pct\":{:.4},\"total_trades\":{},\"avg_pass_pct\":{:.1}}}{}",
                 i + 1, lb, sharpe, ret, dd, trades, *passes as f64 / UNIVERSES.len() as f64)?;
         }
         writeln!(file, "  ],")?;
         let winner = ranked.first();
         if let Some((lb, sharpe, _, _, _, _)) = winner {
-            writeln!(file, "  \"winner\": {{\"lookback\":{},\"avg_sharpe\":{:.4f}}},", lb, sharpe)?;
+            writeln!(file, "  \"winner\": {{\"lookback\":{},\"avg_sharpe\":{:.4}}},", lb, sharpe)?;
         }
         writeln!(file, "  \"baseline_lookback\": 20,")?;
         if let Some(base) = lb_agg.get(&20) {
-            writeln!(file, "  \"baseline_sharpe\": {:.4f},", base.0 / base.5 as f64)?;
+            writeln!(file, "  \"baseline_sharpe\": {:.4},", base.0 / base.5 as f64)?;
         }
         writeln!(file, "  \"elapsed_seconds\": {}", start.elapsed().as_secs())?;
         writeln!(file, "}}")?;

@@ -402,7 +402,7 @@ async fn main() -> Result<()> {
     {
         let mut lines = vec!["entry_period,passes,avg_ret_pct,avg_sharpe,worst_dd_pct,total_trades,wins,win_rate,q_pass_pct".to_string()];
         for (ep, passes, avg_ret, avg_sharpe, worst_dd, trades, wins, win_rate, q_pass_pct) in &sweep_results {
-            lines.push(format!("{},{},{:.4f},{:.6f},{:.4f},{},{},{:.6f},{:.4f}",
+            lines.push(format!("{},{},{:.4},{:.6},{:.4},{},{},{:.6},{:.4}",
                 ep, passes, avg_ret, avg_sharpe, worst_dd, trades, wins, win_rate, q_pass_pct));
         }
         fs::write("snapshots/turtle_entry_sweep_results.csv", lines.join("\n"))?;
@@ -413,7 +413,7 @@ async fn main() -> Result<()> {
     {
         let mut lines = vec!["universe,entry_period,avg_ret_pct,avg_sharpe,worst_dd_pct,avg_trades,avg_win_rate".to_string()];
         for (uni, ep, ret, sh, dd, trades, wr) in &universe_results {
-            lines.push(format!("{},{},{:.4f},{:.6f},{:.4f},{},{:.6f}",
+            lines.push(format!("{},{},{:.4},{:.6},{:.4},{},{:.6}",
                 uni, ep, ret, sh, dd, trades, wr));
         }
         fs::write("snapshots/turtle_entry_universe_results.csv", lines.join("\n"))?;

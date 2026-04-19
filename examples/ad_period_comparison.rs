@@ -351,12 +351,12 @@ if eq_files:
             
             avg_sh = smry.loc[p, 'avg_sharpe'] if p in smry.index else 0
             qp = int(smry.loc[p, 'total_qp']) if p in smry.index else 0
-            label = '{} (p={}, Sharpe={:.2f}, QP={}/54)'.format(tag, p, avg_sh, qp)
+            label = '{} (p={}, Sharpe={:.2}, QP={}/54)'.format(tag, p, avg_sh, qp)
             
             ax1.plot(geo_mean, color=clr, linewidth=lw, linestyle=ls, label=label)
     
     ax1.set_yscale('log')
-    ax1.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
+    ax1.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: '{:.1}'.format(x)))
     ax1.set_ylabel('Equity (log scale)', fontsize=11)
     ax1.set_xlabel('Trading Day', fontsize=11)
     ax1.legend(loc='upper left', fontsize=9, framealpha=0.9)
@@ -401,7 +401,7 @@ bar_colors = [COLORS[p] for p in PERIODS]
 bars = ax3.bar(p_labels, sharpes, color=bar_colors, edgecolor='white', linewidth=1.5)
 for b, s in zip(bars, sharpes):
     ax3.text(b.get_x() + b.get_width()/2., b.get_height() + 0.05,
-             '{:.3f}'.format(s), ha='center', va='bottom', fontsize=12, fontweight='bold')
+             '{:.3}'.format(s), ha='center', va='bottom', fontsize=12, fontweight='bold')
 ax3.set_title('Avg Sharpe Across 9 Universes', fontsize=12)
 ax3.set_ylabel('Avg Sharpe', fontsize=11)
 ax3.axhline(y=0, color='black', linewidth=0.5)
@@ -430,7 +430,7 @@ if os.path.exists(detail_path):
             for j in range(len(PERIODS)):
                 val = pivot.values[i, j]
                 if not np.isnan(val):
-                    ax4.text(j, i, '{:.0f}/7'.format(val), ha='center', va='center',
+                    ax4.text(j, i, '{:.0}/7'.format(val), ha='center', va='center',
                             fontsize=10, color='black', fontweight='bold')
         plt.colorbar(im, ax=ax4, label='Quarter Passes')
 else:
@@ -465,7 +465,7 @@ if eq_files:
         
         ax.set_title(uni, fontsize=11)
         ax.set_yscale('log')
-        ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
+        ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: '{:.1}'.format(x)))
         ax.grid(True, alpha=0.3, which='both')
         ax.legend(fontsize=7, loc='upper left')
         ax.axhline(y=1.0, color='black', linewidth=0.5)

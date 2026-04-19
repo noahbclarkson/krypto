@@ -638,7 +638,7 @@ for fpath in eq_files:
         ax.plot(x, vals, label=label, color=color, linestyle=ls, linewidth=lw)
 
     ax.set_yscale('log')
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: '{{:.2f}}'.format(x)))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: '{{:.2}}'.format(x)))
     ax.set_ylabel('Equity (log scale)', fontsize=11)
     ax.legend(loc='upper left', fontsize=9, framealpha=0.9)
     ax.grid(True, alpha=0.3, which='both')

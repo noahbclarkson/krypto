@@ -391,7 +391,7 @@ async fn main() -> Result<()> {
             let gross_sum: f64 = filtered.iter().map(|t| t.gross_return).sum();
             let net_sum: f64 = filtered.iter().map(|t| t.net_return).sum();
             let wins = filtered.iter().filter(|t| t.net_return > 0.0).count();
-            writeln!(file, "{},{:?},{},{},{:.2},{:.2},{:.4f},{:.4f}",
+            writeln!(file, "{},{:?},{},{},{:.2},{:.2},{:.4},{:.4}",
                 year, regime, m, wins, gross_sum, net_sum,
                 net_sum / m as f64, 100.0 * wins as f64 / m as f64)?;
         }
