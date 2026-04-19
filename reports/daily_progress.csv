@@ -1,4 +1,3 @@
-# UNVALIDATED PROTOTYPE RESULTS — DO NOT USE FOR PRODUCTION DECISIONS
-# These are early prototype backtests with no OOS walk-forward validation.
-# See HALL_OF_FAME.md for validated production strategies.
-date,strategy,return_pct,sharpe,max_dd_pct,trades,win_rate,best_universe,worst_universe
+# UNVALIDATED PROTOTYPE RESULTS — LEGACY ARCHIVE
+# This file was moved to daily_progress_LEGACY.csv on 2026-04-19.
+# All production equity data is in snapshots/progress_equity_curves.csv
