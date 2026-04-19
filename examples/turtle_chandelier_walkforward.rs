@@ -25,12 +25,12 @@ const POSITION_CAP: usize = 3; // hyperopt 2026-04-11: CAP=3 wins over CAP=2 (+1
 // Only window sensitive to MT=3 vs MT=7 is Legacy5BNB W04 (6 trades → PASS at MT=3, FAIL at MT=7).
 // MIN_TRADES does NOT affect strategy returns — only pass/fail label and statistical reliability.
 const MIN_TRADES: usize = 3;
-const CHAND_PERIOD: usize = 20; // hyperopt 2026-04-16: CP=20 wins full 46-value sweep. Full 5-50 step1 sweep across 9 universes. CP=20: pass 47/54 (87.0%), Sharpe 5.1582. CP=28 was WORST in plateau (CP 17-27): Sharpe 5.0797. +1.55% Sharpe improvement, +1.9pp pass rate. Plateau: CP 17-27 is stable (spread 0.18 Sharpe). See memory/hyperopt-2026-04-16-chand-mult.md (re-run as CP sweep).
+const CHAND_PERIOD: usize = 15; // hyperopt 2026-04-19: 2D joint sweep P×M. P=15/M=1.50 wins over P=20/M=2.15 (7/9 universes). Replaces stale CP=20 from 2026-04-16. See turtle_pm9_wf.rs and hyperopt-2026-04-19-chand-pm-2d.md.
 // Extended fine-sweep 2026-04-16: CP=15-50 step=1 on Base5. CP=17 emerged with best Sharpe (5.83 vs CP=28=5.76 on Base5).
 // However, 9-way robustness check (all 9 universes): CP=20 slightly edges CP=17 (45/54=83% vs 44/54=81% global pass, Sharpe 4.51 vs 4.38).
 // CP=17 and CP=28 are nearly identical globally (44/54=81% both, Sharpe 4.38 vs 4.46).
 // Production keeps P=28 (already frozen, stable). CP=17 is a viable alternative if a future re-tune is desired.
-const CHAND_MULT: f64 = 2.15; // hyperopt 2026-04-16: M=2.15 fine-sweep winner (31 values step=0.05, 3→9 universe validation). M=2.00 was step=0.5 coarse. Delta Sharpe +25.5% (3.87→4.86), same 83.3% pass rate. Saturation plateau M=2.15 to 3.00 (identical performance — dual exit means Turtle ATR fires first at M≥2.15). See memory/hyperopt-2026-04-16-chand-mult.md.
+const CHAND_MULT: f64 = 1.50; // hyperopt 2026-04-19: 2D joint sweep P×M. P=15/M=1.50 wins over P=20/M=2.15 (7/9 universes). Tighter stop = more stops but higher Sharpe per trade. Joint optimization critical — sequential sweeps were misleading. See hyperopt-2026-04-19-chand-pm-2d.md.
 const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. Dual exit: Chandelier OR Turtle ATR fires first. See hyperopt-2026-04-16-atr-period.md.
 // hyperopt 2026-04-17: VOL_LOOKBACK=55 found in 1-100 step1 sweep, BUT overfits on held-out W04/W05.

@@ -27,7 +27,7 @@ pub const CHAND_PERIOD: usize = 15; // hyperopt 2026-04-19: 2D joint sweep P×M,
 pub const CHAND_MULT: f64 = 1.50;
 pub const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. See hyperopt-2026-04-16-atr-period.md.
 pub const TURTLE_ATR_MULT: f64 = 2.0;
-pub const HOLD_MAX: usize = 45;
+pub const HOLD_MAX: usize = 45; // Walk-forward harness uses HM=45 (validated). Live production may prefer HM=15 (higher Sharpe with P=15/M=1.50 — see hyperopt-2026-04-19-holdmax.md). HM=15 sweep on Base5: Sharpe 5.95 vs HM=45: 5.40 (+10%). Chandelier(P=15/M=1.50) fires ~bar 14-15; HM=15 is near the exit boundary.
 pub const POSITION_CAP: usize = 3;
 
 /// Configuration for live trading bot.
