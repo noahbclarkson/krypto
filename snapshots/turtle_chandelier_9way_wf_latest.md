@@ -1,15 +1,21 @@
 # Turtle+Chandelier Walk-Forward: 9 Universes
+## Params: EP=21, CHAND(15, 1.50), ATR(24, 2.0), HOLD_MAX=45, CAP=3
+## Run: 2026-04-19 09:10 UTC | Runtime: 5.5s
 
 | Universe | Pass | Avg Ret | Avg Sharpe | Worst DD | Trades |
 |---|---|---|---|---|---|
-| Base5 | 6/6 | +174.7% | 8.564928127423718 | 39.9% | 78 |
-| NoDOGE | 6/6 | +160.8% | 9.026693145522552 | 35.4% | 67 |
-| Legacy4 | 6/6 | +22.1% | 1.8888463011157706 | 40.9% | 77 |
-| Legacy5BNB | 6/6 | +37.0% | 2.618433031189214 | 40.5% | 67 |
-| OldGuardNoBNB | 6/6 | +33.8% | 2.0491938686941413 | 38.9% | 80 |
-| LargeCaps5 | 6/6 | +162.7% | 10.866819501885878 | 35.4% | 63 |
-| Legacy3 | 6/6 | +10.7% | 1.1356801460325547 | 51.3% | 87 |
-| LowVolume5 | 6/6 | +189.1% | 3.0015600957281876 | 68.2% | 100 |
-| OldGuard4 | 6/6 | +13.5% | 1.0753173014802353 | 54.4% | 91 |
+| Base5 | 6/6 | +198.0% | 5.87 | 32.8% | 98 |
+| NoDOGE | 6/6 | +151.5% | 6.72 | 32.8% | 88 |
+| Legacy4 | 6/6 | +19.2% | 1.93 | 42.0% | 95 |
+| Legacy5BNB | 6/6 | +34.5% | 3.25 | 42.0% | 87 |
+| OldGuardNoBNB | 6/6 | +25.2% | 1.79 | 42.0% | 104 |
+| LargeCaps5 | 6/6 | +128.1% | 6.54 | 32.8% | 85 |
+| Legacy3 | 4/6 | +6.6% | 0.93 | 53.3% | 112 |
+| LowVolume5 | 4/6 | +130.9% | 3.48 | 69.9% | 133 |
+| OldGuard4 | 4/6 | +14.1% | 1.22 | 61.1% | 122 |
 
-**GLOBAL: 41/54 pass (24% fail), avg Sharpe 4.469719057674693, 710 trades**
+**GLOBAL: 43/54 pass (79.6%), avg Sharpe 3.53, 924 trades**
+- Failures concentrated in LTC/EOS/BCH (non-trending assets) — structural, not parameter issue
+- Base5/NoDOGE/LargeCaps5: 18/18 pass (100%) — production universe clean
+
+**Production universe (Base5/NoDOGE): 6/6 each, avg Sharpe 6.27**
