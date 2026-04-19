@@ -389,4 +389,4 @@ Once 30-day live data is in: compare actual Sharpe vs expected ~1.0-1.3. If > 0.
 
 ---
 
-*Last updated: 2026-04-18 19:27 UTC — manager directive applied. Research closed. Live testnet only.*
+*Last updated: 2026-04-19 08:15 UTC — critique session. Research closed. Live testnet only.*
