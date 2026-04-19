@@ -29,6 +29,26 @@
 - **Fix:** Run `cargo run --example progress_equity_curves --profile sweep`; verify equity and Sharpe columns are internally consistent; ensure Python chart labels match actual CSV data
 - **Anchor:** Full history $10K→$67M ≈ 670x matches 673.5x closely — 673.5x is likely correct, 1126x was likely from a different calculation window
 
+**T3 STATUS: DONE ✅** — 2026-04-19 06:03 UTC. Verified: Turtle 667.5x (was 673.5x — <1% delta, data-refresh variance). Chart regenerated.
+
+### 🚨 NEW: Walk-Forward Harness Out of Sync With Live Bot Params
+
+**Critical gap discovered 2026-04-19:**
+- Live bot (`src/live/config.rs`): **CHAND_PERIOD=15, CHAND_MULT=1.50** (changed 2026-04-19 03:58)
+- Walk-forward harness (`examples/turtle_chandelier_walkforward.rs`): **CHAND_PERIOD=20, CHAND_MULT=2.15** (NOT updated)
+- The 87% pass rate / 4.68 avg Sharpe is for P=20/M=2.15, not the current live params
+
+**Evidence P=15/M=1.50 may still be valid:**
+- `turtle_pm9_wf.rs` (separate harness): P=15/M=1.50 wins 7/9 universes
+- 7/9 = 78% pass — still above 75% threshold but marginal
+
+**Required action (when API keys available):**
+1. Re-run `turtle_chandelier_walkforward.rs` with CHAND_PERIOD=15, CHAND_MULT=1.50
+2. Confirm pass rate ≥ 75% with the main validation harness
+3. If pass rate drops below 75% → revert to P=20/M=2.15
+
+**Risk:** P=15/M=1.50 = faster/tighter Chandelier exits. May trigger more stops in volatile markets. Live testnet will reveal this.
+
 ---
 
 ## 📋 BINANCE TESTNET READINESS CHECKLIST — For Noah
