@@ -311,3 +311,15 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 - **Conclusion:** ATR calculation already provides sufficient smoothing. ATR_EMA_PERIOD = 1 (raw ATR) is the production default.
 - See `memory/hyperopt-2026-04-17-atr-ema-smoothing.md`.
 - Charts: `charts/turtle_atr_ema_sweep.png`, `charts/turtle_atr_ema_sweep_full.png`.
+
+## FRESHNESS_COOLDOWN Hyperopt (2026-04-18)
+- **Parameter:** FRESHNESS_COOLDOWN — bars to wait after exit before re-entering
+- **Prior:** cd=10 (live bot default, from 2026-04-18 hyperopt on stale params)
+- **New:** cd=0 (no freshness filter, from 2026-04-18 sweep on current params)
+- **Scope:** 15 values (0 to 70 step 5) × Base5 (6 windows)
+- **WINNER: cd=0** — 6/6 pass, Sharpe 8.5649, +174.7% avg return
+- **cd=10 (live default) is worst:** 3/6 pass, Sharpe 5.48, equity 0.69x (NET LOSS)
+- **Root cause:** cd=10 was tuned on stale CHAND_PERIOD=28. With CHAND_PERIOD=20, the filter blocks valid re-entries. The walk-forward harness (which validates the strategy) has NO freshness filter — this was a structural live/backtest gap.
+- **Action:** Set FRESHNESS_COOLDOWN=0 in bot.rs. Live bot now matches validated walk-forward harness.
+- **Stable plateau:** cd=25-50 all 6/6 pass, Sharpe 6.0-7.3. If non-zero cooldown ever desired, cd=25 is best return (+214%).
+- See memory/hyperopt-2026-04-18-cooldown.md.
