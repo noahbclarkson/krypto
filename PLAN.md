@@ -1,209 +1,98 @@
 # PLAN.md — Krypto Live Testnet Priority
 
-**Manager directive (2026-04-18):** Stop all historical hyperopt/doc loops. Research closed. Next useful outputs only:
-1. Minimal Binance testnet readiness checklist for Noah
-2. Exact env/API setup
-3. One dry-run/testnet launch plan
-4. Any code changes strictly required for safe first live shadow run
+**State: 2026-04-19 12:23 UTC. Research closed. Live testnet only. BLOCKED on API keys.**
 
 ---
 
-## ✅ COMPLETED (2026-04-19)
+## 🚨 CRITICAL — VERIFY EQUITY CURVE DATA (Highest Risk)
 
-### T1: HALL_OF_FAME.md Freshness Cooldown ✅
-- Already correct. HALL_OF_FAME.md line 25: `FRESHNESS_COOLDOWN = 0`. bot.rs:21: `cd=0`. No discrepancy.
+**This is the highest-risk issue right now. Charts in Discord may show wrong data.**
 
-### T2: daily_progress.csv Archive ✅
-- Archived to `daily_progress_LEGACY.csv`. Stub file with LEGACY warning created.
+**Problem (from 2026-04-17 session):** `plot_progress.py` reads column index 4 as "Turtle" → but index 4 is `ddbudget_equity`. The real `turtle_equity` is at a different index or may have been removed from the CSV.
 
-### T3: Progress Equity CSV Integrity ✅ (06:03 UTC)
-- Verified: Turtle 673.5x (was 672.7x — <1% data-refresh variance). Equity internally consistent.
+**What we know:**
+- Current CSV has 4 columns: `day,ad_equity,small_equity,ddbudget_equity,turtle_equity`
+- The `progress_equity_curves.rs` harness was supposedly fixed on Apr 17
+- But the Apr 17 critique said the Python script was reading the wrong column
 
-### Walk-Forward Harness Sync ✅ (09:05 UTC)
-- P=15/M=1.50 fully validated: 43/54 (79.6%) global, 6/6 Base5.
-- Walk-forward harness now synced.
-
-### Entry Filter Sweep ✅ (morning session)
-- ATR entry filter: REJECTED (mult=0.0 wins). Volume confirmation: REJECTED.
-- No production code changes needed.
-
-### Examples Hygiene ✅ (12:18 UTC)
-- 33 stale examples archived to `examples/GRAVEYARD/`
-- 320 active examples remaining (was 351)
-- Build: clean ✅
-
----
-
-## 📋 BINANCE TESTNET READINESS CHECKLIST — For Noah
-
-### Step 1: Create Binance Testnet Account (5 minutes)
-
-1. Go to **https://testnet.binancefuture.com/**
-2. Log in with your GitHub or email account
-3. Navigate to **Dashboard → API Keys → Create New**
-4. Label it `krypto-testnet` (or any name you prefer)
-5. **Save the API Key and Secret** — you will only see the secret once
-6. Enable "Enable Spot & Futures Trading" if not already enabled
-7. No IP restriction needed for first test
-
-**⚠️ Testnet funds are free.** Request testnet USDT from:
-- `https://testnet.binancefuture.com/en/futures/BTCUSDT` → click "Faucet" (top right)
-- Request at least 10,000 USDT test funds
-- Each symbol also needs test tokens (BTC, ETH, SOL, etc.) — faucet those too
-
-### Step 2: Verify Dry Run Works (before any real testnet orders)
-
+**Required:**
 ```bash
-# Verify the bot compiles and runs paper/dry-run mode first
 cd ~/.openclaw/workspace-krypto/krypto
-
-# Dry run — no API keys needed, simulates orders only
-cargo run --example live_turtle_chandelier --profile sweep
+cargo run --example progress_equity_curves --profile sweep
+# Then manually verify: which column is which in the output CSV?
+# Then check: what does plot_progress.py actually read as "turtle"?
 ```
 
-Expected output: paper backtest results for 5 symbols, no API errors.
+**Until verified: Do NOT send equity charts to Discord.** If charts were sent in Apr 17-19 sessions, they may have been DDBudget data labeled as Turtle.
 
-### Step 3: Set Environment Variables
+---
 
+## 🚨 CRITICAL — HALL_OF_FAME.md Full Audit
+
+**HALL_OF_FAME.md is wrong on critical params:**
+
+| Parameter | HALL_OF_FAME says | Actual (live_turtle_chandelier.rs) |
+|-----------|------------------|-----------------------------------|
+| CHAND_PERIOD | 20 | 15 |
+| CHAND_MULT | 2.15 | 1.50 |
+| FRESHNESS_COOLDOWN | cd=10 (in #21 text) / cd=0 (in header) | cd=0 |
+
+The "daily equity Sharpe ~1.34" and "6/6 pass" claims in HALL_OF_FAME were from P=20/M=2.15 runs. The current live bot uses P=15/M=1.50.
+
+**Required:**
+1. Rewrite HALL_OF_FAME.md production params section to reflect P=15/M=1.50
+2. Verify all claim references are correct for the current params
+3. Remove VOL_LOOKBACK from Turtle params (it's a harness-only parameter)
+4. Add explicit note that walk-forward Sharpe 6.29 is NOT comparable to daily equity Sharpe
+
+---
+
+## 📋 LIVE TESTNET — What Needs to Happen
+
+### What we have
+- Live bot: `examples/live_turtle_chandelier.rs` ✅
+- Safety interlock: `TradingMode::DryRun` default ✅
+- Testnet config: `use_testnet: true` default ✅
+- API keys from env: `BINANCE_API_KEY`, `BINANCE_API_SECRET` ✅
+
+### What Noah needs to do (blocks on him)
+1. Create testnet account: https://testnet.binancefuture.com/
+2. Faucet test USDT + test BTC/ETH/SOL/XRP/DOGE
+3. Give Kira the API key + secret (or set env vars on VPS)
+
+### Phase 1: Shadow Run (48h)
 ```bash
-# Add to your shell profile (~/.bashrc or ~/.zshrc) or run inline:
-export BINANCE_API_KEY="your_testnet_api_key_here"
-export BINANCE_API_SECRET="your_testnet_secret_here"
-```
-
-**Never put API keys in code or git.**
-
-### Step 4: Verify Testnet Connection (dry-run, then real)
-
-```bash
-# Dry run with testnet config (simulated orders, no real trades)
-BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy \
-  cargo run --example live_turtle_chandelier --profile sweep
-
-# Real testnet orders (shadow mode — bot logs signals but doesn't trade)
 BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy \
   cargo run --example live_turtle_chandelier --profile sweep -- --live
 ```
+Verify: signals fire on live WebSocket, no crashes, `[DRY RUN]` prefix.
 
-Look for `[DRY RUN] BUY BTCUSDT ... on testnet` in the output. This confirms API keys work.
+### Phase 2: Small Real Testnet Trade (5-10 trades, BTC only)
+Change `dry_run: false` in example, run 1 symbol.
 
-### Step 5: Symbols to Fund for Testnet
-
-| Symbol | Why needed | Approx test funds |
-|--------|-----------|-----------------|
-| BTCUSDT | Primary trend | 0.5 BTC |
-| ETHUSDT | Primary trend | 5 ETH |
-| SOLUSDT | High slippage risk | 50 SOL |
-| XRPUSDT | Secondary trend | 5000 XRP |
-| DOGEUSDT | High vol trend | 50000 DOGE |
+### Phase 3: Full 5-Symbol 30-Day Run
+Full universe, measure live Sharpe vs 1.0-1.3 expectation.
 
 ---
 
-## 🧪 DRY-RUN / TESTNET LAUNCH PLAN
+## 📋 POST-LIVE CONCEPTS (Build After 30-Day Live Validation)
 
-### Phase 0 — Verify (Do First)
+These only matter after we have real fill data.
 
-```bash
-# 1. Compile check
-cargo build --example live_turtle_chandelier --profile sweep
+### S1. Live Slippage Tracker
+- Track slippage per symbol per fill vs model
+- SOL is the known risk: 3.7x model at $100K
+- Low effort, high value
 
-# 2. Paper mode (no API keys needed)
-cargo run --example live_turtle_chandelier --profile sweep
+### S2. Maker-Fill Adaptive Position Sizing
+- After 30 days: measure actual maker-fill % per symbol
+- If <50% maker → reduce position 30%
+- Low effort
 
-# 3. Dry-run with testnet API keys (simulates, no real orders)
-BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy \
-  cargo run --example live_turtle_chandelier --profile sweep
-```
-Expected: `DRY RUN` prefix on all orders, no real order IDs returned.
-
-### Phase 1 — Shadow Run (Live signals, observe only)
-
-```bash
-# Bot starts, watches WebSocket, logs all signals but DOES NOT TRADE
-# The --live flag activates real executor but dry_run=true by default
-# from_env() + no --prod flag = testnet, dry_run=true (safe default)
-
-BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy \
-cargo run --example live_turtle_chandelier --profile sweep -- --live
-```
-
-Look for:
-- `[DRY RUN] BUY BTCUSDT ... on testnet` = signal detected, simulated order placed ✅
-- WebSocket bar updates streaming in
-- `TURTLE ENTRY` log lines when breakout detected
-
-**Duration:** Run for 1-2 days. Verify signals fire correctly on live data.
-
-### Phase 2 — Small Real Testnet Trade (if shadow run looks correct)
-
-Once shadow run shows correct signals:
-
-```bash
-# Edit examples/live_turtle_chandelier.rs to set dry_run=false for testnet
-# Change: dry_run: true → dry_run: false  (in the --live block)
-# Run again
-```
-
-Start with **1 symbol only** (BTCUSDT). Monitor for:
-- Order placed on testnet exchange
-- Fill confirmation logged
-- PnL tracking correct
-
-**Duration:** 5-10 trades to validate execution quality.
-
-### Phase 3 — Full 5-Symbol Testnet Run
-
-After Phase 2 validates:
-- Maker fill rate ~60-70%
-- Slippage within model
-- Signal timing correct
-- PnL tracking correct
-
-Run full universe (BTC, ETH, SOL, XRP, DOGE) on testnet for **30 days**.
-
----
-
-## 🔒 REQUIRED CODE CHANGES — Safe First Live Shadow Run
-
-**Minimal required change (one file, ~15 lines)**
-
-**`examples/live_turtle_chandelier.rs`** — modify the `--live` block to add a prominent warning:
-
-```rust
-// Add prominent warning in the --live block:
-println!();
-println!("{}", "╔════════════════════════════════════════════════════════════╗".bold().red());
-println!("{}", "║  ⚠️  LIVE TESTNET MODE — Real testnet orders will be placed  ║".bold().red());
-println!("{}", "║  Funds are testnet only — no real value lost               ║".bold().red());
-println!("{}", "╚════════════════════════════════════════════════════════════╝".bold().red());
-println!();
-```
-
----
-
-## ✅ CODE REVIEW: What's Already Safe
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Signal logic (Turtle+Chandelier) | ✅ Verified | Matches walk-forward harness exactly |
-| Freshness filter (cd=0) | ✅ In bot.rs | Line 21: `const FRESHNESS_COOLDOWN: usize = 0;` |
-| Dual exit (Chandelier + Turtle ATR) | ✅ In bot.rs | Lines 196-210: both stops checked, tighter wins |
-| Position cap (CAP=3) | ✅ Enforced | `check_dual_exit` only checks if in position; `process_bar` enforces cap |
-| Dry run default | ✅ Safe | `dry_run: true` is default in `LiveConfig::default()` |
-| Testnet default | ✅ Safe | `use_testnet: true` is default — won't hit mainnet accidentally |
-| API key env vars | ✅ Secure | Read from `BINANCE_API_KEY` / `BINANCE_API_SECRET`, never hardcoded |
-| Exit logging | ✅ Complete | All exits logged with symbol, price, PnL%, bars held |
-| Freshness tracking | ✅ In bot.rs | `last_exit_bar` HashMap tracks bar of last exit per symbol |
-
----
-
-## ⚠️ KNOWN LIVE TRADING RISKS (document for Noah)
-
-1. **SOL slippage exceeds model** at >$50K notional. Cap SOL position at $50K or reduce to 0.5x size.
-2. **Maker fill ~63%** (actual) vs 70% (model). Slightly conservative — ok.
-3. **No regime defense.** Strategy will underperform badly in choppy 2026-type markets.
-4. **2026 YTD -22.7%** — if live markets stay choppy, live Sharpe could be negative.
-5. **No live stop-loss order** — exits are signaled on next bar open. Gap risk exists.
+### S3. Volatility Regime Dashboard
+- Live ATR percentile rank display per symbol
+- Color-coded: trending vs choppy
+- Nice-to-have
 
 ---
 
@@ -212,28 +101,20 @@ println!();
 - No more walk-forward parameter optimization
 - No more hyperopt passes
 - No more strategy research
-- No more Monte Carlo on historical data
+- No more Monte Carlo
 - No more documentation loops
-
-**The only question live testnet can answer that history cannot:**
-- Does the signal fire correctly on current (live) market data?
-- Does the execution layer work (order placement, fill confirmation, PnL tracking)?
-- Is the maker fill rate in the expected range?
-
-All other questions have been answered. Ship it.
+- No more equity chart generation until CSV is verified
 
 ---
 
-## 📅 TOP PRIORITY
+## ⚠️ KNOWN LIVE TRADING RISKS
 
-1. **Noah creates testnet account + faucets funds** (5 min, blocks on him)
-2. **Verify dry-run mode works** (10 min, no API keys needed)
-3. **Run shadow mode 48h** — verify live signals fire correctly
-4. **Run small real testnet trades** (5-10 trades, 1 symbol)
-5. **30-day full universe testnet run** → measure live Sharpe vs backtest Sharpe
-
-Once 30-day live data is in: compare actual Sharpe vs expected ~1.0-1.3. If > 0.5 → proceed. If < 0.5 → diagnose before any production.
+1. **SOL slippage exceeds model** at >$50K notional. Cap SOL position at $50K or reduce to 0.5x size.
+2. **Maker fill ~63-70%** expected. If live drops below 50%, position sizing should adapt.
+3. **No regime defense.** 2026 YTD -22.7% is regime whipsawing. Live Sharpe could be negative.
+4. **No live stop-loss order** — exits signaled on next bar open. Gap risk exists.
+5. **Equity curve may be wrong** — do not trust charts until verified.
 
 ---
 
-*Last updated: 2026-04-19 12:18 UTC — T1/T2/T3 complete, examples hygiene complete. Research closed. Live testnet only.*
+*Last updated: 2026-04-19 12:23 UTC — critique session. Research closed. Live testnet only. BLOCKED on API keys.*

@@ -251,6 +251,32 @@ The project's research phase is genuinely complete. All parameters frozen, all s
 
 ---
 
+**12:23 UTC critique additions:**
+
+### 🚨 UNVERIFIED: progress_equity_curves.csv May Show Wrong Data
+- **Risk:** `plot_progress.py` reads column index 4 as "Turtle" → but index 4 may be `ddbudget_equity` (not turtle_equity)
+- **Prior fix (Apr 17):** "CSV fixed, 5-column clean" — but verification never happened
+- **What we don't know:** Which column the Python script actually reads as turtle_equity, and whether the Rust harness wrote the right column
+- **Charts sent to Discord (Apr 17-19) may be DDBudget data labeled as Turtle** — same error class as BollingerReversion DOGE 5404 Sharpe
+- **Required:** Re-run `cargo run --example progress_equity_curves --profile sweep` + manually verify column mapping before any Discord chart
+- **Until verified:** Do NOT send equity charts to Discord
+
+### HALL_OF_FAME.md vs Actual Code — Still Mismatched
+| Parameter | HALL_OF_FAME says | live_turtle_chandelier.rs | config.rs |
+|-----------|------------------|---------------------------|-----------|
+| CHAND_PERIOD | 20 | 15 | 15 |
+| CHAND_MULT | 2.15 | 1.50 | 1.50 |
+| FRESHNESS_COOLDOWN | "cd=10" (in #21) / "cd=0" (in header) | cd=0 | cd=0 |
+
+HALL_OF_FAME needs a complete rewrite to match current live code (P=15/M=1.50). All "daily equity Sharpe ~1.34" and "6/6 pass" claims were from P=20/M=2.15.
+
+### 3 Most Promising Unbuilt Ideas (Not Blocked on Live)
+1. **Live Slippage Tracker** — log slippage per fill per symbol. SOL is the known risk (3.7x model at $100K). Build now, use when live.
+2. **Maker-Fill Adaptive Position** — after 30 days: measure actual maker-fill %. If <50% → reduce position 30%.
+3. **Vol Regime Dashboard** — live ATR percentile rank display per symbol. Helps interpret drawdowns in real-time.
+
+---
+
 ## Post-Live-Testnet Concepts (For After 30-Day Live Validation)
 
 These are ideas to research ONLY after live testnet confirms the maker-fill rate and signal quality in real market conditions.
