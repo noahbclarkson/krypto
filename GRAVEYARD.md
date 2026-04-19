@@ -26,6 +26,7 @@
 | 1h Mean Reversion | 2026-04-14 | 0/6 | ALL symbols negative Sharpe on full history |
 | Turtle ATR Entry Multiplier | 2026-04-13 | mult=0.0 wins | Any non-zero filter destroys pass rate |
 | Regime-conditional Turtle (Track C) | 2026-04-15 | 0/6 | 1h MR kill confirmed, ALL symbols negative |
+| BTC ATR Percentile Regime Filter | 2026-04-19 | GRAVEYARD | thresh=20 marginal (+1.9pp pass rate, +0.77 Sharpe), base strategy already 80% pass |
 
 ## Why These Died
 

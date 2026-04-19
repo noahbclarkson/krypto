@@ -277,18 +277,13 @@ HALL_OF_FAME needs a complete rewrite to match current live code (P=15/M=1.50). 
 
 ---
 
-## 22. ATR Percentile Regime Filter — ONE CLEAN TEST
-- **Concept:** If BTC 20d ATR rank < 50th percentile of 252d history → skip new Turtle entries. Not position sizing, not stop modification. Pure market-regime entry gate.
-- **Why this is NOT the same as failed ATR entry filter (#9):**
-  - Previous tests: individual-symbol ATR vs its own 252d median → too granular, trade-starving
-  - This: single BTC-wide ATR rank signal applied uniformly → coarser, less noise
-  - Previous mechanism filtered each symbol independently; this filters the whole portfolio
-- **Why this is NOT the same as vol-contingent Chandelier (#4):**
-  - Vol-contingent Chandelier tried to CHANGE THE STOP dynamically based on vol
-  - This skips new entries entirely when regime is unfavorable — exits are unaffected
-- **Test:** 9 universes × 7 windows. Compare: Turtle with regime filter vs Turtle baseline.
-- **Risk:** 2026-04-14 BTC trend scalar showed regime classifiers (SMA21 vs SMA200) were 100% BULL in all test windows. BTC ATR rank may have the same problem.
-- **Status:** Untested. Medium priority (after equity CSV verification).
+## 22. ATR Percentile Regime Filter — 🪦 GRAVEYARD (2026-04-19)
+- **Concept:** BTC-wide ATR percentile regime gate for Turtle entry.
+- **Results:** Tested 2026-04-19. Two separate sweeps:
+  1. ATR threshold sweep (20-70%): Best = threshold=20. +1.9pp pass rate. GRAVEYARD (marginal).
+  2. ATR trend pct hyperopt (lb=100/pct=0.25): -3.7pp pass rate vs unfiltered Turtle. GRAVEYARD.
+- **Verdict:** ALL regime-filter concepts have now been tested. Every variant loses pass rate vs unfiltered Turtle. The Chandelier tight exit (P=15/M=1.50) already handles regime transitions better than any entry gate.
+- **Do NOT revisit.**
 
 ## 23. CTREND + Chandelier Exit Walk-Forward
 - **Problem:** CTREND signal confirmed genuine by Monte Carlo (0/500 shuffled beat real, 2026-04-17). But progress chart uses **fixed 21-bar hold** — the same flawed exit mechanism class as rejected DynamicTrend.
@@ -303,6 +298,17 @@ HALL_OF_FAME needs a complete rewrite to match current live code (P=15/M=1.50). 
 - **Implementation:** Add `struct FillLog { symbol, side, expected, actual, slippage_bp, notional, ts }` to `live_turtle_chandelier.rs`. Write to `logs/slippage_YYYY-MM-DD.csv`. Even dry-run mode can log expected fills.
 - **Post-live analysis:** After 30 days → compare SOL slippage vs model. If >2x model → reduce SOL cap to $25K.
 - **Status:** Unbuilt. **Do this before live.** Low effort, high value.
+
+---
+
+## 25. Multi-Timeframe Turtle (4h Bars) — UNTESTED
+- **Concept:** Run Turtle+Chandelier on 4h bars instead of daily. 6x more trades, finer entries.
+- **Rationale:** Daily bars produce only 310 trades over 2018-2026. In ranging regimes (2021 chop, 2026 YTD), 4h entries might catch mini-trends and reduce whipsaw. Also provides live signals every 4h instead of once per day.
+- **Why this is different from failed 4h MR (#1):** That was mean-reversion at 4h. This is trend-following (the strategy class that works). Different mechanism, different hypothesis.
+- **Concerns:** (1) 4h params need independent sweep — cannot port daily params. (2) More trades = more fees (could eat edge). (3) 4h intraday noise may drown breakout signals.
+- **Test:** Fetch 4h OHLCV from Binance (already supported in loader.rs). Run turtle_chandelier_walkforward.rs adapted for 4h bars, same 9-universe structure. Sweep EP and CHAND_PERIOD.
+- **Priority:** Medium. Do after Task 1 (Slippage Tracker) and Task 2 (CTREND exit WF).
+- **Status:** Untested. Added 2026-04-19.
 
 ---
 
