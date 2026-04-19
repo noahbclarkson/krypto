@@ -323,3 +323,15 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 - **Action:** Set FRESHNESS_COOLDOWN=0 in bot.rs. Live bot now matches validated walk-forward harness.
 - **Stable plateau:** cd=25-50 all 6/6 pass, Sharpe 6.0-7.3. If non-zero cooldown ever desired, cd=25 is best return (+214%).
 - See memory/hyperopt-2026-04-18-cooldown.md.
+
+## HOLD_MAX Re-Optimization + Walk-Forward Harness Sync (2026-04-19)
+- **Critical gap found:** Walk-forward harness was using P=20/M=2.15 (stale), live bot already using P=15/M=1.50 (updated 2026-04-19). The 87% pass rate was for old params.
+- **Action:** Updated `turtle_chandelier_walkforward.rs` and `live_turtle_chandelier.rs` to P=15/M=1.50.
+- **Full 9-universe validation (P=15/M=1.50/HM=45):** 43/54 = 79.6% pass. Base5/NoDOGE: 100% pass. The 20% global failure is in LTC/EOS/BCH (non-trending assets). Production universe is clean.
+- **HOLD_MAX sweep (P=15/M=1.50, Base5, 6 windows):** 18 values {10-180}
+  - **WINNER: HM=15** — Sharpe 5.95 (+10.1% vs HM=45=5.40)
+  - **HM=25-180 plateau:** all identical (Chandelier fires first — HM is redundant)
+  - **Key insight:** With P=15/M=1.50, Chandelier fires ~bar 14-15. HM should match the Chandelier boundary, not exceed it. Prior HM=45 was always overkill for this Chandelier config.
+  - **⚠️ Caveat:** HM=15 sweep only on Base5. 9-universe validation uses HM=45. Production HOLD_MAX stays at 45. HM=15 is flagged as Sharpe+10% candidate (pending 9-universe confirmation).
+- **Files:** `examples/hm15_p15m150_sweep.rs`, `charts/hm_sweep_comparison.png`, `memory/hyperopt-2026-04-19-holdmax.md`
+- **Status:** Walk-forward harness now synced with live bot params. P=15/M=1.50 is validated. HOLD_MAX candidate HM=15 pending full validation.
