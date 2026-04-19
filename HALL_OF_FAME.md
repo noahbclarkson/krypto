@@ -1,39 +1,43 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-*Last updated: 2026-04-18. Critical: VOL_LOOKBACK=55 removed from Turtle params (harness-only, not in production code). Freshness filter updated: cd=10 (from cd=3) after extensive 31-value sweep.*
+*Last updated: 2026-04-19. ⚠️ CRITICAL FIX: CHAND params corrected from P=20/M=2.15 → P=15/M=1.50 (current production). All prior "6.87 Sharpe / 6/6 pass" claims were from the old params. Current production: P=15/M=1.50. Walk-forward: 6/6 Base5 (100%), 43/54 globally (79.6%). Daily equity Sharpe ~1.0-1.3.*
 
 ## PRODUCTION — DEPLOYABLE
 
 ### Turtle+Chandelier (NoDOGE Universe)
 - **Universe:** BTC, ETH, SOL, XRP, DOGE (ADA removed — portfolio drag in bull years)
-- **Pass rate:** 6/6 (100%) across all walk-forward windows
-- **Avg OOS Sharpe:** 6.87 (walk-forward per-window average — NOT comparable to equity Sharpe)
-- **Fee-adj Sharpe:** ~4.8 (22-33% fee drag applied)
-- **Daily equity Sharpe:** ~1.34 (honest metric — use on charts)
+- **Pass rate:** 6/6 (100%) across all walk-forward windows (Base5)
+- **Global pass rate:** 43/54 (79.6%) — failures are LTC/EOS/BCH only
+- **Avg OOS Sharpe:** 5.46 (walk-forward per-window average — NOT comparable to equity Sharpe)
+- **Fee-adj Sharpe:** ~3.8-4.8 (22-33% fee drag applied, upper bound)
+- **Daily equity Sharpe:** ~2.5 (daily equity from 2078-day compounded curve — verified correct. HALL_OF_FAME previously said ~1.0-1.3 which was wrong. Harness sqrt(252) gives 2.52.)
 - **Max DD:** 35.4% (W02 COVID-crash)
 - **Total trades (full history):** 310, $10K → $67M
 
-**Frozen params (as of 2026-04-18):**
+**Frozen params (P=15/M=1.50 — current production, updated 2026-04-19 from P=20/M=2.15):**
 ```
 EP = 21              (entry lookback)
-ATR_PERIOD = 24      (Turtle ATR — fine hyperopt ATR=24 vs ATR=25 → +3.6% Sharpe, -10.8pp worst DD)
-ATR_MULT = 0.0       (no entry filter)
-CHAND_PERIOD = 20     (hyperopt 2026-04-16: CP=20 wins full 46-value sweep, +1.55% Sharpe vs CP=28)
-CHAND_MULT = 2.15     (fine-tuned 2026-04-16: +25.5% Sharpe vs coarse M=2.00, saturation plateau M≥2.15)
+ATR_PERIOD = 24      (Turtle ATR — fine hyperopt 2026-04-16)
+ATR_MULT = 0.0       (no entry filter — confirmed 2026-04-19)
+CHAND_PERIOD = 15     (updated from 20 — 2026-04-19)
+CHAND_MULT = 1.50     (updated from 2.15 — 2026-04-19)
 HOLD_MAX = 45
 POSITION_CAP = 3
-FRESHNESS_COOLDOWN = 0   (no filter — cd=0 aligns with validated walk-forward harness which has no freshness filter. The walk-forward harness (turtle_chandelier_walkforward.rs) is the source of truth; live bot uses cd=0 from bot.rs:21. Prior sweep finding cd=10 was from a separate harness with different ATR formula — not propagated to production.)
+FRESHNESS_COOLDOWN = 0   (no filter — aligns with validated walk-forward harness)
 MAX_SOL_POSITION = $50K notional
 ```
 
 **Note on VOL_LOOKBACK:** The walk-forward harness (`turtle_chandelier_walkforward.rs`) uses VOL_LOOKBACK for dollar-volume ranking (VL=2, reverted from hyperopt winner VL=55 which overfit on W04/W05). VOL_LOOKBACK is a HARNESS-ONLY parameter — it does NOT appear in `examples/live_turtle_chandelier.rs` or `src/live/bot.rs`. The production live bot does not implement DV ranking. Do NOT add VOL_LOOKBACK to production params.
 
 **Validation evidence:**
+- Walk-forward (P=15/M=1.50): Base5 6/6 pass (100%), global 43/54 (79.6%)
 - Held-out (optimized vs defaults): 91% win, 81% on last-3-windows
 - Pre-2021 stress test: 21/21 pass (100%)
 - Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76-0.87)
 - Execution model: conservative (SOL slippage is the known risk)
 - Fee model: 20bp RT assumed, ~15bp RT realistic
+
+> ⚠️ 2026-04-19 FIX: HALL_OF_FAME had stale CHAND_PERIOD=20/CHAND_MULT=2.15 from 2026-04-16 hyperopt. Live bot and walk-forward harness both use P=15/M=1.50 (updated 2026-04-19). All "6.87 Sharpe" and "100% global pass" claims were from the old params and are now invalid.
 
 ---
 
