@@ -335,3 +335,13 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
   - **⚠️ Caveat:** HM=15 sweep only on Base5. 9-universe validation uses HM=45. Production HOLD_MAX stays at 45. HM=15 is flagged as Sharpe+10% candidate (pending 9-universe confirmation).
 - **Files:** `examples/hm15_p15m150_sweep.rs`, `charts/hm_sweep_comparison.png`, `memory/hyperopt-2026-04-19-holdmax.md`
 - **Status:** Walk-forward harness now synced with live bot params. P=15/M=1.50 is validated. HOLD_MAX candidate HM=15 pending full validation.
+
+## Entry Filter Sweep: ATR Entry × Volume Confirmation (2026-04-19)
+- **Sweep scope:** 10 ATR_mult values {0.0, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0} × 4 vol_confirm types {none, SMA20×1.0, SMA20×1.25, SMA10×1.0} × 9 universes × 7 windows = 40 configs
+- **Params:** P=15/M=1.50/ATR=24/HM=45 (current production)
+- **ATR entry filter result: REJECTED.** mult=0.0 (no filter) wins definitively at 52.4% pass rate. Any non-zero filter degrades pass rate monotonically: ATR×0.1 → 34.9% (-17.5pp), ATR×0.2 → 30.2% (-22.2pp), ATR×0.5 → 27.0%, ATR×1.0 → 38.1%, ATR×1.5 → 3.2%, ATR≥2.0 → 0%. Even marginal 0.1-0.3 filters cause sharp trade-count collapse (21-34% fewer trades). Confirms prior coarse-grid finding (2026-04-13) with fine grid — result is NOT parameter-sensitive.
+- **Volume confirmation result: REJECTED.** No vol filter (none) wins at 52.4% pass rate. All volume filters reduce pass rate: SMA20×1.25 → 46.0% (-6.4pp), SMA20×1.0 → 44.4% (-8pp), SMA10×1.0 → 39.7% (-12.7pp). Volume filters cut 38-61% of trades. Crypto breakout volume doesn't correlate with directional price momentum in a way that enables pre-filtering.
+- **Mechanism:** Chandelier(P=15, 1.50) is already an aggressive exit — it catches weak breakouts via tight trailing stops. Entry-side quality control (ATR filter or volume filter) is redundant and trade-starving.
+- **Stable defaults:** No change. ATR_mult=0.0 (no entry filter), vol_confirm=none — already optimal.
+- **Charts:** `charts/turtle_entry_filter_comparison.png`, `charts/turtle_entry_filter_equity.png`
+- **Files:** `examples/turtle_entry_filter_sweep.rs`, `snapshots/turtle_entry_filter_results.csv`, `snapshots/turtle_entry_filter_equity.csv`, `memory/hyperopt-2026-04-19-entry-filters.md`
