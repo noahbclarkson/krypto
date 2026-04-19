@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-19T03:54:06.664Z",
+  "updatedAt": "2026-04-19T04:26:16.655Z",
   "entries": {
     "memory:memory/2026-04-13.md:5:7": {
       "key": "memory:memory/2026-04-13.md:5:7",
@@ -601,7 +601,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-13T09:25:58.986Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "01679c334ef2"
       ],
@@ -636,7 +636,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-13T09:25:58.986Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "01679c334ef2"
       ],
@@ -669,7 +669,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-13T09:25:58.986Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "01679c334ef2"
       ],
@@ -704,7 +704,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-13T09:25:58.986Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "01679c334ef2"
       ],
@@ -739,7 +739,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-13T09:25:58.986Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "01679c334ef2"
       ],
@@ -774,7 +774,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-13T09:25:58.986Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "01679c334ef2"
       ],
@@ -33850,7 +33850,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-14T07:48:04.489Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "11d1361acb2d"
       ],
@@ -33884,7 +33884,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-14T07:48:04.489Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "11d1361acb2d"
       ],
@@ -33918,7 +33918,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-14T07:48:04.489Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "11d1361acb2d"
       ],
@@ -35626,7 +35626,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-14T07:48:04.489Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "0dac2e09ca9b"
       ],
@@ -35660,7 +35660,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-14T07:48:04.489Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "0dac2e09ca9b"
       ],
@@ -35694,7 +35694,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-14T07:48:04.489Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "0dac2e09ca9b"
       ],
@@ -35728,7 +35728,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-14T07:48:04.489Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "0dac2e09ca9b"
       ],
@@ -35762,7 +35762,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-14T07:48:04.489Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "0dac2e09ca9b"
       ],
@@ -35796,7 +35796,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-14T07:48:04.489Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "0dac2e09ca9b"
       ],
@@ -46346,7 +46346,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-15T05:13:36.346Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "b628913e3912"
       ],
@@ -49321,7 +49321,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-15T05:13:36.346Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "11d1361acb2d"
       ],
@@ -49355,7 +49355,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-15T05:13:36.346Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "11d1361acb2d"
       ],
@@ -49389,7 +49389,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-15T05:13:36.346Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "11d1361acb2d"
       ],
@@ -67557,7 +67557,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-17T03:59:31.438Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "b628913e3912"
       ],
@@ -67590,7 +67590,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-17T03:59:31.438Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "b628913e3912"
       ],
@@ -67623,7 +67623,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-17T03:59:31.438Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "b628913e3912"
       ],
@@ -67656,7 +67656,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-17T03:59:31.438Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "b628913e3912"
       ],
@@ -67689,7 +67689,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-17T03:59:31.438Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "b628913e3912"
       ],
@@ -68266,7 +68266,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-17T03:59:31.438Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "4c4c0cb04efa"
       ],
@@ -68299,7 +68299,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-17T03:59:31.438Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "4c4c0cb04efa"
       ],
@@ -68332,7 +68332,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-17T03:59:31.438Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "4c4c0cb04efa"
       ],
@@ -68365,7 +68365,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-17T03:59:31.438Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "4c4c0cb04efa"
       ],
@@ -68398,7 +68398,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-17T03:59:31.438Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "4c4c0cb04efa"
       ],
@@ -68431,7 +68431,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-17T03:59:31.438Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "4c4c0cb04efa"
       ],
@@ -96439,7 +96439,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96470,7 +96470,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96501,7 +96501,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96532,7 +96532,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96563,7 +96563,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96591,7 +96591,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96622,7 +96622,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96653,7 +96653,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96684,7 +96684,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96713,7 +96713,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96744,7 +96744,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96771,7 +96771,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96802,7 +96802,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96833,7 +96833,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96864,7 +96864,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96895,7 +96895,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "21faa0df9302"
       ],
@@ -96926,7 +96926,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -96958,7 +96958,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -96990,7 +96990,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97022,7 +97022,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97054,7 +97054,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97086,7 +97086,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97118,7 +97118,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97150,7 +97150,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97182,7 +97182,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97214,7 +97214,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97246,7 +97246,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97278,7 +97278,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97310,7 +97310,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97342,7 +97342,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97374,7 +97374,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97406,7 +97406,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97438,7 +97438,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97470,7 +97470,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97502,7 +97502,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97534,7 +97534,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97566,7 +97566,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97598,7 +97598,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97630,7 +97630,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97662,7 +97662,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97694,7 +97694,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97726,7 +97726,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97758,7 +97758,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97790,7 +97790,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97822,7 +97822,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97854,7 +97854,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97886,7 +97886,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97918,7 +97918,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97950,7 +97950,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -97982,7 +97982,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98014,7 +98014,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98046,7 +98046,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98078,7 +98078,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98110,7 +98110,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98142,7 +98142,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98174,7 +98174,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98206,7 +98206,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98238,7 +98238,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98270,7 +98270,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98302,7 +98302,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98334,7 +98334,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98366,7 +98366,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98398,7 +98398,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98430,7 +98430,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98458,7 +98458,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98490,7 +98490,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98521,7 +98521,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98553,7 +98553,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98585,7 +98585,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98617,7 +98617,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98649,7 +98649,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98678,7 +98678,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98710,7 +98710,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98742,7 +98742,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98774,7 +98774,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98804,7 +98804,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98836,7 +98836,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98868,7 +98868,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98900,7 +98900,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98932,7 +98932,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98964,7 +98964,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -98996,7 +98996,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -99028,7 +99028,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -99060,7 +99060,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -99092,7 +99092,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -99124,7 +99124,7 @@
       "totalScore": 0.62,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T03:07:53.088Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
@@ -116031,6 +116031,1436 @@
       "maxScore": 0.58,
       "firstRecalledAt": "2026-04-19T03:53:56.891Z",
       "lastRecalledAt": "2026-04-19T03:53:56.891Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "9-universe",
+        "walk-forward",
+        "assistant",
+        "let",
+        "now",
+        "the",
+        "universe",
+        "walk"
+      ]
+    },
+    "memory:memory/2026-04-19.md:530:533": {
+      "key": "memory:memory/2026-04-19.md:530:533",
+      "path": "memory/2026-04-19.md",
+      "startLine": 530,
+      "endLine": 533,
+      "source": "memory",
+      "snippet": "Reflections: Theme: `assistant` kept surfacing across 2357 memories.; confidence: 1.00; evidence: memory/.dreams/session-corpus/2026-04-11.txt:1-1, memory/.dreams/session-corpus/2026-04-11.txt:2-2, memory/.dreams/session-corpus/2026-04-11.txt:3-3; note: reflection",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "1.00",
+        "1-1",
+        "2-2",
+        "3-3",
+        "reflections",
+        "theme",
+        "assistant",
+        "kept"
+      ]
+    },
+    "memory:memory/2026-04-19.md:534:537": {
+      "key": "memory:memory/2026-04-19.md:534:537",
+      "path": "memory/2026-04-19.md",
+      "startLine": 534,
+      "endLine": 537,
+      "source": "memory",
+      "snippet": "Reflections: Theme: `the` kept surfacing across 1580 memories.; confidence: 0.86; evidence: memory/2026-04-13.md:73-73, memory/2026-04-12.md:28-28, memory/2026-04-12.md:35-35; note: reflection",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "0.86",
+        "memory/2026-04-13.md",
+        "73-73",
+        "memory/2026-04-12.md",
+        "28-28",
+        "35-35",
+        "reflections",
+        "theme"
+      ]
+    },
+    "memory:memory/2026-04-19.md:540:540": {
+      "key": "memory:memory/2026-04-19.md:540:540",
+      "path": "memory/2026-04-19.md",
+      "startLine": 540,
+      "endLine": 540,
+      "source": "memory",
+      "snippet": "Possible Lasting Truths: No strong candidate truths surfaced.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "possible",
+        "lasting",
+        "truths",
+        "strong",
+        "candidate",
+        "surfaced"
+      ]
+    },
+    "memory:memory/2026-04-19.md:545:545": {
+      "key": "memory:memory/2026-04-19.md:545:545",
+      "path": "memory/2026-04-19.md",
+      "startLine": 545,
+      "endLine": 545,
+      "source": "memory",
+      "snippet": "[03:15 UTC] Cron Summary — CHAND P×M 2D Hyperopt: **Mission:** Audit CHAND_PERIOD and CHAND_MULT — were they jointly optimized?",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "chand-period",
+        "chand-mult",
+        "utc",
+        "cron",
+        "summary",
+        "chand",
+        "hyperopt",
+        "mission"
+      ]
+    },
+    "memory:memory/2026-04-19.md:547:547": {
+      "key": "memory:memory/2026-04-19.md:547:547",
+      "path": "memory/2026-04-19.md",
+      "startLine": 547,
+      "endLine": 547,
+      "source": "memory",
+      "snippet": "[03:15 UTC] Cron Summary — CHAND P×M 2D Hyperopt: **What was found:**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "utc",
+        "cron",
+        "summary",
+        "chand",
+        "hyperopt",
+        "what",
+        "was",
+        "found"
+      ]
+    },
+    "memory:memory/2026-04-19.md:548:550": {
+      "key": "memory:memory/2026-04-19.md:548:550",
+      "path": "memory/2026-04-19.md",
+      "startLine": 548,
+      "endLine": 550,
+      "source": "memory",
+      "snippet": "[03:15 UTC] Cron Summary — CHAND P×M 2D Hyperopt: Prior optimization: CP and CM optimized SEPARATELY (not jointly); M=2.15 plateau was verified only at P=20; Joint optimization gap: could P and M jointly find better defaults?",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "2.15",
+        "utc",
+        "cron",
+        "summary",
+        "chand",
+        "hyperopt",
+        "prior",
+        "optimization"
+      ]
+    },
+    "memory:memory/2026-04-19.md:552:552": {
+      "key": "memory:memory/2026-04-19.md:552:552",
+      "path": "memory/2026-04-19.md",
+      "startLine": 552,
+      "endLine": 552,
+      "source": "memory",
+      "snippet": "[03:15 UTC] Cron Summary — CHAND P×M 2D Hyperopt: **What was done:**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "utc",
+        "cron",
+        "summary",
+        "chand",
+        "hyperopt",
+        "what",
+        "was",
+        "done"
+      ]
+    },
+    "memory:memory/2026-04-19.md:553:556": {
+      "key": "memory:memory/2026-04-19.md:553:556",
+      "path": "memory/2026-04-19.md",
+      "startLine": 553,
+      "endLine": 556,
+      "source": "memory",
+      "snippet": "[03:15 UTC] Cron Summary — CHAND P×M 2D Hyperopt: Wrote `turtle_chand_2d_sweep.rs` — 2D grid P∈[15,30]×M∈[1.50,2.10], 208 configs; Ran sweep on Base5 + NoDOGE universes; Winner: **P=15, M=1.50** — Sharpe 2.6659 (+19% vs P=20/M=2.00 on Base5); Wrote equity harness + Python chart s",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "turtle-chand-2d-sweep.rs",
+        "1.50",
+        "2.10",
+        "2.6659",
+        "20/m",
+        "2.00",
+        "utc",
+        "cron"
+      ]
+    },
+    "memory:memory/2026-04-19.md:557:558": {
+      "key": "memory:memory/2026-04-19.md:557:558",
+      "path": "memory/2026-04-19.md",
+      "startLine": 557,
+      "endLine": 558,
+      "source": "memory",
+      "snippet": "[03:15 UTC] Cron Summary — CHAND P×M 2D Hyperopt: Built `turtle_pm9_wf.rs` — full 9-universe walk-forward validation; **Result: P=15/M=1.50 wins 7/9 universes**, avg Sharpe 1.19 vs 0.96 (P20/M215)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "turtle-pm9-wf.rs",
+        "9-universe",
+        "walk-forward",
+        "15/m",
+        "1.50",
+        "7/9",
+        "1.19",
+        "0.96"
+      ]
+    },
+    "memory:memory/2026-04-19.md:560:560": {
+      "key": "memory:memory/2026-04-19.md:560:560",
+      "path": "memory/2026-04-19.md",
+      "startLine": 560,
+      "endLine": 560,
+      "source": "memory",
+      "snippet": "[03:15 UTC] Cron Summary — CHAND P×M 2D Hyperopt: **Production changes:**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "utc",
+        "cron",
+        "summary",
+        "chand",
+        "hyperopt",
+        "production",
+        "changes"
+      ]
+    },
+    "memory:memory/2026-04-19.md:561:562": {
+      "key": "memory:memory/2026-04-19.md:561:562",
+      "path": "memory/2026-04-19.md",
+      "startLine": 561,
+      "endLine": 562,
+      "source": "memory",
+      "snippet": "[03:15 UTC] Cron Summary — CHAND P×M 2D Hyperopt: `krypto/src/live/config.rs`: CHAND_PERIOD 20→15, CHAND_MULT 2.15→1.50; Commits: krypto@aa68d1c, workspace@942e7ca",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "krypto/src/live/config.rs",
+        "chand-period",
+        "chand-mult",
+        "2.15",
+        "1.50",
+        "utc",
+        "cron",
+        "summary"
+      ]
+    },
+    "memory:memory/2026-04-19.md:564:564": {
+      "key": "memory:memory/2026-04-19.md:564:564",
+      "path": "memory/2026-04-19.md",
+      "startLine": 564,
+      "endLine": 564,
+      "source": "memory",
+      "snippet": "[03:15 UTC] Cron Summary — CHAND P×M 2D Hyperopt: **Status: DONE. P=15/M=1.50 is new default.**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "21faa0df9302"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "15/m",
+        "1.50",
+        "utc",
+        "cron",
+        "summary",
+        "chand",
+        "hyperopt",
+        "status"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:42:42": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:42:42",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 42,
+      "endLine": 42,
+      "source": "memory",
+      "snippet": "Assistant: chand_pm_comparison.png",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "chand-pm-comparison.png",
+        "assistant"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:43:43": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:43:43",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 43,
+      "endLine": 43,
+      "source": "memory",
+      "snippet": "User: [cron:8d17bb13-1291-42b4-99b8-3b39a1b24bff kira — strategy research & critique (4h)] You are Kira — algorithmic trading engineer on project Krypto. ## Mission Build a fully automated crypto trading system that trades profitably without human intervention. We are currently i",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "user",
+        "cron",
+        "8d17bb13",
+        "42b4",
+        "99b8",
+        "3b39a1b24bff",
+        "kira",
+        "strategy"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:44:44": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:44:44",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 44,
+      "endLine": 44,
+      "source": "memory",
+      "snippet": "Assistant: Now I have enough context. Let me write the critique and update the plan.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "now",
+        "enough",
+        "context",
+        "let",
+        "write",
+        "the",
+        "critique"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:45:45": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:45:45",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 45,
+      "endLine": 45,
+      "source": "memory",
+      "snippet": "Assistant: Now I have everything I need. Let me write the critique, update the plan, and commit.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "now",
+        "everything",
+        "need",
+        "let",
+        "write",
+        "the",
+        "critique"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:46:46": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:46:46",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 46,
+      "endLine": 46,
+      "source": "memory",
+      "snippet": "Assistant: Now let me update the PLAN.md:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "assistant",
+        "now",
+        "let",
+        "update",
+        "the"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:47:47": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:47:47",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 47,
+      "endLine": 47,
+      "source": "memory",
+      "snippet": "Assistant: Now update strategy-ideas.md:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "assistant",
+        "now",
+        "update",
+        "strategy",
+        "ideas.md"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:48:48": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:48:48",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 48,
+      "endLine": 48,
+      "source": "memory",
+      "snippet": "Assistant: Now commit and push:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "now",
+        "commit",
+        "push"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:49:49": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:49:49",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 49,
+      "endLine": 49,
+      "source": "memory",
+      "snippet": "Assistant: Done. Here's my plain-text summary: --- **CRITIQUE SUMMARY — 2026-04-19 04:07 UTC** **🚨 CRITICAL FINDING: Live Bot Running Unvalidated Params** The `src/live/config.rs` was changed from CHAND_PERIOD=20/CHAND_MULT=2.15 to CHAND_PERIOD=15/CHAND_MULT=1.50 — a tighter, fa",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "plain-text",
+        "src/live/config.rs",
+        "chand-period",
+        "20/chand-mult",
+        "2.15",
+        "15/chand-mult",
+        "1.50",
+        "assistant"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:50:50": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:50:50",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 50,
+      "endLine": 50,
+      "source": "memory",
+      "snippet": "User: [cron:9de6700f-c2c6-487f-b9d3-72a5b64d7868 kira — hyperparameter optimization (3h)] You are Kira — quantitative trading researcher on krypto. Your workspace files (SOUL.md, MEMORY.md, PLAN.md) are already loaded. Use them. ## Your Mission: Hyperparameter Optimization — Stri",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "soul.md",
+        "memory.md",
+        "plan.md",
+        "user",
+        "cron",
+        "9de6700f",
+        "c2c6",
+        "487f"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:51:51": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:51:51",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 51,
+      "endLine": 51,
+      "source": "memory",
+      "snippet": "Assistant: Good orientation. The PLAN says research is closed and I'm blocked on API keys. But the cron mission asks for hyperparameter optimization. Let me audit what's actually been tested vs assumed, and then execute properly. Let me first look at the current state of the code",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "good",
+        "orientation",
+        "the",
+        "plan",
+        "says",
+        "research",
+        "closed"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:52:52": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:52:52",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 52,
+      "endLine": 52,
+      "source": "memory",
+      "snippet": "Assistant: The comparison chart shows strategy-level comparison. Now let me audit the actual strategy code for untested hardcoded parameters:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "strategy-level",
+        "assistant",
+        "the",
+        "comparison",
+        "chart",
+        "shows",
+        "strategy",
+        "level"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:53:53": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:53:53",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 53,
+      "endLine": 53,
+      "source": "memory",
+      "snippet": "Assistant: Now I have a clear picture. The key gap: **CHAND_PERIOD and CHAND_MULT were optimized separately, not jointly.** M=2.15 was found at the same time P was updated to 20, but they may not be the optimal *pair*. Let me run the proper 2D sweep. Let me first check what equit",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "chand-period",
+        "chand-mult",
+        "2.15",
+        "assistant",
+        "now",
+        "clear",
+        "picture",
+        "the"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:54:54": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:54:54",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 54,
+      "endLine": 54,
+      "source": "memory",
+      "snippet": "Assistant: Good. I can see the CHAND_MULT sweep was done with P=20 fixed. The key untested assumption: **M≥2.15 creates a \"saturation plateau\" where all results are identical** — but this was only tested at P=20. Let me write the 2D sweep harness to verify whether the plateau hol",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "chand-mult",
+        "2.15",
+        "assistant",
+        "good",
+        "can",
+        "see",
+        "the",
+        "sweep"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:55:55": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:55:55",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 55,
+      "endLine": 55,
+      "source": "memory",
+      "snippet": "Assistant: Now I have a full picture. Let me write the 2D sweep harness. The key untested assumption: **CHAND_MULT=2.15 plateau was only verified at P=20**. The 2D sweep tests P×M jointly.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "chand-mult",
+        "2.15",
+        "assistant",
+        "now",
+        "full",
+        "picture",
+        "let",
+        "write"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:56:56": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:56:56",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 56,
+      "endLine": 56,
+      "source": "memory",
+      "snippet": "Assistant: Let me rewrite the file properly from scratch with correct data loading:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "let",
+        "rewrite",
+        "the",
+        "properly",
+        "scratch",
+        "correct",
+        "data"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:57:57": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:57:57",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 57,
+      "endLine": 57,
+      "source": "memory",
+      "snippet": "Assistant: The examples directory is at the workspace root, not inside `krypto/`:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "the",
+        "examples",
+        "directory",
+        "root",
+        "not",
+        "inside",
+        "krypto"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:58:58": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:58:58",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 58,
+      "endLine": 58,
+      "source": "memory",
+      "snippet": "Assistant: It compiled. Now let me run it:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "compiled",
+        "now",
+        "let",
+        "run"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:59:59": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:59:59",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 59,
+      "endLine": 59,
+      "source": "memory",
+      "snippet": "Assistant: Excellent results! Let me check the current defaults in context:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "excellent",
+        "results",
+        "let",
+        "check",
+        "the",
+        "current",
+        "defaults"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:60:60": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:60:60",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 60,
+      "endLine": 60,
+      "source": "memory",
+      "snippet": "Assistant: The sweep found **P=15, M=1.50** as the winner (+19% Sharpe vs P=20/M=2.00). Let me generate the equity curves for top configurations and build the comparison chart:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "1.50",
+        "20/m",
+        "2.00",
+        "assistant",
+        "the",
+        "sweep",
+        "found",
+        "winner"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:61:61": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:61:61",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 61,
+      "endLine": 61,
+      "source": "memory",
+      "snippet": "Assistant: The equity numbers are inflated — the equity loop enters multiple symbols per bar instead of one. Let me fix it:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "the",
+        "equity",
+        "numbers",
+        "inflated",
+        "loop",
+        "enters",
+        "multiple"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:62:62": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:62:62",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 62,
+      "endLine": 62,
+      "source": "memory",
+      "snippet": "User: [cron:9de6700f-c2c6-487f-b9d3-72a5b64d7868 kira — hyperparameter optimization (3h)] You are Kira — quantitative trading researcher on krypto. Your workspace files (SOUL.md, MEMORY.md, PLAN.md) are already loaded. Use them. ## Your Mission: Hyperparameter Optimization — Stri",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "soul.md",
+        "memory.md",
+        "plan.md",
+        "user",
+        "cron",
+        "9de6700f",
+        "c2c6",
+        "487f"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:63:63": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:63:63",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 63,
+      "endLine": 63,
+      "source": "memory",
+      "snippet": "Assistant: Excellent — the 9-universe validation is in. Let me now read the results, finalize the report, update defaults, and post to Discord.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "9-universe",
+        "assistant",
+        "excellent",
+        "the",
+        "universe",
+        "validation",
+        "let",
+        "now"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:64:64": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:64:64",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 64,
+      "endLine": 64,
+      "source": "memory",
+      "snippet": "Assistant: P15 wins 7/9 universes — clear winner. Let me update the defaults and run final validation:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "7/9",
+        "assistant",
+        "p15",
+        "wins",
+        "universes",
+        "clear",
+        "winner",
+        "let"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:65:65": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:65:65",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 65,
+      "endLine": 65,
+      "source": "memory",
+      "snippet": "Assistant: Clean build. Now run full 9-way walk-forward validation with new defaults:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "9-way",
+        "walk-forward",
+        "assistant",
+        "clean",
+        "now",
+        "run",
+        "full",
+        "way"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:66:66": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:66:66",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 66,
+      "endLine": 66,
+      "source": "memory",
+      "snippet": "Assistant: The walk-forward harness has hardcoded values — it validates the strategy, not the live config. The pm9_wf already confirmed 7/9 universes pass with P=15/M=1.50. Now let me commit and report:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "walk-forward",
+        "pm9-wf",
+        "7/9",
+        "15/m",
+        "1.50",
+        "assistant",
+        "the",
+        "walk"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:67:67": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:67:67",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 67,
+      "endLine": 67,
+      "source": "memory",
+      "snippet": "Assistant: Now write the hyperopt report:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "now",
+        "write",
+        "the",
+        "hyperopt",
+        "report"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:68:68": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:68:68",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 68,
+      "endLine": 68,
+      "source": "memory",
+      "snippet": "Assistant: Now commit the production changes:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "now",
+        "commit",
+        "the",
+        "production",
+        "changes"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:69:69": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:69:69",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 69,
+      "endLine": 69,
+      "source": "memory",
+      "snippet": "Assistant: Both repos pushed. Now update today's memory:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "both",
+        "repos",
+        "pushed",
+        "now",
+        "update",
+        "today's"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:70:70": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:70:70",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 70,
+      "endLine": 70,
+      "source": "memory",
+      "snippet": "Assistant: Now post to Discord with the chart:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "now",
+        "post",
+        "discord",
+        "the",
+        "chart"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:71:71": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:71:71",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 71,
+      "endLine": 71,
+      "source": "memory",
+      "snippet": "Assistant: Discord posted. Here's the final report: --- **HYPEROPT SESSION SUMMARY — 2026-04-19** **Parameter audited:** CHAND_PERIOD × CHAND_MULT (joint optimization) **Gap identified:** Both parameters were optimized SEPARATELY in prior sessions. The M=2.15 \"winner\" was verifie",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "chand-period",
+        "chand-mult",
+        "2.15",
+        "assistant",
+        "discord",
+        "posted",
+        "here's",
+        "the"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:72:72": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:72:72",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 72,
+      "endLine": 72,
+      "source": "memory",
+      "snippet": "Assistant: The continuous equity is valid for relative comparison. Let me now generate the comparison chart with Python:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "the",
+        "continuous",
+        "equity",
+        "valid",
+        "relative",
+        "comparison",
+        "let"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:73:73": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:73:73",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 73,
+      "endLine": 73,
+      "source": "memory",
+      "snippet": "Assistant: Found it — the `rows = []` and `for line in f:` are at column 0, outside the `with` block! Let me fix the indentation:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "found",
+        "the",
+        "rows",
+        "column",
+        "outside",
+        "block",
+        "let"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:74:74": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:74:74",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 74,
+      "endLine": 74,
+      "source": "memory",
+      "snippet": "Assistant: Chart is saved. Now let me validate the winner across all 9 universes before recommending any change:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "assistant",
+        "chart",
+        "saved",
+        "now",
+        "let",
+        "validate",
+        "the",
+        "winner"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:75:75": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:75:75",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 75,
+      "endLine": 75,
+      "source": "memory",
+      "snippet": "Assistant: The NoDOGE result is striking (P=15/M=1.50: +45% Sharpe vs baseline). Let me now run a full 9-universe validation to check robustness:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "queryHashes": [
+        "c9fd66cc4843"
+      ],
+      "recallDays": [
+        "2026-04-19"
+      ],
+      "conceptTags": [
+        "15/m",
+        "1.50",
+        "9-universe",
+        "assistant",
+        "the",
+        "nodoge",
+        "result",
+        "striking"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-19.txt:76:76": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-19.txt:76:76",
+      "path": "memory/.dreams/session-corpus/2026-04-19.txt",
+      "startLine": 76,
+      "endLine": 76,
+      "source": "memory",
+      "snippet": "Assistant: Let me now do the 9-universe walk-forward validation of the winner to confirm robustness:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
       "queryHashes": [
         "c9fd66cc4843"
       ],

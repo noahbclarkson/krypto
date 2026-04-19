@@ -65,11 +65,11 @@
       "lastContentLine": 6
     },
     "krypto:sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl": {
-      "mtimeMs": 1776548214592,
-      "size": 3748991,
-      "contentHash": "d5d8c756f8496768c3530fedeb7953f822effb9f9fa69ddc6381d2fc2913d234",
-      "lineCount": 571,
-      "lastContentLine": 571
+      "mtimeMs": 1776571359912,
+      "size": 3749443,
+      "contentHash": "bc20da7ab3605603daf147b700663b982b2bd9b70531e5c78b59c0fad80e3f79",
+      "lineCount": 572,
+      "lastContentLine": 572
     },
     "krypto:sessions/1e89a58f-d12e-443d-96c3-00c294866498.checkpoint.da84281e-582c-43e8-9e4d-04b445ffc651.jsonl": {
       "mtimeMs": 1776224110451,
@@ -204,6 +204,13 @@
       "lineCount": 9,
       "lastContentLine": 9
     },
+    "krypto:sessions/52097f5b-5423-4946-81d6-4aeed6b5ec17.jsonl": {
+      "mtimeMs": 1776572001861,
+      "size": 210483,
+      "contentHash": "1adfaa62a137fa9c635828cc7ddc7e56c6b2384099e4c0cab630017629cc48cf",
+      "lineCount": 7,
+      "lastContentLine": 7
+    },
     "krypto:sessions/5353028f-eb6c-48e8-837e-9aa429c3c85d.jsonl.deleted.2026-04-18T14-57-51.118Z": {
       "mtimeMs": 1776435340487,
       "size": 427747,
@@ -225,7 +232,7 @@
       "lineCount": 26,
       "lastContentLine": 26
     },
-    "krypto:sessions/5ec11823-049b-43c6-ace5-748a8ec09cbf.jsonl": {
+    "krypto:sessions/5ec11823-049b-43c6-ace5-748a8ec09cbf.jsonl.deleted.2026-04-19T04-03-03.802Z": {
       "mtimeMs": 1776540915946,
       "size": 265933,
       "contentHash": "c144744b147d14428f2bf2a0f6426e4faf42d3e887b0626e3c58d7e2d8ee809d",
@@ -379,7 +386,7 @@
       "lineCount": 8,
       "lastContentLine": 8
     },
-    "krypto:sessions/acad82cc-ecdb-471d-ad43-26cdc6354330.jsonl": {
+    "krypto:sessions/acad82cc-ecdb-471d-ad43-26cdc6354330.jsonl.deleted.2026-04-19T04-03-03.802Z": {
       "mtimeMs": 1776483705566,
       "size": 285888,
       "contentHash": "25533c928078757c867fe2a262b70a34b071c146b8a79ca59411db9cb3d8e7b9",
@@ -400,7 +407,7 @@
       "lineCount": 12,
       "lastContentLine": 12
     },
-    "krypto:sessions/b0b44348-da76-4b5c-b190-6f9edd3553ab.jsonl": {
+    "krypto:sessions/b0b44348-da76-4b5c-b190-6f9edd3553ab.jsonl.deleted.2026-04-19T04-03-03.802Z": {
       "mtimeMs": 1776485436480,
       "size": 477950,
       "contentHash": "8067b8b5690b19218dce820094a8270c74a3f639af163f447c4c8404cef679d0",
@@ -414,12 +421,19 @@
       "lineCount": 5,
       "lastContentLine": 5
     },
-    "krypto:sessions/b597c717-c52a-4e85-8842-56cf49093ebb.jsonl": {
-      "mtimeMs": 1776570837083,
-      "size": 751137,
+    "krypto:sessions/b597c717-c52a-4e85-8842-56cf49093ebb.checkpoint.5200e15d-b33f-41d1-8210-f078bf927da4.jsonl": {
+      "mtimeMs": 1776570889178,
+      "size": 760084,
       "contentHash": "009f45aa290da69dd4b89f7624c6dc5ca21d0a63db86d918a5b2f6a02bce5d02",
       "lineCount": 17,
       "lastContentLine": 17
+    },
+    "krypto:sessions/b597c717-c52a-4e85-8842-56cf49093ebb.jsonl": {
+      "mtimeMs": 1776571374484,
+      "size": 909105,
+      "contentHash": "6815f0f66f12cef4aa1c8b16d86fe9f470aa513eeab2682845f8e6f8685bb9ac",
+      "lineCount": 27,
+      "lastContentLine": 27
     },
     "krypto:sessions/b61147dc-9f15-4d53-9767-5a01ed5fbedc.jsonl.deleted.2026-04-18T04-30-08.551Z": {
       "mtimeMs": 1776384938785,
@@ -714,7 +728,8 @@
       "2af76872c829b879133e7685d1f54a5b03342fd5",
       "e911f3e08142c20b646f1c179200f26c5c6f138e",
       "6c16bf725c3b96137e512e9a7a5f88dcd554e1b9",
-      "176f219d5b5551c41ba2279fe1f5c5a764832c2d"
+      "176f219d5b5551c41ba2279fe1f5c5a764832c2d",
+      "6e3e12836ce241cea746afc39bda37d3c0077092"
     ],
     "krypto:2063fe70-012b-44c5-a4f1-4b2c894daeb3": [
       "3f46e3173871c72ca6673b821ea296be912ad94f",
@@ -3619,7 +3634,45 @@
       "0062bfe5d9fafbed30947335292bedc689476b1a",
       "8a40393edf9eb9f771e98caf8dae69f1eaf73300",
       "d881fc6a24a8ff46f0003596c0b25f0c17216611",
-      "ecfe51ef226d0fea5b76b124013548551134f6cc"
+      "ecfe51ef226d0fea5b76b124013548551134f6cc",
+      "ecc0980f19250e34761d4c320bffbafa39549c1b",
+      "55116f8f452cea8277b4e1c943526b13806373d7",
+      "3d996f1cfbb9845a92bb5d0698f15a85ff613ef1",
+      "7161b0df0bf5dfee845f6494fa3f240563967baa",
+      "bdbda5c0a543371d570fbec644e0812866797842",
+      "a890fe4186449ab77056c2d13846079b8f07c408",
+      "472fb7dbac6f4af9c0d208f6eb01b22d617ddc2e",
+      "12e6aeb55741fa41a036aecdd5d6dd5682bc9131",
+      "74fe950f41c86d7dd7811a50a9abfffc77a089d1",
+      "1da71842f89710cbec444dfa355faf022c5d3794"
+    ],
+    "krypto:52097f5b-5423-4946-81d6-4aeed6b5ec17": [
+      "280e037ecbdade3b47423b4688e9beed5f254edb",
+      "449d0d78e0d71c7f6f616f26ce1b79443ac79aeb",
+      "2a826f3bdf128d2fffc1e25be329ba5d0ca1d417",
+      "c98c77a9520f0328e2b7dc510bd8ee16de94fb22",
+      "1672579f91fe742de1272f74be4327b2abb66e6c",
+      "6f966183900354c7614a8bdaa160f1983337935f",
+      "d936c33350184026fe2140d4efd676a480296580"
+    ],
+    "krypto:b597c717-c52a-4e85-8842-56cf49093ebb.checkpoint.5200e15d-b33f-41d1-8210-f078bf927da4": [
+      "2ce42d174c51f59806261bcd9608deb6e38225b8",
+      "9c6c6723ae211bfaa8de88ca5c4c98e6862b67da",
+      "4634f1ef4721ea579d0393779d787c9e5e10d0b6",
+      "cab1bb11b2545f2011f00f3426eb76a0e82f9532",
+      "3bcde33753ae32da348301d143419d6bffa2d00e",
+      "e7cd2cb209a6b107fdfb70da72391517fd655040",
+      "01d42374eb3ed9021d181a4262ab58a0e670c424",
+      "7a145f7cde8801b2134cc9e6860109c29456d16c",
+      "88eed7bfbfcd04efedb6c6800f6011c886822e10",
+      "e21a1d9cfd38ae33f39779397521d2f7ea9f7a1d",
+      "69e5e11aed780047810cc2bc57c7fc83c02ac474",
+      "e741badffd356fff6e78257ba746bdf306584acf",
+      "a0292bd1d4667bacb30178408c496782f03801c6",
+      "29d756189eae1fde63954afc2c20b4d3bee9225a",
+      "1dacf007703d3b82ee13e1a72d1627a2c1bda25e",
+      "5bd1efc588e8353f0f77e31655bb7ba7f4f2b316",
+      "df4352733f9c7efa897c01f0a070e1db87c83c91"
     ]
   }
 }
