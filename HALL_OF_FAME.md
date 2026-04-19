@@ -22,7 +22,7 @@ CHAND_PERIOD = 20     (hyperopt 2026-04-16: CP=20 wins full 46-value sweep, +1.5
 CHAND_MULT = 2.15     (fine-tuned 2026-04-16: +25.5% Sharpe vs coarse M=2.00, saturation plateau M≥2.15)
 HOLD_MAX = 45
 POSITION_CAP = 3
-FRESHNESS_COOLDOWN = 10  (2026-04-18: extensive sweep 0..=30 step 1 → cd=10 wins. +7.8pp pass rate, 0.242 Sharpe vs baseline 0.027. See memory/hyperopt-2026-04-18-cooldown.md. Live bot: src/live/bot.rs)
+FRESHNESS_COOLDOWN = 0   (no filter — cd=0 aligns with validated walk-forward harness which has no freshness filter. The walk-forward harness (turtle_chandelier_walkforward.rs) is the source of truth; live bot uses cd=0 from bot.rs:21. Prior sweep finding cd=10 was from a separate harness with different ATR formula — not propagated to production.)
 MAX_SOL_POSITION = $50K notional
 ```
 

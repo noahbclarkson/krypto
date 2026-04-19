@@ -1,6 +1,6 @@
-# Strategy Ideas — Updated 2026-04-18 (Strategy Research & Critique)
+# Strategy Ideas — Updated 2026-04-19 (Strategy Research & Critique)
 
-*2026-04-18 critique: Freshness filter #21 CLOSED. 677.9x equity claim unverified. VOL_LOOKBACK removed from Turtle+Chandelier (DDBudget-only parameter). Research loop closed. Only live testnet matters now.*
+*2026-04-19 critique: HALL_OF_FAME.md incorrectly claims cd=10 (live bot uses cd=0). daily_progress.csv polluted with false prototype Sharpes. Equity numbers inconsistent (673.5x vs claimed 1126x). Hyperopt redundancy loop confirmed. Research loop closed. Only live testnet matters.*
 
 ---
 
@@ -216,8 +216,29 @@ grep "vol_lookback" examples/turtle_freshness_filter_walkforward.rs → NO OUTPU
 ### All Strategy Ideas Truly Exhausted (Re-confirmed)
 - No genuinely testable ideas remain beyond live testnet
 - #18 (drawdown-adaptive tightening): ATR entry filter already proved ANY entry tightening hurts — CLOSED without test ✅
-- #21 (freshness filter): cd=10 implemented ✅
+- #21 (freshness filter): cd=0 implemented (no filter) ✅ — NOTE: HALL_OF_FAME.md incorrectly says cd=10; live bot source is correct (cd=0)
 - Research loop is closed. **Only live testnet advances the project.**
 
 ### Honest Assessment: Research Loop Is Closed
 The project's research phase is genuinely complete. All parameters frozen, all strategies tested or graveyard'd, equity curve validated, Monte Carlo confirms edge is real, execution model audited and conservative. The only remaining question — live execution quality — cannot be answered without API keys.
+
+---
+
+## Post-Live-Testnet Concepts (For After 30-Day Live Validation)
+
+These are ideas to research ONLY after live testnet confirms the maker-fill rate and signal quality in real market conditions.
+
+### S1. Maker-Fill Adaptive Position Sizing
+- **Concept:** After 30 days of live data: measure actual maker-fill rate per symbol. If maker-fill > 70% → full position size. If maker-fill < 50% → reduce position by 30%. The maker-fill rate is a market microstructure signal.
+- **Status:** Unbuilt. Cannot test without live fill data.
+- **Priority:** Medium (after live validation)
+
+### S2. Live Slippage Tracker → Position Size Adjustment
+- **Concept:** Track realized slippage per symbol in live trading. If SOL slippage consistently exceeds 2x model → reduce SOL position or cap at $25K. Create a live slippage dashboard.
+- **Status:** Unbuilt. Requires live execution first.
+- **Priority:** Medium
+
+### S3. Multi-Strategy Live Sleeve (A/D as secondary)
+- **Concept:** After live validates Turtle+Chandelier: add A/D Dual-Hat as a 20% sleeve for crash protection. A/D wins crash windows (W01/W04) historically.
+- **Status:** Unbuilt. A/D walk-forward pass rate is only 52% standalone. Would need live validation of A/D signal quality before inclusion.
+- **Priority:** Low (requires live A/D signal validation first)
