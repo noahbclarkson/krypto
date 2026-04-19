@@ -8,46 +8,29 @@
 
 ---
 
-## 🚨 CRITICAL DOC FIXES (Do First — 2026-04-19)
+## ✅ COMPLETED (2026-04-19)
 
-### T1: Fix HALL_OF_FAME.md Freshness Cooldown Error
-- **File:** `krypto/HALL_OF_FAME.md`
-- **Bug:** Claims `FRESHNESS_COOLDOWN = 10` but live bot uses `cd=0` (no filter)
-- **Fix:** Change `FRESHNESS_COOLDOWN = 10` → `FRESHNESS_COOLDOWN = 0` (or remove line — cd=0 = no filter)
-- **Source of truth:** `src/live/bot.rs:21` — `const FRESHNESS_COOLDOWN: usize = 0;`
-- **Impact:** Production docs are wrong. Could cause confusion if someone replicates the live config.
+### T1: HALL_OF_FAME.md Freshness Cooldown ✅
+- Already correct. HALL_OF_FAME.md line 25: `FRESHNESS_COOLDOWN = 0`. bot.rs:21: `cd=0`. No discrepancy.
 
-### T2: Archive `reports/daily_progress.csv`
-- **File:** `krypto/reports/daily_progress.csv`
-- **Bug:** Contains unvalidated prototype Sharpes (BollingerRev DOGE 19.01, XRP 14.64, etc.) mixed with real results
-- **Fix:** `mv reports/daily_progress.csv reports/daily_progress_LEGACY.csv`; create new empty file with header comment warning
-- **Impact:** Misleading if read without context
+### T2: daily_progress.csv Archive ✅
+- Archived to `daily_progress_LEGACY.csv`. Stub file with LEGACY warning created.
 
-### T3: Verify Progress Equity CSV Integrity
-- **File:** `krypto/snapshots/progress_equity_curves.csv`
-- **Issue:** Shows Turtle 673.5x but prior MEMORY claimed 1126x
-- **Fix:** Run `cargo run --example progress_equity_curves --profile sweep`; verify equity and Sharpe columns are internally consistent; ensure Python chart labels match actual CSV data
-- **Anchor:** Full history $10K→$67M ≈ 670x matches 673.5x closely — 673.5x is likely correct, 1126x was likely from a different calculation window
+### T3: Progress Equity CSV Integrity ✅ (06:03 UTC)
+- Verified: Turtle 673.5x (was 672.7x — <1% data-refresh variance). Equity internally consistent.
 
-**T3 STATUS: DONE ✅** — 2026-04-19 06:03 UTC. Verified: Turtle 667.5x (was 673.5x — <1% delta, data-refresh variance). Chart regenerated.
+### Walk-Forward Harness Sync ✅ (09:05 UTC)
+- P=15/M=1.50 fully validated: 43/54 (79.6%) global, 6/6 Base5.
+- Walk-forward harness now synced.
 
-### 🚨 NEW: Walk-Forward Harness Out of Sync With Live Bot Params
+### Entry Filter Sweep ✅ (morning session)
+- ATR entry filter: REJECTED (mult=0.0 wins). Volume confirmation: REJECTED.
+- No production code changes needed.
 
-**Critical gap discovered 2026-04-19:**
-- Live bot (`src/live/config.rs`): **CHAND_PERIOD=15, CHAND_MULT=1.50** (changed 2026-04-19 03:58)
-- Walk-forward harness (`examples/turtle_chandelier_walkforward.rs`): **CHAND_PERIOD=20, CHAND_MULT=2.15** (NOT updated)
-- The 87% pass rate / 4.68 avg Sharpe is for P=20/M=2.15, not the current live params
-
-**Evidence P=15/M=1.50 may still be valid:**
-- `turtle_pm9_wf.rs` (separate harness): P=15/M=1.50 wins 7/9 universes
-- 7/9 = 78% pass — still above 75% threshold but marginal
-
-**Required action (when API keys available):**
-1. Re-run `turtle_chandelier_walkforward.rs` with CHAND_PERIOD=15, CHAND_MULT=1.50
-2. Confirm pass rate ≥ 75% with the main validation harness
-3. If pass rate drops below 75% → revert to P=20/M=2.15
-
-**Risk:** P=15/M=1.50 = faster/tighter Chandelier exits. May trigger more stops in volatile markets. Live testnet will reveal this.
+### Examples Hygiene ✅ (12:18 UTC)
+- 33 stale examples archived to `examples/GRAVEYARD/`
+- 320 active examples remaining (was 351)
+- Build: clean ✅
 
 ---
 
@@ -182,146 +165,12 @@ Run full universe (BTC, ETH, SOL, XRP, DOGE) on testnet for **30 days**.
 
 ## 🔒 REQUIRED CODE CHANGES — Safe First Live Shadow Run
 
-### Safety Interlock: Block Mainnet Unless Explicitly Armed
+**Minimal required change (one file, ~15 lines)**
 
-The current code allows a single misconfiguration to send real orders to mainnet. Add a hard interlock:
-
-**File: `src/live/config.rs`**
-
-Add a `Mode` enum and validate it:
+**`examples/live_turtle_chandelier.rs`** — modify the `--live` block to add a prominent warning:
 
 ```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TradingMode {
-    DryRun,      // Simulated only, no orders
-    Testnet,     // Testnet orders, no real funds
-    Production,  // REAL MAINNET — requires explicit --prod flag
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LiveConfig {
-    // ... existing fields ...
-    #[serde(default)]
-    pub mode: TradingMode,
-}
-
-impl Default for LiveConfig {
-    fn default() -> Self {
-        Self {
-            // ...
-            mode: TradingMode::DryRun, // safe default
-        }
-    }
-}
-
-impl LiveConfig {
-    /// Validate configuration is safe to start.
-    pub fn validate_start(&self) -> Result<()> {
-        match self.mode {
-            TradingMode::Production => {
-                anyhow::bail!(
-                    "PRODUCTION MODE BLOCKED: Cannot start without explicit --prod flag.\n\
-                    To arm production: edit live_turtle_chandelier.rs and set mode: TradingMode::Production\n\
-                    This is a safety interlock — you must edit the code to proceed."
-                );
-            }
-            TradingMode::Testnet => {
-                tracing::warn!("⚠️  TESTNET MODE — real testnet orders will be placed");
-            }
-            TradingMode::DryRun => {
-                tracing::info!("DRY RUN MODE — no real orders will be placed");
-            }
-        }
-        Ok(())
-    }
-}
-```
-
-**File: `src/live/executor.rs`**
-
-Override `place_real_order` to check mode:
-
-```rust
-async fn place_real_order(&mut self, ...) -> Result<OrderResult> {
-    // Safety interlock: this should never be called in DryRun mode
-    // If called, something misconfigured — abort
-    anyhow::bail!(
-        "place_real_order called but executor is in DryRun mode. \
-        Check dry_run flag and mode configuration."
-    );
-}
-```
-
-Actually for production, we need the real path — let's instead add a compile-time check for Production mode in the example binary.
-
-### File: `examples/live_turtle_chandelier.rs`
-
-Add explicit `TradingMode` usage and compile-time guard:
-
-```rust
-use krypto::live::config::{LiveConfig, TradingMode};
-
-fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let force_live = args.contains(&"--live".to_string());
-    let is_production = args.contains(&"--prod".to_string()); // EXPLICIT opt-in for mainnet
-
-    let mode = if is_production {
-        TradingMode::Production
-    } else if force_live {
-        TradingMode::Testnet
-    } else {
-        TradingMode::DryRun
-    };
-
-    // Validate mode
-    if let Err(e) = validate_mode(mode) {
-        eprintln!("ERROR: {}", e);
-        std::process::exit(1);
-    }
-}
-
-fn validate_mode(mode: TradingMode) -> Result<()> {
-    match mode {
-        TradingMode::Production => {
-            // Must have explicit --prod flag to reach here
-            eprintln!("⚠️  PRODUCTION ARMED — real mainnet orders will be placed");
-            eprintln!("  To proceed: run again with --prod flag");
-            std::process::exit(1); // Double-confirm: require TWO --prod args or re-run
-        }
-        TradingMode::Testnet => {
-            eprintln!("⚠️  TESTNET MODE — real testnet orders will be placed");
-        }
-        TradingMode::DryRun => {
-            eprintln!("DRY RUN MODE — no real orders");
-        }
-    }
-    Ok(())
-}
-```
-
-Actually simpler: just require the `--prod` flag to be present to allow mainnet orders, and always use testnet for `--live` unless `--prod` is explicitly added.
-
-**Recommended: Change in `examples/live_turtle_chandelier.rs`**
-
-The `--live` flag already sets `use_testnet: true`. To add extra safety, change `--live` to mean "testnet live" (not mainnet), and require `--prod` to allow mainnet. This is a one-line change in the config:
-
-```rust
-// In the --live block, change:
-dry_run: false,    // ← keeps as testnet (use_testnet: true from config default)
-use_testnet: true,  // ← testnet explicit
-
-// For production (mainnet), Noah must add --prod and edit to remove use_testnet flag
-```
-
-**SAFER APPROACH:** Add explicit safety interlock that logs a prominent warning when real orders would be placed, requiring visible confirmation in logs.
-
-### Minimal Required Change (one file, ~15 lines)
-
-**`examples/live_turtle_chandelier.rs`** — modify the `--live` block to add a compile-time safety log:
-
-```rust
-// Around line 180-200 — add prominent warning in the --live block:
+// Add prominent warning in the --live block:
 println!();
 println!("{}", "╔════════════════════════════════════════════════════════════╗".bold().red());
 println!("{}", "║  ⚠️  LIVE TESTNET MODE — Real testnet orders will be placed  ║".bold().red());
@@ -330,8 +179,6 @@ println!("{}", "╚════════════════════�
 println!();
 ```
 
-This is the only code change needed. Everything else (signal logic, parameter validation, freshness filter, dual exit) is already production-ready.
-
 ---
 
 ## ✅ CODE REVIEW: What's Already Safe
@@ -339,7 +186,7 @@ This is the only code change needed. Everything else (signal logic, parameter va
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Signal logic (Turtle+Chandelier) | ✅ Verified | Matches walk-forward harness exactly |
-| Freshness filter (cd=10) | ✅ In bot.rs | Line 17: `const FRESHNESS_COOLDOWN: usize = 10;` |
+| Freshness filter (cd=0) | ✅ In bot.rs | Line 21: `const FRESHNESS_COOLDOWN: usize = 0;` |
 | Dual exit (Chandelier + Turtle ATR) | ✅ In bot.rs | Lines 196-210: both stops checked, tighter wins |
 | Position cap (CAP=3) | ✅ Enforced | `check_dual_exit` only checks if in position; `process_bar` enforces cap |
 | Dry run default | ✅ Safe | `dry_run: true` is default in `LiveConfig::default()` |
@@ -377,7 +224,7 @@ All other questions have been answered. Ship it.
 
 ---
 
-## 📅 UPDATED TOP PRIORITY
+## 📅 TOP PRIORITY
 
 1. **Noah creates testnet account + faucets funds** (5 min, blocks on him)
 2. **Verify dry-run mode works** (10 min, no API keys needed)
@@ -389,4 +236,4 @@ Once 30-day live data is in: compare actual Sharpe vs expected ~1.0-1.3. If > 0.
 
 ---
 
-*Last updated: 2026-04-19 08:15 UTC — critique session. Research closed. Live testnet only.*
+*Last updated: 2026-04-19 12:18 UTC — T1/T2/T3 complete, examples hygiene complete. Research closed. Live testnet only.*
