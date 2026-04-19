@@ -224,6 +224,33 @@ The project's research phase is genuinely complete. All parameters frozen, all s
 
 ---
 
+## CRITIQUE ADDITIONS (2026-04-19 08:15 UTC)
+
+### HALL_OF_FAME.md Still Has Wrong Params
+- HALL_OF_FAME claims `CHAND_PERIOD=20, CHAND_MULT=2.15` — but live bot was updated to P=15/M=1.50 on 2026-04-19
+- HALL_OF_FAME claims `FRESHNESS_COOLDOWN = 0` but the Freshness Filter section (strategy-ideas.md #21) describes cd=10 as "CLOSED ✅"
+- These contradictions make HALL_OF_FAME.md unreliable as a single source of truth
+- **Action:** HALL_OF_FAME.md needs a full audit against live_turtle_chandelier.rs source code
+
+### P=15/M=1.50 Is Partial Validation
+- 7/9 universes pass — above 75% threshold but marginal
+- The 2 failures are LTC/EOS/BCH (structural — not fixable by params)
+- Base5/NoDOGE production universe: appears to pass, but not explicitly confirmed in one clean harness run
+- **Action:** Before treating P=15/M=1.50 as confirmed production, run one clean 9-universe walk-forward with P=15/M=1.50/HM=45 and report pass rate explicitly
+
+### Equity Curve Uncertainty
+- Turtle equity: claimed 1126x (Apr 15), 673.5x (Apr 16), 677.9x (Apr 18), 672.7x (Apr 19)
+- Root cause: data refreshes change the source, and different harnesses produce different results
+- **Honest range:** 670x-1100x depending on data/caching. Neither the exact number nor the methodology that produced it is clear
+- **Action:** Stop quoting a specific equity number. Say "hundreds of times" or re-run one clean full-history export
+
+### HOLD_MAX=15 Is Unconfirmed
+- HM=15 (6-window Base5 sweep: +10.1% Sharpe vs HM=45) — NOT propagated to production
+- VL=55 showed the same pattern: partial-scope winner, then reverted
+- **Action:** Production HOLD_MAX=45 STAYS until 9-universe confirms HM=15
+
+---
+
 ## Post-Live-Testnet Concepts (For After 30-Day Live Validation)
 
 These are ideas to research ONLY after live testnet confirms the maker-fill rate and signal quality in real market conditions.
