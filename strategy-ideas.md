@@ -285,19 +285,18 @@ HALL_OF_FAME needs a complete rewrite to match current live code (P=15/M=1.50). 
 - **Verdict:** ALL regime-filter concepts have now been tested. Every variant loses pass rate vs unfiltered Turtle. The Chandelier tight exit (P=15/M=1.50) already handles regime transitions better than any entry gate.
 - **Do NOT revisit.**
 
-## 23. CTREND + Chandelier Exit Walk-Forward
-- **Problem:** CTREND signal confirmed genuine by Monte Carlo (0/500 shuffled beat real, 2026-04-17). But progress chart uses **fixed 21-bar hold** — the same flawed exit mechanism class as rejected DynamicTrend.
-- **Hypothesis:** If CTREND multi-horizon momentum signal is genuinely predictive, pairing it with Chandelier dual-exit should improve or maintain pass rate vs fixed hold.
-- **Test:** Reuse `turtle_chandelier_walkforward.rs` harness structure. Swap Turtle entry → CTREND `ctrend_signals()` function. Keep Chandelier(15,1.50) + ATR(24,2.0) dual exit. 9 universes × 7 windows.
-- **If result:** Pass rate > CTREND fixed-hold baseline → CTREND promoted to production signal family candidate. Walk-forward validate CTREND exit.
-- **Status:** Untested. Low priority — curiosity only. Live testnet is the real priority.
+## 23. CTREND + Chandelier Exit Walk-Forward — 🪦 REJECTED (2026-04-20)
+- **Problem:** CTREND signal confirmed genuine by Monte Carlo (0/500 shuffled beat real, 2026-04-17). But progress chart used **fixed 21-bar hold** — same flawed exit mechanism class as rejected DynamicTrend.
+- **Test:** CTREND entry + Chandelier(11, 2.25) + ATR(24, 2.0) dual exit. 9 universes × 6 windows.
+- **Result:** 30/54 pass (44% fail), avg Sharpe 2.28, 858 trades. **Decisively REJECTED** vs Turtle+Chandelier ~43/54 pass (~20% fail).
+- **Key insight:** Signal quality (Monte Carlo confirmed) ≠ signal-strategy fit. CTREND multi-horizon smoothing fires too late for Chandelier dual-exit. Turtle breakout timing synergizes better. Entry signal matters as much as exit mechanism.
+- **Verdict:** CTREND is a genuine signal but not a viable Turtle replacement for this strategy class. GRAVEYARD as standalone entry. `examples/ctrend_chandelier_walkforward.rs`.
 
-## 24. Live Slippage Tracker — BUILD BEFORE LIVE
-- **Concept:** Structured logging of per-fill slippage: `{timestamp, symbol, side, expected_price, actual_price, slippage_bp, maker_vs_taker, notional_usd}`.
-- **Why build now:** SOL slippage is the biggest known live risk (3.7x model at $100K). We cannot measure or mitigate it without data. Building the logger before live means we capture data from the first fill.
-- **Implementation:** Add `struct FillLog { symbol, side, expected, actual, slippage_bp, notional, ts }` to `live_turtle_chandelier.rs`. Write to `logs/slippage_YYYY-MM-DD.csv`. Even dry-run mode can log expected fills.
-- **Post-live analysis:** After 30 days → compare SOL slippage vs model. If >2x model → reduce SOL cap to $25K.
-- **Status:** Unbuilt. **Do this before live.** Low effort, high value.
+## 24. Live Slippage Tracker — ✅ DONE (infrastructure built in live bot, 2026-04-20)
+- **Concept:** Structured logging of per-fill slippage: `{timestamp, symbol, side, expected_price, actual_price, slippage_bp, notional, quantity, fee_paid, dry_run, order_type}`.
+- **Implementation:** `FillLog` struct in `src/live/executor.rs`. `enable_fill_log()` called in `LiveBot::new()` → writes `logs/slippage_YYYY-MM-DD.csv` on every fill (dry-run or live). Slippage summary via `executor.slippage_summary()`.
+- **Status:** ✅ Built. Works in dry-run mode (simulated fills) and live mode (real fills). CSV header: `timestamp,symbol,side,expected_price,actual_price,slippage_bp,notional,quantity,fee_paid,dry_run,order_type`.
+- **Post-live:** After 30 days → compare SOL slippage vs model. If >2x model → reduce SOL cap to $25K.
 
 ### ⚠️ 2026-04-20 Afternoon Critique Additions
 
