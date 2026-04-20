@@ -1,6 +1,6 @@
-# Strategy Ideas — Updated 2026-04-19 (Strategy Research & Critique)
+# Strategy Ideas — Updated 2026-04-20 (Strategy Research & Critique)
 
-*2026-04-19 critique: HALL_OF_FAME.md incorrectly claims cd=10 (live bot uses cd=0). daily_progress.csv polluted with false prototype Sharpes. Equity numbers inconsistent (673.5x vs claimed 1126x). Hyperopt redundancy loop confirmed. Research loop closed. Only live testnet matters.*
+*2026-04-20 critique: progress_equity_curves.rs uses stale CHAND_P=20/M=2.15 — never re-run with P=15/M=1.50. Equity chart data may be wrong. CTREND has contradictory status (Monte Carlo ✅ signal genuine, but exit mechanism is flawed fixed 21-bar hold). HALL_OF_FAME has two conflicting equity Sharpe numbers (2.52 vs 1.04). Research loop closed. Only live testnet advances the project.*
 
 ---
 
