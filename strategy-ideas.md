@@ -1,6 +1,6 @@
-# Strategy Ideas — Updated 2026-04-20 (Strategy Research & Critique)
+# Strategy Ideas — Updated 2026-04-20 (Evening Critique)
 
-*2026-04-20 critique: progress_equity_curves.rs uses stale CHAND_P=20/M=2.15 — never re-run with P=15/M=1.50. Equity chart data may be wrong. CTREND has contradictory status (Monte Carlo ✅ signal genuine, but exit mechanism is flawed fixed 21-bar hold). HALL_OF_FAME has two conflicting equity Sharpe numbers (2.52 vs 1.04). Research loop closed. Only live testnet advances the project.*
+*2026-04-20 critique: Research loop CLOSED. All production params validated. CTREND exit mechanism (#23) is the only untested idea that could produce genuinely new strategy knowledge. Live slippage tracker (#24) must be built before testnet. Equity numbers ~800x (not 1000x+) with current cache — depend on parquet dates. Confirmation sweeps (ATR_MULT, ATR_PERIOD) produce no new knowledge — stop re-running.*
 
 ---
 

@@ -270,3 +270,9 @@
 [krypto/sessions/bf49f43f-7142-4bd9-a9fc-605d373d961f.jsonl#L164] Assistant: Now let me send the Discord report with the chart:
 [krypto/sessions/bf49f43f-7142-4bd9-a9fc-605d373d961f.jsonl#L166] Assistant: Let me do a final check on the deliverables:
 [krypto/sessions/bf49f43f-7142-4bd9-a9fc-605d373d961f.jsonl#L168] Assistant: --- ## Cron Summary — Hyperparameter Optimization Session (2026-04-19) **What was done:** 1. **Parameter Audit** — All Turtle+Chandelier magic numbers audited. All 9 core params (EP=21, CHAND_P=15, CHAND_M=1.50, ATR_P=24, ATR_M=2.0, CAP=3, cd=0, ATR_entry_mult=0.0, M
+[krypto/sessions/6e8b7539-3b6c-40cd-93ee-4a72e403259b.jsonl#L111] Assistant: Build succeeded. Now let me write the hyperopt report and commit everything:
+[krypto/sessions/6e8b7539-3b6c-40cd-93ee-4a72e403259b.jsonl#L113] Assistant: Now update MEMORY.md with the key findings, then commit everything:
+[krypto/sessions/6e8b7539-3b6c-40cd-93ee-4a72e403259b.jsonl#L117] Assistant: Now commit everything:
+[krypto/sessions/6e8b7539-3b6c-40cd-93ee-4a72e403259b.jsonl#L133] Assistant: Both repos pushed. Now let me update today's memory and send the Discord update:
+[krypto/sessions/6e8b7539-3b6c-40cd-93ee-4a72e403259b.jsonl#L135] Assistant: Now send the Discord update with the chart:
+[krypto/sessions/6e8b7539-3b6c-40cd-93ee-4a72e403259b.jsonl#L137] Assistant: --- **Cron Session Report — Kira | 2026-04-19 07:05 UTC** ## What Was Done **1. Walk-Forward Harness Sync (Critical Fix)** The walk-forward harness (`turtle_chandelier_walkforward.rs`) was running CHAND_P=20/M=2.15 — stale. Live bot already uses P=15/M=1.50 (from 202

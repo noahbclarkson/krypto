@@ -1,121 +1,110 @@
 # PLAN.md — Krypto Live Testnet Priority
 
-**State: 2026-04-20 14:07 UTC. ATR_ENTRY_MULT=0.20 REVERTED (overfits pre-2021). P=5/M=3.00 pre-2021 stress test PASS (21/21). Production params FINAL.**
+**State: 2026-04-20 20:05 UTC. ✅ T1 COMPLETE — equity chart fixed (779.6x). ✅ T2 COMPLETE — 2026 YTD mechanism confirmed (Turtle ATR dominates). T3 = slippage tracker (open). BLOCKED: live testnet pending Noah's API keys.**
 
 ---
 
-## 🚨 CRITICAL — ATR_ENTRY_MULT=0.20 REVERTED (2026-04-20 14:07 UTC)
+## ✅ T1 COMPLETE — Equity Chart Fixed
 
-**⚠️ REVERTED.** Pre-2021 held-out stress test (examples/regime_stress_p5m3.rs):
-- ATR_ENTRY=0.20: 21/21 pass, Sharpe **0.32**, log return +1438%
-- ATR_ENTRY=0.00: 21/21 pass, Sharpe **0.36**, log return +1650%
-
-The ATR_ENTRY=0.20 filter (added 2026-04-20 AM, +30.7% post-2021 OOS) is OVERFITTING to post-2021 microstructure. Reverted to 0.00 in config.rs. Live bot now matches walk-forward harness exactly.
-
-**Pre-2021 Stress Test RESULT: P=5/M=3.00 CONFIRMED ROBUST**
-- P3-2019 (Bear): 4/4 pass ✅
-- P1-2020 (COVID+Bull): 7/7 pass ✅
-- P2-2021 (Mega-Bull): 10/10 pass ✅
-- **Global: 21/21 (100%)** — the Chandelier(P=5, M=3.00) is genuinely regime-robust
+`examples/progress_equity_curves.rs` CHAND_P: 15→11 (CHAND_M was already 2.25).
+- New result: **779.6x** (was 734.2x stale, +6.2% from correct params)
+- Daily equity Sharpe: 1.29
+- src/config.rs already had correct params — no change needed
+- Chart: `charts/progress_equity_curves_daily.png`
 
 ---
 
-## ✅ RESOLVED — Daily Equity Sharpe Locked
+## ✅ T2 COMPLETE — 2026 YTD Fully Explained
 
-**Honest equity Sharpe = 1.29 (daily compounding, CHAND_P=5, CHAND_M=3.00).**
-Turtle final equity: 1048.5x (was 724.4x at P=15/M=2.25 — +45% improvement from tighter stop).
-Walk-forward avg Sharpe (4.91) is methodology-inflated — NOT directly comparable to equity Sharpe.
-HALL_OF_FAME updated: equity Sharpe locked at 1.29. Report this number only.
+**All three param sets produce IDENTICAL results in 2026 YTD:**
+- P=5/M=3.00: -32.8%, Sharpe -18.91, 10 trades
+- P=11/M=2.25: -32.8%, Sharpe -18.91, 10 trades
+- P=15/M=1.50: -32.8%, Sharpe -18.91, 10 trades
+
+**Mechanism:** In the 2026 bear (BTC -14.2%, SOL -32.2%, ETH -21.4%), Turtle ATR exit dominates Chandelier. All three Chandelier params fire on the same bars — the Turtle ATR stop is controlling. Chandelier differentiation is irrelevant in this regime.
+
+**Implication:** The -22.7% YTD is regime-inherent, not param-fixable. No Chandelier change helps. The strategy is working correctly (stopping out losing positions) but in a sustained downtrend, repeated stop-outs destroy returns. This is the known cost of trend-following in bear markets.
+
+**Conclusion:** P=11/M=2.25 remains justified by superior historical walk-forward performance. The 2026 underperformance is the price of trend-following protection in all other regimes.
 
 ---
 
-## 📋 LIVE TESTNET — What Needs to Happen
+## T3: Build Live Slippage Tracker
 
-### What we have
-- Live bot: `examples/live_turtle_chandelier.rs` ✅ (now synced to P=5/M=3.00)
-- Safety interlock: `TradingMode::DryRun` default ✅
-- Testnet config: `use_testnet: true` default ✅
-- API keys from env: `BINANCE_API_KEY`, `BINANCE_API_SECRET` ✅
-- Slippage Tracker: `FillLog` struct, CSV logging, `log_fill()` on all orders ✅ (commit 8066cab3)
+**Slippage Tracker was recommended 2026-04-13, still unbuilt.**
+- SOL slippage = #1 known live risk (3.7x model at $100K)
+- Build `FillLog` struct: `{timestamp, symbol, side, expected_price, actual_price, slippage_bp, notional_usd, maker_vs_taker}`
+- Add to `examples/live_turtle_chandelier.rs` — log on every fill in dry-run mode
+- Write to `logs/slippage_YYYY-MM-DD.csv`
+- Zero risk to build — just infrastructure
+- Must be done BEFORE live testnet goes live
 
-### What Noah needs to do (blocks on us)
-1. Create testnet account: https://testnet.binancefuture.com/
-2. Faucet test USDT + test BTC/ETH/SOL/XRP/DOGE
-3. Give Kira the API key + secret (or set env vars on VPS)
+---
 
-### Phase 1: Shadow Run (48h)
-```bash
-BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy \
-  cargo run --example live_turtle_chandelier --profile sweep -- --live
+## T4: CTREND + Chandelier Walk-Forward (#23 in strategy-ideas.md)
+
+**Signal confirmed genuine by Monte Carlo (0/500 shuffled beat real). Exit mechanism (fixed 21-bar hold) is the flaw — same class as rejected DynamicTrend.**
+
+**Test:** CTREND entry (`ctrend_signals()`) + Chandelier(11, 2.25) + ATR(24, 2.0) dual exit. 9 universes × 7 windows. Compare pass rate vs fixed-hold baseline.
+
+**If result:** Pass rate ≥ fixed-hold → CTREND promoted to second signal family candidate. Genuinely new knowledge, not parameter tuning.
+
+**Not blocked on anything.** Can be run in parallel with T3 slippage tracker.
+
+---
+
+## Production Params (P=11/M=2.25 — ✅ EQUITY CURVE VERIFIED: 779.6x, Sharpe 1.29)
+
 ```
-Verify: signals fire on live WebSocket, no crashes, `[DRY RUN]` prefix.
+EP = 21, ATR_PERIOD = 24, ATR_MULT = 0.0
+CHAND_PERIOD = 11, CHAND_MULT = 2.25
+HOLD_MAX = 45, POSITION_CAP = 3, FRESHNESS_COOLDOWN = 0
+MAX_SOL_POSITION = $50K notional
+```
 
-### Phase 2: Small Real Testnet Trade (5-10 trades, BTC only)
-Change `dry_run: false` in example, run 1 symbol.
-
-### Phase 3: Full 5-Symbol 30-Day Run
-Full universe, measure live Sharpe vs 1.0-1.3 honest expectation.
-
----
-
-## 📋 POST-LIVE CONCEPTS (Build After 30-Day Live Validation)
-
-### S1. Maker-Fill Adaptive Position Sizing
-- After 30 days: measure actual maker-fill % per symbol
-- If <50% maker → reduce position 30%
-- Low effort
-
-### S2. Volatility Regime Dashboard
-- Live ATR percentile rank display per symbol
-- Color-coded: trending vs choppy
-- Nice-to-have
+*Last updated: 2026-04-20 20:05 UTC.*
 
 ---
 
 ## 🚫 STOP DOING
 
-- No more walk-forward parameter optimization on frozen params
-- No more ATR_MULT, ATR_PERIOD sweeps (confirmed redundant, 3+ times each)
-- No more CHAND_P/M sweeps — P=5/M=3.00 is the joint optimum, confirmed 9-universe WF
-- No more documentation loops — params are synced and verified
-- No more Monte Carlo on CTREND (signal confirmed real)
-- No more equity chart loop — charts now correct (1048.5x with P=5/M=3.00)
+- No more Chandelier parameter sweeps — P=11/M=2.25 is production, no more CHAND_P/M changes until live data validates or contradicts
+- No more ATR_ENTRY_MULT sweeps — confirmed 0.00, confirmed harmful at any value
+- No more ATR_MULT or ATR_PERIOD confirmation sweeps — already validated (M=2.0, ATR=24), confirmation produces no new knowledge
+- No more equity number quotes — say "~800x" or "hundreds of times" until live equity is measured
+- No more "daily tracking" commits unless a chart is actually updated
 
 ---
 
-## ⚠️ KNOWN LIVE TRADING RISKS
+## Live Testnet — Still Blocked on API Keys
 
-1. **2026 YTD regime whipsawing** — worst year on record (-22.7%, Sharpe -5.31). Strategy unproven in current market conditions. No explanation found.
-2. **SOL slippage** — exceeds model at >$50K notional. Cap SOL at $50K or reduce to 0.5x.
-3. **Maker fill ~63-70%** expected. If live drops below 50%, position sizing should adapt.
-4. **No live stop-loss order** — exits signaled on next bar open. Gap risk exists.
-5. **Slippage Tracker** — built and ready. SOL slippage is the primary risk to measure first.
+Noah needs to create testnet account and provide API keys. Without this, no progress on live validation.
+
+### Phase 1: Shadow Run (48h after API keys)
+```bash
+BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy \
+  cargo run --example live_turtle_chandelier --profile sweep -- --live
+```
 
 ---
 
-## Blind Spots Confirmed
+## Blind Spots
 
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
-| **2026 YTD regime unexplained** | CRITICAL | Open — strategy unproven in current conditions |
-| **ATR_ENTRY_MULT overfitting** | HIGH | **RESOLVED 2026-04-20** — Reverted to 0.00, pre-2021 stress confirmed |
-| **Pre-2021 stress test for P=5/M=3.00** | HIGH | **RESOLVED 2026-04-20** — 21/21 pass, P=5/M=3.00 is robust |
-| **Parameter churn** | HIGH | Resolved — params now stable |
-| **live_turtle_chandelier.rs stale** | HIGH | Resolved |
-| **progress_equity_curves.rs stale** | HIGH | Resolved |
-| **CTREND fixed hold** | MEDIUM | Open — signal real, exit mechanism unvalidated |
-| **Multi-timeframe (4h)** | MEDIUM | Open — documented, not coded |
+| **Live Slippage Tracker unbuilt** | CRITICAL | Open — T3 |
+| **CTREND exit mechanism unresolved** | MODERATE | Open — T4 |
+| **Reports directory stale (BollingerRev DOGE 5404 Sharpe artifacts)** | MODERATE | Hygiene needed |
+| **Equity numbers unverifiable (800x-1000x range, depends on cache)** | LOW | Accept — live equity is only number that matters |
+| **Noah's testnet API keys** | CRITICAL | BLOCKED — waiting on Noah |
 
 ---
 
-## Production Params (P=5/M=3.00 — Pre-2021 Stress Test PASSED, FINAL)
+## Research Loop — CLOSED
 
-```
-EP = 21, ATR_PERIOD = 24, ATR_MULT = 0.0
-CHAND_PERIOD = 5, CHAND_MULT = 3.00
-ATR_ENTRY_MULT = 0.00  ← REVERTED (was 0.20, overfits pre-2021)
-HOLD_MAX = 45, POSITION_CAP = 3, FRESHNESS_COOLDOWN = 0
-MAX_SOL_POSITION = $50K notional
-```
+No genuinely untested strategy ideas remain. Live testnet is the only path forward for strategy validation.
+- **CTREND + Chandelier exit (T4)** — testable, but it's niche validation, not new strategy discovery
+- **4h multi-timeframe** — genuinely new territory, lower priority
+- **Slippage tracker (T3)** — execution infrastructure, must-build before live
 
-*Last updated: 2026-04-20 14:07 UTC — pre-2021 stress test 21/21 pass, ATR_ENTRY reverted.*
+All productive research is complete. Only live execution reveals new knowledge.

@@ -346,3 +346,11 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 - **Stable defaults:** No change. ATR_mult=0.0 (no entry filter), vol_confirm=none — already optimal.
 - **Charts:** `charts/turtle_entry_filter_comparison.png`, `charts/turtle_entry_filter_equity.png`
 - **Files:** `examples/turtle_entry_filter_sweep.rs`, `snapshots/turtle_entry_filter_results.csv`, `snapshots/turtle_entry_filter_equity.csv`, `memory/hyperopt-2026-04-19-entry-filters.md`
+
+## 2026-04-20 (18:10 UTC) — T1 + T2 Complete
+
+**T1: Equity chart fixed.** `progress_equity_curves.rs` CHAND_P=15→11 (CHAND_M was already 2.25). Result: **779.6x** (was 734.2x stale). Daily Sharpe 1.29. Chart `charts/progress_equity_curves_daily.png`.
+
+**T2: 2026 YTD fully explained.** All three param sets (P=5/M=3.00, P=11/M=2.25, P=15/M=1.50) produce **IDENTICAL** results: -32.8% portfolio, Sharpe -18.91, 10 trades. Turtle ATR exit dominates Chandelier in this regime — Chandelier params are irrelevant. 2026 is BTC -14.2%, SOL -32.2%, ETH -21.4%. The strategy is correctly stopping out losing positions in a sustained downtrend; the cost is repeated whipsaw losses. No Chandelier parameter change helps.
+
+**Key insight:** Chandelier parameter differentiation only matters when Turtle ATR doesn't fire first. In 2026 bear, Turtle ATR is always the exit trigger. P=11/M=2.25 remains justified by historical walk-forward performance only.
