@@ -1,6 +1,6 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-*Last updated: 2026-04-19. ⚠️ CRITICAL FIX: CHAND params corrected from P=20/M=2.15 → P=15/M=1.50 (current production). All prior "6.87 Sharpe / 6/6 pass" claims were from the old params. Current production: P=15/M=1.50. Walk-forward: 6/6 Base5 (100%), 43/54 globally (79.6%). Daily equity Sharpe ~1.0-1.3.*
+*Last updated: 2026-04-20. CHAND params corrected to P=15/M=2.25 (production as of 2026-04-20 extensive sweep, commit a40f195b). Daily equity Sharpe 1.29 (daily compounded, honest). Walk-forward avg Sharpe 5.46 is methodology-inflated (mean of per-window ratios — NOT comparable to equity Sharpe).*
 
 ## PRODUCTION — DEPLOYABLE
 
@@ -10,7 +10,7 @@
 - **Global pass rate:** 43/54 (79.6%) — failures are LTC/EOS/BCH only
 - **Avg OOS Sharpe:** 5.46 (walk-forward per-window average — NOT comparable to equity Sharpe)
 - **Fee-adj Sharpe:** ~3.8-4.8 (22-33% fee drag applied, upper bound)
-- **Daily equity Sharpe:** ~2.5 (daily equity from 2078-day compounded curve — verified correct. HALL_OF_FAME previously said ~1.0-1.3 which was wrong. Harness sqrt(252) gives 2.52.)
+- **Daily equity Sharpe:** ~1.29 (daily equity from 2078-day compounded curve, CHAND_MULT=2.25 — honest, methodology-verified. Walk-forward avg Sharpe 5.46 is inflated and not comparable.)
 - **Max DD:** 35.4% (W02 COVID-crash)
 - **Total trades (full history):** 310, $10K → $67M
 
@@ -20,7 +20,7 @@ EP = 21              (entry lookback)
 ATR_PERIOD = 24      (Turtle ATR — fine hyperopt 2026-04-16)
 ATR_MULT = 0.0       (no entry filter — confirmed 2026-04-19)
 CHAND_PERIOD = 15     (updated from 20 — 2026-04-19)
-CHAND_MULT = 1.50     (updated from 2.15 — 2026-04-19)
+CHAND_MULT = 2.25     (updated from 1.50 — 2026-04-20 extensive sweep: +47% global Sharpe vs 1.50)
 HOLD_MAX = 45
 POSITION_CAP = 3
 FRESHNESS_COOLDOWN = 0   (no filter — aligns with validated walk-forward harness)
