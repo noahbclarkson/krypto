@@ -23,7 +23,7 @@ impl Default for TradingMode {
 
 /// Turtle+Chandelier strategy params (validated walk-forward, frozen 2026-04-16).
 pub const TURTLE_EP: usize = 21;
-pub const CHAND_PERIOD: usize = 15; // hyperopt 2026-04-19: 2D joint sweep P×M, 2D sweep winner P=15/M=1.50. Joint sweep over P∈[15,30]×M∈[1.50,2.10]. 7/9 universes validate P15/M150 wins over P20/M215. See hyperopt-2026-04-19-chand-pm-2d.md.
+pub const CHAND_PERIOD: usize = 11; // hyperopt 2026-04-20: FULL sweep CP∈[5..60 step 2]×9 universes×54 windows. CP=11 wins global (Sharpe 4.775 vs CP=15 baseline 4.688, +1.9%). Pass rate 79.6% vs 77.8% (+1.8pp). Consistent across all production universes. See memory/hyperopt-2026-04-20-chand-period.md.
 pub const CHAND_MULT: f64 = 2.25; // hyperopt 2026-04-20: EXTENSIVE sweep M∈[0.50,5.00] step 0.25 (19 values) × 9 universes × 7 windows. M=2.25 wins: global Sharpe 3.879 (+47% vs M=1.50 at 2.625), Base5 100% pass. See hyperopt-2026-04-20-chand-mult.md. Prior M=1.50 was from 2D joint sweep limited to M∈[1.50,2.10] — range too narrow.
 pub const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. See hyperopt-2026-04-16-atr-period.md.
 pub const TURTLE_ATR_MULT: f64 = 2.0;

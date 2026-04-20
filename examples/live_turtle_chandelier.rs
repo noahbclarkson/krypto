@@ -26,7 +26,7 @@ use std::collections::VecDeque;
 // Strategy params (validated)
 // =============================================================================
 const EP: usize = 21;       // Turtle entry lookback
-const CHAND_P: usize = 15;  // Chandelier ATR period (updated 2026-04-19: 2D joint sweep P×M winner, replaces stale CP=20 from 2026-04-16. See turtle_chandelier_walkforward.rs.)
+const CHAND_P: usize = 11;  // Chandelier ATR period (updated 2026-04-20: FULL sweep CP∈[5..60 step 2] × 9 universes × 54 windows. CP=11 wins global Sharpe 4.775 (+1.9% vs CP=15 baseline 4.688). Pass rate 79.6% (+1.8pp). See hyperopt-2026-04-20-chand-period.md.)
 const CHAND_M: f64 = 2.25;   // Chandelier ATR multiplier (updated 2026-04-20: EXTENSIVE sweep M∈[0.50,5.00] step 0.25. M=2.25 wins: global Sharpe 3.879, +47% vs M=1.50. See hyperopt-2026-04-20-chand-mult.md)
 const ATR_P: usize = 24;     // Turtle ATR period (2026-04-16: fine hyperopt 18-35 step=1, ATR=24 +3.6% Sharpe, -10.8pp DD vs ATR=25)
 const ATR_M: f64 = 2.0;     // Turtle ATR multiplier
