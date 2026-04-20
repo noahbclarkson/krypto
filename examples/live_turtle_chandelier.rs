@@ -27,7 +27,7 @@ use std::collections::VecDeque;
 // =============================================================================
 const EP: usize = 21;       // Turtle entry lookback
 const CHAND_P: usize = 15;  // Chandelier ATR period (updated 2026-04-19: 2D joint sweep P×M winner, replaces stale CP=20 from 2026-04-16. See turtle_chandelier_walkforward.rs.)
-const CHAND_M: f64 = 1.50;   // Chandelier ATR multiplier (updated 2026-04-19: 2D joint sweep P×M winner, tighter stop. Replaces stale M=2.15 from 2026-04-16.)
+const CHAND_M: f64 = 2.25;   // Chandelier ATR multiplier (updated 2026-04-20: EXTENSIVE sweep M∈[0.50,5.00] step 0.25. M=2.25 wins: global Sharpe 3.879, +47% vs M=1.50. See hyperopt-2026-04-20-chand-mult.md)
 const ATR_P: usize = 24;     // Turtle ATR period (2026-04-16: fine hyperopt 18-35 step=1, ATR=24 +3.6% Sharpe, -10.8pp DD vs ATR=25)
 const ATR_M: f64 = 2.0;     // Turtle ATR multiplier
 const HOLD_MAX: usize = 45; // Production: consider HM=15 (hyperopt 2026-04-19: Sharpe 5.95 vs HM=45: 5.40 on Base5). HM=45 is the validated harness default; HM=15 is the optimized live value. See hyperopt-2026-04-19-holdmax.md.

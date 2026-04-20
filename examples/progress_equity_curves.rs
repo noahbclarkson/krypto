@@ -59,11 +59,11 @@ const WARMUP_BARS: usize = 200;
 const CS_LOOKBACK: usize = 63;
 const AD_PERIOD: usize = 8; // walk-forward winner 2026-04-14: p=8 Sharpe 2.00, 67% pass (p=5 rejected: Sharpe -1.20, 52%)
 
-// CHAND_P = 20 (hyperopt 2026-04-16 full 46-value sweep: wins all 9 universes, +1.55% Sharpe vs CP=28)
-const CHAND_P: usize = 20;         // hyperopt 2026-04-16
+// CHAND_P = 15 (hyperopt 2026-04-19: 2D joint sweep P×M winner. Replaces stale CP=20 from 2026-04-16.)
+const CHAND_P: usize = 15;         // hyperopt 2026-04-19: P=15/M=1.50 wins 7/9 universes vs P=20/M=2.15
 
-// CHAND_M = 2.15 (hyperopt 2026-04-16: saturation plateau M≥2.15 confirmed)
-const CHAND_M: f64 = 2.15;         // hyperopt 2026-04-16
+// CHAND_M = 2.25 (hyperopt 2026-04-20: EXTENSIVE sweep M∈[0.50,5.00] step 0.25. M=2.25 wins globally.)
+const CHAND_M: f64 = 2.25;         // hyperopt 2026-04-20: M=2.25 — +47% global Sharpe vs M=1.50, Base5 100% pass
 
 // TURTLE_ATR_P = 24 (hyperopt 2026-04-17: fine sweep 18-35 step1: +3.6% Sharpe, -10.8pp DD vs coarse 25)
 const TURTLE_ATR_P: usize = 24;    // hyperopt 2026-04-17
@@ -74,8 +74,8 @@ const TURTLE_EP: usize = 21;       // hyperopt 2026-04-10
 
 const TURTLE_HOLD_MAX: usize = 45; // hyperopt 2026-04-11
 
-// === DOLLAR-VOLUME RANKING: 55-bar rolling SMA (hyperopt 2026-04-17: VL=55 wins, +40% Sharpe vs VL=1, extended range 1-100 confirmed) ===
-const VOL_LOOKBACK: usize = 2; // hyperopt 2026-04-17: VL=55 REVERTED (overfits W04/W05). Production: VL=2.
+// === DOLLAR-VOLUME RANKING: VL=2 (hyperopt 2026-04-17: VL=55 REVERTED — overfits W04/W05 held-out data) ===
+const VOL_LOOKBACK: usize = 2; // hyperopt 2026-04-17: VL=55 overfits held-out W04/W05. VL=2 is production default.
 
 fn rolling_dv(close: &[f64], vol: &[f64], lookback: usize, bar: usize) -> f64 {
     let mut sum = 0.0_f64;
@@ -247,8 +247,8 @@ async fn main() -> Result<()> {
     // DDBudget three-sleeve: simulate with family-level DDHard budgeting
     let ddbudget_daily = simulate_ddbudget(&ad_plans, &macd_plans, &small_plans, universe.steps);
 
-    // Turtle+Chandelier: uses CHAND(20,2.15)+ATR(24,2.0) DUAL EXIT — updated 2026-04-17
-    // Params: CHAND_P=20, CHAND_M=2.15, TURTLE_ATR_P=24, TURTLE_ATR_M=2.0, VOL_LOOKBACK=2 (VL=55 REVERTED 2026-04-17)
+    // Turtle+Chandelier: uses CHAND(15,1.50)+ATR(24,2.0) DUAL EXIT — updated 2026-04-20
+    // Params: CHAND_P=15, CHAND_M=1.50, TURTLE_ATR_P=24, TURTLE_ATR_M=2.0, VOL_LOOKBACK=2
     let turtle_daily = simulate_turtle_chandelier_equity(&universe)?;
 
     // Export CSV
@@ -692,14 +692,20 @@ fn simulate_turtle_chandelier_equity(universe: &UniverseData) -> Result<Vec<f64>
     let syms: Vec<String> = universe.data.iter().map(|(s,_)| s.clone()).collect();
     let mut equity = 1.0_f64;
     let mut equity_curve = vec![1.0_f64; total];
+    let mut in_position = false;
 
     let mut bar = warmup;
     while bar < total {
-        // Rank by dollar volume
+        // If in a position, the equity_curve for this bar was already set by the position loop
+        // below. Record it now if we haven't (shouldn't happen, but belt-and-suspenders).
+        if !in_position {
+            equity_curve[bar] = equity;
+        }
+
+        // Rank by dollar volume for flat-bar entry decisions
         let mut scores: Vec<(&str,f64)> = syms.iter().filter_map(|s| {
             sym_data.get(s).and_then(|sd| {
                 if bar < sd.close.len() {
-                    // VOL_LOOKBACK=2: 2-bar SMA dollar volume (production default after 2026-04-17 overfitting revert)
                     let dv = rolling_dv(&sd.close, &sd.vol, VOL_LOOKBACK, bar);
                     Some((s.as_str(), if dv.is_finite() && dv > 0.0 { dv } else { 0.0 }))
                 } else { None }
@@ -707,63 +713,81 @@ fn simulate_turtle_chandelier_equity(universe: &UniverseData) -> Result<Vec<f64>
         }).collect();
         scores.sort_by(|a,b| b.1.partial_cmp(&a.1).unwrap());
         let top: Vec<String> = scores.into_iter().take(POSITION_CAP).map(|(s,_)| s.to_string()).collect();
+        if top.is_empty() { in_position = false; bar += 1; continue; }
 
-        if top.is_empty() { equity_curve[bar] = equity; bar += 1; continue; }
-
-        // Turtle entry
-        let mut entered = false;
+        // Try to enter a position
+        let mut entered_sym = None;
         for sym in &top {
-            let sd_opt = sym_data.get(sym);
-            if let Some(sd) = sd_opt {
+            if let Some(sd) = sym_data.get(sym) {
                 if bar >= TURTLE_EP + 1 && bar < sd.close.len() {
                     let start_idx = bar + 1 - TURTLE_EP;
                     let mut max_close = f64::NEG_INFINITY;
-                    for i in start_idx..bar {  // exclude current bar (same as turtle_chandelier_walkforward.rs)
+                    for i in start_idx..bar {
                         if let Some(&c) = sd.close.get(i) { max_close = max_close.max(c); }
                     }
                     let curr_close = sd.close.get(bar).copied().unwrap_or(0.0);
-                    let sig = curr_close > max_close;
-                    if sig {
-                        // Entry: price at bar (close of signal bar)
-                        let entry_px = sd.close.get(bar).copied().unwrap_or(0.0);
-                        let entry = entry_px * (1.0 - TAKER_FEE); // fee on entry like walk-forward
-                        let next_bar = bar + 1;
-                        let n = sd.close.len();
-                        let max_hold = (next_bar + TURTLE_HOLD_MAX).min(n.saturating_sub(1));
-                        let mut exit_bar = max_hold;
-
-                        // Track highest highs for both ATRs
-                        let mut hh_c = sd.high.get(next_bar).copied().unwrap_or(0.0);
-                        let mut hh_t = sd.high.get(next_bar).copied().unwrap_or(0.0);
-                        for b in next_bar..=max_hold {
-                            hh_c = hh_c.max(sd.high.get(b).copied().unwrap_or(0.0));
-                            let atr_c = atr_region(&sd.high, &sd.low, &sd.close, CHAND_P, b);
-                            let trail_c = hh_c - CHAND_M * atr_c;
-                            hh_t = hh_t.max(sd.high.get(b).copied().unwrap_or(0.0));
-                            let atr_t = atr_region(&sd.high, &sd.low, &sd.close, TURTLE_ATR_P, b);
-                            let trail_t = hh_t - TURTLE_ATR_M * atr_t;
-                            if sd.close.get(b).copied().unwrap_or(0.0) < trail_c
-                            || sd.close.get(b).copied().unwrap_or(0.0) < trail_t {
-                                exit_bar = b; break;
-                            }
-                        }
-
-                        if let Some(exit_px) = sd.close.get(exit_bar).copied() {
-                            let exit = exit_px * (1.0 - TAKER_FEE); // fee on exit
-                            let gross_ret = exit / entry - 1.0;
-                            equity *= 1.0 + gross_ret;
-                            equity_curve[exit_bar] = equity;
-                            bar = exit_bar + 1;
-                            entered = true; break;
-                        }
+                    if curr_close > max_close {
+                        entered_sym = Some(sym.clone());
+                        break;
                     }
                 }
             }
         }
-        if !entered { equity_curve[bar] = equity; bar += 1; }
+
+        if let Some(sym_name) = entered_sym {
+            let sd = sym_data.get(&sym_name).unwrap();
+            // Entry at next bar open (close of current bar minus fee)
+            let entry_px = sd.close.get(bar).copied().unwrap_or(0.0);
+            if entry_px <= 0.0 { bar += 1; continue; }
+            let entry = entry_px * (1.0 - TAKER_FEE);
+            let next_bar = bar + 1;
+            let n = sd.close.len();
+            let max_hold = (next_bar + TURTLE_HOLD_MAX).min(n.saturating_sub(1));
+            let mut exit_bar = max_hold;
+
+            let mut hh_c = sd.high.get(next_bar).copied().unwrap_or(0.0);
+            let mut hh_t = sd.high.get(next_bar).copied().unwrap_or(0.0);
+            for b in next_bar..=max_hold {
+                hh_c = hh_c.max(sd.high.get(b).copied().unwrap_or(0.0));
+                let atr_c = atr_region(&sd.high, &sd.low, &sd.close, CHAND_P, b);
+                let trail_c = hh_c - CHAND_M * atr_c;
+                hh_t = hh_t.max(sd.high.get(b).copied().unwrap_or(0.0));
+                let atr_t = atr_region(&sd.high, &sd.low, &sd.close, TURTLE_ATR_P, b);
+                let trail_t = hh_t - TURTLE_ATR_M * atr_t;
+                if sd.close.get(b).copied().unwrap_or(0.0) < trail_c
+                || sd.close.get(b).copied().unwrap_or(0.0) < trail_t {
+                    exit_bar = b; break;
+                }
+            }
+
+            // Track equity bar-by-bar through the position
+            // Start from next_bar (first bar IN the position) through exit_bar
+            for b in next_bar..=exit_bar {
+                // During the position, equity stays at entry value until exit
+                // equity_curve[b] = equity (the position hasn't closed yet)
+                // At exit bar, apply the P&L
+                if b == exit_bar {
+                    if let Some(exit_px) = sd.close.get(exit_bar).copied() {
+                        let exit = exit_px * (1.0 - TAKER_FEE);
+                        let gross_ret = exit / entry - 1.0;
+                        equity *= 1.0 + gross_ret;
+                        equity_curve[exit_bar] = equity;
+                    }
+                } else {
+                    equity_curve[b] = equity; // still holding at entry value
+                }
+            }
+            in_position = true;
+            bar = exit_bar + 1;
+        } else {
+            // No entry signal; stay flat
+            in_position = false;
+            equity_curve[bar] = equity; // flat — equity unchanged
+            bar += 1;
+        }
     }
 
-    // Forward fill remaining bars
+    // Forward fill from last bar to end of array
     for b in bar..total { equity_curve[b] = equity; }
     Ok(equity_curve)
 }
