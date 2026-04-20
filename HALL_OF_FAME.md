@@ -1,13 +1,13 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-*Last updated: 2026-04-20. CHAND params updated to P=11/M=2.25 (extensive P×M sweeps, 2026-04-20). Pre-2021 paired stress test: P=11/M=2.25 = 21/21 pass, ΔSH=-0.02 vs validated P=28/M=2.0 — equivalent robustness, NOT overfitting. Daily equity Sharpe 1.29 (daily compounded, honest).*
+*Last updated: 2026-04-20 (evening). CHAND params updated to P=11/M=2.25 (extensive P×M sweeps). EP updated 21→24 (re-optimized vs P=11/M=2.25). Global pass: 45/54 (83.3%). Pre-2021 paired stress test: P=11/M=2.25 = 21/21 pass, ΔSH=-0.02 vs validated P=28/M=2.0 — equivalent robustness, NOT overfitting. Daily equity Sharpe ~1.33 (daily compounded, honest).*
 
 ## PRODUCTION — DEPLOYABLE
 
 ### Turtle+Chandelier (NoDOGE Universe)
 - **Universe:** BTC, ETH, SOL, XRP, DOGE (ADA removed — portfolio drag in bull years)
 - **Pass rate:** 6/6 (100%) across all walk-forward windows (Base5)
-- **Global pass rate:** 43/54 (79.6%) — failures are LTC/EOS/BCH only
+- **Global pass rate:** 45/54 (83.3%) — failures are LTC/EOS/BCH only
 - **Avg OOS Sharpe:** 4.78 (9-universe global; Base5 avg Sharpe 5.46 — NOT directly comparable to equity Sharpe)
 - **Fee-adj Sharpe:** ~3.8-4.8 (22-33% fee drag applied, upper bound)
 - **Daily equity Sharpe:** ~1.29 (daily equity from 2078-day compounded curve, CHAND_MULT=2.25 — honest, methodology-verified. Walk-forward avg Sharpe 5.46 is inflated and not comparable.)
@@ -16,7 +16,7 @@
 
 **Frozen params (P=11/M=2.25 — current production, updated 2026-04-20 from P=15/M=1.50):**
 ```
-EP = 21              (entry lookback)
+EP = 24              (entry lookback — hyperopt 2026-04-20: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%). See hyperopt-2026-04-20-ep-reopt.md)
 ATR_PERIOD = 24      (Turtle ATR — fine hyperopt 2026-04-16)
 ATR_MULT = 0.0       (no entry filter — confirmed 2026-04-19)
 CHAND_PERIOD = 11     (full sweep CP∈[5..60 step2]×9 universes×54 windows, 2026-04-20: CP=11 wins +1.9% Sharpe vs CP=15. See hyperopt-2026-04-20-chand-period.md)
@@ -105,4 +105,4 @@ GLD's 53% pass is expected — gold trends less persistently than equities. Stil
 
 ---
 
-*Current production claim: "Sharpe ~1.0-1.3 on daily equity, 93% OOS pass, real but modest edge. Not Sharpe 5.0+ — that metric is not comparable."*
+*Current production claim: "Sharpe ~1.0-1.3 on daily equity, 83% OOS pass, real but modest edge. Not Sharpe 5.0+ — that metric is not comparable."*
