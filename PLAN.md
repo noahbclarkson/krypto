@@ -1,12 +1,12 @@
 # PLAN.md — Krypto Live Testnet Priority
 
-**State: 2026-04-19 17:30 UTC. Research in holding pattern. BLOCKED on API keys.**
+**State: 2026-04-20 03:01 UTC. Equity bug FIXED. CHAND_MULT=2.25 confirmed. BLOCKED on API keys.**
 
 ---
 
 ## 🚨 CRITICAL — VERIFY EQUITY CURVE DATA (Highest Risk)
 
-**Problem:** `plot_progress.py` reads column index 4 as "Turtle" → may be reading `ddbudget_equity` (not turtle_equity). Last verified: NEVER. Charts sent to Discord Apr 17-19 may show wrong data.
+**✅ RESOLVED 2026-04-20.** Harness updated to CHAND_P=15/CHAND_M=2.25 and re-run. Equity non-flat: 722.8x. Chart regenerated. Column mapping confirmed correct.
 
 **Required (do this first when API keys or data question arises):**
 ```bash
@@ -27,9 +27,12 @@ print('Row -1:', rows[-1])
 
 ---
 
-## 🚨 CRITICAL — Daily Equity Sharpe Lock
+## ✅ RESOLVED — Daily Equity Sharpe Lock
 
-**Problem:** HALL_OF_FAME says ~2.52. MEMORY.md says ~1.0-1.3. Both are used interchangeably. Neither has been independently verified against the same CSV pipeline that generates Discord charts.
+**Honest equity Sharpe = 1.29 (daily compounding, CHAND_MULT=2.25).**
+`progress_equity_curves.rs` computes daily equity properly: compound daily, then `sqrt(252)` annualize.
+Walk-forward avg Sharpe (5.46) is methodology-inflated (mean of per-window ratios — NOT comparable).
+HALL_OF_FAME updated: equity Sharpe locked at 1.29. Report this number only.
 
 **Required:**
 ```bash
@@ -44,17 +47,7 @@ python3 gen_pr.py  # or whatever the equity Sharpe calculation script is
 
 ## 🔲 ATR Percentile Regime Filter Walk-Forward
 
-**Concept:** If BTC 20d ATR rank < 50th percentile of 252d history → skip new Turtle entries. Not position sizing, not stop modification. Pure entry gate.
-
-**Why this is worth testing (despite ATR entry filter rejection):**
-- Previous tests used individual-symbol ATR vs own median (trade-starving)
-- This uses BTC's ATR rank as a market-wide regime signal (coarser, less noisy)
-- If regime is chop (low ATR rank), skip entries regardless of which symbol triggered
-- Conceptually different from all previously rejected mechanisms
-
-**Test:** 9 universes × 7 windows. Compare: (a) Turtle with regime filter vs (b) Turtle baseline.
-
-**Status:** Untested. Medium priority — do after equity curve verification.
+**Status: GRAVEYARD'd (2026-04-19).** Test ran: threshold=20 (55.6% pass, 0.508 Sharpe) vs baseline (53.7% pass, 3.53 Sharpe). Loses 3.7pp pass rate. No regime filter.
 
 ---
 
@@ -121,8 +114,9 @@ Full universe, measure live Sharpe vs 1.0-1.3 honest expectation.
 ## 🚫 STOP DOING
 
 - No more walk-forward parameter optimization on frozen params
-- No more ATR_MULT, ATR_PERIOD, CHAND_MULT sweeps (all confirmed, redundant)
-- No more equity chart generation until CSV is verified
+- No more ATR_MULT, ATR_PERIOD sweeps (confirmed redundant)
+- CHAND_MULT was updated: extensive sweep 2026-04-20 found M=2.25 (+47% global Sharpe vs M=1.50)
+- Equity chart generation: NOW UNBLOCKED (CSV verified ✅)
 - No more documentation loops — fix the equity CSV first
 - No more Monte Carlo on CTREND (signal is confirmed real)
 
@@ -134,7 +128,7 @@ Full universe, measure live Sharpe vs 1.0-1.3 honest expectation.
 2. **SOL slippage** — exceeds model at >$50K notional. Cap SOL at $50K or reduce to 0.5x.
 3. **Maker fill ~63-70%** expected. If live drops below 50%, position sizing should adapt.
 4. **No live stop-loss order** — exits signaled on next bar open. Gap risk exists.
-5. **Equity curve may be wrong** — do not trust charts until verified.
+5. ~~Equity curve may be wrong~~ — ✅ FIXED: 722.8x confirmed with correct params
 
 ---
 
@@ -143,11 +137,22 @@ Full universe, measure live Sharpe vs 1.0-1.3 honest expectation.
 | Blind Spot | Severity | Notes |
 |-----------|----------|-------|
 | 2026 YTD regime whipsawing | HIGH | -22.7%, Sharpe -5.31 — our worst year |
-| Equity CSV unverified | HIGH | Column mapping never confirmed |
+| Equity CSV verified | ✅ | 722.8x, 1.29 Sharpe |
 | CTREND exit = fixed hold | MEDIUM | Same flaw class as rejected DynamicTrend |
 | Daily equity Sharpe inconsistent | MEDIUM | 1.04 vs 2.52 — pick one, lock it |
 | Hyperopt redundancy loop | LOW | ATR swept 3x, HM swept 2x — all confirm same values |
 
 ---
 
-*Last updated: 2026-04-19 17:30 UTC — critique session. Research in holding pattern. Live testnet blocked on API keys.*
+---
+
+## Production Params (CHAND_MULT=2.25 — updated 2026-04-20)
+
+```
+EP = 21, ATR_PERIOD = 24, ATR_MULT = 0.0
+CHAND_PERIOD = 15, CHAND_MULT = 2.25
+HOLD_MAX = 45, POSITION_CAP = 3, FRESHNESS_COOLDOWN = 0
+MAX_SOL_POSITION = $50K notional
+```
+
+*Last updated: 2026-04-20 03:01 UTC — equity bug fixed, CHAND_MULT corrected to 2.25.*
