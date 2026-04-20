@@ -59,8 +59,10 @@ const WARMUP_BARS: usize = 200;
 const CS_LOOKBACK: usize = 63;
 const AD_PERIOD: usize = 8; // walk-forward winner 2026-04-14: p=8 Sharpe 2.00, 67% pass (p=5 rejected: Sharpe -1.20, 52%)
 
-// CHAND_P = 15 (hyperopt 2026-04-19: 2D joint sweep P×M winner. Replaces stale CP=20 from 2026-04-16.)
-const CHAND_P: usize = 15;         // hyperopt 2026-04-19: P=15/M=1.50 wins 7/9 universes vs P=20/M=2.15
+// CHAND_P = 11 (hyperopt 2026-04-20: full sweep P∈[5..60 step 2] × 9 universes × 54 windows. CP=11 wins globally:
+//   Sharpe 4.775 vs CP=15 baseline 4.688, +1.9%. Pass rate 43/54 (79.6%) vs 42/54 (77.8%).
+//   Wins on ALL production universes: Base5, NoDOGE, LargeCaps5, Legacy5BNB, Legacy4.)
+const CHAND_P: usize = 11;         // hyperopt 2026-04-20: CP=11 global winner. Matches src/live/config.rs + turtle_chandelier_walkforward.rs
 
 // CHAND_M = 2.25 (hyperopt 2026-04-20: EXTENSIVE sweep M∈[0.50,5.00] step 0.25. M=2.25 wins globally.)
 const CHAND_M: f64 = 2.25;         // hyperopt 2026-04-20: M=2.25 — +47% global Sharpe vs M=1.50, Base5 100% pass
@@ -248,7 +250,7 @@ async fn main() -> Result<()> {
     let ddbudget_daily = simulate_ddbudget(&ad_plans, &macd_plans, &small_plans, universe.steps);
 
     // Turtle+Chandelier: uses CHAND(15,1.50)+ATR(24,2.0) DUAL EXIT — updated 2026-04-20
-    // Params: CHAND_P=15, CHAND_M=1.50, TURTLE_ATR_P=24, TURTLE_ATR_M=2.0, VOL_LOOKBACK=2
+    // Params: CHAND_P=11, CHAND_M=2.25, TURTLE_ATR_P=24, TURTLE_ATR_M=2.0, VOL_LOOKBACK=2
     let turtle_daily = simulate_turtle_chandelier_equity(&universe)?;
 
     // Export CSV
