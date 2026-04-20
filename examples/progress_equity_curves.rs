@@ -72,7 +72,7 @@ const TURTLE_ATR_P: usize = 24;    // hyperopt 2026-04-17
 
 const TURTLE_ATR_M: f64 = 2.0;     // hyperopt 2026-04-12
 
-const TURTLE_EP: usize = 21;       // hyperopt 2026-04-10
+const TURTLE_EP: usize = 24;       // hyperopt 2026-04-20 re-opt: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%). See memory/hyperopt-2026-04-20-ep-reopt.md.
 
 const TURTLE_HOLD_MAX: usize = 45; // hyperopt 2026-04-11
 

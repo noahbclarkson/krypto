@@ -31,7 +31,7 @@ const CHAND_PERIOD: usize = 11; // hyperopt 2026-04-20: FULL sweep CP∈[5..60 s
 // CP=17 and CP=28 are nearly identical globally (44/54=81% both, Sharpe 4.38 vs 4.46).
 // Production keeps P=28 (already frozen, stable). CP=17 is a viable alternative if a future re-tune is desired.
 const CHAND_MULT: f64 = 2.25; // hyperopt 2026-04-20: EXTENSIVE sweep M∈[0.50,5.00] step 0.25 (19 values) × 9 universes × 7 windows. M=2.25 wins: global Sharpe 3.879 (+47% vs M=1.50 at 2.625), Base5 100% pass. See hyperopt-2026-04-20-chand-mult.md. Prior M=1.50 from 2D joint sweep limited to M∈[1.50,2.10].
-const TURTLE_ENTRY: usize = 21;
+const TURTLE_ENTRY: usize = 24; // hyperopt 2026-04-20 re-opt: EP=21 swept vs P=11/M=2.25 (new). EP=24 wins global 45/54 (83.3%) vs EP=21 43/54 (79.6%), +2% avg Sharpe. Validated across all 9 universes. See memory/hyperopt-2026-04-20-ep-reopt.md.
 const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. Dual exit: Chandelier OR Turtle ATR fires first. See hyperopt-2026-04-16-atr-period.md.
 // hyperopt 2026-04-17: VOL_LOOKBACK=55 found in 1-100 step1 sweep, BUT overfits on held-out W04/W05.
 // Held-out test (2026-04-17): VL=2 wins Base5 (+77.3%/+43.6%) vs VL=55 (+51.0%/+26.2%).
