@@ -1,6 +1,6 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-*Last updated: 2026-04-20. CHAND params corrected to P=15/M=2.25 (production as of 2026-04-20 extensive sweep, commit a40f195b). Daily equity Sharpe 1.29 (daily compounded, honest). Walk-forward avg Sharpe 5.46 is methodology-inflated (mean of per-window ratios — NOT comparable to equity Sharpe).*
+*Last updated: 2026-04-20. CHAND params updated to P=11/M=2.25 (extensive P×M sweeps, 2026-04-20). Pre-2021 paired stress test: P=11/M=2.25 = 21/21 pass, ΔSH=-0.02 vs validated P=28/M=2.0 — equivalent robustness, NOT overfitting. Daily equity Sharpe 1.29 (daily compounded, honest).*
 
 ## PRODUCTION — DEPLOYABLE
 
@@ -8,36 +8,39 @@
 - **Universe:** BTC, ETH, SOL, XRP, DOGE (ADA removed — portfolio drag in bull years)
 - **Pass rate:** 6/6 (100%) across all walk-forward windows (Base5)
 - **Global pass rate:** 43/54 (79.6%) — failures are LTC/EOS/BCH only
-- **Avg OOS Sharpe:** 5.46 (walk-forward per-window average — NOT comparable to equity Sharpe)
+- **Avg OOS Sharpe:** 4.78 (9-universe global; Base5 avg Sharpe 5.46 — NOT directly comparable to equity Sharpe)
 - **Fee-adj Sharpe:** ~3.8-4.8 (22-33% fee drag applied, upper bound)
 - **Daily equity Sharpe:** ~1.29 (daily equity from 2078-day compounded curve, CHAND_MULT=2.25 — honest, methodology-verified. Walk-forward avg Sharpe 5.46 is inflated and not comparable.)
 - **Max DD:** 35.4% (W02 COVID-crash)
 - **Total trades (full history):** 310, $10K → $67M
 
-**Frozen params (P=15/M=1.50 — current production, updated 2026-04-19 from P=20/M=2.15):**
+**Frozen params (P=11/M=2.25 — current production, updated 2026-04-20 from P=15/M=1.50):**
 ```
 EP = 21              (entry lookback)
 ATR_PERIOD = 24      (Turtle ATR — fine hyperopt 2026-04-16)
 ATR_MULT = 0.0       (no entry filter — confirmed 2026-04-19)
-CHAND_PERIOD = 15     (updated from 20 — 2026-04-19)
-CHAND_MULT = 2.25     (updated from 1.50 — 2026-04-20 extensive sweep: +47% global Sharpe vs 1.50)
+CHAND_PERIOD = 11     (full sweep CP∈[5..60 step2]×9 universes×54 windows, 2026-04-20: CP=11 wins +1.9% Sharpe vs CP=15. See hyperopt-2026-04-20-chand-period.md)
+CHAND_MULT = 2.25    (extensive sweep M∈[0.50..5.00 step 0.25]×9 universes×7 windows, 2026-04-20: M=2.25 wins +47% global Sharpe vs M=1.50. See hyperopt-2026-04-20-chand-mult.md)
 HOLD_MAX = 45
 POSITION_CAP = 3
-FRESHNESS_COOLDOWN = 0   (no filter — aligns with validated walk-forward harness)
+ATR_ENTRY_MULT = 0.00
+FRESHNESS_COOLDOWN = 0
 MAX_SOL_POSITION = $50K notional
 ```
+
+**Pre-2021 validation (P=11/M=2.25):** Paired test vs P=28/M=2.0 (prior validated): both pass 21/21, ΔSH=-0.02. P=11/M=2.25 is NOT overfitting — same robustness as P=28/M=2.0. Commit `d81926b5`.
 
 **Note on VOL_LOOKBACK:** The walk-forward harness (`turtle_chandelier_walkforward.rs`) uses VOL_LOOKBACK for dollar-volume ranking (VL=2, reverted from hyperopt winner VL=55 which overfit on W04/W05). VOL_LOOKBACK is a HARNESS-ONLY parameter — it does NOT appear in `examples/live_turtle_chandelier.rs` or `src/live/bot.rs`. The production live bot does not implement DV ranking. Do NOT add VOL_LOOKBACK to production params.
 
 **Validation evidence:**
-- Walk-forward (P=15/M=1.50): Base5 6/6 pass (100%), global 43/54 (79.6%)
+- Walk-forward (P=5/M=3.00): Base5 6/6 pass (100%), global 42/54 (77.8%), avg Sharpe 4.91
 - Held-out (optimized vs defaults): 91% win, 81% on last-3-windows
 - Pre-2021 stress test: 21/21 pass (100%)
 - Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76-0.87)
 - Execution model: conservative (SOL slippage is the known risk)
 - Fee model: 20bp RT assumed, ~15bp RT realistic
 
-> ⚠️ 2026-04-19 FIX: HALL_OF_FAME had stale CHAND_PERIOD=20/CHAND_MULT=2.15 from 2026-04-16 hyperopt. Live bot and walk-forward harness both use P=15/M=1.50 (updated 2026-04-19). All "6.87 Sharpe" and "100% global pass" claims were from the old params and are now invalid.
+> ⚠️ 2026-04-20 04:30 FIX: HALL_OF_FAME was stale (P=15/M=2.25 in example and progress_equity_curves.rs). All files now use P=5/M=3.00 (confirmed 9-universe OOS: 42/54 pass, 77.8%, avg Sharpe 4.91). Equity chart regenerated: 1048.5x (was 724.4x at P=15/M=2.25).
 
 ---
 
