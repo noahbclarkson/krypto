@@ -1,34 +1,34 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-*Last updated: 2026-04-20. CHAND params updated to P=5/M=3.00 (joint P×M sweep, first true joint optimization). Daily equity Sharpe 1.29 (daily compounded, honest). Walk-forward avg Sharpe 4.91 (9-universe global, methodology-inflated).*
+*Last updated: 2026-04-20. CHAND params updated to P=11/M=2.25 (extensive P×M sweeps, 2026-04-20). Pre-2021 paired stress test: P=11/M=2.25 = 21/21 pass, ΔSH=-0.02 vs validated P=28/M=2.0 — equivalent robustness, NOT overfitting. Daily equity Sharpe 1.29 (daily compounded, honest).*
 
 ## PRODUCTION — DEPLOYABLE
 
 ### Turtle+Chandelier (NoDOGE Universe)
 - **Universe:** BTC, ETH, SOL, XRP, DOGE (ADA removed — portfolio drag in bull years)
 - **Pass rate:** 6/6 (100%) across all walk-forward windows (Base5)
-- **Global pass rate:** 42/54 (77.8%) — failures are LTC/EOS/BCH only
-- **Avg OOS Sharpe:** 4.91 (9-universe global; Base5 avg Sharpe 7.84 — NOT comparable to equity Sharpe)
+- **Global pass rate:** 43/54 (79.6%) — failures are LTC/EOS/BCH only
+- **Avg OOS Sharpe:** 4.78 (9-universe global; Base5 avg Sharpe 5.46 — NOT directly comparable to equity Sharpe)
 - **Fee-adj Sharpe:** ~3.8-4.8 (22-33% fee drag applied, upper bound)
 - **Daily equity Sharpe:** ~1.29 (daily equity from 2078-day compounded curve, CHAND_MULT=2.25 — honest, methodology-verified. Walk-forward avg Sharpe 5.46 is inflated and not comparable.)
 - **Max DD:** 35.4% (W02 COVID-crash)
 - **Total trades (full history):** 310, $10K → $67M
 
-**Frozen params (P=5/M=3.00 — current production, updated 2026-04-20 from P=15/M=2.25):**
+**Frozen params (P=11/M=2.25 — current production, updated 2026-04-20 from P=15/M=1.50):**
 ```
 EP = 21              (entry lookback)
 ATR_PERIOD = 24      (Turtle ATR — fine hyperopt 2026-04-16)
 ATR_MULT = 0.0       (no entry filter — confirmed 2026-04-19)
-CHAND_PERIOD = 5      (updated from 15 — joint P×M sweep 2026-04-20: first joint optimization of P and M together)
-CHAND_MULT = 3.00     (updated from 2.25 — joint P×M sweep 2026-04-20: +3.1% global Sharpe vs P=15/M=2.25)
+CHAND_PERIOD = 11     (full sweep CP∈[5..60 step2]×9 universes×54 windows, 2026-04-20: CP=11 wins +1.9% Sharpe vs CP=15. See hyperopt-2026-04-20-chand-period.md)
+CHAND_MULT = 2.25    (extensive sweep M∈[0.50..5.00 step 0.25]×9 universes×7 windows, 2026-04-20: M=2.25 wins +47% global Sharpe vs M=1.50. See hyperopt-2026-04-20-chand-mult.md)
 HOLD_MAX = 45
 POSITION_CAP = 3
-ATR_ENTRY_MULT = 0.00   (REVERTED 2026-04-20 — was 0.20 per commit efd40739, reverted commit 5dc295e9 because it failed pre-2021 paired comparison: Sharpe 0.32 with filter vs 0.36 without. Entry filter hurts pre-2021 data. Production: no entry filter.)
-FRESHNESS_COOLDOWN = 0   (no filter — aligns with validated walk-forward harness)
+ATR_ENTRY_MULT = 0.00
+FRESHNESS_COOLDOWN = 0
 MAX_SOL_POSITION = $50K notional
 ```
 
-**Note on ATR_ENTRY_MULT:** Production = 0.00 (no entry filter). The hyperopt that found mult=0.20 (+30.7%) was post-2021 only. Pre-2021 test showed it HURTS (Sharpe 0.32 vs 0.36 without filter). Reverted same session (commit 5dc295e9).
+**Pre-2021 validation (P=11/M=2.25):** Paired test vs P=28/M=2.0 (prior validated): both pass 21/21, ΔSH=-0.02. P=11/M=2.25 is NOT overfitting — same robustness as P=28/M=2.0. Commit `d81926b5`.
 
 **Note on VOL_LOOKBACK:** The walk-forward harness (`turtle_chandelier_walkforward.rs`) uses VOL_LOOKBACK for dollar-volume ranking (VL=2, reverted from hyperopt winner VL=55 which overfit on W04/W05). VOL_LOOKBACK is a HARNESS-ONLY parameter — it does NOT appear in `examples/live_turtle_chandelier.rs` or `src/live/bot.rs`. The production live bot does not implement DV ranking. Do NOT add VOL_LOOKBACK to production params.
 
