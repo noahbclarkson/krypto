@@ -5,7 +5,7 @@
 //! Dual exit: whichever stop fires first.
 //!
 //! Production params (frozen 2026-04-21):
-//!   EP=24, CHAND(11, 2.25), ATR(24, 2.0), ATR_ENTRY_MULT=0.90, HM=12, CAP=3
+//!   EP=24, CHAND(7, 2.25), ATR(24, 2.0), ATR_ENTRY_MULT=0.85, HM=12, CAP=3
 //!   See HALL_OF_FAME.md and PLAN.md for full documentation.
 //!
 //! Freshness Filter: DISABLED (cd=0) — counterproductive with current tight Chandelier.
@@ -16,7 +16,7 @@ const FRESHNESS_COOLDOWN: usize = 0; // bars to wait after exit before re-entry 
 // Only enter if close >= max_close + ATR(24) * 0.90 (momentum confirmation filter).
 // Prior 6-window sweep found EM=1.0 winner — insufficient validation.
 // See memory/hyperopt-2026-04-21-atr-entry-mult-full.md.
-const ATR_ENTRY_MULT: f64 = 0.90;
+const ATR_ENTRY_MULT: f64 = 0.85;
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
