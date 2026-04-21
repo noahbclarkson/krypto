@@ -1,10 +1,13 @@
-//! CHAND_PERIOD Hyperopt with Equity Curve Export
+//! Equity Curve Export for Turtle+Chandelier hyperopt
 //!
-//! Full sweep of CHAND_PERIOD ∈ [5..60 step 2] × 9 universes × all windows
-//! with current production params: HOLD_MAX=12, ATR_ENTRY_MULT=0.90
+//! Runs simulation for a single CHAND_PERIOD value and exports
+//! per-window equity curves to CSV for charting comparison.
 //!
-//! Exports equity curves for baseline (winner), top runner-ups.
-//! Usage: cargo run --example chand_period_hyperopt --profile sweep
+//! Usage: cargo run --example equity_curve_export --profile sweep -- CHAND_PERIOD 15 11 20
+//!
+//! Exports: snapshots/equity_<param>_<value>.csv
+//!   Columns: universe, window, ret_pct, sharpe, max_dd_pct, trades, pass
+//!   equity_curve: JSON array of equity values (bar 0 = 1.0)
 
 use anyhow::Result;
 use krypto::data::loader::DataLoader;
@@ -41,7 +44,10 @@ const UNIVERSES: &[(&str, &[&str])] = &[
 ];
 
 struct SymData {
-    close: Vec<f64>, high: Vec<f64>, low: Vec<f64>, vol: Vec<f64>,
+    close: Vec<f64>,
+    high: Vec<f64>,
+    low: Vec<f64>,
+    vol: Vec<f64>,
 }
 
 fn atr_at(high: &[f64], low: &[f64], close: &[f64], period: usize, idx: usize) -> f64 {
@@ -77,7 +83,9 @@ fn turtle_signal(close: &[f64], high: &[f64], low: &[f64], entry_period: usize, 
             return curr_close >= max_close + atr_mult * atr_val;
         }
         breakout
-    } else { false }
+    } else {
+        false
+    }
 }
 
 fn annualised_sharpe(daily_rets: &[f64]) -> f64 {
@@ -100,15 +108,27 @@ fn max_dd_from(equity: &[f64]) -> f64 {
 }
 
 struct WfResult {
-    ret: f64, sharpe: f64, max_dd: f64, trades: usize, win_rate: f64, pass: bool,
+    ret: f64,
+    sharpe: f64,
+    max_dd: f64,
+    trades: usize,
+    win_rate: f64,
+    pass: bool,
     equity_curve: Vec<f64>,
 }
 
-fn run_sim(sym_data: &HashMap<String, SymData>, symbols: &[String], chand_p: usize, test_start: usize, test_end: usize) -> WfResult {
+fn run_sim_with_equity(
+    sym_data: &HashMap<String, SymData>,
+    symbols: &[String],
+    chand_p: usize,
+    test_start: usize,
+    test_end: usize,
+) -> WfResult {
     let mut equity = 1.0_f64;
     let mut equity_curve = vec![1.0_f64];
     let mut peak = equity;
-    let mut wins = 0usize; let mut total_trades = 0usize;
+    let mut wins = 0usize;
+    let mut total_trades = 0usize;
     let mut daily_rets = Vec::new();
 
     let mut bar = test_start;
@@ -125,7 +145,12 @@ fn run_sim(sym_data: &HashMap<String, SymData>, symbols: &[String], chand_p: usi
         }
         scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
         let top_syms: Vec<String> = scores.into_iter().take(POSITION_CAP).map(|(s, _)| s.to_string()).collect();
-        if top_syms.is_empty() { equity_curve.push(equity); bar += 1; continue; }
+
+        if top_syms.is_empty() {
+            equity_curve.push(equity);
+            bar += 1;
+            continue;
+        }
 
         let mut entered = false;
         for sym in &top_syms {
@@ -136,6 +161,7 @@ fn run_sim(sym_data: &HashMap<String, SymData>, symbols: &[String], chand_p: usi
                         let entry = entry_px * (1.0 - TAKER_FEE);
                         let entry_bar_next = bar + 1;
                         let n = sd.close.len();
+
                         let mut highest_high_chand = sd.high[entry_bar_next];
                         let mut lowest_low_turtle = sd.low[entry_bar_next];
                         let max_bar = (entry_bar_next + HOLD_MAX).min(n.saturating_sub(1));
@@ -148,27 +174,40 @@ fn run_sim(sym_data: &HashMap<String, SymData>, symbols: &[String], chand_p: usi
                             let atr_turtle = atr_at(&sd.high, &sd.low, &sd.close, TURTLE_ATR_PERIOD, b);
                             let trail_turtle = lowest_low_turtle - TURTLE_ATR_MULT * atr_turtle;
                             if sd.close[b] < trail_chand || sd.close[b] < trail_turtle {
-                                exit_bar = b; break;
+                                exit_bar = b;
+                                break;
                             }
                         }
+
                         if let Some(&exit_px) = sd.close.get(exit_bar) {
                             let exit = exit_px * (1.0 - TAKER_FEE);
                             let gross_ret = exit / entry - 1.0;
                             let bars_held = (exit_bar as i64 - entry_bar_next as i64).max(1) as usize;
+
                             wins += if gross_ret > 0.0 { 1 } else { 0 };
                             total_trades += 1;
                             equity *= 1.0 + gross_ret;
+
                             let avg_daily = gross_ret / bars_held as f64;
-                            for _ in 0..bars_held { daily_rets.push(avg_daily); }
+                            for _ in 0..bars_held {
+                                daily_rets.push(avg_daily);
+                            }
+
                             if equity > peak { peak = equity; }
                             equity_curve.push(equity);
-                            bar = exit_bar + 1; entered = true; break;
+                            bar = exit_bar + 1;
+                            entered = true;
+                            break;
                         }
                     }
                 }
             }
         }
-        if !entered { equity_curve.push(equity); bar += 1; }
+
+        if !entered {
+            equity_curve.push(equity);
+            bar += 1;
+        }
     }
 
     let ret = (equity - 1.0) * 100.0;
@@ -176,11 +215,15 @@ fn run_sim(sym_data: &HashMap<String, SymData>, symbols: &[String], chand_p: usi
     let max_dd = max_dd_from(&equity_curve);
     let win_rate = if total_trades > 0 { wins as f64 / total_trades as f64 * 100.0 } else { 0.0 };
     let pass = total_trades >= MIN_TRADES && ret > 0.0;
+
     WfResult { ret, sharpe, max_dd, trades: total_trades, win_rate, pass, equity_curve }
 }
 
+/// Resample equity curves to fixed length by linear interpolation
 fn resample_curve(curve: &[f64], target_len: usize) -> Vec<f64> {
-    if curve.len() == target_len { return curve.to_vec(); }
+    if curve.len() == target_len {
+        return curve.to_vec();
+    }
     if curve.len() < 2 || target_len < 2 {
         let v = curve.first().copied().unwrap_or(1.0);
         return vec![v; target_len];
@@ -193,7 +236,9 @@ fn resample_curve(curve: &[f64], target_len: usize) -> Vec<f64> {
         let frac = pos - idx as f64;
         let v = if idx + 1 < curve.len() {
             curve[idx] * (1.0 - frac) + curve[idx + 1] * frac
-        } else { curve[idx] };
+        } else {
+            curve[idx]
+        };
         out.push(v);
     }
     out
@@ -201,22 +246,36 @@ fn resample_curve(curve: &[f64], target_len: usize) -> Vec<f64> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() < 3 {
+        eprintln!("Usage: equity_curve_export <param> <baseline> [winner] [runnerup1] ...");
+        eprintln!("Example: equity_curve_export CHAND_PERIOD 15 11 20 28");
+        std::process::exit(1);
+    }
+
+    let param = &args[1];
+    let baseline: usize = args[2].parse().unwrap_or(15);
+    let values: Vec<usize> = args[3..].iter().map(|s| s.parse().unwrap_or(baseline)).collect();
+    let all_values = std::iter::once(baseline).chain(values.into_iter()).collect::<Vec<_>>();
+    
+    eprintln!("==== Equity Curve Export ====");
+    eprintln!("Parameter: {} | Values: {:?}", param, all_values);
+
     let t0 = Instant::now();
-    // Sweep range: CP ∈ {5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,40,45,50,55,60}
-    let sweep_values: [usize; 21] = [5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,40,45,50,55,60];
-
-    eprintln!("==== CHAND_PERIOD Hyperopt (current prod params) ====");
-    eprintln!("Sweep: {:?}\n", sweep_values);
-
     let loader = DataLoader::new(None, None);
     let mut all_syms: std::collections::HashSet<String> = std::collections::HashSet::new();
-    for (_, syms) in UNIVERSES { for &s in *syms { all_syms.insert(s.to_string()); } }
+    for (_, syms) in UNIVERSES {
+        for &s in *syms { all_syms.insert(s.to_string()); }
+    }
 
     let mut raw_cache: HashMap<String, DataFrame> = HashMap::new();
     let mut min_len = usize::MAX;
     for sym in all_syms.iter() {
         match loader.fetch_with_cache(sym.as_str(), "1d", CANDLES).await {
-            Ok(df) => { min_len = min_len.min(df.height()); raw_cache.insert(sym.clone(), df); }
+            Ok(df) => {
+                min_len = min_len.min(df.height());
+                raw_cache.insert(sym.clone(), df);
+            }
             Err(e) => { eprintln!("  WARNING: {} load failed: {}", sym, e); }
         }
     }
@@ -226,35 +285,40 @@ async fn main() -> Result<()> {
     for sym in &all_syms {
         if let Some(df) = raw_cache.get(sym) {
             let n_min = df.height().min(n);
-            macro_rules! col_vec { ($name:expr) => {{
-                let chunked = df.column($name)?.f64()?;
-                chunked.into_iter().filter_map(|x| x).take(n_min).collect::<Vec<_>>()
-            }}; }
+            macro_rules! col_vec {
+                ($name:expr) => {{
+                    let chunked = df.column($name)?.f64()?;
+                    chunked.into_iter().filter_map(|x| x).take(n_min).collect::<Vec<_>>()
+                }};
+            }
             sym_data_map.insert(sym.clone(), SymData {
                 close: col_vec!("close"), high: col_vec!("high"),
                 low: col_vec!("low"), vol: col_vec!("volume"),
             });
         }
     }
-    eprintln!("Loaded {} symbols, {} bars\n", sym_data_map.len(), n);
+    eprintln!("Loaded {} symbols, {} bars", sym_data_map.len(), n);
 
-    // Results storage: (cp, global_pass, global_total, avg_sharpe, avg_ret, global_trades, pass_pct)
-    let mut results: Vec<(usize, usize, usize, f64, f64, usize, f64)> = Vec::new();
-    // Equity storage for top candidates
-    let mut equity_by_cp: HashMap<usize, Vec<Vec<f64>>> = HashMap::new();
-
-    for &cp in &sweep_values {
-        let mut global_pass = 0usize; let mut global_total = 0usize;
+    // Run each config and export equity curves
+    for &cp in &all_values {
+        let mut csv_lines = vec!["universe,window,ret_pct,sharpe,max_dd_pct,trades,win_rate,pass,equity_json".to_string()];
+        
+        let mut global_pass = 0usize;
+        let mut global_total = 0usize;
         let mut global_trades = 0usize;
-        let mut all_sharpe = Vec::new(); let mut all_ret = Vec::new();
-        let mut window_curves: Vec<Vec<f64>> = Vec::new();
+        let mut all_sharpe = Vec::new();
+        let mut all_ret = Vec::new();
 
         for &(label, symbols) in UNIVERSES {
             let symbols: Vec<String> = symbols.iter().map(|s| s.to_string()).collect();
             let all_loaded = symbols.iter().all(|s| sym_data_map.contains_key(s));
             if !all_loaded { continue; }
+
             let total_windows = n.saturating_sub(TRAIN_BARS + TEST_BARS) / TEST_BARS;
             if total_windows == 0 { continue; }
+
+            let mut window_results: Vec<WfResult> = Vec::new();
+            let mut passed = 0usize;
 
             for wi in 0..total_windows {
                 let train_end = TRAIN_BARS + wi * TEST_BARS;
@@ -262,79 +326,45 @@ async fn main() -> Result<()> {
                 let test_end = (test_start + TEST_BARS).min(n);
                 if test_end.saturating_sub(test_start) < 5 { continue; }
 
-                let r = run_sim(&sym_data_map, &symbols, cp, test_start, test_end);
-                if r.pass { global_pass += 1; } global_total += 1;
+                let r = run_sim_with_equity(&sym_data_map, &symbols, cp, test_start, test_end);
+
+                let eq_json = r.equity_curve.iter()
+                    .map(|v| format!("{:.6}", v))
+                    .collect::<Vec<_>>()
+                    .join(",");
+
+                csv_lines.push(format!(
+                    "{},{},{:.2},{:.4},{:.2},{},{:.2},{},\"[{}]\"",
+                    label, wi, r.ret, r.sharpe, r.max_dd, r.trades, r.win_rate, r.pass, eq_json
+                ));
+
+                if r.pass { passed += 1; global_pass += 1; }
+                global_total += 1;
                 global_trades += r.trades;
                 all_sharpe.push(r.sharpe);
                 all_ret.push(r.ret);
-                window_curves.push(r.equity_curve);
+                window_results.push(r);
             }
+
+            let pass_pct = passed as f64 / total_windows as f64 * 100.0;
+            eprintln!("  {} CP={}: {}/{} windows pass ({:.0}%)", label, cp, passed, total_windows, pass_pct);
         }
 
         let avg_sharpe: f64 = all_sharpe.iter().sum::<f64>() / all_sharpe.len().max(1) as f64;
         let avg_ret: f64 = all_ret.iter().sum::<f64>() / all_ret.len().max(1) as f64;
         let fail_pct = (global_total - global_pass) as f64 / global_total.max(1) as f64 * 100.0;
+        eprintln!("  GLOBAL: {}/{} pass ({:.0}% fail), avg Sharpe {:.3}, {} trades",
+            global_pass, global_total, fail_pct, avg_sharpe, global_trades);
 
-        eprintln!("CP={:2}: {}/{} pass ({:.0}% fail), Sharpe={:.3}, Ret={:.1}%, Trades={}",
-            cp, global_pass, global_total, fail_pct, avg_sharpe, avg_ret, global_trades);
-
-        results.push((cp, global_pass, global_total, avg_sharpe, avg_ret, global_trades, fail_pct));
-
-        // Store equity curves for key candidates (baseline + top 3 sharpe winners)
-        equity_by_cp.insert(cp, window_curves);
+        let out_path = format!("snapshots/equity_{}_{}.csv", param, cp);
+        let mut f = File::create(&out_path)?;
+        for line in &csv_lines { writeln!(f, "{}", line)?; }
+        eprintln!("  → {}\n", out_path);
     }
 
-    // Sort by Sharpe to find winners
-    let mut sorted = results.clone();
-    sorted.sort_by(|a, b| b.3.partial_cmp(&a.3).unwrap());
+    eprintln!("Runtime: {:?}", t0.elapsed());
+    eprintln!("\nChart with: python3 charts/plot_comparison.py {} {}",
+        param, all_values.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(" "));
 
-    eprintln!("\n==== SWEEP RESULTS (sorted by Sharpe) ====");
-    eprintln!("{:>4} {:>8} {:>8} {:>8} {:>10} {:>10} {:>8}", "CP", "Pass", "Total", "Pass%", "Sharpe", "AvgRet%", "Trades");
-    for r in &sorted {
-        let pass_pct = r.1 as f64 / r.2.max(1) as f64 * 100.0;
-        eprintln!("{:4} {:8} {:8} {:7.1}% {:10.3} {:10.1} {:8}", r.0, r.1, r.2, pass_pct, r.3, r.4, r.5);
-    }
-
-    let best_cp = sorted[0].0;
-    let second_cp = sorted.get(1).map(|r| r.0).unwrap_or(best_cp);
-    let third_cp = sorted.get(2).map(|r| r.0).unwrap_or(best_cp);
-    eprintln!("\nWINNER: CP={} (Sharpe {:.3})", best_cp, sorted[0].3);
-    eprintln!("Runner-up 1: CP={} (Sharpe {:.3})", second_cp, sorted.get(1).map(|r| r.3).unwrap_or(0.0));
-    eprintln!("Runner-up 2: CP={} (Sharpe {:.3})", third_cp, sorted.get(2).map(|r| r.3).unwrap_or(0.0));
-
-    // Save summary CSV
-    let mut csv_lines = vec!["cp,pass,total,pass_pct,sharpe,avg_ret_pct,trades".to_string()];
-    for r in &results {
-        let pass_pct = r.1 as f64 / r.2.max(1) as f64 * 100.0;
-        csv_lines.push(format!("{},{},{},{:.2},{},{:.2},{}", r.0, r.1, r.2, pass_pct, r.3, r.4, r.5));
-    }
-    let csv_path = "snapshots/chand_period_hyperopt_summary.csv";
-    let mut f = File::create(csv_path)?;
-    for line in &csv_lines { writeln!(f, "{}", line)?; }
-    eprintln!("\nSummary: {}", csv_path);
-
-    // Export equity curves for baseline(11), winner(best_cp), and runners-up
-    let export_cps = vec![11usize, best_cp, second_cp, third_cp];
-    let export_labels = vec!["baseline", "winner", "runnerup1", "runnerup2"];
-
-    for (&cp, &label) in export_cps.iter().zip(export_labels.iter()) {
-        if let Some(curves) = equity_by_cp.get(&cp) {
-            let mut csv_lines = vec!["universe,window,bar_idx,equity".to_string()];
-            let mut uidx = 0usize;
-            for curve in curves {
-                let resampled = resample_curve(curve, 252);
-                for (bi, &eq) in resampled.iter().enumerate() {
-                    csv_lines.push(format!("{},{},{},{:.6}", uidx, bi / 252, bi % 252, eq));
-                }
-                uidx += 1;
-            }
-            let out = format!("snapshots/equity_chand_cp_{}.csv", cp);
-            let mut f = File::create(&out)?;
-            for line in &csv_lines { writeln!(f, "{}", line)?; }
-            eprintln!("Equity curve {} (CP={}): {}", label, cp, out);
-        }
-    }
-
-    eprintln!("\nRuntime: {:?}", t0.elapsed());
     Ok(())
 }

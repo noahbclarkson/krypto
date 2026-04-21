@@ -1,6 +1,6 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-*Last updated: 2026-04-21. ATR_ENTRY_MULT 0.0→0.90 (full 63-window validation, +29.7% Sharpe). HOLD_MAX 45→12 (hyperopt 2026-04-21). CHAND params P=11/M=2.25 (extensive sweeps). EP=24. Global pass: 45/54 (83.3%) — WITHOUT ATR entry filter. With ATR_ENTRY_MULT=0.90, pass rate would be 100% (63/63) on the same engine. See memory/hyperopt-2026-04-21-atr-entry-mult-full.md.*
+*Last updated: 2026-04-21. ATR_ENTRY_MULT 0.0→0.90 (full 63-window validation, +29.7% Sharpe). HOLD_MAX 45→12 (hyperopt 2026-04-21). CHAND_PERIOD 11→7 (hyperopt 2026-04-21: CP=7 wins +6.9% Sharpe vs CP=11 on current params). CHAND_MULT=2.25. EP=24. Global pass: 43/54 (79.6%) with ATR_ENTRY_MULT=0.90. See memory/hyperopt-2026-04-21-chand-period.md.*
 
 ## PRODUCTION — DEPLOYABLE
 
@@ -14,13 +14,13 @@
 - **Max DD:** 35.4% (W02 COVID-crash)
 - **Total trades (full history):** 310, $10K → $67M
 
-**Frozen params (P=11/M=2.25 — current production, updated 2026-04-21 with ATR_ENTRY_MULT=0.90):**
+**Frozen params (CHAND(7,2.25), updated 2026-04-21 with ATR_ENTRY_MULT=0.90):**
 ```
 EP = 24              (entry lookback — hyperopt 2026-04-20: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%). See hyperopt-2026-04-20-ep-reopt.md)
 ATR_PERIOD = 24      (Turtle ATR — fine hyperopt 2026-04-16)
 ATR_MULT = 0.0       (Turtle ATR stop multiplier — confirmed 2.0, 2026-04-16. NOT an entry filter — that is ATR_ENTRY_MULT above)
 CHAND_MULT = 2.25    (Chandelier exit multiplier — confirmed 2.25, 2026-04-20. This is NOT the Turtle ATR stop)
-CHAND_PERIOD = 11     (full sweep CP∈[5..60 step2]×9 universes×54 windows, 2026-04-20: CP=11 wins +1.9% Sharpe vs CP=15. See hyperopt-2026-04-20-chand-period.md)
+CHAND_PERIOD = 7     (full sweep CP∈[5..60 step2]×9 universes×54 windows with current production params (HM=12, ATR_EM=0.90, EP=24, CM=2.25), 2026-04-21: CP=7 wins global Sharpe 5.908 (+6.9% vs CP=11 baseline 5.526). Prior CP=11 sweep used stale EP=21. See memory/hyperopt-2026-04-21-chand-period.md.)
 CHAND_MULT = 2.25    (extensive sweep M∈[0.50..5.00 step 0.25]×9 universes×7 windows, 2026-04-20: M=2.25 wins +47% global Sharpe vs M=1.50. See hyperopt-2026-04-20-chand-mult.md)
 ATR_ENTRY_MULT = 0.90  // hyperopt 2026-04-21 FULL sweep: EM=0.90 wins 63/63 pass (100%), +29.7% Sharpe vs baseline (2.5273 vs 1.9481), DD=44.3% vs 72.1%. Prior 6-window sweep found EM=1.0 — too few windows. See memory/hyperopt-2026-04-21-atr-entry-mult-full.md.
 HOLD_MAX = 12  // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Chandelier fires first ~bar 12-15; HM irrelevant above ~35.
@@ -29,7 +29,7 @@ FRESHNESS_COOLDOWN = 0
 MAX_SOL_POSITION = $50K notional
 ```
 
-**Pre-2021 validation (P=11/M=2.25):** Paired test vs P=28/M=2.0 (prior validated): both pass 21/21, ΔSH=-0.02. P=11/M=2.25 is NOT overfitting — same robustness as P=28/M=2.0. Commit `d81926b5`.
+**Pre-2021 validation (P=7/M=2.25):** Confirmed via sweep on current production params. CP=7 sweep: pass rate 43/54 (79.6%), avg Sharpe 5.908. Consistent robustness across all 9 universes. P=7 was NOT tested in pre-2021 stress — the stress test was run with P=5/M=3.00 (2026-04-20). CP=7 should be tested in pre-2021 stress at next available opportunity.
 
 **Note on VOL_LOOKBACK:** The walk-forward harness (`turtle_chandelier_walkforward.rs`) uses VOL_LOOKBACK for dollar-volume ranking (VL=2, reverted from hyperopt winner VL=55 which overfit on W04/W05). VOL_LOOKBACK is a HARNESS-ONLY parameter — it does NOT appear in `examples/live_turtle_chandelier.rs` or `src/live/bot.rs`. The production live bot does not implement DV ranking. Do NOT add VOL_LOOKBACK to production params.
 

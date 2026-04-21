@@ -25,7 +25,7 @@ const POSITION_CAP: usize = 3; // hyperopt 2026-04-11: CAP=3 wins over CAP=2 (+1
 // Only window sensitive to MT=3 vs MT=7 is Legacy5BNB W04 (6 trades → PASS at MT=3, FAIL at MT=7).
 // MIN_TRADES does NOT affect strategy returns — only pass/fail label and statistical reliability.
 const MIN_TRADES: usize = 3;
-const CHAND_PERIOD: usize = 11; // hyperopt 2026-04-20: FULL sweep CP∈[5..60 step 2] × 9 universes × 54 windows. CP=11 wins global (Sharpe 4.775 vs CP=15 baseline 4.688, +1.9%). Pass rate 79.6% vs 77.8%. Consistent across all production universes. See memory/hyperopt-2026-04-20-chand-period.md.
+const CHAND_PERIOD: usize = 7; // hyperopt 2026-04-21: EXTENSIVE sweep CP∈[5..60 step 2] × 9 universes × 54 windows with current production params (HM=12, ATR_EM=0.90, EP=24, CM=2.25). CP=7 wins global Sharpe 5.908 (+6.9% vs CP=11 baseline 5.526). Pass rate 79.6% (identical). Prior CP=11 sweep used stale EP=21 (not current EP=24). See memory/hyperopt-2026-04-21-chand-period.md.
 // Extended fine-sweep 2026-04-16: CP=15-50 step=1 on Base5. CP=17 emerged with best Sharpe (5.83 vs CP=28=5.76 on Base5).
 // However, 9-way robustness check (all 9 universes): CP=20 slightly edges CP=17 (45/54=83% vs 44/54=81% global pass, Sharpe 4.51 vs 4.38).
 // CP=17 and CP=28 are nearly identical globally (44/54=81% both, Sharpe 4.38 vs 4.46).
