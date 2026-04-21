@@ -16,7 +16,7 @@ use std::time::Instant;
 const CANDLES: u32 = 3000;
 const TRAIN_BARS: usize = 252;
 const TEST_BARS: usize = 252;
-const HOLD_MAX: usize = 45; // hyperopt 2026-04-11: HM=45 Sharpe winner across 9/9 universes (+1.5% vs HM=60 baseline). Full sweep 10-200 step 5 (39 values). Chandelier exits most trades before 45 bars; HM>=50 produces identical results. HM=15-25 gives +2pp pass rate but -10% Sharpe.
+const HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 baseline (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Full sweep 19 values [5-180] with production params CHAND(11,2.25)/EP=24. HM=45 plateau: all HM≥35 produce IDENTICAL results (Chandelier fires first ~bar 12-15). HM=12 is tighter, exits before Chandelier in edge cases, better Sharpe. Pass rate: 96.3% vs 92.6% (+3.7pp). Update: 2026-04-21. See memory/hyperopt-2026-04-21-hold-max.md.
 const TAKER_FEE: f64 = 0.001;
 const POSITION_CAP: usize = 3; // hyperopt 2026-04-11: CAP=3 wins over CAP=2 (+1.4% Sharpe, +13pp pass rate, 91% vs 78%)
 // MIN_TRADES=3: hyperopt 2026-04-16 sweep across 14 values × 9 universes. MT=1-6 produce IDENTICAL
