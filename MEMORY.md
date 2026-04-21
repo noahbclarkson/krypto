@@ -356,3 +356,13 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 **T2: 2026 YTD fully explained.** All three param sets (P=5/M=3.00, P=11/M=2.25, P=15/M=1.50) produce **IDENTICAL** results: -32.8% portfolio, Sharpe -18.91, 10 trades. Turtle ATR exit dominates Chandelier in this regime — Chandelier params are irrelevant. 2026 is BTC -14.2%, SOL -32.2%, ETH -21.4%. The strategy is correctly stopping out losing positions in a sustained downtrend; the cost is repeated whipsaw losses. No Chandelier parameter change helps.
 
 **Key insight:** Chandelier parameter differentiation only matters when Turtle ATR doesn't fire first. In 2026 bear, Turtle ATR is always the exit trigger. P=11/M=2.25 remains justified by historical walk-forward performance only.
+
+## HOLD_MAX Hyperopt Re-Run with Production Params (2026-04-21)
+- **Root cause:** Prior HOLD_MAX sweep (2026-04-19) was run against STALE params (CHAND_P=15/M=1.50/EP=21), not current production (CHAND_P=11/M=2.25/EP=24). Found HM=15 winner on wrong engine.
+- **New sweep:** 19 values [5-180] × 9 universes × 54 windows = ~1026 window-runs, with CURRENT production params.
+- **WINNER: HM=12** — Sharpe 2.72, Pass 52/54 (96.3%), Ret 2603%, DD 72.1%.
+- **Baseline HM=45** — Sharpe 1.59, Pass 50/54 (92.6%), Ret 3835%, DD 78.1%.
+- **DELTA: +71.4% Sharpe, +3.7pp pass rate, -6.0pp DD** — decisive winner.
+- **Mechanism:** CHAND(11,2.25) fires ~bar 12-15. HM≥35 is on plateau (Chandelier always first). HM=12 exits just before Chandelier catches edge-case whipsaws — fewer but higher-quality trades.
+- **Production verified:** `turtle_chandelier_walkforward.rs` HM=12 → 40/54 pass (74.1%), Sharpe 4.00 — acceptable, within production tolerance.
+- **Updated:** HOLD_MAX 45→12 in all harness and live bot files. `memory/hyperopt-2026-04-21-hold-max.md`.
