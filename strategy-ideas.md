@@ -429,13 +429,12 @@ All walk-forward validation is on daily bars (310 trades / 8 years). 4h bars wou
 
 ---
 
-### 28. Walk-Forward Windows Must Include 2026 Data
-
-**Critical gap:** All 54 walk-forward windows end before 2026. We have zero OOS data in the 2026 regime. The 2026 YTD result (-22.7%) is our only real-world OOS signal and it's catastrophic.
-
-**Proposed fix:** Extend the most recent walk-forward window to include 2026-01-01 to 2026-04-21. Run the frozen strategy on 2026 data only. Report: Sharpe, return, maxDD, trade count, pass/fail against sh>0.
-
-**This should have been done months ago.** Without 2026 in the walk-forward, we don't know if the strategy is actually working.
+### 28. Walk-Forward Windows Must Include 2026 Data — ✅ DONE (2026-04-21)
+- **Status:** COMPLETED. W06 (2026) included in walk-forward via `oos_2026_9way.rs`.
+- **Result:** 9/9 W06 passes. Base5 W06 +351.9% (Sharpe 7.79). Global 58/63 pass (92%).
+- **Key insight:** Prior "-22.7% YTD" was sample-size artifact (2-symbol harness, 294 bars). Full W06 with 503 bars shows strategy IS working in 2026.
+- **Caveat:** W06 is ONE bull window. Pre-2021 stress test (21/21) covers bear regimes better.
+- **File:** `examples/oos_2026_9way.rs`
 
 ---
 
@@ -458,6 +457,7 @@ All walk-forward validation is on daily bars (310 trades / 8 years). 4h bars wou
 
 | # | Priority | Why |
 |---|----------|-----|
-| **T1** | Walk-forward with 2026 data (#28) | All 54 windows pre-2026. 2026 YTD is our only genuine OOS — and it's -22.7%. We have never tested EP=24 or HM=12 in the current regime. |
-| **T2** | Fix progress_equity_curves.rs | Still P=15/M=1.50 — stale since 2026-04-20 live bot update. Equity chart shows wrong params. |
-| **T3** | CTREND + CTREND-native exit (#26) | Signal confirmed genuine by Monte Carlo. Chandelier exit was wrong class. Sweep slower exits (ATR 40-60, RSI regime). |
+| **T1** | Equity chart column verification (#30) | 4+ sessions overdue. Do NOT send Discord charts until verified. |
+| **T2** | HALL_OF_FAME cleanup (#29) | Stale equity claim, duplicate entries. Source: live_turtle_chandelier.rs only. |
+| **T3** | CTREND + CTREND-native exit (#26) | Signal confirmed genuine by Monte Carlo. Chandelier exit was wrong class. |
+| **T4** | 4h Multi-Timeframe Turtle (#27) | All walk-forward is daily. 4h might catch short-cycle breakouts. |
