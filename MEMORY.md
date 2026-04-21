@@ -384,10 +384,10 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 
 **Updated files:** `src/live/config.rs`, `examples/live_turtle_chandelier.rs`, `examples/turtle_chandelier_walkforward.rs`, `examples/hold_max_prod_sweep.rs`, HALL_OF_FAME.md.
 
-**All hyperopts truly exhausted.** Production params frozen. Only live testnet (blocked on API keys) advances knowledge.
+**CHAND_PERIOD Hyperopt (2026-04-21 afternoon):** Extended sweep CP∈[5..60 step 2] × 9 universes × 54 windows with current production params (EP=24, HM=12, ATR_ENTRY_MULT=0.90, CHAND_MULT=2.25). **WINNER: CP=7** — Sharpe 5.908 (+6.9% vs CP=11 baseline 5.526), pass rate 43/54 (identical), avg return 99.5% (+20.7pp vs baseline 78.8%), 12 fewer trades. Prior CP=11 sweep (2026-04-20) was run with stale EP=21 — cross-parameter interaction shifted optimal CP from 11→7. Walk-forward confirmed: 43/54 pass, Sharpe 5.908, 507 trades. Updated CHAND_PERIOD from 11→7 in all files. See `memory/hyperopt-2026-04-21-chand-period.md`. **All core params now truly exhausted with current params. Live testnet is the only path forward.**
 
-**Production params (FINAL — 2026-04-21):**
+**Production params (FINAL — 2026-04-21, updated CHAND_PERIOD 2026-04-21 afternoon):**
 ```
-EP=24, CHAND_PERIOD=11, CHAND_MULT=2.25, HOLD_MAX=12,
-ATR_PERIOD=24, ATR_MULT=0.0, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
+EP=24, CHAND_PERIOD=7, CHAND_MULT=2.25, HOLD_MAX=12,
+ATR_PERIOD=24, ATR_ENTRY_MULT=0.90, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
 ```
