@@ -62,7 +62,7 @@ const AD_PERIOD: usize = 8; // walk-forward winner 2026-04-14: p=8 Sharpe 2.00, 
 // CHAND_P = 11 (hyperopt 2026-04-20: full sweep P∈[5..60 step 2] × 9 universes × 54 windows. CP=11 wins globally:
 //   Sharpe 4.775 vs CP=15 baseline 4.688, +1.9%. Pass rate 43/54 (79.6%) vs 42/54 (77.8%).
 //   Wins on ALL production universes: Base5, NoDOGE, LargeCaps5, Legacy5BNB, Legacy4.)
-const CHAND_P: usize = 11;         // hyperopt 2026-04-20: CP=11 global winner. Matches src/live/config.rs + turtle_chandelier_walkforward.rs
+const CHAND_P: usize = 7;  // hyperopt 2026-04-21: CP=7 wins +6.9% Sharpe vs CP=11 on current production params (EP=24, HM=12, ATR_EM=0.90, CM=2.25). CP=11 sweep used stale EP=21. Updated to CP=7 in src/live/config.rs + turtle_chandelier_walkforward.rs.
 
 // CHAND_M = 2.25 (hyperopt 2026-04-20: EXTENSIVE sweep M∈[0.50,5.00] step 0.25. M=2.25 wins globally.)
 const CHAND_M: f64 = 2.25;         // hyperopt 2026-04-20: M=2.25 — +47% global Sharpe vs M=1.50, Base5 100% pass
