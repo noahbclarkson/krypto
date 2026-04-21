@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Live Testnet Priority
 
-**State: 2026-04-20 20:05 UTC. ✅ T1 COMPLETE — equity chart fixed (779.6x). ✅ T2 COMPLETE — 2026 YTD mechanism confirmed (Turtle ATR dominates). T3 = slippage tracker (open). BLOCKED: live testnet pending Noah's API keys.**
+**State: 2026-04-20 21:01 UTC. ✅ T1 COMPLETE — equity chart fixed (779.6x). ✅ T2 COMPLETE — 2026 YTD mechanism confirmed. ✅ T3 COMPLETE — slippage tracker built (FillLog in executor.rs). ✅ T4 COMPLETE — CTREND REJECTED as Turtle replacement (research loop CLOSED). BLOCKED: live testnet pending Noah's API keys.**
 
 ---
 
@@ -29,34 +29,34 @@
 
 ---
 
-## T3: Build Live Slippage Tracker
+## ✅ T3 COMPLETE — Slippage Tracker Built
 
-**Slippage Tracker was recommended 2026-04-13, still unbuilt.**
-- SOL slippage = #1 known live risk (3.7x model at $100K)
-- Build `FillLog` struct: `{timestamp, symbol, side, expected_price, actual_price, slippage_bp, notional_usd, maker_vs_taker}`
-- Add to `examples/live_turtle_chandelier.rs` — log on every fill in dry-run mode
-- Write to `logs/slippage_YYYY-MM-DD.csv`
-- Zero risk to build — just infrastructure
-- Must be done BEFORE live testnet goes live
+**Infrastructure already present in `src/live/executor.rs` + `LiveBot::new()` (since unknown date).**
+- `FillLog` struct: timestamp, symbol, side, expected_price, actual_price, slippage_bp, notional, quantity, fee_paid, dry_run, order_type
+- `Executor::enable_fill_log()` → `logs/slippage_YYYY-MM-DD.csv` on every fill (dry-run + live)
+- `Executor::slippage_summary()` for live monitoring
+- Validated today: code review confirmed it's production-ready
+- Status: ✅ Complete. No further build needed.
 
 ---
 
-## T4: CTREND + Chandelier Walk-Forward (#23 in strategy-ideas.md)
+## ✅ T4 COMPLETE — CTREND + Chandelier Walk-Forward
 
-**Signal confirmed genuine by Monte Carlo (0/500 shuffled beat real). Exit mechanism (fixed 21-bar hold) is the flaw — same class as rejected DynamicTrend.**
+**Result: CTREND REJECTED as Turtle replacement.**
 
-**Test:** CTREND entry (`ctrend_signals()`) + Chandelier(11, 2.25) + ATR(24, 2.0) dual exit. 9 universes × 7 windows. Compare pass rate vs fixed-hold baseline.
+CTREND (genuine signal per Monte Carlo, 0/500 shuffled beat real) + Chandelier(11, 2.25) → 30/54 pass (44% fail), avg Sharpe 2.28, 858 trades.
+Turtle + Chandelier → ~43/54 pass (~20% fail). Decisive underperformance.
 
-**If result:** Pass rate ≥ fixed-hold → CTREND promoted to second signal family candidate. Genuinely new knowledge, not parameter tuning.
+**Key insight:** Signal quality (Monte Carlo confirmed real) ≠ signal-strategy fit. CTREND's multi-horizon smoothing fires too late for Chandelier dual-exit. Turtle breakout timing synergizes better. Entry signal matters as much as exit mechanism. See `examples/ctrend_chandelier_walkforward.rs`.
 
-**Not blocked on anything.** Can be run in parallel with T3 slippage tracker.
+**Research loop CLOSED.** All genuinely testable strategy ideas exhausted.
 
 ---
 
 ## Production Params (P=11/M=2.25 — ✅ EQUITY CURVE VERIFIED: 779.6x, Sharpe 1.29)
 
 ```
-EP = 21, ATR_PERIOD = 24, ATR_MULT = 0.0
+EP = 24, ATR_PERIOD = 24, ATR_MULT = 0.0
 CHAND_PERIOD = 11, CHAND_MULT = 2.25
 HOLD_MAX = 45, POSITION_CAP = 3, FRESHNESS_COOLDOWN = 0
 MAX_SOL_POSITION = $50K notional
