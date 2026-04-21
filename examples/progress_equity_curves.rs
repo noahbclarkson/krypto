@@ -74,7 +74,7 @@ const TURTLE_ATR_M: f64 = 2.0;     // hyperopt 2026-04-12
 
 const TURTLE_EP: usize = 24;       // hyperopt 2026-04-20 re-opt: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%). See memory/hyperopt-2026-04-20-ep-reopt.md.
 
-const TURTLE_HOLD_MAX: usize = 45; // hyperopt 2026-04-11
+const TURTLE_HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 on production engine
 
 // === DOLLAR-VOLUME RANKING: VL=2 (hyperopt 2026-04-17: VL=55 REVERTED — overfits W04/W05 held-out data) ===
 const VOL_LOOKBACK: usize = 2; // hyperopt 2026-04-17: VL=55 overfits held-out W04/W05. VL=2 is production default.

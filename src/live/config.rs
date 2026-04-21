@@ -22,12 +22,13 @@ impl Default for TradingMode {
 }
 
 /// Turtle+Chandelier strategy params (validated walk-forward, frozen 2026-04-16).
-pub const TURTLE_EP: usize = 21;
+pub const TURTLE_EP: usize = 24; // hyperopt 2026-04-20 re-opt: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%), +2% avg Sharpe. Validated across all 9 universes. See hyperopt-2026-04-20-ep-reopt.md.
 pub const CHAND_PERIOD: usize = 11; // hyperopt 2026-04-20: FULL sweep CP∈[5..60 step 2]×9 universes×54 windows. CP=11 wins global (Sharpe 4.775 vs CP=15 baseline 4.688, +1.9%). Pass rate 79.6% vs 77.8% (+1.8pp). Consistent across all production universes. See memory/hyperopt-2026-04-20-chand-period.md.
 pub const CHAND_MULT: f64 = 2.25; // hyperopt 2026-04-20: EXTENSIVE sweep M∈[0.50,5.00] step 0.25 (19 values) × 9 universes × 7 windows. M=2.25 wins: global Sharpe 3.879 (+47% vs M=1.50 at 2.625), Base5 100% pass. See hyperopt-2026-04-20-chand-mult.md. Prior M=1.50 was from 2D joint sweep limited to M∈[1.50,2.10] — range too narrow.
 pub const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. See hyperopt-2026-04-16-atr-period.md.
 pub const TURTLE_ATR_MULT: f64 = 2.0;
-pub const HOLD_MAX: usize = 45; // Walk-forward harness uses HM=45 (validated). Live production may prefer HM=15 (higher Sharpe with P=15/M=1.50 — see hyperopt-2026-04-19-holdmax.md). HM=15 sweep on Base5: Sharpe 5.95 vs HM=45: 5.40 (+10%). Chandelier(P=15/M=1.50) fires ~bar 14-15; HM=15 is near the exit boundary.
+pub const ATR_ENTRY_MULT: f64 = 0.90; // hyperopt 2026-04-21: EM=0.90 wins FULL 63-window validation. +29.7% Sharpe vs baseline (2.5273 vs 1.9481), 100% pass (63/63) vs baseline 96.8%, DD=44.3% vs 72.1%. Prior 6-window sweep found EM=1.0 winner (81.5% pass) — that was insufficient validation. See memory/hyperopt-2026-04-21-atr-entry-mult-full.md.
+pub const HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 baseline (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Full sweep 19 values [5-180] with production params CHAND(11,2.25)/EP=24. Chandelier fires first ~bar 12-15; HM is irrelevant above ~35. HM=12 wins on Sharpe + pass rate (96.3% vs 92.6%). See memory/hyperopt-2026-04-21-hold-max.md.
 pub const POSITION_CAP: usize = 3;
 
 /// Configuration for live trading bot.
@@ -66,6 +67,10 @@ pub struct LiveConfig {
     pub atr_period: usize,
     /// Turtle ATR stop multiplier (default: 2.0)
     pub atr_mult: f64,
+    /// ATR entry multiplier — momentum filter on Turtle breakout (default: 0.0)
+    /// Only enter if close >= breakout_level + ATR(atr_period) * ATR_ENTRY_MULT.
+    /// hyperopt 2026-04-21: EM=0.90 wins full 63-window validation (+29.7% Sharpe).
+    pub atr_entry_mult: f64,
     /// Max hold bars (default: 45)
     pub hold_max: usize,
     /// Max concurrent positions (default: 3)
@@ -102,6 +107,7 @@ impl Default for LiveConfig {
             chand_mult: CHAND_MULT,
             atr_period: TURTLE_ATR_PERIOD,
             atr_mult: TURTLE_ATR_MULT,
+            atr_entry_mult: ATR_ENTRY_MULT,
             hold_max: HOLD_MAX,
             position_cap: POSITION_CAP,
             // Legacy
