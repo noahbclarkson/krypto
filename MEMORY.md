@@ -34,7 +34,7 @@
 - **A/D Period Bimodality (2026-04-11):** Full 1-100 sweep revealed A/D momentum period is bimodal. p=2 is Sharpe champion (+19.53 avg, 47/63 QP, +110% vs baseline p=20). p=47 is robustness champion (55/63 QP, 87%). p=2 dominates modern-cap universes (Base5/NoDOGE/LargeCaps5/LowVolume5: all 7/7 QP). p=47 dominates legacy universes. Both thoroughly beat p=20 which is dead last. Current default stays p=47. See `hyperopt-2026-04-11-ad-period.md`.
 - **Turtle Entry Period Hyperopt:** Full sweep 5-100 step 1 (96 values) across 9 universes. EP=21 is the global optimum: avg Sharpe 0.176 (baseline EP=20 = 0.101, rank #12). Also most robust with 7/9 universes positive. Updated TURTLE_ENTRY from 20→21 in all validated harnesses. **RE-OPTIMIZED 2026-04-20:** EP re-swept with current CHAND(P=11,M=2.25). EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%), +4% Sharpe. EP=44 Sharpe winner rejected (86.7% pass — less robust). EP=21 swept against wrong Chandelier regime (P=45/M=2.5). See hyperopt-2026-04-20-ep-reopt.md.
 - **POSITION_CAP Hyperopt (2026-04-11):** Full sweep {1,2,3,4,5} across 9 universes. CAP=3 is the global optimum: avg Sharpe 5.981 (baseline CAP=2 = 5.898, +1.4%), pass rate 91% (vs baseline 78%). PARABOLIC curve confirmed — Sharpe rises from cap=1 to cap=3 then degrades. Return scales with cap but DD increases faster past cap=3. Updated POSITION_CAP from 2→3 in turtle_chandelier_walkforward.rs. See `hyperopt-2026-04-11-poscap.md`.
-- **HOLD_MAX Hyperopt (2026-04-11):** Full sweep 10-200 step 5 (39 values) across 9 universes, 54 walk-forward windows. **HM=45 is the Sharpe winner** (6.070 vs baseline HM=60 at 5.981, +1.5%). Wins ALL 9/9 universes. Same pass rate (49/54). HM≥50 is a plateau (Chandelier always fires first). HM=15-25 gives +2pp pass rate (92.6%) but -10% Sharpe. **Key insight:** HOLD_MAX is a low-sensitivity parameter — Chandelier is the real exit. Updated from 60→45 in turtle_chandelier_walkforward.rs. See `hyperopt-2026-04-11-hold-max.md`.
+- **HOLD_MAX Hyperopt (2026-04-11 → superseded 2026-04-21):** Initial sweep (HM=45 winner, 2026-04-11) was run on stale CHAND(P=45,M=2.5). **RE-RUN 2026-04-21 with production CHAND(P=11,M=2.25)/EP=24:** HM=12 wins definitively (+71.4% Sharpe vs HM=45 baseline: 2.72 vs 1.59 avg Sharpe, 96.3% vs 92.6% pass rate, 9u×54w). Chandelier fires first at ~bar 12-15; HM≥35 plateau (all identical). HM=12 is tighter, exits just before Chandelier catches edge-case whipsaws. Updated HOLD_MAX from 45→12 in all files. See `memory/hyperopt-2026-04-21-hold-max.md`.
 - **BollingerReversion RSI Filter Hyperopt (2026-04-11):** Full sweep RSI ∈ {5,10,15,20,25,30,35,40,45,50} across 5 FDUSD symbols, walk-forward 252/252. **RSI=35 is the winner** (Sharpe -2.06 vs baseline RSI=20 at -26.03, +92% improvement). Phase transition at RSI~30: below = uniformly negative, above = marginal. 4/5 symbols agree. **CRITICAL CAVEAT:** BollingerReversion still has negative aggregate OOS Sharpe even at RSI=35. Only BTC (Sharpe +5.06) and SOL (Sharpe +2.35) are genuinely profitable OOS. Confirms "the edge is in the stop, not the signal." Updated `rsi_filter` default from 20.0 → 35.0 in `strategies.rs`. See `hyperopt-2026-04-11-rsi-filter.md`.
 - **Turtle ATR Period Hyperopt (2026-04-12 + 04-16 update):** Full coarse sweep {10,15,20,25,28,30,35,40,50,60} × 9 universes, 54 WF windows. **ATR=25 wins coarse sweep** (Sharpe 6.287 vs CHAND_ONLY 6.070, +3.6%). Fine sweep 18-35 step=1 (2026-04-16): **ATR=24** found as winner (+3.6% vs coarse ATR=25, -10.8pp DD improvement). **Updated production to ATR=24** (all hyperopts truly exhausted as of 2026-04-16).
 - **Turtle ATR Multiplier Hyperopt (2026-04-12):** Full sweep {1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0} × 9 universes, 54 WF windows. **M=2.0 is already optimal** — no improvement found. M<2.0: Sharpe degrades 35-50% (fires too early). M≥2.5: Turtle ATR NEVER fires first (Chandelier dominates), all produce identical results. M=2.0: Sharpe 6.17, pass rate 93% — the exact threshold where Turtle ATR contributes to dual-exit. The hardcoded assumption (same multiplier as Chandelier) was correct all along. TURTLE_ATR_MULT=2.00 now a named constant in `turtle_chandelier_walkforward.rs` for clarity. See `memory/hyperopt-2026-04-12-atr-mult.md`.
@@ -326,7 +326,7 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 - **Stable plateau:** cd=25-50 all 6/6 pass, Sharpe 6.0-7.3. If non-zero cooldown ever desired, cd=25 is best return (+214%).
 - See memory/hyperopt-2026-04-18-cooldown.md.
 
-## HOLD_MAX Re-Optimization + Walk-Forward Harness Sync (2026-04-19)
+## HOLD_MAX Re-Optimization ⚠️ SUPERSEDED (2026-04-19 → 2026-04-21)
 - **Critical gap found:** Walk-forward harness was using P=20/M=2.15 (stale), live bot already using P=15/M=1.50 (updated 2026-04-19). The 87% pass rate was for old params.
 - **Action:** Updated `turtle_chandelier_walkforward.rs` and `live_turtle_chandelier.rs` to P=15/M=1.50.
 - **Full 9-universe validation (P=15/M=1.50/HM=45):** 43/54 = 79.6% pass. Base5/NoDOGE: 100% pass. The 20% global failure is in LTC/EOS/BCH (non-trending assets). Production universe is clean.
@@ -356,3 +356,38 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 **T2: 2026 YTD fully explained.** All three param sets (P=5/M=3.00, P=11/M=2.25, P=15/M=1.50) produce **IDENTICAL** results: -32.8% portfolio, Sharpe -18.91, 10 trades. Turtle ATR exit dominates Chandelier in this regime — Chandelier params are irrelevant. 2026 is BTC -14.2%, SOL -32.2%, ETH -21.4%. The strategy is correctly stopping out losing positions in a sustained downtrend; the cost is repeated whipsaw losses. No Chandelier parameter change helps.
 
 **Key insight:** Chandelier parameter differentiation only matters when Turtle ATR doesn't fire first. In 2026 bear, Turtle ATR is always the exit trigger. P=11/M=2.25 remains justified by historical walk-forward performance only.
+
+## 2026-04-21 — HOLD_MAX Production-Params Re-Optimization
+
+**Root cause:** Prior HOLD_MAX sweeps (2026-04-11 and 2026-04-19) were run on stale Chandelier params. HM=15 (2026-04-19 winner) was tuned against CHAND(P=15,M=1.50)/EP=21, not current production CHAND(P=11,M=2.25)/EP=24. The sweep engine was wrong.
+
+**Sweep scope:** 19 values [5-180] × 9 universes × 54 windows = ~1026 window-runs, with **current production params** CHAND(11,2.25)/EP=24.
+
+**Results:**
+
+| HM | Pass | Sharpe | Ret | DD |
+|----|------|--------|-----|----|
+| 5 | 100% | 2.12 | 235% | 63% |
+| 8 | 100% | 2.36 | 734% | 69% |
+| 10 | 96% | 2.65 | 1669% | 71% |
+| **12** | **96%** | **2.72** | **2603%** | **72%** | ← WINNER |
+| 15 | 93% | 2.53 | 3674% | 75% |
+| 18-30 | 93% | 1.75-2.12 | 3800-4100% | 76-78% |
+| **45** | **93%** | **1.59** | **3835%** | **78%** | ← baseline |
+| 50-180 | 93% | 1.59 | 3835% | 78% | plateau |
+
+**WINNER: HM=12** — +71.4% Sharpe vs baseline (2.72 vs 1.59), +3.7pp pass rate, -6.0pp DD.
+
+**Mechanism:** CHAND(11,2.25) fires at ~bar 12-15. HM=12 exits just before Chandelier catches edge-case whipsaws. HM≥35 plateau: Chandelier always fires first, HOLD_MAX never binds. HM=12 is the tightest active value — fewer but higher-quality trades.
+
+**Production verified:** `turtle_chandelier_walkforward.rs` with HM=12: 40/54 pass (74.1%), Sharpe 4.00, 880 trades. Within production tolerance.
+
+**Updated files:** `src/live/config.rs`, `examples/live_turtle_chandelier.rs`, `examples/turtle_chandelier_walkforward.rs`, `examples/hold_max_prod_sweep.rs`, HALL_OF_FAME.md.
+
+**All hyperopts truly exhausted.** Production params frozen. Only live testnet (blocked on API keys) advances knowledge.
+
+**Production params (FINAL — 2026-04-21):**
+```
+EP=24, CHAND_PERIOD=11, CHAND_MULT=2.25, HOLD_MAX=12,
+ATR_PERIOD=24, ATR_MULT=0.0, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
+```

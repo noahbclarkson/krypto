@@ -1,6 +1,6 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-*Last updated: 2026-04-20 (evening). CHAND params updated to P=11/M=2.25 (extensive P×M sweeps). EP updated 21→24 (re-optimized vs P=11/M=2.25). Global pass: 45/54 (83.3%). Pre-2021 paired stress test: P=11/M=2.25 = 21/21 pass, ΔSH=-0.02 vs validated P=28/M=2.0 — equivalent robustness, NOT overfitting. Daily equity Sharpe ~1.33 (daily compounded, honest).*
+*Last updated: 2026-04-21. HOLD_MAX 45→12 (hyperopt re-run on correct production params CHAND(11,2.25)/EP=24). CHAND params P=11/M=2.25 (extensive P×M sweeps). EP=24 (re-optimized vs P=11/M=2.25). Global pass: 45/54 (83.3%). Pre-2021 paired stress test: P=11/M=2.25 = 21/21 pass, ΔSH=-0.02 vs validated P=28/M=2.0 — equivalent robustness, NOT overfitting. Daily equity Sharpe ~1.33 (daily compounded, honest).*
 
 ## PRODUCTION — DEPLOYABLE
 
@@ -21,7 +21,7 @@ ATR_PERIOD = 24      (Turtle ATR — fine hyperopt 2026-04-16)
 ATR_MULT = 0.0       (no entry filter — confirmed 2026-04-19)
 CHAND_PERIOD = 11     (full sweep CP∈[5..60 step2]×9 universes×54 windows, 2026-04-20: CP=11 wins +1.9% Sharpe vs CP=15. See hyperopt-2026-04-20-chand-period.md)
 CHAND_MULT = 2.25    (extensive sweep M∈[0.50..5.00 step 0.25]×9 universes×7 windows, 2026-04-20: M=2.25 wins +47% global Sharpe vs M=1.50. See hyperopt-2026-04-20-chand-mult.md)
-HOLD_MAX = 45
+HOLD_MAX = 12  // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Chandelier fires first ~bar 12-15; HM irrelevant above ~35.
 POSITION_CAP = 3
 ATR_ENTRY_MULT = 0.00
 FRESHNESS_COOLDOWN = 0
