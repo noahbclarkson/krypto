@@ -6,12 +6,13 @@
 
 ## CRITICAL — Do First
 
-### T-2026: Walk-Forward Including 2026 OOS Data
-**This is the most important test we can run. Zero of our 54 OOS windows include 2026 data.**
-- Run frozen params (P=11/M=2.25, EP=21, HM=12, ATR_ENTRY_MULT=0.90) on 2026-01-01 to 2026-04-21
-- Report: Sharpe, return, maxDD, trade count, pass/fail against sh>0
-- Hypothesis: All param sets (P=5/M=3.00, P=11/M=2.25, P=15/M=1.50) produce IDENTICAL results — Turtle ATR dominates
-- **Status:** NEW — was idea #28 in strategy-ideas.md. MUST RUN.
+### T-2026: Walk-Forward Including 2026 OOS Data ✅ DONE
+**Result: W06 PASSES 9/9 universes. 58/63 global pass (92%).**
+- W06 (2026): 9/9 universes pass — +351.9% (Base5), +211.3% (NoDOGE), +52.5% (Legacy4), +203.1% (Legacy5BNB), +140.9% (OldGuardNoBNB), +278.7% (LargeCaps5), +23.6% (Legacy3), +71.9% (LowVolume5), +223.5% (OldGuard4)
+- Extended data: fetch_data_in_range bypasses Binance ~2080 bar historical cap
+- Prior catastrophic -22.7% YTD was from BTC+ETH-only harness with 294 test bars (too short)
+- **Commit:** `ed813fef`
+- **Data:** BTC 2806, ETH 2806, SOL 1717, XRP 2547, DOGE 2120, ADA 2564 rows
 
 ### T1: Equity Curve Regeneration + Source Verification
 **Progress chart has been wrong 3+ times in project history.**
@@ -91,9 +92,9 @@ FRESHNESS_COOLDOWN = 0
 ## Research Loop Status
 
 Genuinely untested ideas:
-1. **#26 CTREND-native exit** — untested, promising mechanism hypothesis
+1. **#26 CTREND-native exit** — REJECTED (30/54 pass vs Turtle 43/54)
 2. **#27 4h multi-timeframe Turtle** — genuinely new territory (all validation is daily)
-3. **#28 2026 OOS validation** — MUST RUN, not optional
+3. **#28 2026 OOS validation** — DONE ✅ (9/9 universes pass)
 
 All non-trend strategies: GRAVEYARD.
 All regime switching: GRAVEYARD.

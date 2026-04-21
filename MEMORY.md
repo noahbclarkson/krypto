@@ -125,7 +125,7 @@
 - **Chandelier exit mostly taker (~25% maker):** Stop always below market → fast declines trigger market sell.
 - **Actionable for live bot:** Place entry limit at bar close, Post Only flag, sell limit 1-2 ticks above Chandelier stop.
 - **Key insight:** The fee gap is the biggest unmeasured variable. Live testnet paper trading is the only honest test remaining.
-- **VOL_LOOKBACK: VL=55 REVERTED to VL=2 (2026-04-17):** Extended sweep VL=1-100 step 1 found VL=55 (+40% global Sharpe). BUT held-out test on W04/W05: VL=2 wins Base5 (+77.3%/+43.6%) vs VL=55 (+51.0%/+26.2%). NoDOGE same pattern. VL=55 was overfitting to non-held-out windows in global optimization. **First confirmed overfitting case in hyperopt pipeline.** Production reverted to VL=2. See memory/2026-04-17.md.
+- **VOL_LOOKBACK Hyperopt (2026-04-21 — UPDATED):** Extended sweep VL=1-100 step 1 found VL=55 on stale CHAND(28,2.0)/EP=21. **RE-SWEEP on current production params** CHAND(11,2.25)/EP=24/ATR_ENTRY_MULT=0.90: 14 values × 9 universes × 54 windows. **WINNER: VL=1** (+2.8% Sharpe vs VL=2=3.893, 100% pass, +11.5% return, DD 41.5% vs 40.9%). Mechanism: shorter smoothing captures recent volume leaders — crypto trend leadership rotates fast, 55-bar avg is too slow. VL=1 wins by winning BIG in trending windows even while losing head-to-head in 72% of windows. VL=55 was 6th on current params (3.682 Sharpe). **Updated: VL=2 → VL=1** in turtle_chandelier_walkforward.rs. See memory/hyperopt-2026-04-21-vol-lookback.md.
 - **Files:** `charts/execution_gap_analysis.py`, `charts/execution_gap_analysis.png`
 - **State:** Research complete. Only Binance testnet API keys needed to proceed.
 
