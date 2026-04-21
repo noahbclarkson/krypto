@@ -415,7 +415,7 @@ All walk-forward validation is on daily bars (310 trades / 8 years). 4h bars wou
 
 | Strategy | Status | Reason |
 |----------|--------|--------|
-| EP re-optimization | CLOSED | EP=21 is production, EP=24 is noise |
+| EP re-optimization | CLOSED | EP=24 is production (daac533a, 2026-04-20) |
 | Chandelier P/M re-sweep | CLOSED | P=11/M=2.25 is production |
 | ATR entry filter | CLOSED | Confirmed 0.00, done twice |
 | Vol regime filters | CLOSED | All failed, Chandelier handles it |
@@ -423,3 +423,13 @@ All walk-forward validation is on daily bars (310 trades / 8 years). 4h bars wou
 | Non-trend strategies | CLOSED | All failed — edge is directional trend |
 | Regime switching | CLOSED | All failed — strategies don't separate cleanly |
 | CTREND + Chandelier | CLOSED | Wrong exit for CTREND's character |
+| ATR_MULT re-sweep | CLOSED | M=2.0 confirmed optimal, done twice |
+| VOL_LOOKBACK re-sweep | CLOSED | VL=2 is production, VL=55 was overfitting |
+
+### Top 3 Priorities (2026-04-21)
+
+| # | Priority | Why |
+|---|----------|-----|
+| **T1** | Walk-forward with 2026 data (#28) | All 54 windows pre-2026. 2026 YTD is our only genuine OOS — and it's -22.7%. We have never tested EP=24 or HM=12 in the current regime. |
+| **T2** | Fix progress_equity_curves.rs | Still P=15/M=1.50 — stale since 2026-04-20 live bot update. Equity chart shows wrong params. |
+| **T3** | CTREND + CTREND-native exit (#26) | Signal confirmed genuine by Monte Carlo. Chandelier exit was wrong class. Sweep slower exits (ATR 40-60, RSI regime). |
