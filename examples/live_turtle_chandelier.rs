@@ -26,7 +26,7 @@ use std::collections::VecDeque;
 // Strategy params (validated)
 // =============================================================================
 const EP: usize = 24;       // Turtle entry lookback — hyperopt 2026-04-20: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%), +2% Sharpe. See memory/hyperopt-2026-04-20-ep-reopt.md.
-const CHAND_P: usize = 7;  // Chandelier ATR period — hyperopt 2026-04-21: EXTENSIVE sweep CP∈[5..60 step 2] × 9 universes × 54 windows with current production params (HM=12, ATR_EM=0.90, EP=24, CM=2.25). CP=7 wins global Sharpe 5.908 (+6.9% vs CP=11 baseline 5.526). Pass rate 79.6% (identical). Prior CP=11 sweep used stale EP=21 (not current EP=24). See memory/hyperopt-2026-04-21-chand-period.md.
+const CHAND_P: usize = 7;  // Chandelier ATR period — hyperopt 2026-04-21: CP=7 wins +6.9% Sharpe vs CP=11 (5.908 vs 5.526). Swept CP∈[5..60 step2] × 9 universes × 54 windows with current production params (EP=24, HM=12, ATR_ENTRY_MULT=0.85, CM=2.25). Pass rate 43/54 (79.6%, identical to CP=11). Prior CP=11 sweep used stale EP=21. See memory/hyperopt-2026-04-21-chand-period.md.
 const CHAND_M: f64 = 2.25;   // Chandelier ATR multiplier (updated 2026-04-20: EXTENSIVE sweep M∈[0.50,5.00] step 0.25. M=2.25 wins: global Sharpe 3.879, +47% vs M=1.50. See hyperopt-2026-04-20-chand-mult.md)
 const ATR_P: usize = 24;     // Turtle ATR period (2026-04-16: fine hyperopt 18-35 step=1, ATR=24 +3.6% Sharpe, -10.8pp DD vs ATR=25)
 const ATR_M: f64 = 2.0;     // Turtle ATR multiplier
@@ -255,7 +255,7 @@ fn main() -> Result<()> {
     println!("{} {}", "═".repeat(66), "═".cyan());
     println!("  Live Turtle+Chandelier Bot");
     println!("  Params: EP={}, Chand({},{}), ATR({},{}), ATR_ENTRY={:.2}, HM={}, CAP={} (freshness filter DISABLED — cd=0)",
-             EP, CHAND_P, CHAND_M, ATR_P, ATR_M, 0.90, HOLD_MAX, POS_CAP);
+             EP, CHAND_P, CHAND_M, ATR_P, ATR_M, 0.85, HOLD_MAX, POS_CAP);
     println!("{} {}", "═".repeat(66), "═".cyan());
     println!();
 
