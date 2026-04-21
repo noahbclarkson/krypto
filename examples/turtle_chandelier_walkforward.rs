@@ -33,6 +33,7 @@ const CHAND_PERIOD: usize = 11; // hyperopt 2026-04-20: FULL sweep CP∈[5..60 s
 const CHAND_MULT: f64 = 2.25; // hyperopt 2026-04-20: EXTENSIVE sweep M∈[0.50,5.00] step 0.25 (19 values) × 9 universes × 7 windows. M=2.25 wins: global Sharpe 3.879 (+47% vs M=1.50 at 2.625), Base5 100% pass. See hyperopt-2026-04-20-chand-mult.md. Prior M=1.50 from 2D joint sweep limited to M∈[1.50,2.10].
 const TURTLE_ENTRY: usize = 24; // hyperopt 2026-04-20 re-opt: EP=21 swept vs P=11/M=2.25 (new). EP=24 wins global 45/54 (83.3%) vs EP=21 43/54 (79.6%), +2% avg Sharpe. Validated across all 9 universes. See memory/hyperopt-2026-04-20-ep-reopt.md.
 const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. Dual exit: Chandelier OR Turtle ATR fires first. See hyperopt-2026-04-16-atr-period.md.
+const ATR_ENTRY_MULT: f64 = 0.90; // hyperopt 2026-04-21 FULL sweep: EM=0.90 wins 63/63 (100% pass), +29.7% Sharpe vs baseline (2.5273 vs 1.9481), DD=44.3% vs 72.1%. Only enter if close >= max_close + ATR(24)*EM. See memory/hyperopt-2026-04-21-atr-entry-mult-full.md.
 // hyperopt 2026-04-17: VOL_LOOKBACK=55 found in 1-100 step1 sweep, BUT overfits on held-out W04/W05.
 // Held-out test (2026-04-17): VL=2 wins Base5 (+77.3%/+43.6%) vs VL=55 (+51.0%/+26.2%).
 // Reverted to VL=2. VL=55 was noise-fitting non-held-out windows in global optimization.
@@ -82,7 +83,7 @@ fn rolling_avg(vals: &[f64], window: usize, idx: usize) -> f64 {
     vals[start..=idx].iter().sum::<f64>() / window as f64
 }
 
-fn turtle_signal(close: &[f64], _high: &[f64], entry_period: usize, idx: usize) -> bool {
+fn turtle_signal(close: &[f64], high: &[f64], low: &[f64], entry_period: usize, atr_period: usize, atr_mult: f64, idx: usize) -> bool {
     if idx < entry_period + 1 { return false; }
     let start = idx + 1 - entry_period;
     let mut max_close = f64::NEG_INFINITY;
@@ -90,7 +91,13 @@ fn turtle_signal(close: &[f64], _high: &[f64], entry_period: usize, idx: usize) 
         if let Some(&c) = close.get(i) { max_close = max_close.max(c); }
     }
     if let Some(&curr_close) = close.get(idx) {
-        curr_close > max_close
+        let breakout = curr_close > max_close;
+        if breakout && atr_mult > 0.0 {
+            // ATR momentum filter: require close >= max_close + ATR(atr_period) * atr_mult
+            let atr_val = atr_at(high, low, close, atr_period, idx);
+            return curr_close >= max_close + atr_mult * atr_val;
+        }
+        breakout
     } else {
         false
     }
@@ -164,26 +171,28 @@ fn run_sim(
         for sym in &top_syms {
             if let Some(sd) = sym_data.get(sym) {
                 if bar >= TURTLE_ENTRY + 1 && bar < sd.close.len() {
-                    if turtle_signal(&sd.close, &sd.high, TURTLE_ENTRY, bar) {
+                    if turtle_signal(&sd.close, &sd.high, &sd.low, TURTLE_ENTRY, TURTLE_ATR_PERIOD, ATR_ENTRY_MULT, bar) {
                         let entry_px = sd.close[bar];
                         let entry = entry_px * (1.0 - TAKER_FEE);
                         let entry_bar_next = bar + 1;
                         let n = sd.close.len();
 
-                        // DUAL_EXIT: Chandelier(28,2.0) OR Turtle_ATR(25,2.0) — exit fires on whichever triggers first
+                        // DUAL_EXIT: Chandelier ATR OR Turtle ATR — whichever fires first
+                        // Chandelier: trailing max_high - M * ATR(chand_period)
+                        // Turtle ATR: trailing min_low - M * ATR(turtle_atr_period)
                         let mut highest_high_chand = sd.high[entry_bar_next];
-                        let mut highest_high_turtle = sd.high[entry_bar_next];
+                        let mut lowest_low_turtle = sd.low[entry_bar_next];
                         let max_bar = (entry_bar_next + HOLD_MAX).min(n.saturating_sub(1));
                         let mut exit_bar = max_bar;
                         for b in entry_bar_next..=max_bar.min(n.saturating_sub(1)) {
-                            // Chandelier ATR(28, 2.0)
+                            // Chandelier ATR
                             highest_high_chand = highest_high_chand.max(sd.high[b]);
                             let atr_chand = atr_at(&sd.high, &sd.low, &sd.close, CHAND_PERIOD, b);
                             let trail_chand = highest_high_chand - CHAND_MULT * atr_chand;
-                            // Turtle ATR(25, 2.0)
-                            highest_high_turtle = highest_high_turtle.max(sd.high[b]);
+                            // Turtle ATR trailing stop: lowest_low - TURTLE_ATR_MULT * ATR(turtle_period)
+                            lowest_low_turtle = lowest_low_turtle.min(sd.low[b]);
                             let atr_turtle = atr_at(&sd.high, &sd.low, &sd.close, TURTLE_ATR_PERIOD, b);
-                            let trail_turtle = highest_high_turtle - TURTLE_ATR_MULT * atr_turtle;
+                            let trail_turtle = lowest_low_turtle - TURTLE_ATR_MULT * atr_turtle;
                             // Exit on EITHER stop
                             if sd.close[b] < trail_chand || sd.close[b] < trail_turtle {
                                 exit_bar = b;

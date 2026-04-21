@@ -1,24 +1,22 @@
 //! Live trading bot — Turtle+Chandelier breakout strategy.
 //!
-//! Signal: Turtle breakout (close >= max(close, EP bars)) → enter long.
+//! Signal: Turtle breakout with ATR momentum filter: close >= max(close, EP bars) + ATR * 0.90
 //! Exit: Chandelier ATR trailing stop OR Turtle ATR stop OR HOLD_MAX reached.
 //! Dual exit: whichever stop fires first.
 //!
-//! Production params (frozen 2026-04-16):
-//!   EP=21, CHAND(20, 2.15), ATR(24, 2.0), HM=45, CAP=3
+//! Production params (frozen 2026-04-21):
+//!   EP=24, CHAND(11, 2.25), ATR(24, 2.0), ATR_ENTRY_MULT=0.90, HM=12, CAP=3
+//!   See HALL_OF_FAME.md and PLAN.md for full documentation.
 //!
-//! Freshness Filter (REVERTED 2026-04-18):
-//!   After an exit (stop or HOLD_MAX), wait FRESHNESS_COOLDOWN bars before re-entering.
-//!
-//!   IMPORTANT: Freshness filter is DISABLED (cd=0). The sweep on the current
-//!   production params (CHAND_PERIOD=20, CHAND_MULT=2.15) showed:
-//!     cd=0:  6/6 pass, Sharpe 8.56, equity 1.38x — WINNER
-//!     cd=10: 3/6 pass, Sharpe 5.48, equity 0.69x — NET LOSS, worst pass rate
-//!
-//!   The prior cd=10 result (2026-04-18) was tuned on STALE params CHAND_PERIOD=28.
-//!   With updated CHAND_PERIOD=20, the filter is counterproductive.
+//! Freshness Filter: DISABLED (cd=0) — counterproductive with current tight Chandelier.
 
 const FRESHNESS_COOLDOWN: usize = 0; // bars to wait after exit before re-entry (0=disabled)
+
+// ATR entry multiplier — hyperopt 2026-04-21: EM=0.90 wins full 63-window validation.
+// Only enter if close >= max_close + ATR(24) * 0.90 (momentum confirmation filter).
+// Prior 6-window sweep found EM=1.0 winner — insufficient validation.
+// See memory/hyperopt-2026-04-21-atr-entry-mult-full.md.
+const ATR_ENTRY_MULT: f64 = 0.90;
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
@@ -296,10 +294,37 @@ impl LiveBot {
         let ws = bars.len() - ep;
         let max_close = bars[ws..].iter().map(|b| b.close).fold(f64::NEG_INFINITY, f64::max);
 
+        // ATR entry filter: require momentum confirmation beyond ATR noise band
+        // Only enter if: close >= max_close + ATR(atr_period) * ATR_ENTRY_MULT
+        if ATR_ENTRY_MULT > 0.0 {
+            let atr_period = self.config.atr_period;
+            let n = bars.len();
+            if n >= atr_period + 1 {
+                let mut tr_sum = 0.0_f64;
+                for i in (n - atr_period)..n {
+                    let b = &bars[i];
+                    let pc = if i == 0 { b.close } else { bars[i - 1].close };
+                    let tr = (b.high - b.low)
+                        .max((b.high - pc).abs())
+                        .max((b.low - pc).abs());
+                    tr_sum += tr;
+                }
+                let atr = tr_sum / atr_period as f64;
+                let threshold = max_close + atr * ATR_ENTRY_MULT;
+                if bar.close < threshold {
+                    tracing::debug!(
+                        "[{}] ATR FILTER SKIP: close {} < threshold {} (ATR={:.2}, EM={})",
+                        symbol, bar.close, threshold, atr, ATR_ENTRY_MULT
+                    );
+                    return false;
+                }
+            }
+        }
+
         if bar.close >= max_close {
             tracing::info!(
-                "[{}] TURTLE ENTRY: close {} >= max_close({}) = {}",
-                symbol, bar.close, ep, max_close
+                "[{}] TURTLE ENTRY: close {} >= max_close({}) = {} (ATR_EM={})",
+                symbol, bar.close, ep, max_close, ATR_ENTRY_MULT
             );
 
             // Initialize trailing state

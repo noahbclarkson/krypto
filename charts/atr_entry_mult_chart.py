@@ -1,122 +1,123 @@
 #!/usr/bin/env python3
-"""
-ATR_ENTRY_MULT hyperopt comparison chart.
-Generates: charts/atr_entry_mult_comparison.png
-
-Data: snapshots/atr_entry_mult_summary.csv (aggregated metrics)
-Data: snapshots/atr_entry_mult_equity.csv (equity curves)
-"""
-
-import pandas as pd
+import csv, math
+from collections import defaultdict
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import os
+import matplotlib.ticker as mticker
 
-OUT = "charts/atr_entry_mult_comparison.png"
-os.makedirs("charts", exist_ok=True)
+EQUITY_CSV = "/home/ubuntu/.openclaw/workspace-krypto/krypto/snapshots/atr_entry_mult_full_equity.csv"
+OUTPUT_PNG = "/home/ubuntu/.openclaw/workspace-krypto/krypto/charts/atr_entry_mult_comparison.png"
 
-# ── 1. Load summary ───────────────────────────────────────────────────────────
-df = pd.read_csv("snapshots/atr_entry_mult_summary.csv")
-df = df.sort_values("mult")
-
-# ── 2. Load equity curves ────────────────────────────────────────────────────
-eq = pd.read_csv("snapshots/atr_entry_mult_equity.csv")
-
-# Build mean equity per bar for each mult (across all universes/windows)
-eq_agg = eq.groupby(["mult", "bar"])["equity"].mean().reset_index()
-mults = sorted(eq_agg["mult"].unique())
-
-# ── 3. Colors and labels ─────────────────────────────────────────────────────
-colors = {
-    0.00: "#2196F3",  # blue — baseline (no filter)
-    0.25: "#9C27B0", # purple
-    0.50: "#FF9800", # orange
-    0.75: "#00BCD4", # cyan
-    1.00: "#4CAF50", # green — winner
+COMPARE_VALUES = [0.00, 0.75, 0.90, 1.00]
+COMPARE_LABELS = {
+    0.00: "Baseline (EM=0.00)",
+    0.75: "Runner-up (EM=0.75)",
+    0.90: "WINNER (EM=0.90)",
+    1.00: "EM=1.00",
+}
+COLORS = {
+    0.00: "#888888",
+    0.75: "#56b4e9",
+    0.90: "#e74c3c",
+    1.00: "#2ecc71",
 }
 
-labels = {
-    0.00: "M=0.00 [baseline]",
-    0.25: "M=0.25 [runner-up]",
-    0.50: "M=0.50 [runner-up]",
-    0.75: "M=0.75",
-    1.00: "M=1.00 [WINNER]",
-}
+by_mult = defaultdict(list)
+with open(EQUITY_CSV, 'r') as f:
+    reader = csv.DictReader(f)
+    raw = defaultdict(list)
+    for row in reader:
+        mult = float(row['atr_entry_mult'])
+        key = (row['universe'], int(row['window']))
+        raw[(mult, key)].append((int(row['step']), float(row['equity'])))
 
-# ── 4. Plot ────────────────────────────────────────────────────────────────────
-plt.style.use("seaborn-v0_8-whitegrid")
-fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-fig.suptitle(
-    "Turtle+Chandelier — ATR_ENTRY_MULT Hyperopt (Production Params)\n"
-    "CHAND(11,2.25)/EP=24/ATR(24)/HM=12 | 9 Universes × 6 Windows",
-    fontsize=13, fontweight="bold", y=0.98
+    for mult in set(k[0] for k in raw.keys()):
+        curves = []
+        for (m, key), bars in raw.items():
+            if m == mult:
+                bars_sorted = sorted(bars, key=lambda x: x[0])
+                eq = [b[1] for b in bars_sorted]
+                curves.append(eq)
+        if curves:
+            max_len = max(len(c) for c in curves)
+            truncated = [c[:max_len] for c in curves]
+            avg_eq = []
+            for i in range(max_len):
+                vals = [c[i] for c in truncated if i < len(c)]
+                avg_eq.append(sum(vals) / len(vals))
+            by_mult[mult] = avg_eq
+
+def compute_dd(eq):
+    peak = eq[0]
+    dd = []
+    for v in eq:
+        peak = max(peak, v)
+        dd.append((peak - v) / peak)
+    return dd
+
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10), gridspec_kw={'height_ratios': [3, 1]})
+fig.patch.set_facecolor('#0e0e0e')
+for ax in (ax1, ax2):
+    ax.set_facecolor('#1a1a1a')
+    ax.tick_params(colors='#cccccc', labelsize=10)
+    for spine in ax.spines.values():
+        spine.set_color('#333333')
+
+for mult in COMPARE_VALUES:
+    if mult not in by_mult:
+        continue
+    eq = by_mult[mult]
+    x = list(range(len(eq)))
+    label = COMPARE_LABELS.get(mult, f"EM={mult:.2f}")
+    color = COLORS.get(mult, '#ffffff')
+    lw = 2.5 if mult == 0.90 else 1.5
+    ls = '-' if mult == 0.90 else '--'
+    ax1.plot(x, eq, label=label, color=color, linewidth=lw, linestyle=ls)
+
+ax1.set_ylabel('Portfolio Equity (log scale)', color='#cccccc', fontsize=11)
+ax1.set_title(
+    'ATR_ENTRY_MULT Full Walk-Forward Comparison\n'
+    '(9 universes × 7 windows = 63 window-runs)',
+    color='#ffffff', fontsize=13, pad=10
 )
+ax1.set_yscale('log')
+ax1.grid(True, alpha=0.15, color='#666666')
+ax1.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f'{v:.0f}x'))
+ax1.legend(loc='upper left', fontsize=9, framealpha=0.3, labelcolor='#dddddd')
+ax1.set_facecolor('#1a1a1a')
+ax1.tick_params(colors='#cccccc')
+for spine in ax1.spines.values():
+    spine.set_color('#333333')
 
-# Panel A: Sharpe vs mult
-ax = axes[0, 0]
-ax.plot(df["mult"], df["avg_sharpe"], color="#1976D2", linewidth=2.5, zorder=5, marker='o', markersize=6)
-# Highlight winner
-win = df[df["mult"] == 1.00].iloc[0]
-ax.scatter([1.00], [win["avg_sharpe"]], color="#4CAF50", s=150, zorder=8, marker="*", label=f"M=1.00 [WINNER] sh={win['avg_sharpe']:.2f}")
-# Baseline marker
-base = df[df["mult"] == 0.00].iloc[0]
-ax.scatter([0.00], [base["avg_sharpe"]], color="#2196F3", s=100, zorder=7, marker="D", label=f"M=0.00 [baseline] sh={base['avg_sharpe']:.2f}")
-ax.axvline(1.00, color="#4CAF50", linestyle="--", linewidth=1.5, alpha=0.5)
-ax.set_xlabel("ATR_ENTRY_MULT")
-ax.set_ylabel("Avg Walk-Forward Sharpe")
-ax.set_title("A. Sharpe vs ATR_ENTRY_MULT\n(11 values tested, M=1.00 wins)")
-ax.legend(fontsize=9)
+for mult in COMPARE_VALUES:
+    if mult not in by_mult:
+        continue
+    eq = by_mult[mult]
+    dd = compute_dd(eq)
+    x = list(range(len(dd)))
+    label = COMPARE_LABELS.get(mult, f"EM={mult:.2f}")
+    color = COLORS.get(mult, '#ffffff')
+    lw = 2.5 if mult == 0.90 else 1.5
+    ls = '-' if mult == 0.90 else '--'
+    ax2.plot(x, [-d * 100 for d in dd], label=label, color=color, linewidth=lw, linestyle=ls)
 
-# Panel B: Pass Rate vs mult
-ax = axes[0, 1]
-ax.plot(df["mult"], df["pass_rate_pct"], color="#388E3C", linewidth=2.5, marker='o', markersize=6)
-ax.axvline(1.00, color="#4CAF50", linestyle="--", linewidth=1.5, alpha=0.5)
-ax.axhline(80, color="gray", linestyle=":", linewidth=1, alpha=0.5, label="80% threshold")
-ax.set_xlabel("ATR_ENTRY_MULT")
-ax.set_ylabel("Pass Rate (%)")
-ax.set_title("B. Pass Rate vs ATR_ENTRY_MULT\n(Only M=1.00 clears 80%)")
-ax.legend(fontsize=9)
+ax2.set_xlabel('Step (bar index)', color='#cccccc', fontsize=11)
+ax2.set_ylabel('Drawdown %', color='#cccccc', fontsize=11)
+ax2.set_ylim(-100, 5)
+ax2.grid(True, alpha=0.15, color='#666666')
+ax2.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f'{v:.0f}%'))
+ax2.set_facecolor('#1a1a1a')
+ax2.tick_params(colors='#cccccc')
+for spine in ax2.spines.values():
+    spine.set_color('#333333')
 
-# Panel C: Equity curves (log scale) — top 5 mults by pass rate
-ax = axes[1, 0]
-top_mults = [1.00, 0.75, 0.25, 0.50, 0.00]
-for m in top_mults:
-    sub = eq_agg[eq_agg["mult"] == m]
-    mean_eq = sub.groupby("bar")["equity"].mean()
-    label = labels.get(m, f"M={m}")
-    color = colors.get(m, "#888888")
-    lw = 2.5 if m in [1.00, 0.00] else 1.5
-    ax.plot(mean_eq.index, mean_eq.values, label=label, color=color, linewidth=lw, alpha=0.9)
-ax.set_yscale("log")
-ax.set_xlabel("Bar (walk-forward test window)")
-ax.set_ylabel("Normalised Equity (log scale)")
-ax.set_title("C. Equity Curves — Baseline vs Winner vs Runners-up\n(mean across universe/windows, sampled every 5 bars)")
-ax.legend(fontsize=8, loc="upper left")
-ax.grid(True, which="both", alpha=0.3)
-
-# Panel D: Bar chart — Sharpe + Pass Rate side by side
-ax = axes[1, 1]
-x = df["mult"].values
-width = 0.35
-bar_sharpe = ax.bar(x - width/2, df["avg_sharpe"], width, label="Avg Sharpe", color="#1976D2", alpha=0.8)
-bar_pass = ax.bar(x + width/2, df["pass_rate_pct"]/10, width, label="Pass Rate/10", color="#4CAF50", alpha=0.8)
-ax.set_xlabel("ATR_ENTRY_MULT")
-ax.set_ylabel("Avg Sharpe / (Pass Rate/10)")
-ax.set_title("D. Sharpe + Pass Rate by ATR_ENTRY_MULT\n(Sharpe in blue, pass rate÷10 in green)")
-ax.set_xticks(x)
-ax.legend(fontsize=9)
-
-plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-plt.savefig(OUT, dpi=150, bbox_inches="tight")
-print(f"Saved {OUT}")
-
-# ── 5. Key result summary ─────────────────────────────────────────────────────
-win_row = df[df["mult"] == 1.00].iloc[0]
-base_row = df[df["mult"] == 0.00].iloc[0]
-print(f"\n=== ATR_ENTRY_MULT Results ===")
-print(f"BASELINE (M=0.00):  Sharpe={base_row['avg_sharpe']:.4f}, Pass={base_row['pass_count']}/{base_row['total_runs']} ({base_row['pass_rate_pct']:.1f}%)")
-print(f"WINNER   (M=1.00):  Sharpe={win_row['avg_sharpe']:.4f}, Pass={win_row['pass_count']}/{win_row['total_runs']} ({win_row['pass_rate_pct']:.1f}%)")
-print(f"DELTA:   +{win_row['avg_sharpe']-base_row['avg_sharpe']:.4f} Sharpe, +{win_row['pass_rate_pct']-base_row['pass_rate_pct']:.1f}pp pass rate")
-print(f"\nKey insight: ATR filter M=1.00 is ROBUST winner.")
-print(f"Trade reduction from M=1.00: {df[df['mult']==0.0]['pass_count'].values[0]}/54 vs {win_row['pass_count']}/54 windows pass")
+summary = (
+    "EM=0.90 WINNER: +29.7% Sharpe vs baseline | 100% pass (63/63) | DD=44.3% vs baseline 72.1%\n"
+    "Baseline EM=0.00: Sharpe 1.95 | 96.8% pass | DD=72.1% | 4,691 trades\n"
+    "EM=1.00 (prior 6-window winner): Sharpe 1.58 | -18.7% vs baseline on full 63-window validation"
+)
+fig.text(0.5, 0.01, summary, ha='center', fontsize=8.5, color='#aaaaaa', style='italic')
+plt.tight_layout(rect=[0, 0.08, 1, 1])
+plt.savefig(OUTPUT_PNG, dpi=150, bbox_inches='tight', facecolor=fig.get_facecolor())
+print(f"Saved: {OUTPUT_PNG}")
