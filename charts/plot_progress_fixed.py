@@ -17,14 +17,13 @@ with open('/home/ubuntu/.openclaw/workspace-krypto/krypto/snapshots/progress_equ
 
 days = [r[0] for r in rows]
 
-# NOTE: CTREND removed — it runs on full in-sample history with fixed 21-bar hold
-# (same flaw class as BollingerReversion). No OOS walk-forward validation.
-# See memory/2026-04-16.md and strategy-ideas.md entry 19.
+# NOTE: MACD+Regime, Blend, and CTREND removed — all GRAVEYARD.
+# CSV has 5 columns: day, ad_equity, small_equity, ddbudget_equity, turtle_equity
 strategies = {
-    'Turtle+Chandelier\n(🦐 OOS validated)': [r[7] for r in rows],
+    'Turtle+Chandelier\n(🦐 OOS validated)': [r[4] for r in rows],
     'A/D Momentum\n(🟢 OOS validated)':     [r[1] for r in rows],
-    'FactorSmallByDV\n(🟡 OOS marginal)':    [r[3] for r in rows],
-    'DDBudget 3-Sleeve\n(⚠️ milestone-agg)': [r[5] for r in rows],
+    'FactorSmallByDV\n(🟡 OOS marginal)':    [r[2] for r in rows],
+    'DDBudget 3-Sleeve\n(⚠️ milestone-agg)': [r[3] for r in rows],
 }
 
 fig, axes = plt.subplots(2, 1, figsize=(14, 10))
@@ -47,7 +46,7 @@ ax.legend(loc='upper left', fontsize=9)
 ax.grid(True, which='both', ls='--', alpha=0.4)
 
 # Compute per-year stats for caption
-turtle_eq = np.array([r[7] for r in rows])
+turtle_eq = np.array([r[4] for r in rows])
 
 # Panel 2: Drawdown
 ax2 = axes[1]
@@ -70,8 +69,8 @@ print(f"Turtle equity Sharpe (daily): compute from daily returns...")
 # Compute honest Sharpe for turtle
 daily_rets = []
 for i in range(1, len(rows)):
-    prev = rows[i-1][7]
-    curr = rows[i][7]
+    prev = rows[i-1][4]
+    curr = rows[i][4]
     if prev > 0:
         daily_rets.append(curr / prev - 1.0)
 mean_r = np.mean(daily_rets)
