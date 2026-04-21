@@ -34,10 +34,12 @@ const CHAND_MULT: f64 = 2.25; // hyperopt 2026-04-20: EXTENSIVE sweep M∈[0.50,
 const TURTLE_ENTRY: usize = 24; // hyperopt 2026-04-20 re-opt: EP=21 swept vs P=11/M=2.25 (new). EP=24 wins global 45/54 (83.3%) vs EP=21 43/54 (79.6%), +2% avg Sharpe. Validated across all 9 universes. See memory/hyperopt-2026-04-20-ep-reopt.md.
 const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. Dual exit: Chandelier OR Turtle ATR fires first. See hyperopt-2026-04-16-atr-period.md.
 const ATR_ENTRY_MULT: f64 = 0.90; // hyperopt 2026-04-21 FULL sweep: EM=0.90 wins 63/63 (100% pass), +29.7% Sharpe vs baseline (2.5273 vs 1.9481), DD=44.3% vs 72.1%. Only enter if close >= max_close + ATR(24)*EM. See memory/hyperopt-2026-04-21-atr-entry-mult-full.md.
-// hyperopt 2026-04-17: VOL_LOOKBACK=55 found in 1-100 step1 sweep, BUT overfits on held-out W04/W05.
-// Held-out test (2026-04-17): VL=2 wins Base5 (+77.3%/+43.6%) vs VL=55 (+51.0%/+26.2%).
-// Reverted to VL=2. VL=55 was noise-fitting non-held-out windows in global optimization.
-const VOL_LOOKBACK: usize = 2; // dollar-volume smoothing window (rolling SMA of vol*price)
+// hyperopt 2026-04-21: VOL_LOOKBACK sweep {1,2,3,5,7,10,15,20,25,30,40,55,75,100} × 9 universes × 54 windows.
+// WINNER: VL=1 (+2.8% global Sharpe vs baseline VL=2, 100% pass rate identical).
+// Mechanism: shorter smoothing captures recent volume leaders → better momentum signal alignment.
+// Prior VL=55 (2026-04-17) overfitted on stale CHAND(28,2.0)/EP=21 params — not applicable to current.
+// See memory/hyperopt-2026-04-21-vol-lookback.md.
+const VOL_LOOKBACK: usize = 1; // dollar-volume smoothing window (rolling SMA of vol*price)
 const TURTLE_ATR_MULT: f64 = 2.00; // hyperopt 2026-04-12: TURTLE_ATR_MULT sweep {1.0-5.0 step 0.5}. M=2.0 is optimal (Sharpe 6.17, 93% pass). M<2.0 degrades Sharpe (M=1.0: 3.06). M>=2.5: Turtle ATR never fires first (Chandelier dominates). Current value matches CHAND_MULT by design — Turtle ATR is the faster secondary exit, not an independent mechanism. See memory/hyperopt-2026-04-12-atr-mult.md.
 
 const UNIVERSES: &[(&str, &[&str])] = &[
