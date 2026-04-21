@@ -442,9 +442,9 @@ All walk-forward validation is on daily bars (310 trades / 8 years). 4h bars wou
 
 | Strategy | Status | Reason |
 |----------|--------|--------|
-| EP re-optimization | CLOSED | EP=24 is production (daac533a, 2026-04-20) |
-| Chandelier P/M re-sweep | CLOSED | P=11/M=2.25 is production |
-| ATR entry filter | CLOSED | Confirmed 0.00, done twice |
+| EP re-optimization | NEEDS HELD-OUT | EP=24 is noise-level (+2 windows) — never validated on held-out. May revert to EP=21. See PLAN.md T3. |
+| Chandelier P/M re-sweep | CLOSED | P=7/M=2.25 is production — real improvement but partly cross-param correction from P=11 (stale EP=21). |
+| ATR_ENTRY_MULT 0.85 | NEEDS HELD-OUT | EM=0.85 is noise-level (+1 window) — never validated on held-out. See PLAN.md T3. |
 | Vol regime filters | CLOSED | All failed, Chandelier handles it |
 | Position scaling | CLOSED | All failed — Chandelier is sufficient |
 | Non-trend strategies | CLOSED | All failed — edge is directional trend |
@@ -458,6 +458,6 @@ All walk-forward validation is on daily bars (310 trades / 8 years). 4h bars wou
 | # | Priority | Why |
 |---|----------|-----|
 | **T1** | Equity chart column verification (#30) | 4+ sessions overdue. Do NOT send Discord charts until verified. |
-| **T2** | HALL_OF_FAME cleanup (#29) | Stale equity claim, duplicate entries. Source: live_turtle_chandelier.rs only. |
-| **T3** | CTREND + CTREND-native exit (#26) | Signal confirmed genuine by Monte Carlo. Chandelier exit was wrong class. |
+| **T2** | CTREND + CTREND-native exit (#26) | Only untested idea producing genuinely new signal knowledge. Monte Carlo confirmed genuine. |
+| **T3** | Held-out validation for EP=24 and ATR_ENTRY_MULT 0.85 | Noise-level changes accepted without held-out test. May revert to EP=21 / EM=0.90. |
 | **T4** | 4h Multi-Timeframe Turtle (#27) | All walk-forward is daily. 4h might catch short-cycle breakouts. |

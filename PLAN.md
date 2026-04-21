@@ -1,100 +1,82 @@
 # PLAN.md — Krypto Live Testnet Priority
 
-**State: 2026-04-21 08:15 UTC. Critique session completed. TOP PRIORITY: Run 2026-only OOS validation. HALL_OF_FAME.md needs full audit. Hyperopt cycling stopped.**
+**State: 2026-04-21 16:05 UTC. Research CLOSED. Blocked on live testnet API keys. Equity chart stale (248x claimed, ~780x actual with P=7). EP=24 and ATR_ENTRY_MULT 0.85 are marginal noise-level changes.**
 
 ---
 
 ## CRITICAL — Do First
 
-### T-2026: Walk-Forward Including 2026 OOS Data ✅ DONE
-**Result: W06 PASSES 9/9 universes. 58/63 global pass (92%).**
-- W06 (2026): 9/9 universes pass — +351.9% (Base5), +211.3% (NoDOGE), +52.5% (Legacy4), +203.1% (Legacy5BNB), +140.9% (OldGuardNoBNB), +278.7% (LargeCaps5), +23.6% (Legacy3), +71.9% (LowVolume5), +223.5% (OldGuard4)
-- Extended data: fetch_data_in_range bypasses Binance ~2080 bar historical cap
-- Prior catastrophic -22.7% YTD was from BTC+ETH-only harness with 294 test bars (too short)
-- **Commit:** `ed813fef`
-- **Data:** BTC 2806, ETH 2806, SOL 1717, XRP 2547, DOGE 2120, ADA 2564 rows
+### T1: Equity Chart Regeneration + Column Verification
+**Status: 4+ sessions overdue. The 248x number in daily_progress.csv is stale (P=15 harness).**
+- `progress_equity_curves.rs` was just fixed to P=7 (76b4e6fc commit) but CSV was generated with stale P=15
+- Re-run: `cargo run --example progress_equity_curves --profile sweep`
+- Manually verify column mapping: print raw CSV headers → map each column to harness source → verify Python reads correct indices
+- Update `reports/daily_progress.csv` with correct equity numbers
+- **Until verified: Do NOT send equity charts to Discord**
 
-### T1: Equity Curve Regeneration + Source Verification
-**Progress chart has been wrong 3+ times in project history.**
-- Run `cargo run --example progress_equity_curves --profile sweep`
-- Manually verify column mapping: which column = turtle_equity, which = ad_equity
-- Verify the equity numbers match what the Rust harness actually writes
-- Only after column verification: generate PNG and send to Discord
-- **Until verified:** Do NOT send equity charts to Discord
-
-### T2: HALL_OF_FAME.md Full Audit
-**HALL_OF_FAME has been stale for 4+ sessions. Contradictions across files.**
-- Pull production params ONLY from `examples/live_turtle_chandelier.rs` source code
-- Verify every param (EP, CHAND_P, CHAND_M, ATR_ENTRY_MULT, HOLD_MAX, etc.)
-- Rewrite HALL_OF_FAME to match code exactly, add staleness disclaimer
-- Add header: "WARNING: May be stale. Source of truth: live_turtle_chandelier.rs"
+### T2: CTREND + CTREND-Native Exit Walk-Forward (#26)
+**Monte Carlo confirms CTREND signal is genuine (0/500 shuffled beat real). But CTREND + Chandelier exit FAILED (30/54). Exit mechanism was wrong class.**
+- Hypothesis: CTREND's multi-horizon smoothing fires too slowly for Chandelier's tight stop
+- Test: Sweep fixed holds (10, 15, 21, 30, 45, 60, 90 bars) + multi-horizon counter exit (exit when shorter-horizon CTREND flips against position)
+- Baseline: Turtle+Chandelier = 43/54 pass
+- Any CTREND variant beating 38/54 = viable signal family
+- **This is the only untested idea that produces genuinely new strategy knowledge**
 
 ---
 
 ## HIGH PRIORITY
 
-### T3: 2026 YTD Parameter Investigation
-**All 3 param sets produce IDENTICAL -32.8% result in 2026 YTD. Why?**
-- Re-run with EP=21 (EP=24 may be hyperopt noise)
-- Check: does Turtle ATR exit fire differently at EP=21 vs EP=24 in 2026?
-- Run ATR_ENTRY_MULT=0.90 on 2026-only data — does it help or hurt?
-- Document: is 2026 regime-inherent loss or signal quality degradation?
+### T3: Held-Out Validation Gate for Parameter Changes
+**Problem: EP=24 (+2 windows vs EP=21, +3.7% Sharpe) was accepted without held-out test. Within noise range. This is exactly how overfitting happens.**
+- Rule: Any parameter change producing <+5% Sharpe improvement AND <+3 window improvement requires formal held-out test
+- Held-out test: fix the parameter on W00-W03 only, validate on W04-W05 (never used in optimization)
+- Apply this to EP=24 and ATR_ENTRY_MULT=0.85 before treating them as production defaults
 
-### T4: CTREND-Native Exit Walk-Forward
-**Hypothesis:** CTREND signal confirmed genuine, but wrong exit mechanism (Chandelier too tight).
-- Test: Exit when shorter-horizon CTREND flips against position
-- Sweep fixed holds: 10, 15, 21, 30, 45, 60, 90 bars
-- Compare vs Turtle+Chandelier baseline (43/54 pass)
-- If any CTREND variant beats 38/54 -> viable alternative signal family
-
-### T5: Commit Quality Gate
-**No more undocumented bug fix commits.**
-- "Turtle ATR exit bug fix" in `6ec838bd` is unexplained
-- If real signal bug: prior ATR parameter results may be invalidated -> re-run ATR_PERIOD sweep
-- If trivial: don't call it "bug fix" — say "refactor: clean up ATR calculation comments"
-- **Rule:** Every commit touching signal logic must describe WHAT bug and WHICH harness validated
+### T4: Sideways Regime Stress Test
+**All validation is bull or bear. Almost no sideways regime data. CHAND_P=7 (tightest ever used) may behave badly in low-vol chop.**
+- Identify the most sideways regime in dataset: flat price + low ATR percentile
+- Run Turtle+Chandelier(P=7) on that window specifically
+- If P=7 fails sideways while P=11 or P=15 passes → we need a regime-conditional Chandelier parameter
 
 ---
 
 ## BLOCKED — Waiting on Noah
 
-### T6: Live Testnet
-Noah needs testnet API keys. Without this, no live paper trading.
+### T5: Live Testnet
+Noah needs testnet API keys. Without this, no live paper trading. This is the only validation that matters now.
 
 ---
 
 ## STOP DOING
 
-- **Hyperopt cycling on stable params** — ATR_MULT 3x, ATR_PERIOD 3x, CHAND_MULT 3x, EP 4x. All confirm prior results. Stop.
-- **Equity vanity numbers** — stop saying "$67M", "1048.5x", "670,515%". Report equity Sharpe (~1.3) and pass rate (83%).
-- **HALL_OF_FAME as source of truth** — treat as potentially stale. Verify against source code.
-- **Undocumented bug fix commits** — document which harness confirmed the fix.
-- **Running without --profile sweep** — build speed matters.
+- **Hyperopt cycling on stable params** — EP=24 is noise, ATR_ENTRY_MULT 0.85 is marginal. No more sweeps on these.
+- **Equity vanity numbers** — stop reporting 248x when actual is ~780x with current P=7. Report verified numbers only.
+- **HALL_OF_FAME equity claims** — the 1048.5x was from P=5/M=3.00, doesn't match current P=7/M=2.25. Needs recalculation.
+- **Treating marginal wins as confirmed production params** — EP=24, ATR_ENTRY_MULT 0.85 need held-out validation before production acceptance.
 
 ---
 
-## Current Production Params (CONFLICTING — T2 MUST RESOLVE)
+## Current Production Params (NEEDS HELD-OUT VALIDATION)
 
 ```
-EP = 24 (HALL_OF_FAME) vs 21 (ATR_ENTRY_MULT commit) ← CONFLICT
-CHAND_PERIOD = 11 (HALL_OF_FAME) vs 15 (live code reported) ← CONFLICT
-CHAND_MULT = 2.25 (HALL_OF_FAME) vs 1.50 (live code reported) ← CONFLICT
-ATR_ENTRY_MULT = 0.90
-HOLD_MAX = 12
-POSITION_CAP = 3
-FRESHNESS_COOLDOWN = 0
+EP = 24              ← needs held-out test (was EP=21, +2 windows noise)
+CHAND_PERIOD = 7     ← validated on current params
+CHAND_MULT = 2.25    ← validated
+ATR_ENTRY_MULT = 0.85 ← needs held-out test (+1 window, marginal)
+HOLD_MAX = 12        ← validated
+ATR_PERIOD = 24      ← validated
+POSITION_CAP = 3     ← validated
+FRESHNESS_COOLDOWN = 0 ← validated
 ```
-
-**HALL_OF_FAME contradicts live code. T2 audit must resolve this.**
 
 ---
 
 ## Research Loop Status
 
 Genuinely untested ideas:
-1. **#26 CTREND-native exit** — REJECTED (30/54 pass vs Turtle 43/54)
-2. **#27 4h multi-timeframe Turtle** — genuinely new territory (all validation is daily)
-3. **#28 2026 OOS validation** — DONE ✅ (9/9 universes pass)
+1. **#26 CTREND + CTREND-native exit** — Monte Carlo confirmed genuine signal, wrong exit mechanism. This is new signal family territory.
+2. **#27 4h multi-timeframe Turtle** — all validation is daily, different resolution may catch short-cycle edges
+3. **#30 Equity chart verification** — infrastructure built, needs clean run
 
 All non-trend strategies: GRAVEYARD.
 All regime switching: GRAVEYARD.
@@ -106,10 +88,9 @@ All entry-side filters: GRAVEYARD.
 
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
-| **ZERO 2026 in walk-forward** | CRITICAL | T-2026 |
-| **HALL_OF_FAME contradictions** | CRITICAL | T2 audit |
-| **Equity chart unverified** | CRITICAL | T1 in progress |
-| **2026 YTD -22.7% unexplained** | CRITICAL | T3 investigation |
-| **Hyperopt cycling (no new knowledge)** | MODERATE | STOP DOING |
-| **SOL slippage vs model (3.7x miss)** | MODERATE | Accept — tracker built |
-| **Noah's testnet API keys** | BLOCKED | Waiting |
+| **EP=24 needs held-out validation** | CRITICAL | T3 in progress |
+| **ATR_ENTRY_MULT 0.85 needs held-out validation** | CRITICAL | T3 in progress |
+| **Equity chart unverified (4+ sessions)** | CRITICAL | T1 in progress |
+| **No sideways regime validation** | MODERATE | T4 in progress |
+| **Live execution never validated** | BLOCKED | Waiting on T5 |
+| **HALL_OF_FAME equity claim stale** | LOW | Will self-correct when T1 done |
