@@ -31,7 +31,7 @@ CHAND_PERIOD = 7     // +6.9% Sharpe vs P=11, same pass rate — plausible
 CHAND_MULT = 2.30    // MARGINAL: +1 window over M=2.25 in 54-window test
 ATR_ENTRY_MULT = 0.00 // CONFIRMED: definitive sweep winner, NOT marginal
 HOLD_MAX = 12        // +71% Sharpe vs HM=45 — plausible but sweep used P=11 (not P=7)
-ATR_PERIOD = 24      // Confirmed 3×, no further testing needed
+ATR_PERIOD = 24      // Confirmed NULL sweep 2026-04-25 — all 26 values produced 100% pass. ATR=24 confirmed.
 POSITION_CAP = 3
 FRESHNESS_COOLDOWN = 0
 MAX_SOL_POSITION = $50K notional
@@ -60,7 +60,7 @@ MAX_SOL_POSITION = $50K notional
 - Synthetic test: 420 fills, avg slippage BTC -1.05bp, SOL -2.03bp, no alerts
 - **Status:** Cannot be validated further without live FillLog CSV from testnet
 
-### T6: CTREND Fixed-Hold Exit Sweep — 🟡 UNTESTED (genuinely new territory)
+### T6: CTREND Fixed-Hold Exit Sweep — ✅ COMPLETE (2026-04-25)
 - **Signal is genuine:** Monte Carlo 0/500 shuffled beat real
 - **Prior test (REJECTED):** CTREND entry + Chandelier exit → 30/54 pass (wrong mechanism — Chandelier too tight for CTREND's slower multi-horizon timing)
 - **New test:** CTREND entry + fixed-hold sweep (10, 15, 21, 30, 45, 60, 90 bars)
