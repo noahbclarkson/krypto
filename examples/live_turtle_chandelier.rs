@@ -255,7 +255,7 @@ fn main() -> Result<()> {
     println!("{} {}", "═".repeat(66), "═".cyan());
     println!("  Live Turtle+Chandelier Bot");
     println!("  Params: EP={}, Chand({},{}), ATR({},{}), ATR_ENTRY={:.2}, HM={}, CAP={} (freshness filter DISABLED — cd=0)",
-             EP, CHAND_P, CHAND_M, ATR_P, ATR_M, 0.85, HOLD_MAX, POS_CAP);
+             EP, CHAND_P, CHAND_M, ATR_P, ATR_M, ATR_ENTRY_MULT, HOLD_MAX, POS_CAP);
     println!("{} {}", "═".repeat(66), "═".cyan());
     println!();
 
