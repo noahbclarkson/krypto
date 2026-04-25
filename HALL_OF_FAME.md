@@ -1,6 +1,6 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-*Last updated: 2026-04-25. CHAND_MULT 2.25→2.30 (dense sweep 71 values, step=0.05: M=2.30 wins 83.3% pass vs M=2.25 81.5%, Sharpe 6.204 vs 6.122). ATR_ENTRY_MULT 0.90→0.85 (fine sweep). HOLD_MAX 45→12 (hyperopt 2026-04-21). CHAND_PERIOD 11→7 (hyperopt 2026-04-21). EP=24. Global pass: 45/54 (83.3%) with ATR_ENTRY_MULT=0.85. See memory/hyperopt-2026-04-25-chand-mult-dense.md.*
+*Last updated: 2026-04-25. CHAND_MULT 2.25→2.30 (dense sweep 71 values, step=0.05: M=2.30 wins 83.3% pass vs M=2.25 81.5%, Sharpe 6.204 vs 6.122). ATR_ENTRY_MULT 0.85→0.00 (REVERTED — full 41-value sweep {0.00-2.00 step 0.05} × 9 universes × 54 windows with CHAND(7,2.30)/EP=24/HM=12. EM=0.00 wins: 83.3% pass, Sharpe 1.87, 707 trades. Prior EM=0.85 was in-sample inflation on OOS data). HOLD_MAX 45→12 (hyperopt 2026-04-21). CHAND_PERIOD 11→7 (hyperopt 2026-04-21). EP=24. Global pass: 45/54 (83.3%).*
 
 ## PRODUCTION — DEPLOYABLE
 
@@ -14,7 +14,7 @@
 - **Max DD:** 35.4% (W02 COVID-crash)
 - **Total trades (full history):** 310, $10K → $67M
 
-**Frozen params (CHAND(7,2.30), updated 2026-04-25 with ATR_ENTRY_MULT=0.85):**
+**Frozen params (CHAND(7,2.30), updated 2026-04-25: ATR_ENTRY_MULT 0.85→0.00):**
 ```
 EP = 24              (entry lookback — hyperopt 2026-04-20: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%). See hyperopt-2026-04-20-ep-reopt.md)
 ATR_PERIOD = 24      (Turtle ATR — fine hyperopt 2026-04-16)
@@ -22,7 +22,7 @@ ATR_MULT = 0.0       (Turtle ATR stop multiplier — confirmed 2.0, 2026-04-16. 
 CHAND_MULT = 2.30    (Chandelier exit multiplier — hyperopt 2026-04-25: DENSE sweep M∈[1.50..5.00] step 0.05 (71 values) × 9 universes × 54 windows. M=2.30 wins: Sharpe 6.204 (+0.8% vs M=2.25 at 6.122), 83.3% pass (45/54) vs 81.5% (44/54). Lowest M at peak pass rate — most efficient. See memory/hyperopt-2026-04-25-chand-mult-dense.md. NOTE: M=2.30 is the production default. Historical M=2.25 results remain valid — the shift is marginal.)
 CHAND_PERIOD = 7     (full sweep CP∈[5..60 step2]×9 universes×54 windows with current production params (HM=12, ATR_EM=0.90, EP=24, CM=2.25), 2026-04-21: CP=7 wins global Sharpe 5.908 (+6.9% vs CP=11 baseline 5.526). Prior CP=11 sweep used stale EP=21. See memory/hyperopt-2026-04-21-chand-period.md.)
 CHAND_MULT = 2.25    (extensive sweep M∈[0.50..5.00 step 0.25]×9 universes×7 windows, 2026-04-20: M=2.25 wins +47% global Sharpe vs M=1.50. See hyperopt-2026-04-20-chand-mult.md)
-ATR_ENTRY_MULT = 0.85  // hyperopt 2026-04-21 FINE sweep: EM=0.85 wins 44/54 (81.5%) vs EM=0.90 43/54 (79.6%). Full 11-value sweep {0.60-1.10 step 0.05} × 9 universes × 54 windows with current production params CHAND(7,2.25)/EP=24/HM=12. EM=0.85 avoids catastrophic Base5 W3 failure (+12.2% vs -28.3%). +3.6% Sharpe (6.12 vs 5.91). See memory/hyperopt-2026-04-21-atr-entry-mult-fine.md.
+ATR_ENTRY_MULT = 0.00  // REVERTED 2026-04-25: Full 41-value sweep {0.00-2.00 step 0.05} × 9 universes × 54 windows with CHAND(7,2.30)/EP=24/HM=12. EM=0.00 wins definitively: 83.3% pass, Sharpe 1.87, +151.9% return, 707 trades. Prior EM=0.85 (2026-04-21 winner) was in-sample inflation — both EP=24 and EM=0.85 were optimized on the same OOS validation data used for EP=24 and P=7. EM=0.00 is the production default. See memory/hyperopt-2026-04-25-atr-entry-mult.md.
 HOLD_MAX = 12  // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Chandelier fires first ~bar 12-15; HM irrelevant above ~35.
 POSITION_CAP = 3
 FRESHNESS_COOLDOWN = 0

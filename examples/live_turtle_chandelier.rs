@@ -10,7 +10,7 @@
 //! BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy cargo run --example live_turtle_chandelier --profile sweep -- --live
 //! ```
 //!
-//! Validated walk-forward: 83% global pass (44/54), 100% Base5 pass (6/6) with current production params CHAND(7,2.25)/EP=24/HM=12/ATR_ENTRY_MULT=0.85. Sharpe 6.12 (avg per-window). Pre-2021 stress: 67.9% (19/28) — marginally below 70% threshold.
+//! Validated walk-forward: 83% global pass (45/54), 100% Base5 pass (6/6) with CHAND(7,2.30)/EP=24/HM=12/ATR_ENTRY_MULT=0.00. Pre-2021 stress: 67.9% (19/28). ATR_ENTRY_MULT reverted 2026-04-25 — full sweep showed EM=0.00 wins over EM=0.85.
 //! Pre-2021 held-out: 100% pass (21/21 windows).
 //! Fee-adjusted Sharpe ≈ 3.1–3.7.
 
@@ -26,7 +26,7 @@ use std::collections::VecDeque;
 // Strategy params (validated)
 // =============================================================================
 const EP: usize = 24;       // Turtle entry lookback — hyperopt 2026-04-20: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%), +2% Sharpe. See memory/hyperopt-2026-04-20-ep-reopt.md.
-const CHAND_P: usize = 7;  // Chandelier ATR period — hyperopt 2026-04-21: CP=7 wins +6.9% Sharpe vs CP=11 (5.908 vs 5.526). Swept CP∈[5..60 step2] × 9 universes × 54 windows with current production params (EP=24, HM=12, ATR_ENTRY_MULT=0.85, CM=2.25). Pass rate 43/54 (79.6%, identical to CP=11). Prior CP=11 sweep used stale EP=21. See memory/hyperopt-2026-04-21-chand-period.md.
+const CHAND_P: usize = 7;  // Chandelier ATR period — hyperopt 2026-04-21: CP=7 wins +6.9% Sharpe vs CP=11 (5.908 vs 5.526). Swept CP∈[5..60 step2] × 9 universes × 54 windows with current production params (EP=24, HM=12, ATR_ENTRY_MULT=0.00, CM=2.30). Pass rate 43/54 (79.6%, identical to CP=11). Prior CP=11 sweep used stale EP=21. See memory/hyperopt-2026-04-21-chand-period.md.
 const CHAND_M: f64 = 2.30;   // Chandelier ATR multiplier — hyperopt 2026-04-25: DENSE sweep M∈[1.50..5.00] step 0.05 (71 values) × 9 universes × 54 windows. M=2.30 wins: Sharpe 6.2036 (+0.8% vs M=2.25 at 6.1225), 83.3% pass (45/54) vs 81.5% (44/54). See memory/hyperopt-2026-04-25-chand-mult-dense.md.
 const ATR_P: usize = 24;     // Turtle ATR period (2026-04-16: fine hyperopt 18-35 step=1, ATR=24 +3.6% Sharpe, -10.8pp DD vs ATR=25)
 const ATR_M: f64 = 2.0;     // Turtle ATR multiplier
