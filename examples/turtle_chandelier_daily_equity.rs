@@ -29,13 +29,13 @@ const EXIT_FEE: f64 = 0.0005;     // 5bp total exit cost
 // =============================================================================
 // Strategy params (FROZEN — all validated via hyperopt)
 // =============================================================================
-const TURTLE_ENTRY: usize = 21;       // hyperopt 2026-04-10
-const CHAND_PERIOD: usize = 28;        // hyperopt 2026-04-11 fine-sweep
-const CHAND_MULT: f64 = 2.00;         // hyperopt 2026-04-11
-const TURTLE_ATR_PERIOD: usize = 24; // fine-sweep winner 2026-04-16.
-const TURTLE_ATR_MULT: f64 = 2.00;    // hyperopt 2026-04-12
-const HOLD_MAX: usize = 45;           // hyperopt 2026-04-11
-const POSITION_CAP: usize = 3;        // hyperopt 2026-04-11
+const TURTLE_ENTRY: usize = 24;      // hyperopt 2026-04-20: EP=24 wins 45/54 vs EP=21 43/54
+const CHAND_PERIOD: usize = 7;       // hyperopt 2026-04-21: CP=7 wins +6.9% Sharpe vs CP=11
+const CHAND_MULT: f64 = 2.30;        // hyperopt 2026-04-25: DENSE sweep M=2.30 wins 83.3% pass
+const TURTLE_ATR_PERIOD: usize = 24; // fine-sweep winner 2026-04-16 (unchanged)
+const TURTLE_ATR_MULT: f64 = 2.00;    // hyperopt 2026-04-12 (unchanged)
+const HOLD_MAX: usize = 12;          // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45
+const POSITION_CAP: usize = 3;       // hyperopt 2026-04-11 (unchanged)
 
 // Production universe — 6/6 pass (100%) incl W04/W05
 const BASE5: &[&str] = &["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT"];

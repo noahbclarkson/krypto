@@ -30,6 +30,7 @@ const CHAND_P: usize = 7;  // Chandelier ATR period — hyperopt 2026-04-21: CP=
 const CHAND_M: f64 = 2.30;   // Chandelier ATR multiplier — hyperopt 2026-04-25: DENSE sweep M∈[1.50..5.00] step 0.05 (71 values) × 9 universes × 54 windows. M=2.30 wins: Sharpe 6.2036 (+0.8% vs M=2.25 at 6.1225), 83.3% pass (45/54) vs 81.5% (44/54). See memory/hyperopt-2026-04-25-chand-mult-dense.md.
 const ATR_P: usize = 24;     // Turtle ATR period (2026-04-16: fine hyperopt 18-35 step=1, ATR=24 +3.6% Sharpe, -10.8pp DD vs ATR=25)
 const ATR_M: f64 = 2.0;     // Turtle ATR multiplier
+const ATR_ENTRY_MULT: f64 = 0.00; // NO entry-side ATR filter — confirmed 2026-04-25 (revert from 0.85)
 const HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 baseline (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Full sweep 19 values [5-180] with production params CHAND(11,2.25)/EP=24. Chandelier fires first ~bar 12-15; HM is irrelevant above ~35. HM=12 wins on Sharpe + pass rate (96.3% vs 92.6%). See memory/hyperopt-2026-04-21-hold-max.md.
 const POS_CAP: usize = 3;   // Max concurrent positions
 
