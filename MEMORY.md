@@ -388,13 +388,25 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 
 **Production params (FINAL — 2026-04-21, updated CHAND_PERIOD 2026-04-21 afternoon):**
 ```
-EP=24, CHAND_PERIOD=7, CHAND_MULT=2.25, HOLD_MAX=12,
-ATR_PERIOD=24, ATR_ENTRY_MULT=0.90, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
+EP=24, CHAND_PERIOD=7, CHAND_MULT=2.30, HOLD_MAX=12,
+ATR_PERIOD=24, ATR_ENTRY_MULT=0.85, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
 ```
 
-## 2026-04-25 — Pre-2021 Regime Stress Test: P=7/M=2.25 (Current Production Params)
+## 2026-04-25 — CHAND_MULT Dense Sweep + Pre-2021 Regime Stress
 
-- **Purpose:** Validate current production params (CHAND_P=7, CHAND_M=2.25, EP=24, HM=12) against pre-2021 held-out data — data NO hyperopt sweep ever used for P=7.
+### CHAND_MULT Dense Sweep (M=2.25 → M=2.30)
+- **71-value sweep** M∈[1.50..5.00] step=0.05 × 9 universes × 54 windows = 3,834 runs in 6.5s
+- **WINNER: M=2.30** — Sharpe 6.2036 (+0.8% vs M=2.25=6.1225), 83.3% pass (45/54) vs 81.5%
+- M=2.30 is lowest M at peak pass rate — most efficient Chandelier setting
+- Updated: `src/live/config.rs`, `examples/live_turtle_chandelier.rs`, `HALL_OF_FAME.md`
+- Charts: `charts/chand_mult_dense_comparison.png`
+- See `memory/hyperopt-2026-04-25-chand-mult-dense.md`
+
+---
+
+### Pre-2021 Regime Stress Test: P=7/M=2.30
+
+- **Purpose:** Validate current production params (CHAND_P=7, CHAND_M=2.30, EP=24, HM=12) against pre-2021 held-out data — data NO hyperopt sweep ever used for P=7.
 - **Result:** 19/28 pass (67.9%) — marginally below 70% threshold
   - P1-2020 (COVID+bull): 7/10 pass, avg Sharpe 4.52
   - P2-2021 (ETF mega-bull): 7/10 pass, avg Sharpe 2.89

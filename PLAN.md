@@ -24,7 +24,7 @@ The project has systematically tested all major strategy ideas. All trend-follow
 ## CRITICAL — Pending
 
 ### T3: Held-Out Validation — ✅ COMPLETE (2026-04-25)
-- **Result: 20/20 pass (100%)** on pre-2021 held-out data using current production params EP=24/CHAND(7,2.25)/HM=12/ATR_ENTRY_MULT=0.85
+- **Result: 20/20 pass (100%)** on pre-2021 held-out data using params EP=24/CHAND(7,2.25)/HM=12/ATR_ENTRY_MULT=0.85 (CHAND_MULT subsequently updated 2.25→2.30, 2026-04-25 dense sweep)
 - Harness identical to original regime_stress_test.rs (which got 21/21 with P=28/M=2.0) — comparable result
 - P1-2020: 7/7 pass (100%), P2-2021: 9/9 pass (100%), P3-2019: 4/4 pass (100%)
 - **Conclusion:** EP=24 and ATR_ENTRY_MULT=0.85 are genuine held-out validated improvements, not noise
@@ -73,10 +73,10 @@ Noah needs Binance testnet API keys. Without this, no live paper trading.
 
 ---
 
-## Production Params (FINAL — 2026-04-21, validated 2026-04-25)
+## Production Params (FINAL — 2026-04-25, updated CHAND_MULT 2.25→2.30)
 
 ```
-EP=24, CHAND_PERIOD=7, CHAND_MULT=2.25, HOLD_MAX=12,
+EP=24, CHAND_PERIOD=7, CHAND_MULT=2.30, HOLD_MAX=12,
 ATR_PERIOD=24, ATR_ENTRY_MULT=0.85, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
 ```
 
