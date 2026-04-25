@@ -406,3 +406,21 @@ ATR_PERIOD=24, ATR_ENTRY_MULT=0.90, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
 - **HALL_OF_FAME audit:** All params correct (CHAND_P=7, ATR_ENTRY_MULT=0.85, HOLD_MAX=12). Deprecated equity figure "1048.5x" from stale P=5/M=3.00 run. Source of truth is `examples/live_turtle_chandelier.rs`.
 - **Project state:** Research loop CLOSED. Only live testnet (Noah's API keys) advances the project.
 - Files: `examples/regime_stress_p7_validation.rs`, `examples/regime_stress_test.rs`
+
+## 2026-04-25 — 4h Multi-Timeframe Turtle: GRAVEYARD
+
+**Track C: Broaden edge discovery — genuinely untested idea from PLAN.md.**
+All prior walk-forward validation is daily (1d). Hypothesis: Turtle breakout at 4h might offer more granular entry.
+
+**Full walk-forward:** 5 symbols × 4 windows × EP sweep [24, 48, 96, 144] × CP sweep [18, 36, 48, 72].
+
+**Result: DECISIVELY REJECTED — 1/20 pass (5%), avg Sharpe 0.11, 65 trades.**
+- BTC: 0/4 passes | ETH: 0/4 | SOL: 0/4 | DOGE: 0/4 | XRP: 1/4 (marginal)
+- EP variation: all produce 5% pass rate (0.10-0.11 Sharpe) — no differentiation
+- CP variation: all produce identical results (5% pass, 0.11 Sharpe) — no differentiation
+
+**Root cause:** The dual Chandelier+Turtle ATR exit mechanism is fundamentally tied to daily timeframe mechanics. On 4h, 60 bars = 10 days = the entire lifetime of a typical trade. The Chandelier stop becomes equivalent to a fixed-time stop, collapsing the dual-exit to a single exit. Turtle ATR exit also trails too slowly at this timescale. EP and CP parameter scaling doesn't fix a structural incompatibility.
+
+**Conclusion:** Turtle+Chandelier requires daily bars to work. The strategy captures multi-day trend dynamics that need room to develop. 4h simply doesn't have the same "bar per day" resolution for the trailing stops to function as designed. **Requires structural re-think, not parameter tuning.**
+
+File: `examples/turtle_4h_walkforward.rs`.

@@ -118,5 +118,5 @@ HALL_OF_FAME.md may be stale — always verify against live_turtle_chandelier.rs
 | **HALL_OF_FAME staleness** | CRITICAL | ✅ Done (2026-04-25) |
 | **Zero 2026 in walk-forward** | CRITICAL | ✅ Done (W06 passes 9/9) |
 | **2026 YTD -32.8% unexplained** | CRITICAL | ✅ EXPLAINED (Turtle ATR dominates) |
-| **4h multi-timeframe Turtle** | MEDIUM | Genuinely untested — requires live data |
+| **4h multi-timeframe Turtle** | MEDIUM | ✅ GRAVEYARD (2026-04-25) — 1/20 pass (5%), 4h Chandelier = fixed-time stop, collapses dual-exit |
 | **Noah's testnet API keys** | BLOCKED | Waiting |
