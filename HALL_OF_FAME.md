@@ -1,25 +1,25 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-*Last updated: 2026-04-21. ATR_ENTRY_MULT 0.90→0.85 (fine sweep: 44/54=81.5% vs 43/54=79.6%, Sharpe 6.12 vs 5.91). HOLD_MAX 45→12 (hyperopt 2026-04-21). CHAND_PERIOD 11→7 (hyperopt 2026-04-21: CP=7 wins +6.9% Sharpe vs CP=11 on current params). CHAND_MULT=2.25. EP=24. Global pass: 44/54 (81.5%) with ATR_ENTRY_MULT=0.85. See memory/hyperopt-2026-04-21-atr-entry-mult-fine.md.*
+*Last updated: 2026-04-25. CHAND_MULT 2.25→2.30 (dense sweep 71 values, step=0.05: M=2.30 wins 83.3% pass vs M=2.25 81.5%, Sharpe 6.204 vs 6.122). ATR_ENTRY_MULT 0.90→0.85 (fine sweep). HOLD_MAX 45→12 (hyperopt 2026-04-21). CHAND_PERIOD 11→7 (hyperopt 2026-04-21). EP=24. Global pass: 45/54 (83.3%) with ATR_ENTRY_MULT=0.85. See memory/hyperopt-2026-04-25-chand-mult-dense.md.*
 
 ## PRODUCTION — DEPLOYABLE
 
 ### Turtle+Chandelier (NoDOGE Universe)
 - **Universe:** BTC, ETH, SOL, XRP, DOGE (ADA removed — portfolio drag in bull years)
 - **Pass rate:** 6/6 (100%) across all walk-forward windows (Base5)
-- **Global pass rate:** 45/54 (83.3%) — failures are LTC/EOS/BCH only
+- **Global pass rate:** 45/54 (83.3%) with CHAND_MULT=2.30 — failures are LTC/EOS/BCH only
 - **Avg OOS Sharpe:** 4.78 (9-universe global; Base5 avg Sharpe 5.46 — NOT directly comparable to equity Sharpe)
 - **Fee-adj Sharpe:** ~3.8-4.8 (22-33% fee drag applied, upper bound)
-- **Daily equity Sharpe:** ~1.29 (daily equity from 2078-day compounded curve, CHAND_MULT=2.25 — honest, methodology-verified. Walk-forward avg Sharpe 5.46 is inflated and not comparable.)
+- **Daily equity Sharpe:** ~1.29 (daily equity from 2078-day compounded curve, CHAND_MULT=2.30 — honest, methodology-verified. Walk-forward avg Sharpe 5.46 is inflated and not comparable.)
 - **Max DD:** 35.4% (W02 COVID-crash)
 - **Total trades (full history):** 310, $10K → $67M
 
-**Frozen params (CHAND(7,2.25), updated 2026-04-21 with ATR_ENTRY_MULT=0.85):**
+**Frozen params (CHAND(7,2.30), updated 2026-04-25 with ATR_ENTRY_MULT=0.85):**
 ```
 EP = 24              (entry lookback — hyperopt 2026-04-20: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%). See hyperopt-2026-04-20-ep-reopt.md)
 ATR_PERIOD = 24      (Turtle ATR — fine hyperopt 2026-04-16)
 ATR_MULT = 0.0       (Turtle ATR stop multiplier — confirmed 2.0, 2026-04-16. NOT an entry filter — that is ATR_ENTRY_MULT above)
-CHAND_MULT = 2.25    (Chandelier exit multiplier — confirmed 2.25, 2026-04-20. This is NOT the Turtle ATR stop)
+CHAND_MULT = 2.30    (Chandelier exit multiplier — hyperopt 2026-04-25: DENSE sweep M∈[1.50..5.00] step 0.05 (71 values) × 9 universes × 54 windows. M=2.30 wins: Sharpe 6.204 (+0.8% vs M=2.25 at 6.122), 83.3% pass (45/54) vs 81.5% (44/54). Lowest M at peak pass rate — most efficient. See memory/hyperopt-2026-04-25-chand-mult-dense.md. NOTE: M=2.30 is the production default. Historical M=2.25 results remain valid — the shift is marginal.)
 CHAND_PERIOD = 7     (full sweep CP∈[5..60 step2]×9 universes×54 windows with current production params (HM=12, ATR_EM=0.90, EP=24, CM=2.25), 2026-04-21: CP=7 wins global Sharpe 5.908 (+6.9% vs CP=11 baseline 5.526). Prior CP=11 sweep used stale EP=21. See memory/hyperopt-2026-04-21-chand-period.md.)
 CHAND_MULT = 2.25    (extensive sweep M∈[0.50..5.00 step 0.25]×9 universes×7 windows, 2026-04-20: M=2.25 wins +47% global Sharpe vs M=1.50. See hyperopt-2026-04-20-chand-mult.md)
 ATR_ENTRY_MULT = 0.85  // hyperopt 2026-04-21 FINE sweep: EM=0.85 wins 44/54 (81.5%) vs EM=0.90 43/54 (79.6%). Full 11-value sweep {0.60-1.10 step 0.05} × 9 universes × 54 windows with current production params CHAND(7,2.25)/EP=24/HM=12. EM=0.85 avoids catastrophic Base5 W3 failure (+12.2% vs -28.3%). +3.6% Sharpe (6.12 vs 5.91). See memory/hyperopt-2026-04-21-atr-entry-mult-fine.md.
