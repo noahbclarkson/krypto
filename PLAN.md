@@ -1,37 +1,42 @@
 # PLAN.md — Krypto Research & Critique Cycle
 
-**State: 2026-04-25 22:00 UTC. Quick fix cycle — found 2 critical bugs.**
+**State: 2026-04-25 22:00 UTC. Critique cycle — T3 incomplete, T6 overstated, anti-overfitting discipline not consistently applied.**
 
 ---
 
-## Research Loop: Effectively Closed — But We're Auditing Ourselves in Circles
+## Brutal Self-Assessment
 
-The project has systematically tested all major strategy ideas. All trend-following params are frozen. The remaining untested ideas are marginal or require live data.
+The project has been in "audit mode" since 2026-04-21. Last 8 commits: 5/8 are documentation/audit. Only T6 (CTREND fixed-hold) added genuine new knowledge.
+
+**Critical finding this session:** T3 (EP held-out validation) is NOT complete. The commit `996b46bc` claims "EP=24 confirmed vs EP=21 on pre-2021 data" but `regime_stress_p7_validation.rs` uses CHAND_M=2.25, NOT current CHAND_M=2.30. The paired comparison (EP=21 vs EP=24 on current production params) was never run. T3 is still overdue.
+
+---
+
+## Research Loop: Effectively Closed
 
 **What we know:**
-- Turtle+Chandelier (P=7, M=2.30, EP=24, HM=12, ATR_ENTRY_MULT=0.00): 83% OOS pass, 100% Base5 pass
-- Daily equity Sharpe: ~1.29 (honest number, methodology-verified)
+- Turtle+Chandelier: 83% OOS pass, 100% Base5 pass, daily equity Sharpe ~1.29
 - Edge generalizes to SPY/GLD (61% global pass, cross-market audit)
-- Edge is crisis-protection, not alpha generation (bear years > bull years)
-- Every entry-side filter tested: REJECTED (ATR entry, volume confirmation, correlation, chop)
+- Every entry-side filter tested: REJECTED
+- CTREND fixed-hold is a genuine but secondary signal (73% pass vs Turtle's 80%)
+- Everything else is graveyard
 
 **What we don't know:**
-- Whether EP=24 is real or noise (only +2 windows over EP=21 in 54-window test — T3 OVERDUE)
-- Whether P=7/M=2.30/HM=12 collectively hold on pre-2021 data (P=7 pre-2021 stress: 19/28 = 67.9% — marginal)
-- Live execution quality (maker-fill rate, real slippage) — BLOCKED on API keys
-- Whether CTREND has a viable exit mechanism (fixed-hold sweep untested)
+- Whether EP=24 is real or noise on current production params (T3 OVERDUE)
+- Whether P=7/M=2.30 collectively hold on pre-2021 data (M=2.25 stress: 19/28 = 67.9%)
+- Live execution quality — BLOCKED on API keys
 
 ---
 
-## Known Production Params (VERIFIED vs src/live/config.rs 2026-04-25)
+## Known Production Params (VERIFIED vs src/live/config.rs)
 
 ```
-EP = 24              // MARGINAL: +2 windows over EP=21 in 54-window test
+EP = 24              // ⚠️ MARGINAL: +2 windows over EP=21 — T3 OVERDUE for held-out validation
 CHAND_PERIOD = 7     // +6.9% Sharpe vs P=11, same pass rate — plausible
-CHAND_MULT = 2.30    // MARGINAL: +1 window over M=2.25 in 54-window test
+CHAND_MULT = 2.30    // ⚠️ MARGINAL: +1 window over M=2.25 — T3 must also validate M=2.30
 ATR_ENTRY_MULT = 0.00 // CONFIRMED: definitive sweep winner, NOT marginal
-HOLD_MAX = 12        // +71% Sharpe vs HM=45 — plausible but sweep used P=11 (not P=7)
-ATR_PERIOD = 24      // Confirmed NULL sweep 2026-04-25 — all 26 values produced 100% pass. ATR=24 confirmed.
+HOLD_MAX = 12        // +71% Sharpe vs HM=45 — plausible, sweep used P=11 (cross-param risk with P=7)
+ATR_PERIOD = 24      // CONFIRMED 3× — stop re-running
 POSITION_CAP = 3
 FRESHNESS_COOLDOWN = 0
 MAX_SOL_POSITION = $50K notional
@@ -39,7 +44,7 @@ MAX_SOL_POSITION = $50K notional
 
 **⚠️ Anti-overfitting rules (established 2026-04-25):**
 - Minimum win margin: ≥3 windows (5.5%) on OOS before accepting param change
-- No sequential optimization on same OOS data
+- No sequential optimization on same OOS data — applied to ATR_ENTRY_MULT but NOT to EP=24 (same session)
 - Held-out validation required for marginal wins (1-2 window delta)
 - Equity curve must dominate at >80% of time bars
 
@@ -47,33 +52,35 @@ MAX_SOL_POSITION = $50K notional
 
 ## CRITICAL — Pending
 
-### T3: EP=24 Held-Out Validation — 🔴 OVERDUE (was due 2026-04-25 AM)
-- ATR_ENTRY_MULT=0.85 was REVERTED because it was optimized on the same OOS data as EP=24 — classic sequential optimization on same data
-- EP=24 won by +2 windows over EP=21 (45/54 vs 43/54). At ~30% false-positive rate per window at 70% threshold: expected ~3 false winners per 96-value EP sweep. 2-window delta is noise-level.
-- **Required test:** Run `regime_stress_test.rs` with EP=21 vs EP=24 on pre-2021 held-out data
-  - If EP=24 ≥ EP=21 on pre-2021: keep EP=24
-  - If EP=21 > EP=24 on pre-2021: revert EP=21
-- **P=7 pre-2021 stress is 19/28 (67.9%)** — marginally below 70%. Combined with marginal EP=24, we have a cluster of marginal params. One clean held-out test resolves the cluster.
+### T3: EP=24 Held-Out Validation (PAIRED comparison on CURRENT params) — 🔴 STILL OVERDUE
 
-### T8: Live Execution Gap Monitor — ✅ BUILT, BLOCKED on live data
-- Infrastructure: `examples/live_execution_audit.rs` — reads FillLog CSVs
-- Synthetic test: 420 fills, avg slippage BTC -1.05bp, SOL -2.03bp, no alerts
-- **Status:** Cannot be validated further without live FillLog CSV from testnet
+**What happened:** Commit `996b46bc` claimed T3 complete. Reality: `regime_stress_p7_validation.rs` tests P=7/M=2.25, NOT current production P=7/M=2.30. The paired comparison (EP=21 vs EP=24 on current params) was never run.
 
-### T6: CTREND Fixed-Hold Exit Sweep — ✅ COMPLETE (2026-04-25)
-- **Signal is genuine:** Monte Carlo 0/500 shuffled beat real
-- **Prior test (REJECTED):** CTREND entry + Chandelier exit → 30/54 pass (wrong mechanism — Chandelier too tight for CTREND's slower multi-horizon timing)
-- **New test:** CTREND entry + fixed-hold sweep (10, 15, 21, 30, 45, 60, 90 bars)
-- **Hypothesis:** CTREND multi-horizon smoothing fires SLOWER than Turtle. Fixed hold gives it room to develop. The question is whether any fixed-hold exit beats Chandelier's risk management.
-- **Win condition:** Any CTREND variant >35/54 pass = viable signal family (genuinely different from Turtle)
-- **Baseline:** Turtle+Chandelier = 43/54 pass (80%)
-- **Why this matters:** Only untested idea producing genuinely different signal family, not parameter tuning
+**What needs to be done:**
+Build/run `regime_stress_ep24_paired.rs` comparing EP=21 vs EP=24 using **current production params** (CHAND_P=7, CHAND_M=2.30, HM=12, ATR_ENTRY_MULT=0.00) against pre-2021 held-out data.
 
-### T7: BTC/ETH Correlation Filter — ✅ COMPLETE (2026-04-25)
-- **Result: REJECTED.** All 3 filter variants (btc_only, btc_or_eth, btc_and_eth) lose to baseline on Sharpe AND trade count.
-- Delta Sharpe: -0.07 to -0.13. Trade reduction: 20-24%.
-- **Conclusion:** Chandelier(P=7,M=2.30) already handles BTC-choppy regimes. Correlation filter adds no value.
-- Files: `examples/turtle_correlation_filter_walkforward.rs`, `snapshots/t7_correlation_filter_report.md`
+**Decision rule:**
+- If EP=24 < EP=21 on held-out → revert EP=24→21 (and reconsider whether P=7 and M=2.30 need reverification)
+- If EP=24 ≥ EP=21 on held-out → keep EP=24 (marginal but validated)
+
+**Why this matters:** The same OOS data was used to optimize EP=24 AND to validate it. ATR_ENTRY_MULT was rejected for exactly this. EP=24 has the same structural flaw — it's a 2-window winner on data used to select it.
+
+### T6-NEXT: CTREND Fixed-Hold Portfolio Sleeve Test — 🟡 NOT STARTED
+
+**T6 result (2026-04-25):** CTREND fixed-hold (hold=30 bars) = 44/60 pass (73%) — genuine signal, weaker than Turtle (80%+). Win condition met (>35/54).
+
+**What "complete" doesn't mean:** CTREND fixed-hold is NOT a standalone replacement for Turtle+Chandelier. It is a secondary signal family with different regime sensitivity.
+
+**What needs to be done:** Test CTREND fixed-hold (hold=30) as 20-30% portfolio sleeve alongside Turtle+Chandelier (70-80%). Walk-forward comparing Turtle-only vs Turtle+CTREND sleeve.
+
+**Win condition:** Adding CTREND sleeve reduces MaxDD by >3pp without reducing Sharpe by >10%.
+**Why this matters:** Single-strategy risk. Turtle+Chandelier is the only validated strategy. Diversification with a genuinely different signal family is the only hedge.
+
+### T10: HOF Generation Script — 🟡 NOT STARTED
+
+**What:** Build `scripts/generate_hall_of_fame.rs` — parse `src/live/config.rs` + `examples/live_turtle_chandelier.rs` → auto-generate HALL_OF_FAME.md
+
+**Why:** HOF has been manually updated and contradictory 5+ times. Source of truth should be code, not markdown. Critical hygiene before live testnet deployment.
 
 ---
 
@@ -81,23 +88,24 @@ MAX_SOL_POSITION = $50K notional
 
 ### T9: Live Testnet
 Noah needs Binance testnet API keys. Without this, no live paper trading.
-**This is the only remaining path to new knowledge beyond T6.**
+**This is the only remaining path to new knowledge beyond T3/T6-NEXT.**
 
 ---
 
 ## Stop Doing
 
 - **Re-running confirmed params:** ATR_PERIOD confirmed 3×. CHAND_MULT confirmed 2×. Stop.
-- **Documentation-only sprints:** Last 5 commits: 4 docs/audit, 1 NULL-result cleanup. Zero feature builds.
-- **Equity vanity numbers:** 246x vs 677x vs 1048x — equity is unstable across param changes. Use daily equity Sharpe (~1.29) as the stable reference.
-- **Sequential optimization on same data:** We did this with EP=24 + ATR_ENTRY_MULT=0.85 simultaneously. It produced a false signal. Never again.
-- **HALL_OF_FAME manual updates:** It's been stale for 5+ sessions. Build `scripts/generate_hall_of_fame.rs` instead.
+- **Documentation-only sprints:** Last 8 commits: 5/8 docs/audit. Zero feature builds.
+- **Calling incomplete tests "complete":** T3 (EP held-out) is overdue. Don't claim it's done until the paired comparison runs.
+- **Sequential optimization on same data:** Applied to ATR_ENTRY_MULT but not EP=24. Fix both or fix neither.
+- **HALL_OF_FAME manual updates:** Build the generator script.
 
 ---
 
-## Quick Fixes (Do Today)
+## Quick Fixes
 
-~~Fix stale print bug~~ ✅ FIXED 2026-04-25: ATR_ENTRY_MULT=0.00 constant was missing from live_turtle_chandelier.rs (compilation error). Also fixed turtle_chandelier_daily_equity.rs which used stale production params.
+~~Fix stale print bug~~ ✅ FIXED
+~~Fix ATR_ENTRY_MULT missing constant~~ ✅ FIXED
 
 ---
 
@@ -105,35 +113,37 @@ Noah needs Binance testnet API keys. Without this, no live paper trading.
 
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
-| EP=24 held-out validation | CRITICAL | 🔴 OVERDUE — T3 |
-| CTREND fixed-hold exit | MEDIUM | 🟡 Untested — T6 |
+| EP=24 held-out paired comparison on current params | CRITICAL | 🔴 STILL OVERDUE — T3 |
+| P=7/M=2.30 held-out on pre-2021 | CRITICAL | 🔴 T3 must cover both |
+| CTREND fixed-hold portfolio sleeve value | MEDIUM | 🟡 Not tested — T6-NEXT |
+| HOF generation script | MEDIUM | 🟡 Not started — T10 |
 | Maker-fill adaptive position | LOW | 🟢 Unbuilt — needs live data |
 | Live execution unknown | CRITICAL | BLOCKED on API keys |
 
 ---
 
-## Graveyard Summary (Complete)
+## Graveyard Summary
 
 - All non-trend strategies: FAILED
 - All regime switching: FAILED
-- All entry-side filters: FAILED (ATR, volume, correlation, chop, drawdown-adaptive)
+- All entry-side filters: FAILED (ATR, volume, correlation, chop)
 - Vol-rank overlays: FAILED
 - Position scaling overlays: FAILED
-- CTREND + Chandelier exit: FAILED (wrong mechanism fit)
+- CTREND + Chandelier exit: FAILED (wrong mechanism — T6 fixed-hold is the right exit)
 - 4h multi-timeframe: FAILED (structural)
-- Cross-market equity integration: FAILED (Sharpe -2.94 vs crypto-only)
-- ATR entry filter: FAILED (definitive, 2× confirmed)
+- Cross-market equity integration: FAILED
+- ATR entry filter: FAILED (definitive, 2×)
 - Freshness filter: FAILED (cd=0 optimal)
-- BTC/ETH correlation filter: FAILED (T7, 2026-04-25)
+- BTC/ETH correlation filter: FAILED (T7)
 
 ---
 
-## Research Loop: Truly Closed — What Remains
+## Research Loop: What Remains
 
-**Valid new knowledge paths:**
-1. T3: EP=24 held-out (running now would take 30 min — no excuse for 5-day delay)
-2. T6: CTREND fixed-hold sweep (takes 2 hours — genuinely new territory)
-3. Live testnet (blocked on Noah's keys)
+1. **T3:** EP=24 paired held-out on current params (CRITICAL, overdue)
+2. **T6-NEXT:** CTREND portfolio sleeve test (MEDIUM, not started)
+3. **T10:** HOF generation script (LOW, not started)
+4. **T9:** Live testnet (BLOCKED on Noah's keys)
 
 **Everything else in strategy-ideas.md is either:**
 - Already tested and rejected
