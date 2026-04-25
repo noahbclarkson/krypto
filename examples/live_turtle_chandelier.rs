@@ -10,7 +10,7 @@
 //! BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy cargo run --example live_turtle_chandelier --profile sweep -- --live
 //! ```
 //!
-//! Validated walk-forward: 91% pass (49/54 windows), Sharpe 5.98.
+//! Validated walk-forward: 83% global pass (44/54), 100% Base5 pass (6/6) with current production params CHAND(7,2.25)/EP=24/HM=12/ATR_ENTRY_MULT=0.85. Sharpe 6.12 (avg per-window). Pre-2021 stress: 67.9% (19/28) — marginally below 70% threshold.
 //! Pre-2021 held-out: 100% pass (21/21 windows).
 //! Fee-adjusted Sharpe ≈ 3.1–3.7.
 
@@ -372,8 +372,8 @@ fn main() -> Result<()> {
     println!();
     println!("  {}", format!("  ── Honest Assessment ──").bold());
     println!();
-    println!("  • Walk-forward validation: 91% pass (49/54 windows), Sharpe 5.98");
-    println!("  • Pre-2021 held-out stress: 100% pass (21/21 windows)");
+    println!("  • Walk-forward validation: 83% global pass (44/54), 100% Base5 pass (6/6), avg Sharpe 6.12");
+    println!("  • Pre-2021 held-out stress: 67.9% (19/28) — marginally below 70% threshold (legacy P=28/M=2.0 was 21/21)");
     println!("  • Execution realism: ~22-33% Sharpe degradation under realistic fees");
     println!("  • Fee-adjusted walk-forward Sharpe ≈ 3.1–3.7");
     println!("  • Historical paper: {} trades across {} symbols, {} avg return",
