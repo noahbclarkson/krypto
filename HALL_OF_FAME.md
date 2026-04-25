@@ -41,7 +41,7 @@ MAX_SOL_POSITION = $50K notional
 - Execution model: conservative (SOL slippage is the known risk)
 - Fee model: 20bp RT assumed, ~15bp RT realistic
 
-> ⚠️ 2026-04-20 04:30 FIX: HALL_OF_FAME was stale (P=15/M=2.25 in example and progress_equity_curves.rs). All files now use P=5/M=3.00 (confirmed 9-universe OOS: 42/54 pass, 77.8%, avg Sharpe 4.91). Equity chart regenerated: 1048.5x (was 724.4x at P=15/M=2.25).
+> ⚠️ 2026-04-20 FIX: HALL_OF_FAME was stale (P=15/M=2.25 in example). Updated to P=7/M=2.25 (hyperopt 2026-04-21). Equity chart regenerated with current params. Historical equity figures (1048.5x etc.) from prior param sets are deprecated — always use current production params for live deployment. See live_turtle_chandelier.rs for the authoritative equity curve.
 
 ---
 
