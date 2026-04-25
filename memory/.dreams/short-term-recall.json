@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-20T03:34:21.473Z",
+  "updatedAt": "2026-04-25T07:59:40.868Z",
   "entries": {
     "memory:memory/2026-04-13.md:5:7": {
       "key": "memory:memory/2026-04-13.md:5:7",
@@ -96951,18 +96951,19 @@
       "source": "memory",
       "snippet": "Orient: Read PLAN.md, MEMORY.md, strategy-ideas.md ✅; `git pull` → f3d9135a updated (TradingMode interlock + testnet PLAN) ✅; Discord history: empty (no new messages since last cron) ✅; Data fresh (parquet refresh Apr 18) ✅",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
       "recallDays": [
         "2026-04-18",
-        "2026-04-19"
+        "2026-04-19",
+        "2026-04-25"
       ],
       "conceptTags": [
         "plan.md",
@@ -96983,18 +96984,19 @@
       "source": "memory",
       "snippet": "Last 8 Commits: 4/8 Genuine, 4/8 Documentation Loop: f3d9135a chore: TradingMode interlock + testnet PLAN ← docs/infra 1905c2c4 feat: TradingMode safety interlock ← real (minimal) 758a12f4 docs: hyperopt session update (memory hygiene) ← docs 8153d5ce feat: TURTLE_ATR_MULT extens",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
       "recallDays": [
         "2026-04-18",
-        "2026-04-19"
+        "2026-04-19",
+        "2026-04-25"
       ],
       "conceptTags": [
         "4/8",
@@ -97015,18 +97017,19 @@
       "source": "memory",
       "snippet": "Last 8 Commits: 4/8 Genuine, 4/8 Documentation Loop: 25816f95 feat: head-to-head benchmark + MACD + parquet ← real (genuine findings) 3ecd1a58 docs: critique and plan update ← docs fbcb7847 chore: daily progress tracking ← docs 0b46f45f docs: research loop closed ← docs",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
       "recallDays": [
         "2026-04-18",
-        "2026-04-19"
+        "2026-04-19",
+        "2026-04-25"
       ],
       "conceptTags": [
         "4/8",
@@ -97047,18 +97050,19 @@
       "source": "memory",
       "snippet": "Last 8 Commits: 4/8 Genuine, 4/8 Documentation Loop: **Verdict: 2/8 commits produced new validated knowledge.** The rest is documentation, infrastructure, and re-validation of already-frozen parameters.",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
       "recallDays": [
         "2026-04-18",
-        "2026-04-19"
+        "2026-04-19",
+        "2026-04-25"
       ],
       "conceptTags": [
         "4/8",
@@ -97079,18 +97083,19 @@
       "source": "memory",
       "snippet": "ATR_MULT and ATR_PERIOD Re-sweep: Redundant, Not Discovery: **ATR_MULT=2.0 — already frozen since 2026-04-12.** The \"extensive 9-value sweep\" (commit 8153d5ce) is identical to the original 2026-04-12 hyperopt that established M=2.0. The same 9 values {1.0, 1.5, 2.0, 2.5, 3.0, 3.5",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
       "recallDays": [
         "2026-04-18",
-        "2026-04-19"
+        "2026-04-19",
+        "2026-04-25"
       ],
       "conceptTags": [
         "atr-mult",
@@ -97111,18 +97116,19 @@
       "source": "memory",
       "snippet": "ATR_MULT and ATR_PERIOD Re-sweep: Redundant, Not Discovery: **ATR_PERIOD=24 — already frozen since 2026-04-16.** The \"full-range sweep 5-100 step=5\" found the same ATR=24 that was validated in the fine 18-35 step=1 sweep. The only new information from this sweep was that ATR=95 (",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
       "recallDays": [
         "2026-04-18",
-        "2026-04-19"
+        "2026-04-19",
+        "2026-04-25"
       ],
       "conceptTags": [
         "atr-mult",
@@ -97143,18 +97149,19 @@
       "source": "memory",
       "snippet": "ATR_MULT and ATR_PERIOD Re-sweep: Redundant, Not Discovery: **Pattern:** Running more sweeps on already-frozen parameters does not increase confidence. It increases overfit risk and creates the illusion of progress.",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
       "recallDays": [
         "2026-04-18",
-        "2026-04-19"
+        "2026-04-19",
+        "2026-04-25"
       ],
       "conceptTags": [
         "atr-mult",
@@ -97175,18 +97182,19 @@
       "source": "memory",
       "snippet": "Strategy-Ideas.md: All Genuinely Unbuilt Ideas Exhausted: | # | Idea | Status | Notes | |---|------|--------|-------| | 18 | DD-adaptive EP tightening | 🪦 REJECTED | ATR entry filter already proved ANY entry tightening hurts | | 21 | Freshness filter (cd=N) | ✅ DONE | cd=10 impl",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-19T03:07:53.088Z",
-      "lastRecalledAt": "2026-04-19T04:26:16.655Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "77ca9720ec15"
       ],
       "recallDays": [
         "2026-04-18",
-        "2026-04-19"
+        "2026-04-19",
+        "2026-04-25"
       ],
       "conceptTags": [
         "strategy-ideas.md",
@@ -133544,18 +133552,19 @@
       "source": "memory",
       "snippet": "2026-04-19 Session Log — Strategy Research & Critique: **12:23 UTC — Cron cycle. Mission: read, think, criticize. Research closed. Ship.**",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-20T03:33:17.678Z",
-      "lastRecalledAt": "2026-04-20T03:33:17.678Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "21faa0df9302"
       ],
       "recallDays": [
         "2026-04-19",
-        "2026-04-20"
+        "2026-04-20",
+        "2026-04-25"
       ],
       "conceptTags": [
         "log",
@@ -133576,18 +133585,19 @@
       "source": "memory",
       "snippet": "Orient: Read: PLAN.md, MEMORY.md, strategy-ideas.md; Git: pulled v2-rewrite (6 new commits since last session); Discord: channel is empty (no new instructions); Current time: 2026-04-19 12:23 UTC",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-20T03:33:17.678Z",
-      "lastRecalledAt": "2026-04-20T03:33:17.678Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "21faa0df9302"
       ],
       "recallDays": [
         "2026-04-19",
-        "2026-04-20"
+        "2026-04-20",
+        "2026-04-25"
       ],
       "conceptTags": [
         "plan.md",
@@ -133608,18 +133618,19 @@
       "source": "memory",
       "snippet": "What was actually built vs what was documented: | Commit | Message | Status | |--------|---------|--------| | `1e264550` | PLAN.md update | METADATA — cleaned up docs | | `03dc2506` | PLAN.md update | METADATA — same |",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-20T03:33:17.678Z",
-      "lastRecalledAt": "2026-04-20T03:33:17.678Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "21faa0df9302"
       ],
       "recallDays": [
         "2026-04-19",
-        "2026-04-20"
+        "2026-04-20",
+        "2026-04-25"
       ],
       "conceptTags": [
         "plan.md",
@@ -133640,18 +133651,19 @@
       "source": "memory",
       "snippet": "What was actually built vs what was documented: | `e4f12bd7` | Archive 33 stale examples | SUBSTANTIVE ✅ — hygiene, overdue | | `4e72b79d` | Archive daily_progress.csv | SUBSTANTIVE ✅ — hygiene, LEGACY labels | | `0cd65d3c` | cron summary | METADATA | | `ea48b3d5` | entry filter",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-20T03:33:17.678Z",
-      "lastRecalledAt": "2026-04-20T03:33:17.678Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "21faa0df9302"
       ],
       "recallDays": [
         "2026-04-19",
-        "2026-04-20"
+        "2026-04-20",
+        "2026-04-25"
       ],
       "conceptTags": [
         "daily-progress.csv",
@@ -133672,18 +133684,19 @@
       "source": "memory",
       "snippet": "What was actually built vs what was documented: | `a3c831eb` | entry filter sweep — ATR × vol | SUBSTANTIVE ✅ — but result was REJECTED | | `5e7c070b` | cron summary | METADATA |",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-20T03:33:17.678Z",
-      "lastRecalledAt": "2026-04-20T03:33:17.678Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "21faa0df9302"
       ],
       "recallDays": [
         "2026-04-19",
-        "2026-04-20"
+        "2026-04-20",
+        "2026-04-25"
       ],
       "conceptTags": [
         "what",
@@ -133704,18 +133717,19 @@
       "source": "memory",
       "snippet": "What was actually built vs what was documented: **Pattern:** 5/8 commits are docs/metadata. Of the 3 substantive:",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-20T03:33:17.678Z",
-      "lastRecalledAt": "2026-04-20T03:33:17.678Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "21faa0df9302"
       ],
       "recallDays": [
         "2026-04-19",
-        "2026-04-20"
+        "2026-04-20",
+        "2026-04-25"
       ],
       "conceptTags": [
         "5/8",
@@ -133736,18 +133750,19 @@
       "source": "memory",
       "snippet": "What was actually built vs what was documented: Hygiene work (examples archive, CSV archive): genuinely useful cleanup; Entry filter sweep: ran and confirmed no filter wins — same answer as 3 prior entry-side sweeps; No new strategy found. No new discovery.",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-20T03:33:17.678Z",
-      "lastRecalledAt": "2026-04-20T03:33:17.678Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "21faa0df9302"
       ],
       "recallDays": [
         "2026-04-19",
-        "2026-04-20"
+        "2026-04-20",
+        "2026-04-25"
       ],
       "conceptTags": [
         "entry-side",
@@ -133768,18 +133783,19 @@
       "source": "memory",
       "snippet": "What was actually built vs what was documented: **Meta-lesson:** The project has been self-auditing for 3 days. The hygiene was overdue and good, but it doesn't move the project forward.",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-20T03:33:17.678Z",
-      "lastRecalledAt": "2026-04-20T03:33:17.678Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
       "queryHashes": [
         "21faa0df9302"
       ],
       "recallDays": [
         "2026-04-19",
-        "2026-04-20"
+        "2026-04-20",
+        "2026-04-25"
       ],
       "conceptTags": [
         "meta-lesson",
@@ -135820,6 +135836,2813 @@
         "assistant",
         "now",
         "let"
+      ]
+    },
+    "memory:memory/2026-04-25.md:6:9": {
+      "key": "memory:memory/2026-04-25.md:6:9",
+      "path": "memory/2026-04-25.md",
+      "startLine": 6,
+      "endLine": 9,
+      "source": "memory",
+      "snippet": "Orient: Read PLAN.md, MEMORY.md, strategy-ideas.md; Git pulled: v2-rewrite up to date (8661be71 — 4h multi-timeframe GRAVEYARD); Discord channel session: no new messages since last cron; Memory from last session: 4h Turtle REJECTED (1/20 pass), pre-2021 P=7 stress 19/28 (67.9%)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "memory.md",
+        "strategy-ideas.md",
+        "v2-rewrite",
+        "multi-timeframe",
+        "1/20",
+        "pre-2021",
+        "19/28"
+      ]
+    },
+    "memory:memory/2026-04-25.md:16:16": {
+      "key": "memory:memory/2026-04-25.md:16:16",
+      "path": "memory/2026-04-25.md",
+      "startLine": 16,
+      "endLine": 16,
+      "source": "memory",
+      "snippet": "5a. 4h Multi-Timeframe Turtle — REJECTED ✅ (Deserved): **Result:** 1/20 pass (5%), Sharpe 0.11, 65 trades. Correctly rejected. This was the right untested idea. The daily strategy fundamentally requires the room between bars for Chandelier to function as a trailing stop vs a fixe",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "multi-timeframe",
+        "1/20",
+        "0.11",
+        "multi",
+        "timeframe",
+        "turtle",
+        "rejected",
+        "deserved"
+      ]
+    },
+    "memory:memory/2026-04-25.md:19:20": {
+      "key": "memory:memory/2026-04-25.md:19:20",
+      "path": "memory/2026-04-25.md",
+      "startLine": 19,
+      "endLine": 20,
+      "source": "memory",
+      "snippet": "5b. Pre-2021 Stress P=7/M=2.25 — 67.9% ⚠️ (Partially Valid): **Result:** 19/28 pass (67.9%) — marginally below 70%. But the HALL_OF_FAME itself says: *\"P=7 was NOT tested in pre-2021 stress — the stress test was run with P=5/M=3.00 (2026-04-20). CP=7 should be tested in pre-2021",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "pre-2021",
+        "7/m",
+        "2.25",
+        "67.9",
+        "19/28",
+        "hall-of-fame",
+        "5/m",
+        "3.00"
+      ]
+    },
+    "memory:memory/2026-04-25.md:23:23": {
+      "key": "memory:memory/2026-04-25.md:23:23",
+      "path": "memory/2026-04-25.md",
+      "startLine": 23,
+      "endLine": 23,
+      "source": "memory",
+      "snippet": "5c. HALL_OF_FAME Staleness Audit — Partially Fixed ⚠️: HALL_OF_FAME was audited 2026-04-25 (today) and updated to P=7/M=2.25. But several issues remain:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "hall-of-fame",
+        "7/m",
+        "2.25",
+        "staleness",
+        "audit",
+        "partially",
+        "fixed",
+        "was"
+      ]
+    },
+    "memory:memory/2026-04-25.md:24:27": {
+      "key": "memory:memory/2026-04-25.md:24:27",
+      "path": "memory/2026-04-25.md",
+      "startLine": 24,
+      "endLine": 27,
+      "source": "memory",
+      "snippet": "5c. HALL_OF_FAME Staleness Audit — Partially Fixed ⚠️: `CHAND_MULT = 2.25` listed TWICE (ATR_ENTRY_MULT is listed in the middle); ATR_ENTRY_MULT=0.85 won by +1 window vs EM=0.90 (44/54 vs 43/54) — this is noise-level; HOLD_MAX=12 won by +3.7pp pass rate vs HM=45 — also marginal;",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "hall-of-fame",
+        "chand-mult",
+        "2.25",
+        "atr-entry-mult",
+        "0.85",
+        "0.90",
+        "44/54",
+        "43/54"
+      ]
+    },
+    "memory:memory/2026-04-25.md:30:30": {
+      "key": "memory:memory/2026-04-25.md:30:30",
+      "path": "memory/2026-04-25.md",
+      "startLine": 30,
+      "endLine": 30,
+      "source": "memory",
+      "snippet": "5d. Equity Curve Fix (CHAND_P=7) — ⚠️ (Numbers Unstable): **daily_progress.csv shows:**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "chand-p",
+        "daily-progress.csv",
+        "equity",
+        "curve",
+        "fix",
+        "numbers",
+        "unstable",
+        "shows"
+      ]
+    },
+    "memory:memory/2026-04-25.md:31:33": {
+      "key": "memory:memory/2026-04-25.md:31:33",
+      "path": "memory/2026-04-25.md",
+      "startLine": 31,
+      "endLine": 33,
+      "source": "memory",
+      "snippet": "5d. Equity Curve Fix (CHAND_P=7) — ⚠️ (Numbers Unstable): 2026-04-19: 668.5x; 2026-04-20: 734.2x (same harness, different data refresh); 2026-04-21: 248.0x (CHAND_P=7 run) — 3x DROP in one day from param change",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "chand-p",
+        "668.5x",
+        "734.2x",
+        "248.0x",
+        "equity",
+        "curve",
+        "fix",
+        "numbers"
+      ]
+    },
+    "memory:memory/2026-04-25.md:35:35": {
+      "key": "memory:memory/2026-04-25.md:35:35",
+      "path": "memory/2026-04-25.md",
+      "startLine": 35,
+      "endLine": 35,
+      "source": "memory",
+      "snippet": "5d. Equity Curve Fix (CHAND_P=7) — ⚠️ (Numbers Unstable): A 3x swing in equity value from one parameter change is not credible — either the old runs were wrong or the new one is wrong. The strategy-ideas.md T1 (#30 equity chart column verification) is still marked NOT DONE after",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "chand-p",
+        "strategy-ideas.md",
+        "equity",
+        "curve",
+        "fix",
+        "numbers",
+        "unstable",
+        "swing"
+      ]
+    },
+    "memory:memory/2026-04-25.md:38:38": {
+      "key": "memory:memory/2026-04-25.md:38:38",
+      "path": "memory/2026-04-25.md",
+      "startLine": 38,
+      "endLine": 38,
+      "source": "memory",
+      "snippet": "5e. HOLD_MAX Re-optimization — HM=12 ✅ (Reasoned Kill): HM=12 was correctly identified as the winner when Chandelier fires first at ~bar 12. The logic is sound: Chandelier(P=7) exits at bar 7-12, so HM=12 is tightest before Chandelier takes over. This is a genuine improvement, no",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "hold-max",
+        "re-optimization",
+        "7-12",
+        "optimization",
+        "reasoned",
+        "kill",
+        "was",
+        "correctly"
+      ]
+    },
+    "memory:memory/2026-04-25.md:44:44": {
+      "key": "memory:memory/2026-04-25.md:44:44",
+      "path": "memory/2026-04-25.md",
+      "startLine": 44,
+      "endLine": 44,
+      "source": "memory",
+      "snippet": "Strategy-Ideas.md: 3 Most Promising Unbuilt Ideas: After today's audit, the genuinely untested ideas are:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "strategy",
+        "ideas.md",
+        "promising",
+        "unbuilt",
+        "ideas",
+        "today's",
+        "audit"
+      ]
+    },
+    "memory:memory/2026-04-25.md:46:47": {
+      "key": "memory:memory/2026-04-25.md:46:47",
+      "path": "memory/2026-04-25.md",
+      "startLine": 46,
+      "endLine": 47,
+      "source": "memory",
+      "snippet": "Strategy-Ideas.md: 3 Most Promising Unbuilt Ideas: **#1 — Live Slippage Tracker (#24, built infrastructure, never tested live)** The FillLog struct exists in executor.rs, CSV logging is live. But SOL at $100K = 3.7× the slippage model. We have no live validation of this gap. This",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "executor.rs",
+        "3.7",
+        "strategy",
+        "ideas.md",
+        "promising",
+        "unbuilt",
+        "ideas"
+      ]
+    },
+    "memory:memory/2026-04-25.md:49:50": {
+      "key": "memory:memory/2026-04-25.md:49:50",
+      "path": "memory/2026-04-25.md",
+      "startLine": 49,
+      "endLine": 50,
+      "source": "memory",
+      "snippet": "Strategy-Ideas.md: 3 Most Promising Unbuilt Ideas: **#2 — CTREND + CTREND-Native Exit (#26)** Monte Carlo confirmed CTREND signal is genuine (0/500 shuffled beat real). But CTREND + Chandelier exit failed (30/54 pass, 44% fail). The hypothesis is the exit is wrong for CTREND's mu",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "ctrend-native",
+        "0/500",
+        "30/54",
+        "strategy",
+        "ideas.md",
+        "promising",
+        "unbuilt"
+      ]
+    },
+    "memory:memory/2026-04-25.md:52:53": {
+      "key": "memory:memory/2026-04-25.md:52:53",
+      "path": "memory/2026-04-25.md",
+      "startLine": 52,
+      "endLine": 53,
+      "source": "memory",
+      "snippet": "Strategy-Ideas.md: 3 Most Promising Unbuilt Ideas: **#3 — 4h Multi-Timeframe (NOW REJECTED)** Already killed today (1/20 pass). GRAVEYARD. Not worth revisiting.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "multi-timeframe",
+        "1/20",
+        "strategy",
+        "ideas.md",
+        "promising",
+        "unbuilt",
+        "ideas"
+      ]
+    },
+    "memory:memory/2026-04-25.md:60:60": {
+      "key": "memory:memory/2026-04-25.md:60:60",
+      "path": "memory/2026-04-25.md",
+      "startLine": 60,
+      "endLine": 60,
+      "source": "memory",
+      "snippet": "The Equity Number Problem: `daily_progress.csv`:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "daily-progress.csv",
+        "the",
+        "equity",
+        "number",
+        "problem"
+      ]
+    },
+    "memory:memory/2026-04-25.md:62:64": {
+      "key": "memory:memory/2026-04-25.md:62:64",
+      "path": "memory/2026-04-25.md",
+      "startLine": 62,
+      "endLine": 64,
+      "source": "memory",
+      "snippet": "The Equity Number Problem: 2026-04-19: 668.5x, Sharpe 2.52 2026-04-20: 734.2x, Sharpe 1.29 2026-04-21: 248.0x, Sharpe 1.68",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "668.5x",
+        "2.52",
+        "734.2x",
+        "1.29",
+        "248.0x",
+        "1.68",
+        "the",
+        "equity"
+      ]
+    },
+    "memory:memory/2026-04-25.md:66:66": {
+      "key": "memory:memory/2026-04-25.md:66:66",
+      "path": "memory/2026-04-25.md",
+      "startLine": 66,
+      "endLine": 66,
+      "source": "memory",
+      "snippet": "The Equity Number Problem: The equity swings 3× from one param change. These numbers are meaningless without verification that the CSV column mapping is correct (T1 from strategy-ideas.md #30 — still NOT DONE after multiple sessions). **The Sharpe numbers are stable (~1.3-2.5) —",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "1.3-2.5",
+        "the",
+        "equity",
+        "number",
+        "problem",
+        "swings",
+        "one"
+      ]
+    },
+    "memory:memory/2026-04-25.md:69:70": {
+      "key": "memory:memory/2026-04-25.md:69:70",
+      "path": "memory/2026-04-25.md",
+      "startLine": 69,
+      "endLine": 70,
+      "source": "memory",
+      "snippet": "The Two Sharpe Problem: Walk-forward avg Sharpe: 5.46-6.29 (average of per-window Sharpe ratios); Daily equity Sharpe: ~1.04-1.68 (actual compounded equity curve)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "walk-forward",
+        "5.46-6.29",
+        "per-window",
+        "1.04-1.68",
+        "the",
+        "two",
+        "sharpe",
+        "problem"
+      ]
+    },
+    "memory:memory/2026-04-25.md:71:71": {
+      "key": "memory:memory/2026-04-25.md:71:71",
+      "path": "memory/2026-04-25.md",
+      "startLine": 71,
+      "endLine": 71,
+      "source": "memory",
+      "snippet": "The Two Sharpe Problem: These measure fundamentally different things and are never comparable. We know this. But the reports/daily_progress.csv shows both together without explanation. Any reader would assume they're the same metric.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "reports/daily-progress.csv",
+        "the",
+        "two",
+        "sharpe",
+        "problem",
+        "measure",
+        "fundamentally",
+        "different"
+      ]
+    },
+    "memory:memory/2026-04-25.md:74:74": {
+      "key": "memory:memory/2026-04-25.md:74:74",
+      "path": "memory/2026-04-25.md",
+      "startLine": 74,
+      "endLine": 74,
+      "source": "memory",
+      "snippet": "Fee-Adjusted Sharpe: ~3.1-3.8 (Honest Range): 22-33% fee drag applied to gross walk-forward 5.46 gives 3.8. This is the most honest number for live expectations.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "fee-adjusted",
+        "3.1-3.8",
+        "22-33",
+        "walk-forward",
+        "5.46",
+        "3.8",
+        "fee",
+        "adjusted"
+      ]
+    },
+    "memory:memory/2026-04-25.md:76:76": {
+      "key": "memory:memory/2026-04-25.md:76:76",
+      "path": "memory/2026-04-25.md",
+      "startLine": 76,
+      "endLine": 76,
+      "source": "memory",
+      "snippet": "Fee-Adjusted Sharpe: ~3.1-3.8 (Honest Range): **Verdict:** Metrics are NOT fabricated — but the equity multiplier is unstable due to data refresh issues, and the dual-Sharpe problem creates misinterpretation risk.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "fee-adjusted",
+        "3.1-3.8",
+        "dual-sharpe",
+        "fee",
+        "adjusted",
+        "sharpe",
+        "3.1",
+        "3.8"
+      ]
+    },
+    "memory:memory/2026-04-25.md:83:83": {
+      "key": "memory:memory/2026-04-25.md:83:83",
+      "path": "memory/2026-04-25.md",
+      "startLine": 83,
+      "endLine": 83,
+      "source": "memory",
+      "snippet": "BLIND SPOT 1: Pre-2021 Stress — P=7 Never Validated ✅ (NEW FINDING): The 21/21 pass on pre-2021 data was achieved with P=28/M=2.0. We CHANGED to P=7/M=2.25 and claim robustness based on the 19/28 (67.9%) result from a DIFFERENT test harness with a DIFFERENT test structure. These",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "pre-2021",
+        "21/21",
+        "28/m",
+        "2.0",
+        "7/m",
+        "2.25",
+        "19/28",
+        "67.9"
+      ]
+    },
+    "memory:memory/2026-04-25.md:85:85": {
+      "key": "memory:memory/2026-04-25.md:85:85",
+      "path": "memory/2026-04-25.md",
+      "startLine": 85,
+      "endLine": 85,
+      "source": "memory",
+      "snippet": "BLIND SPOT 1: Pre-2021 Stress — P=7 Never Validated ✅ (NEW FINDING): Action needed: Run the regime_stress_test.rs (the original, that got 21/21) with P=7/M=2.25 params. If it passes 18+/21, P=7 is validated. If it fails, we have a real problem.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "pre-2021",
+        "regime-stress-test.rs",
+        "21/21",
+        "7/m",
+        "2.25",
+        "blind",
+        "spot",
+        "pre"
+      ]
+    },
+    "memory:memory/2026-04-25.md:88:88": {
+      "key": "memory:memory/2026-04-25.md:88:88",
+      "path": "memory/2026-04-25.md",
+      "startLine": 88,
+      "endLine": 88,
+      "source": "memory",
+      "snippet": "BLIND SPOT 2: EP=24 and ATR_ENTRY_MULT=0.85 — Noise-Level Changes Accepted ✅: Both were accepted as production based on +2 windows and +1 window improvements respectively — within normal noise for 54-window tests. T3 (held-out validation) was marked as the fix but was NEVER compl",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "atr-entry-mult",
+        "0.85",
+        "noise-level",
+        "54-window",
+        "held-out",
+        "blind",
+        "spot",
+        "noise"
+      ]
+    },
+    "memory:memory/2026-04-25.md:90:90": {
+      "key": "memory:memory/2026-04-25.md:90:90",
+      "path": "memory/2026-04-25.md",
+      "startLine": 90,
+      "endLine": 90,
+      "source": "memory",
+      "snippet": "BLIND SPOT 2: EP=24 and ATR_ENTRY_MULT=0.85 — Noise-Level Changes Accepted ✅: The correct process: hold out the last 1-2 windows BEFORE running the sweep, test candidates against held-out only, accept only if held-out confirms. This was never done for EP=24 or EM=0.85.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "atr-entry-mult",
+        "0.85",
+        "noise-level",
+        "1-2",
+        "held-out",
+        "blind",
+        "spot",
+        "noise"
+      ]
+    },
+    "memory:memory/2026-04-25.md:93:93": {
+      "key": "memory:memory/2026-04-25.md:93:93",
+      "path": "memory/2026-04-25.md",
+      "startLine": 93,
+      "endLine": 93,
+      "source": "memory",
+      "snippet": "BLIND SPOT 3: Equity Chart Instability — 3x Swing in 3 Days ⚠️: Strategy-ideas.md T1 (#30 equity column verification) flagged urgent multiple times, still NOT DONE. Until this is verified, any Discord chart may be showing the wrong data. This undermines the only regular communica",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "blind",
+        "spot",
+        "equity",
+        "chart",
+        "instability",
+        "swing",
+        "days"
+      ]
+    },
+    "memory:memory/2026-04-25.md:96:98": {
+      "key": "memory:memory/2026-04-25.md:96:98",
+      "path": "memory/2026-04-25.md",
+      "startLine": 96,
+      "endLine": 98,
+      "source": "memory",
+      "snippet": "BLIND SPOT 4: Freshness Cooldown Discrepancy 🔴: live_turtle_chandelier.rs: FRESHNESS_COOLDOWN = 0; strategy-ideas.md #21: \"cd=10 is production default. Live testnet is the only remaining validation\"; src/live/bot.rs: cd=0 (from git history, commit 1246943d)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "live-turtle-chandelier.rs",
+        "freshness-cooldown",
+        "strategy-ideas.md",
+        "src/live/bot.rs",
+        "blind",
+        "spot",
+        "freshness",
+        "cooldown"
+      ]
+    },
+    "memory:memory/2026-04-25.md:100:100": {
+      "key": "memory:memory/2026-04-25.md:100:100",
+      "path": "memory/2026-04-25.md",
+      "startLine": 100,
+      "endLine": 100,
+      "source": "memory",
+      "snippet": "BLIND SPOT 4: Freshness Cooldown Discrepancy 🔴: The freshness filter implementation is contradictory. If cd=0 is live, then the 3-bar mild cooldown idea was either abandoned or never propagated. This needs source-code verification.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "3-bar",
+        "source-code",
+        "blind",
+        "spot",
+        "freshness",
+        "cooldown",
+        "discrepancy",
+        "the"
+      ]
+    },
+    "memory:memory/2026-04-25.md:103:103": {
+      "key": "memory:memory/2026-04-25.md:103:103",
+      "path": "memory/2026-04-25.md",
+      "startLine": 103,
+      "endLine": 103,
+      "source": "memory",
+      "snippet": "BLIND SPOT 5: Research Loop Claimed Closed But T3 Never Done: PLAN.md says \"Research Loop Status: ✅ CLOSED\" and \"Only live testnet advances the project.\" But T3 (held-out validation for EP=24 and EM=0.85) was marked as action required and was never completed. The research loop is",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "held-out",
+        "0.85",
+        "blind",
+        "spot",
+        "research",
+        "loop",
+        "claimed"
+      ]
+    },
+    "memory:memory/2026-04-25.md:109:112": {
+      "key": "memory:memory/2026-04-25.md:109:112",
+      "path": "memory/2026-04-25.md",
+      "startLine": 109,
+      "endLine": 112,
+      "source": "memory",
+      "snippet": "Summary Assessment: | Dimension | Status | Verdict | |-----------|--------|---------| | Core strategy (Turtle+Chandelier) | ✅ Validated | Walk-forward 83%, Base5 100%, signal genuine | | Production params | ⚠️ Mostly valid | P=7/M=2.25 recent — pre-2021 stress gap |",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "walk-forward",
+        "7/m",
+        "2.25",
+        "pre-2021",
+        "summary",
+        "assessment",
+        "dimension",
+        "status"
+      ]
+    },
+    "memory:memory/2026-04-25.md:113:116": {
+      "key": "memory:memory/2026-04-25.md:113:116",
+      "path": "memory/2026-04-25.md",
+      "startLine": 113,
+      "endLine": 116,
+      "source": "memory",
+      "snippet": "Summary Assessment: | EP=24, EM=0.85 | 🔴 Unvalidated | Noise-level improvements, no held-out test | | Equity chart | 🔴 Unverified | T1 (#30) overdue, 3× equity swing | | Freshness cooldown | 🔴 Contradictory | cd=0 vs cd=10 unclear from sources | | Live testnet | 🟡 Blocked | W",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "0.85",
+        "noise-level",
+        "held-out",
+        "summary",
+        "assessment",
+        "unvalidated",
+        "noise",
+        "level"
+      ]
+    },
+    "memory:memory/2026-04-25.md:117:117": {
+      "key": "memory:memory/2026-04-25.md:117:117",
+      "path": "memory/2026-04-25.md",
+      "startLine": 117,
+      "endLine": 117,
+      "source": "memory",
+      "snippet": "Summary Assessment: | Research loop | ⚠️ Claimed closed, actually blocked | T3 not done |",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "summary",
+        "assessment",
+        "research",
+        "loop",
+        "claimed",
+        "closed",
+        "actually",
+        "blocked"
+      ]
+    },
+    "memory:memory/2026-04-25.md:119:119": {
+      "key": "memory:memory/2026-04-25.md:119:119",
+      "path": "memory/2026-04-25.md",
+      "startLine": 119,
+      "endLine": 119,
+      "source": "memory",
+      "snippet": "Summary Assessment: **Honest verdict:** The strategy is real and validated at the core level. But the recent parameter changes (P=7, EP=24, EM=0.85, HM=12) were pushed as production without completing the held-out validation sequence. The equity chart infrastructure has been brok",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "90c0a0f693f1"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "0.85",
+        "held-out",
+        "summary",
+        "assessment",
+        "honest",
+        "verdict",
+        "the",
+        "strategy"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:1:1": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:1:1",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 1,
+      "endLine": 1,
+      "source": "memory",
+      "snippet": "User: [cron:4a2780a9-4d94-4550-a64a-bc7157edf90c kira — research loop] You are Kira — quantitative trading researcher and engineer on krypto. Your workspace files (SOUL.md, MEMORY.md, PLAN.md, TOOLS.md) are already loaded. Use them. ## ORIENT 1. Read PLAN.md carefully — know the",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "soul.md",
+        "memory.md",
+        "plan.md",
+        "tools.md",
+        "user",
+        "cron",
+        "4a2780a9",
+        "4d94"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:2:2": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:2:2",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 2,
+      "endLine": 2,
+      "source": "memory",
+      "snippet": "User: time on? - Is that still the highest-value use of time? - Are we repeating edge-comparison work that is already settled? ## PROJECT MODE Run the project as a three-track research program: - Track A — Trust the lab - Track B — Stress the current leader - Track C — Broaden ed",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "highest-value",
+        "edge-comparison",
+        "three-track",
+        "user",
+        "time",
+        "still",
+        "the",
+        "highest"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:3:3": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:3:3",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 3,
+      "endLine": 3,
+      "source": "memory",
+      "snippet": "User: and leave the code untouched. - Avoid repeated edits to the same memory/plan blocks unless you are adding genuinely new findings. ## EXECUTE Choose the single highest-value item from PLAN.md after reviewing recent work. Bias toward the most under-served track, but only if i",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "memory/plan",
+        "highest-value",
+        "plan.md",
+        "under-served",
+        "user",
+        "leave",
+        "the",
+        "code"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:4:4": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:4:4",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 4,
+      "endLine": 4,
+      "source": "memory",
+      "snippet": "User: (real ones, not decision questions) to Arc: sessions_send to agent:main:main. Return a concise plain-text summary only. Do NOT use the message tool or post directly to Discord. Cron delivery handles posting automatically. Current time: Saturday, April 25th, 2026 - 4:10 AM (",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "sessions-send",
+        "plain-text",
+        "user",
+        "real",
+        "ones",
+        "not",
+        "decision",
+        "questions"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:5:5": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:5:5",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 5,
+      "endLine": 5,
+      "source": "memory",
+      "snippet": "Assistant: **Orient complete.** No recent cron sessions ran (memory files stop at 2026-04-21, 4 days ago). Last Discord activity was chart images 4 days ago. Plan is stale — T1/T2/T3 done but filed incorrectly, T6 (live testnet) is the only real remaining path and is blocked on N",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "t1/t2/t3",
+        "assistant",
+        "orient",
+        "complete",
+        "recent",
+        "cron",
+        "ran",
+        "stop"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:6:6": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:6:6",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 6,
+      "endLine": 6,
+      "source": "memory",
+      "snippet": "Assistant: Good. I have a clear picture now. Let me assess what I found: **State of the project (2026-04-25):** - Research is genuinely closed — all major params (EP, CHAND_P, CHAND_M, HOLD_MAX, ATR, ATR_ENTRY_MULT) have been exhaustively validated - Live testnet is the only rema",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "chand-p",
+        "chand-m",
+        "hold-max",
+        "atr-entry-mult",
+        "assistant",
+        "good",
+        "clear",
+        "picture"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:7:7": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:7:7",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 7,
+      "endLine": 7,
+      "source": "memory",
+      "snippet": "Assistant: current production params (CHAND 7,2.25) to confirm the 100% pass claim.** This directly affects the production readiness scorecard and HALL_OF_FAME integrity. Let me do that now.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "2.25",
+        "hall-of-fame",
+        "assistant",
+        "current",
+        "production",
+        "params",
+        "chand",
+        "7,2.25"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:8:8": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:8:8",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 8,
+      "endLine": 8,
+      "source": "memory",
+      "snippet": "Assistant: Now I have full context. Critical finding: `regime_stress_test.rs` uses **stale params** (P=28/M=2.0/EP=21/HM=45) while current production is P=7/M=2.25/EP=24/HM=12. The pre-2021 stress test was the most important validation — but it's stale. The plan explicitly flags",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "regime-stress-test.rs",
+        "28/m",
+        "2.0/ep",
+        "21/hm",
+        "7/m",
+        "2.25/ep",
+        "24/hm",
+        "pre-2021"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:9:9": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:9:9",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 9,
+      "endLine": 9,
+      "source": "memory",
+      "snippet": "Assistant: Build successful. Now I'll run the regime stress test with current production params (CHAND_P=7, M=2.25) to properly validate the pre-2021 held-out performance, since the existing test uses stale P=28/M=2.00.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "chand-p",
+        "2.25",
+        "pre-2021",
+        "held-out",
+        "28/m",
+        "2.00",
+        "assistant",
+        "successful"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:10:10": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:10:10",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 10,
+      "endLine": 10,
+      "source": "memory",
+      "snippet": "Assistant: The live example timed out fetching Binance data. Let me focus on the actual work — T2, the HALL_OF_FAME audit that's been the only remaining task for 4 days.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "hall-of-fame",
+        "assistant",
+        "the",
+        "live",
+        "example",
+        "timed",
+        "out",
+        "fetching"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:11:11": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:11:11",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 11,
+      "endLine": 11,
+      "source": "memory",
+      "snippet": "Assistant: **Analysis complete.** Key findings: 1. **No new Discord direction** from Noah — last messages are chart images (progress updates) 2. **Plan status**: Research CLOSED. Only blocker is Noah's testnet API keys (T6). The regime stress test (which confirmed P=5/M=3.00 was",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "5/m",
+        "3.00",
+        "assistant",
+        "analysis",
+        "complete",
+        "key",
+        "findings",
+        "new"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:12:12": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:12:12",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 12,
+      "endLine": 12,
+      "source": "memory",
+      "snippet": "Assistant: current production params (P=7/M=2.25):",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "7/m",
+        "2.25",
+        "assistant",
+        "current",
+        "production",
+        "params"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:13:13": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:13:13",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 13,
+      "endLine": 13,
+      "source": "memory",
+      "snippet": "User: [cron:8d17bb13-1291-42b4-99b8-3b39a1b24bff kira — strategy research & critique (4h)] You are Kira — algorithmic trading engineer on project Krypto. ## Mission Build a fully automated crypto trading system that trades profitably without human intervention. We are currently i",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "user",
+        "cron",
+        "8d17bb13",
+        "42b4",
+        "99b8",
+        "3b39a1b24bff",
+        "kira",
+        "strategy"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:14:14": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:14:14",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 14,
+      "endLine": 14,
+      "source": "memory",
+      "snippet": "User: ourselves they are? 2. Look at the `strategy-ideas.md` file. Pick the 3 most promising unbuilt ideas. 3. Look at the `reports/` directory. Are our metrics real (Sharpe 5.0+) or are we curve-fitting? 4. What is our biggest blind spot right now? (e.g. are we only testing in b",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "5.0",
+        "curve-fitting",
+        "e.g",
+        "user",
+        "ourselves",
+        "look",
+        "the"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:15:15": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:15:15",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 15,
+      "endLine": 15,
+      "source": "memory",
+      "snippet": "User: handles posting automatically. Current time: Saturday, April 25th, 2026 - 7:43 AM (UTC) / 2026-04-25 07:43 UTC Use the message tool if you need to notify the user directly for the current chat. If you do not send directly, your final plain-text reply will be delivered autom",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "plain-text",
+        "user",
+        "handles",
+        "posting",
+        "automatically",
+        "current",
+        "time",
+        "saturday"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:16:16": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:16:16",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 16,
+      "endLine": 16,
+      "source": "memory",
+      "snippet": "Assistant: Now let me check git state and Discord for recent instructions.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "assistant",
+        "now",
+        "let",
+        "check",
+        "git",
+        "state",
+        "discord",
+        "recent"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:17:17": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:17:17",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 17,
+      "endLine": 17,
+      "source": "memory",
+      "snippet": "Assistant: Now I have enough context to write the critique. Let me write it to the memory file and update PLAN.md.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "assistant",
+        "now",
+        "enough",
+        "context",
+        "write",
+        "the",
+        "critique"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:18:18": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:18:18",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 18,
+      "endLine": 18,
+      "source": "memory",
+      "snippet": "Assistant: Now let me verify the freshness cooldown contradiction and update strategy-ideas.md:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "assistant",
+        "now",
+        "let",
+        "verify",
+        "the",
+        "freshness",
+        "cooldown"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:19:19": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:19:19",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 19,
+      "endLine": 19,
+      "source": "memory",
+      "snippet": "Assistant: Now let me fix the contradiction and update the strategy file:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "assistant",
+        "now",
+        "let",
+        "fix",
+        "the",
+        "contradiction",
+        "update",
+        "strategy"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:20:20": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:20:20",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 20,
+      "endLine": 20,
+      "source": "memory",
+      "snippet": "Assistant: Now let me update strategy-ideas.md with the correction about freshness cooldown, then commit everything:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "assistant",
+        "now",
+        "let",
+        "update",
+        "strategy",
+        "ideas.md",
+        "the"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:21:21": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:21:21",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 21,
+      "endLine": 21,
+      "source": "memory",
+      "snippet": "Assistant: Now let me update strategy-ideas.md to fix the freshness filter contradiction, and then commit everything:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "assistant",
+        "now",
+        "let",
+        "update",
+        "strategy",
+        "ideas.md",
+        "fix"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:22:22": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:22:22",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 22,
+      "endLine": 22,
+      "source": "memory",
+      "snippet": "Assistant: Now let me fix the strategy-ideas.md contradiction and then commit everything:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "assistant",
+        "now",
+        "let",
+        "fix",
+        "the",
+        "strategy",
+        "ideas.md"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:23:23": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:23:23",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 23,
+      "endLine": 23,
+      "source": "memory",
+      "snippet": "Assistant: ## Critique & Strategy Research — 2026-04-25 07:43 UTC ### Last 5 Items Built: Honest Assessment **4h Multi-Timeframe Turtle ✅ — Deserved kill.** 1/20 pass (5%), Sharpe 0.11. Correctly rejected. The daily strategy needs room for Chandelier to function as a trailing sto",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "multi-timeframe",
+        "1/20",
+        "0.11",
+        "assistant",
+        "critique",
+        "strategy",
+        "research",
+        "utc"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:24:24": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:24:24",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 24,
+      "endLine": 24,
+      "source": "memory",
+      "snippet": "Assistant: Curve Fix ⚠️ — Numbers still unstable.** Same harness, one param change: 668x → 734x → 248x in 3 days. The equity chart column verification (T1, flagged urgent 4+ sessions ago) is still not done. Any Discord chart may show wrong data. **HOLD_MAX HM=12 ✅ — Sound kill.**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "hold-max",
+        "assistant",
+        "curve",
+        "fix",
+        "numbers",
+        "still",
+        "unstable",
+        "harness"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:25:25": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:25:25",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 25,
+      "endLine": 25,
+      "source": "memory",
+      "snippet": "User: [cron:4a2780a9-4d94-4550-a64a-bc7157edf90c kira — research loop] You are Kira — quantitative trading researcher and engineer on krypto. Your workspace files (SOUL.md, MEMORY.md, PLAN.md, TOOLS.md) are already loaded. Use them. ## ORIENT 1. Read PLAN.md carefully — know the",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "soul.md",
+        "memory.md",
+        "plan.md",
+        "tools.md",
+        "user",
+        "cron",
+        "4a2780a9",
+        "4d94"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:26:26": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:26:26",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 26,
+      "endLine": 26,
+      "source": "memory",
+      "snippet": "User: time on? - Is that still the highest-value use of time? - Are we repeating edge-comparison work that is already settled? ## PROJECT MODE Run the project as a three-track research program: - Track A — Trust the lab - Track B — Stress the current leader - Track C — Broaden ed",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "highest-value",
+        "edge-comparison",
+        "three-track",
+        "user",
+        "time",
+        "still",
+        "the",
+        "highest"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:27:27": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:27:27",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 27,
+      "endLine": 27,
+      "source": "memory",
+      "snippet": "User: and leave the code untouched. - Avoid repeated edits to the same memory/plan blocks unless you are adding genuinely new findings. ## EXECUTE Choose the single highest-value item from PLAN.md after reviewing recent work. Bias toward the most under-served track, but only if i",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "memory/plan",
+        "highest-value",
+        "plan.md",
+        "under-served",
+        "user",
+        "leave",
+        "the",
+        "code"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:28:28": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:28:28",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 28,
+      "endLine": 28,
+      "source": "memory",
+      "snippet": "User: (real ones, not decision questions) to Arc: sessions_send to agent:main:main. Return a concise plain-text summary only. Do NOT use the message tool or post directly to Discord. Cron delivery handles posting automatically. Current time: Saturday, April 25th, 2026 - 5:47 AM (",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "sessions-send",
+        "plain-text",
+        "user",
+        "real",
+        "ones",
+        "not",
+        "decision",
+        "questions"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:29:29": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:29:29",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 29,
+      "endLine": 29,
+      "source": "memory",
+      "snippet": "Assistant: **Orient complete.** No prior session logs exist for 2026-04-24 or 2026-04-25. Git pull brought in recent docs commits. Discord history shows only chart sends — no incoming direction from Noah. **Assessment:** - Research: CLOSED (all hyperopts exhausted, all ideas grav",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "assistant",
+        "orient",
+        "complete",
+        "prior",
+        "logs",
+        "exist",
+        "git",
+        "pull"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:30:30": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:30:30",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 30,
+      "endLine": 30,
+      "source": "memory",
+      "snippet": "Assistant: keys arrive.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "assistant",
+        "keys",
+        "arrive"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:31:31": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:31:31",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 31,
+      "endLine": 31,
+      "source": "memory",
+      "snippet": "Assistant: Let me orient on what's been done and what the actual gap is.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "assistant",
+        "let",
+        "orient",
+        "what's",
+        "been",
+        "done",
+        "what",
+        "the"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:32:32": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:32:32",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 32,
+      "endLine": 32,
+      "source": "memory",
+      "snippet": "Assistant: Now let me build the 4h multi-timeframe walk-forward — the one genuinely untested idea left. The strategy is Turtle+Chandelier on 4h data, with parameter sweeps to find the right EP and Chandelier period for this timeframe.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "multi-timeframe",
+        "walk-forward",
+        "assistant",
+        "now",
+        "let",
+        "the",
+        "multi",
+        "timeframe"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:33:33": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:33:33",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 33,
+      "endLine": 33,
+      "source": "memory",
+      "snippet": "Assistant: Now I can see the bug. The Chandelier stop on 4h BTC is catastrophically tight: CM=2.25 × ATR=866 = 1949 stop distance from entry at 65229 → stop at 63280, which is **29.8% below entry**. On daily, the equivalent would be only 7% below entry. The 4h ATR(24) ≈ daily ATR",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "2.25",
+        "29.8",
+        "assistant",
+        "now",
+        "can",
+        "see",
+        "the",
+        "bug"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:34:34": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:34:34",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 34,
+      "endLine": 34,
+      "source": "memory",
+      "snippet": "Assistant: **Session Summary — 2026-04-25 05:47 UTC** **Track C: 4h Multi-Timeframe Turtle — GRAVEYARD** Tested the last genuinely untested idea from PLAN.md. Result: **decisively rejected.** - 5 symbols × 4 windows × EP sweep [24, 48, 96, 144] × CP sweep [18, 36, 48, 72] - **1/2",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "multi-timeframe",
+        "plan.md",
+        "1/2",
+        "assistant",
+        "summary",
+        "utc",
+        "track",
+        "multi"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:35:35": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:35:35",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 35,
+      "endLine": 35,
+      "source": "memory",
+      "snippet": "Assistant: trading. **Files:** `examples/turtle_4h_walkforward.rs`, `memory/2026-04-25.md`, PLAN.md, MEMORY.md — all committed and pushed to `v2-rewrite` (8661be7).",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "memory/2026-04-25.md",
+        "plan.md",
+        "memory.md",
+        "v2-rewrite",
+        "assistant",
+        "trading",
+        "examples",
+        "turtle-4h-walkforward.rs"
+      ]
+    },
+    "memory:memory/2026-04-21.md:6:8": {
+      "key": "memory:memory/2026-04-21.md:6:8",
+      "path": "memory/2026-04-21.md",
+      "startLine": 6,
+      "endLine": 8,
+      "source": "memory",
+      "snippet": "Orientation: Read PLAN.md, MEMORY.md; Git pulled: `f5e21708` docs: update ATR_ENTRY_MULT to 0.85 in MEMORY.md and HALL_OF_FAME.md (latest); Discord channel: recent posts from prior cron sessions (all charts posted by prior Kira cycles)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "f52400c81d76"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "memory.md",
+        "atr-entry-mult",
+        "0.85",
+        "hall-of-fame.md",
+        "orientation",
+        "read",
+        "git"
+      ]
+    },
+    "memory:memory/2026-04-21.md:12:12": {
+      "key": "memory:memory/2026-04-21.md:12:12",
+      "path": "memory/2026-04-21.md",
+      "startLine": 12,
+      "endLine": 12,
+      "source": "memory",
+      "snippet": "Equity Tracking Cycle Run: Three suites executed with `--profile sweep`:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "f52400c81d76"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "equity",
+        "tracking",
+        "cycle",
+        "run",
+        "three",
+        "suites",
+        "executed",
+        "profile"
+      ]
+    },
+    "memory:memory/2026-04-21.md:14:15": {
+      "key": "memory:memory/2026-04-21.md:14:15",
+      "path": "memory/2026-04-21.md",
+      "startLine": 14,
+      "endLine": 15,
+      "source": "memory",
+      "snippet": "Equity Tracking Cycle Run: **1. progress_equity_curves:** Final equities (2079 days, Base5 universe):",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "f52400c81d76"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "progress-equity-curves",
+        "equity",
+        "tracking",
+        "cycle",
+        "run",
+        "final",
+        "equities",
+        "days"
+      ]
+    },
+    "memory:memory/2026-04-21.md:16:19": {
+      "key": "memory:memory/2026-04-21.md:16:19",
+      "path": "memory/2026-04-21.md",
+      "startLine": 16,
+      "endLine": 19,
+      "source": "memory",
+      "snippet": "Equity Tracking Cycle Run: Turtle+Chandelier: **248.0x** (daily Sharpe **1.68**); A/D Momentum: **40.3x** (daily Sharpe 3.62); FactorSmallByDV: **13.1x** (daily Sharpe 1.89); DDBudget 3-Sleeve: **59.3x** (Sharpe 7.21)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "f52400c81d76"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "248.0x",
+        "1.68",
+        "a/d",
+        "40.3x",
+        "3.62",
+        "13.1x",
+        "1.89",
+        "3-sleeve"
+      ]
+    },
+    "memory:memory/2026-04-21.md:21:21": {
+      "key": "memory:memory/2026-04-21.md:21:21",
+      "path": "memory/2026-04-21.md",
+      "startLine": 21,
+      "endLine": 21,
+      "source": "memory",
+      "snippet": "Equity Tracking Cycle Run: Chart: `charts/progress_equity_curves_daily.png`",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "f52400c81d76"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "equity",
+        "tracking",
+        "cycle",
+        "run",
+        "chart",
+        "charts",
+        "progress-equity-curves-daily.png"
+      ]
+    },
+    "memory:memory/2026-04-21.md:23:23": {
+      "key": "memory:memory/2026-04-21.md:23:23",
+      "path": "memory/2026-04-21.md",
+      "startLine": 23,
+      "endLine": 23,
+      "source": "memory",
+      "snippet": "Equity Tracking Cycle Run: **2. hall_of_fame_validator:**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "f52400c81d76"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "hall-of-fame-validator",
+        "equity",
+        "tracking",
+        "cycle",
+        "run"
+      ]
+    },
+    "memory:memory/2026-04-21.md:24:27": {
+      "key": "memory:memory/2026-04-21.md:24:27",
+      "path": "memory/2026-04-21.md",
+      "startLine": 24,
+      "endLine": 27,
+      "source": "memory",
+      "snippet": "Equity Tracking Cycle Run: OBV Trend (BTC 4h): 15% SL/15% TP → Sharpe 2.32, 68 trades; BollingerReversion (XRP/DOGE): 0.5× ATR stop → XRP Sharpe 9.39, DOGE Sharpe 48.0 — BOTH IN GRAVEYARD (2026-04-11 definitive kill); Passive Execution: Taker -3.0%, Maker -0.2% — not viable; **No",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "f52400c81d76"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "sl/15",
+        "2.32",
+        "xrp/doge",
+        "0.5",
+        "9.39",
+        "48.0",
+        "3.0",
+        "0.2"
+      ]
+    },
+    "memory:memory/2026-04-21.md:29:29": {
+      "key": "memory:memory/2026-04-21.md:29:29",
+      "path": "memory/2026-04-21.md",
+      "startLine": 29,
+      "endLine": 29,
+      "source": "memory",
+      "snippet": "Equity Tracking Cycle Run: **3. head_to_head_comparison:** Hung on LTC/BTC data load. Killed. Not re-run (low priority — equity tracking harness provides sufficient daily data).",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "f52400c81d76"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "head-to-head-comparison",
+        "ltc/btc",
+        "re-run",
+        "equity",
+        "tracking",
+        "cycle",
+        "run",
+        "hung"
+      ]
+    },
+    "memory:memory/2026-04-20.md:3:3": {
+      "key": "memory:memory/2026-04-20.md:3:3",
+      "path": "memory/2026-04-20.md",
+      "startLine": 3,
+      "endLine": 3,
+      "source": "memory",
+      "snippet": "2026-04-20 21:01 UTC — CTREND + Chandelier Walk-Forward Run: **Mission:** Test CTREND multi-horizon momentum signal (Monte Carlo confirmed genuine, 0/500 shuffled beat real) paired with Chandelier dual-exit. The \"fixed 21-bar hold\" was the suspected flaw in prior CTREND equity ch",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "511fd8111b88"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "walk-forward",
+        "multi-horizon",
+        "0/500",
+        "dual-exit",
+        "21-bar",
+        "utc",
+        "ctrend",
+        "chandelier"
+      ]
+    },
+    "memory:memory/2026-04-20.md:9:10": {
+      "key": "memory:memory/2026-04-20.md:9:10",
+      "path": "memory/2026-04-20.md",
+      "startLine": 9,
+      "endLine": 10,
+      "source": "memory",
+      "snippet": "Result: CTREND + Chandelier — REJECTED as Standalone Replacement: **CTREND+Chandelier: 30/54 pass (44% fail), avg Sharpe 2.28, 858 trades** **Turtle+Chandelier: 43/54 pass (~20% fail), avg Sharpe ~4.78**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "511fd8111b88"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "30/54",
+        "2.28",
+        "43/54",
+        "4.78",
+        "result",
+        "ctrend",
+        "chandelier",
+        "rejected"
+      ]
+    },
+    "memory:memory/2026-04-20.md:12:12": {
+      "key": "memory:memory/2026-04-20.md:12:12",
+      "path": "memory/2026-04-20.md",
+      "startLine": 12,
+      "endLine": 12,
+      "source": "memory",
+      "snippet": "Result: CTREND + Chandelier — REJECTED as Standalone Replacement: CTREND is decisively worse than Turtle as an entry signal for this strategy.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "511fd8111b88"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "result",
+        "ctrend",
+        "chandelier",
+        "rejected",
+        "standalone",
+        "replacement",
+        "decisively",
+        "worse"
+      ]
+    },
+    "memory:memory/2026-04-20.md:16:19": {
+      "key": "memory:memory/2026-04-20.md:16:19",
+      "path": "memory/2026-04-20.md",
+      "startLine": 16,
+      "endLine": 19,
+      "source": "memory",
+      "snippet": "Per-Universe Breakdown: | Universe | CTREND Pass | Turtle Pass (est.) | Delta | |----------|-------------|-------------------|-------| | Base5 | 5/6 (83%) | 6/6 (100%) | -17pp | | NoDOGE | 4/6 (67%) | 6/6 (100%) | -33pp |",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "511fd8111b88"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "per-universe",
+        "5/6",
+        "6/6",
+        "4/6",
+        "per",
+        "universe",
+        "breakdown",
+        "ctrend"
+      ]
+    },
+    "memory:memory/2026-04-20.md:20:23": {
+      "key": "memory:memory/2026-04-20.md:20:23",
+      "path": "memory/2026-04-20.md",
+      "startLine": 20,
+      "endLine": 23,
+      "source": "memory",
+      "snippet": "Per-Universe Breakdown: | LargeCaps5 | 4/6 (67%) | 6/6 (100%) | -33pp | | Legacy4 | 3/6 (50%) | ~4/6 | ~-17pp | | Legacy5BNB | 3/6 (50%) | ~3/6 | ~0pp | | OldGuardNoBNB | 3/6 (50%) | ~3/6 | ~0pp |",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "511fd8111b88"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "per-universe",
+        "4/6",
+        "6/6",
+        "3/6",
+        "per",
+        "universe",
+        "breakdown",
+        "largecaps5"
+      ]
+    },
+    "memory:memory/2026-04-20.md:24:26": {
+      "key": "memory:memory/2026-04-20.md:24:26",
+      "path": "memory/2026-04-20.md",
+      "startLine": 24,
+      "endLine": 26,
+      "source": "memory",
+      "snippet": "Per-Universe Breakdown: | Legacy3 | 3/6 (50%) | ~3/6 | ~0pp | | OldGuard4 | 3/6 (50%) | ~3/6 | ~0pp | | LowVolume5 | 2/6 (33%) | ~2/6 | ~0pp |",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "511fd8111b88"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "per-universe",
+        "3/6",
+        "2/6",
+        "per",
+        "universe",
+        "breakdown",
+        "legacy3",
+        "0pp"
+      ]
+    },
+    "memory:memory/2026-04-20.md:30:30": {
+      "key": "memory:memory/2026-04-20.md:30:30",
+      "path": "memory/2026-04-20.md",
+      "startLine": 30,
+      "endLine": 30,
+      "source": "memory",
+      "snippet": "Key Mechanism Insight: CTREND is a smoothed multi-horizon momentum signal (5/21/63/126-bar returns normalized by vol). Turtle is a breakout signal (close > max close of last 21 bars).",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "511fd8111b88"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "multi-horizon",
+        "5/21/63/126-bar",
+        "key",
+        "mechanism",
+        "insight",
+        "ctrend",
+        "smoothed",
+        "multi"
+      ]
+    },
+    "memory:memory/2026-04-20.md:32:32": {
+      "key": "memory:memory/2026-04-20.md:32:32",
+      "path": "memory/2026-04-20.md",
+      "startLine": 32,
+      "endLine": 32,
+      "source": "memory",
+      "snippet": "Key Mechanism Insight: In trending markets, Turtle captures the initial breakout momentum — the price is already moving, and the Chandelier trailing stop locks in profits quickly. CTREND's smoothed signal fires later (after momentum builds across multiple horizons), by which poin",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "511fd8111b88"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "key",
+        "mechanism",
+        "insight",
+        "trending",
+        "markets",
+        "turtle",
+        "captures",
+        "the"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:36:36": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:36:36",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 36,
+      "endLine": 36,
+      "source": "memory",
+      "snippet": "Assistant: The regime stress test is complete. Now let me update docs and push.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "assistant",
+        "the",
+        "regime",
+        "stress",
+        "test",
+        "complete",
+        "now",
+        "let"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:37:37": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:37:37",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 37,
+      "endLine": 37,
+      "source": "memory",
+      "snippet": "Assistant: Now let me fix the stale \"91% pass (49/54)\" claim in `live_turtle_chandelier.rs` since that's the most critical miscommunication for a live bot:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "49/54",
+        "live-turtle-chandelier.rs",
+        "assistant",
+        "now",
+        "let",
+        "fix",
+        "the",
+        "stale"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:38:38": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:38:38",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 38,
+      "endLine": 38,
+      "source": "memory",
+      "snippet": "Assistant: Now let me update MEMORY.md with the pre-2021 stress test finding:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "memory.md",
+        "pre-2021",
+        "assistant",
+        "now",
+        "let",
+        "update",
+        "the",
+        "pre"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:39:39": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:39:39",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 39,
+      "endLine": 39,
+      "source": "memory",
+      "snippet": "Assistant: ## Summary **Session: 2026-04-25 04:10 UTC** ### Pre-2021 Regime Stress Test — Current Production Params (P=7/M=2.25) - Result: **19/28 pass (67.9%)** — marginally below 70% threshold - P1-2020: 7/10 (Sharpe 4.52), P2-2021: 7/10 (Sharpe 2.89), P3-2019: 5/8 (Sharpe 1.89",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "pre-2021",
+        "7/m",
+        "2.25",
+        "19/28",
+        "67.9",
+        "p1-2020",
+        "7/10",
+        "4.52"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:40:40": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:40:40",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 40,
+      "endLine": 40,
+      "source": "memory",
+      "snippet": "Assistant: dry-run - 369 trades across 5 symbols. All positive: BTC +158.6%, ETH +177.9%, SOL +111.6%, XRP +169.9%, DOGE +271.4% ### Project State - Research loop: **CLOSED** ✅ - All params validated, all hyperopts exhausted - **BLOCKED:** Waiting on Noah's Binance testnet API ke",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "dry-run",
+        "158.6",
+        "177.9",
+        "111.6",
+        "169.9",
+        "271.4",
+        "assistant",
+        "dry"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:41:41": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:41:41",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 41,
+      "endLine": 41,
+      "source": "memory",
+      "snippet": "Assistant: CTREND's multi-horizon character. Fixed-hold sweep for CTREND entry is the only untested idea in a genuinely different signal family. 3. **Held-Out Validation for EP=24 + EM=0.85 (#T3)** — both won by noise-level margins (+1-2 windows in 54). T3 was planned but never e",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "multi-horizon",
+        "fixed-hold",
+        "held-out",
+        "0.85",
+        "noise-level",
+        "1-2",
+        "assistant",
+        "ctrend's"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:42:42": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:42:42",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 42,
+      "endLine": 42,
+      "source": "memory",
+      "snippet": "Assistant: is different test | | EP=24 / EM=0.85 noise-level, no held-out | 🔴 CRITICAL | T3 never done | | Equity chart column mapping unverified | 🔴 OVERDUE | T1 4+ sessions overdue | | Freshness cooldown contradiction | ✅ RESOLVED | cd=0 is production | | Research loop claime",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "0.85",
+        "noise-level",
+        "held-out",
+        "assistant",
+        "different",
+        "test",
+        "noise",
+        "level"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-25.txt:43:43": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-25.txt:43:43",
+      "path": "memory/.dreams/session-corpus/2026-04-25.txt",
+      "startLine": 43,
+      "endLine": 43,
+      "source": "memory",
+      "snippet": "Assistant: `strategy-ideas.md`: #21 freshness cooldown corrected (cd=0 production) - Commit `f428313a` pushed to v2-rewrite **Next real step:** T3 (held-out validation for EP=24 + EM=0.85) or T1 (equity chart verification). Both are blocked only on execution time, not on API keys",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-25T07:59:40.868Z",
+      "lastRecalledAt": "2026-04-25T07:59:40.868Z",
+      "queryHashes": [
+        "0ebfd40e58af"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "v2-rewrite",
+        "held-out",
+        "0.85",
+        "assistant",
+        "strategy",
+        "ideas.md",
+        "freshness"
       ]
     }
   }
