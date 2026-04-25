@@ -37,15 +37,11 @@ The project has systematically tested all major strategy ideas. All trend-follow
 - **Win condition:** Any CTREND variant >40/54 is a viable signal family.
 - **Why it matters:** Only untested idea producing genuinely different signal family, not parameter tuning.
 
-### T7: Correlation Entry Filter for ALT Symbols 🟡
-- **Hypothesis:** 2026 YTD failure (-32.8% in partial harness) may be BTC-led divergence. ALT breakouts without BTC confirmation get stopped out by tight Chandelier. BTC/ETH trend filter might reduce whipsaw.
-- **Test:** Turtle+Chandelier with BTC/ETH trend confirmation filter for ALT entries.
-  - No filter (baseline)
-  - BTC signal required for ALT entries
-  - BTC OR ETH signal (any 1-of-2)
-  - BTC AND ETH signal (both required)
-- **Win condition:** Filter must improve pass rate OR Sharpe without reducing trade count by >30%.
-- **Risk:** Trade-starving. Every entry filter tested so far hurt pass rate.
+### T7: Correlation Entry Filter for ALT Symbols ✅ COMPLETE (2026-04-25)
+- **Result: REJECTED.** All 3 filter variants (btc_only, btc_or_eth, btc_and_eth) lose to baseline on Sharpe AND trade count.
+- Delta Sharpe: -0.07 to -0.13. Trade reduction: 20-24%.
+- **Conclusion:** Chandelier(P=7,M=2.30) already handles BTC-choppy regimes. Correlation filter adds no value.
+- File: `examples/turtle_correlation_filter_walkforward.rs`, report: `snapshots/t7_correlation_filter_report.md`
 
 ### T8: Live Execution Gap Monitor ✅ BUILT (2026-04-25)
 - **Cannot be backtested.** Infrastructure built and tested with synthetic fills.
