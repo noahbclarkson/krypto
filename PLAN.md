@@ -35,7 +35,73 @@
 
 ---
 
-## HIGH PRIORITY
+### BLIND SPOT 1: Pre-2021 Stress — P=7 Never Validated at 21/21 Equivalent 🔴
+The 21/21 pre-2021 pass was with P=28/M=2.0. We switched to P=7/M=2.25 and never re-ran the 21/21 equivalent test. The 19/28 result is from a DIFFERENT test harness. We need a clean 21/21 equivalent for P=7.
+
+**Action:** Run `examples/regime_stress_p7_validation.rs` — it IS the P=7 pre-2021 stress. If it gets 18+/21 → P=7 validated. If it fails badly → problem.
+
+### BLIND SPOT 2: EP=24 and ATR_ENTRY_MULT=0.85 — Noise-Level Changes Without Held-Out ✅
+Both won by +1-2 windows in 54-window tests (noise-level). T3 was planned but never executed. We accepted them as production without held-out confirmation.
+
+**Action:** T3 is still the correct fix. But we need to define the acceptance bar FIRST (e.g., must win held-out by ≥+0.5 Sharpe or ≥+1 window).
+
+### BLIND SPOT 3: Equity Chart Instability — T1 Overdue ⚠️
+3× equity swing (668→734→248) in 3 days. Strategy-ideas.md T1 (#30) flagged urgent multiple sessions, still NOT DONE.
+
+**Action:** Complete T1 before next Discord chart.
+
+### BLIND SPOT 4: Freshness Cooldown Contradiction 🔴
+live_turtle_chandelier.rs: cd=0. Strategy-ideas.md #21: "cd=10 is production default." These contradict.
+
+**Action:** Verify src/live/bot.rs cd value in source. Resolve contradiction.
+
+---
+
+# PLAN.md — Krypto Live Testnet Priority
+
+**State: 2026-04-25 07:43 UTC. Critique session: research loop NOT closed (T3 incomplete). Pre-2021 P=7 stress inconclusive. Equity chart overdue (T1). Freshness cooldown contradiction (BLIND SPOT 4). Live testnet BLOCKED on Noah's API keys.**
+
+---
+
+## CRITICAL — Done
+
+### T1: Equity Chart Column Verification (#30) ⚠️ OVERDUE
+- **Status:** 4+ sessions overdue. Strategy-ideas.md T1 still marked NOT DONE.
+- **Problem:** `plot_progress.py` column index mapping has been wrong 3+ times. 3× equity swing (668→734→248) in 3 days proves data instability.
+- **Rule:** Before any Discord chart: (1) verify column headers from harness CSV output, (2) verify Python index reads correct column, (3) document verification in commit.
+- **Required:** Re-run `cargo run --example progress_equity_curves --profile sweep` → inspect CSV headers → verify plot script mapping → THEN send chart.
+
+### T2: Pre-2021 Stress Test P=7/M=2.25 (Regime Stress) ✅ Done but with Gap
+- **Result:** 19/28 pass (67.9%) — marginally below 70% threshold.
+- **⚠️ CRITICAL GAP:** 21/21 was achieved with P=28/M=2.0. 19/28 is from `regime_stress_p7_validation.rs` which uses P=7/M=2.25 on DIFFERENT test structure. These are not comparable. We do NOT have a clean 21/21 equivalent for P=7.
+- **Verdict:** 19/28 is supplementary. P=7 pre-2021 validation is INCOMPLETE.
+
+### T3: Held-Out Validation for EP=24 and ATR_ENTRY_MULT 0.85 🔴 NOT DONE
+- **Status:** Planned in prior session but never executed.
+- **Problem:** EP=24 won by +2 windows (44/54 vs 42/54), EM=0.85 won by +1 window (44/54 vs 43/54) — within noise for 54-window tests.
+- **Correct process:** Define acceptance bar BEFORE running. Accept only if held-out confirms ≥+0.5 Sharpe or ≥+1 window improvement.
+- **Alternative:** Accept EP=21/EM=0.90 as production (prior stable winners) until T3 completes.
+- **Risk if not done:** Continued hyperopt cycling on noise-level results (same pattern as VL=55→2).
+
+### T4: Freshness Cooldown Source Verification ✅ Done 2026-04-25
+- **Contradiction resolved:** Strategy-ideas.md claimed "cd=10 is production" but source shows cd=0.
+- `src/live/bot.rs` line 13: `const FRESHNESS_COOLDOWN: usize = 0;` (DISABLED)
+- `examples/live_turtle_chandelier.rs`: "freshness filter DISABLED — cd=0"
+- The cd=10 sweep was never propagated. Production default is cd=0.
+- **Updated:** strategy-ideas.md #21 corrected. cd=0 is production.
+- live_turtle_chandelier.rs: cd=0
+- Strategy-ideas.md #21: "cd=10 is production default"
+- **These contradict.** Source code must be definitive.
+- **Action:** `grep -n "FRESHNESS\|cooldown\|cd=" src/live/bot.rs` → resolve in source → update strategy-ideas.md.
+
+
+### T5: CTREND + CTREND-Native Exit Walk-Forward 🟡 UNTESTED
+- **Previous:** CTREND + Chandelier = 30/54 pass (44% fail). Exit wrong for CTREND character.
+- **New hypothesis:** CTREND-native exit (fixed hold, RSI exit, or multi-horizon counter-signal).
+- **Monte Carlo:** CTREND signal is genuinely predictive (0/500 shuffled beat real).
+- **Why this matters:** Only untested idea producing genuinely different signal family.
+- **Test:** Run fixed hold sweep (10, 15, 21, 30, 45, 60 bars) × CTREND entry. Compare vs Turtle+Chandelier baseline.
+
 
 ### T3: 2026 YTD — EXPLAINED (2026-04-20 evening session)
 - All param sets (P=5, P=11, P=15) produce IDENTICAL -32.8% portfolio result

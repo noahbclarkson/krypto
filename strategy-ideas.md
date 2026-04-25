@@ -113,24 +113,16 @@
 - **Result:** 0/500 shuffled permutations beat real. Aggregate: 3.04 avg real Sharpe vs -6.35 median shuffled
 - **Verdict:** Signal is GENUINE — Monte Carlo confirms CTREND price momentum signal is not overfitted to price pattern structure
 
-## 21. Turtle Signal Freshness Filter — ✅ TESTED (2026-04-18)
+## 21. Turtle Signal Freshness Filter — ✅ CLOSED (2026-04-18, UPDATED 2026-04-25)
 - **Harness:** `examples/turtle_freshness_filter_walkforward.rs` — 6 cooldown values {0,3,5,10,15,20} × 9 universes × 10 windows
-- **Result: cd=3 is the winner.** Mild cooldown (3 bars) improves pass rate from 58.9%→66.7% and Sharpe from -0.066→0.136. This is a genuine improvement over baseline (cd=0). Mechanistically: after a stop-out, waiting 3 bars reduces immediate re-entry whipsaw in choppy conditions.
-- **Summary table:**
-
-| Cooldown | Pass Rate | Avg Sharpe | Verdict |
-|----------|-----------|------------|----------|
-| 0 (baseline) | 58.9% | -0.066 | BASELINE |
-| 3 | **66.7%** | **+0.136** | **✅ BEST — KEEPS** |
-| 5 | 62.2% | +0.187 | ✅ KEEPS |
-| 10 | 60.0% | +0.174 | ✅ KEEPS |
-| 15 | 50.0% | -0.114 | 🪦 REJECT |
-| 20 | 50.0% | -0.083 | 🪦 REJECT |
-
-- **Note on absolute pass rates:** This harness shows lower pass rates than `turtle_chandelier_walkforward.rs` (58.9% vs 93%) due to different ATR formula, no dollar-volume ranking, and 10 windows vs 54. The *relative* comparison (cd=3 vs cd=0) within this harness is valid and conclusive: mild cooldown helps.
-- **Updated (2026-04-18):** Extensive 31-value sweep {0..=30 step 1} across 9 universes found **cd=10** as the winner (65.6% pass, 0.242 Sharpe vs baseline 57.8% pass, 0.027 Sharpe). cd=3 won the coarse 6-value sweep on Base5 only. cd=10 is the 9-universe aggregate winner.
-- **Live bot:** `src/live/bot.rs` uses cd=10 (commit 944bcd66).
-- **Status:** ✅ CLOSED. cd=10 is production default. Live testnet is the only remaining validation — the effect is modest (noise-range) and regime-dependent.
+- **Result (coarse 6-value):** cd=3 wins on Base5: +8pp pass rate (58.9%→66.7%).
+- **Result (fine 31-value):** cd=10 wins global: 65.6% pass, Sharpe 0.242 vs baseline 57.8%/0.027.
+- **⚠️ CONTRADICTION RESOLVED (2026-04-25):** Strategy-ideas.md previously claimed "Live bot uses cd=10." Source code verification shows:
+  - `src/live/bot.rs` line 13: `const FRESHNESS_COOLDOWN: usize = 0;` (DISABLED)
+  - `examples/live_turtle_chandelier.rs` confirms: "freshness filter DISABLED — cd=0"
+  - **The cd=10 sweep was never propagated to production.** The entry at line 132 ("Live bot uses cd=10") was incorrect.
+  - **Actual production default: cd=0** (freshness filter DISABLED). Chandelier(P=7,M=2.25) is tight enough to manage re-entry without a separate cooldown layer.
+- **Status:** CLOSED ✅. cd=0 is production. Do NOT re-test without explicit reason.
 
 ---
 
