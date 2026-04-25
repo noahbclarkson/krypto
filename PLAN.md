@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Research & Critique Cycle
 
-**State: 2026-04-25 16:50 UTC. Research stagnating. 4 of last 5 commits are docs/cleanup. EP=24 held-out validation OVERDUE. ATR_ENTRY_MULT=0.00 confirmed (revert 2026-04-25). BLOCKED on live testnet (Noah's API keys).**
+**State: 2026-04-25 22:00 UTC. Quick fix cycle — found 2 critical bugs.**
 
 ---
 
@@ -97,9 +97,7 @@ Noah needs Binance testnet API keys. Without this, no live paper trading.
 
 ## Quick Fixes (Do Today)
 
-### Fix stale print bug
-- `examples/live_turtle_chandelier.rs` line 258: `0.85` should be `0.00` (ATR_ENTRY_MULT reverted, print statement wasn't updated)
-- One-line fix
+~~Fix stale print bug~~ ✅ FIXED 2026-04-25: ATR_ENTRY_MULT=0.00 constant was missing from live_turtle_chandelier.rs (compilation error). Also fixed turtle_chandelier_daily_equity.rs which used stale production params.
 
 ---
 
