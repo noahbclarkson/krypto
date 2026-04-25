@@ -74,3 +74,21 @@ Everything else has failed OOS validation.
 **Verdict:** Signal matters, not just exit. Turtle breakout captures break-of-structure dynamics that EMA smoothing misses. Earlier entry in trending markets = better risk-adjusted returns.
 
 **Evidence file:** `examples/dynamic_trend_chandelier_walkforward.rs`, `snapshots/dynamic_trend_chandelier_wf.csv`
+
+## T7: BTC/ETH Correlation Entry Filter (2026-04-25)
+
+**Hypothesis:** 2026 YTD failure may be BTC-led divergence. ALT breakouts fire but get stopped by Chandelier when BTC doesn't confirm. BTC/ETH trend confirmation filter might reduce whipsaw.
+
+**Test:** 4 filter variants × Base5 (6 windows) + all 9 universes × 6 windows = 240 runs total.
+
+**Result:** All 3 filter variants lose to baseline on every metric.
+
+| Filter | Δ Sharpe vs baseline | Trade reduction |
+|--------|---------------------|-----------------|
+| btc_only | -0.12 | -20% |
+| btc_or_eth | -0.07 | -20% |
+| btc_and_eth | -0.13 | -24% |
+
+**Verdict:** Chandelier(P=7, M=2.30) already handles choppy BTC regimes correctly. Correlation filter adds no value and trades off Sharpe for trade frequency.
+
+**Evidence file:** `examples/turtle_correlation_filter_walkforward.rs`, `snapshots/t7_correlation_filter_results.csv`
