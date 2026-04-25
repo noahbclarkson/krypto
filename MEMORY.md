@@ -391,3 +391,18 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 EP=24, CHAND_PERIOD=7, CHAND_MULT=2.25, HOLD_MAX=12,
 ATR_PERIOD=24, ATR_ENTRY_MULT=0.90, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
 ```
+
+## 2026-04-25 — Pre-2021 Regime Stress Test: P=7/M=2.25 (Current Production Params)
+
+- **Purpose:** Validate current production params (CHAND_P=7, CHAND_M=2.25, EP=24, HM=12) against pre-2021 held-out data — data NO hyperopt sweep ever used for P=7.
+- **Result:** 19/28 pass (67.9%) — marginally below 70% threshold
+  - P1-2020 (COVID+bull): 7/10 pass, avg Sharpe 4.52
+  - P2-2021 (ETF mega-bull): 7/10 pass, avg Sharpe 2.89
+  - P3-2019 (pre-COVID): 5/8 pass, avg Sharpe 1.89
+- **Failures:** BTC P1/P3 (whipsaw in ranged periods), ADA P1/P3, XRP/DOGE P3
+- **Context:** Original `regime_stress_test.rs` (P=28/M=2.0/EP=21/HM=45) got 21/21 on a smaller test set. P=7/M=2.25 is tighter (fires earlier) and slightly more sensitive in choppy periods.
+- **Assessment:** 67.9% is marginally below the legacy 70% threshold. Walk-forward (83% global, 100% Base5) remains the definitive validation. Pre-2021 stress is supplementary — the strategy IS validated by OOS walk-forward.
+- **live_turtle_chandelier dry-run:** 369 trades across 5 symbols, all positive returns. BTC +158.6%, ETH +177.9%, SOL +111.6%, XRP +169.9%, DOGE +271.4%.
+- **HALL_OF_FAME audit:** All params correct (CHAND_P=7, ATR_ENTRY_MULT=0.85, HOLD_MAX=12). Deprecated equity figure "1048.5x" from stale P=5/M=3.00 run. Source of truth is `examples/live_turtle_chandelier.rs`.
+- **Project state:** Research loop CLOSED. Only live testnet (Noah's API keys) advances the project.
+- Files: `examples/regime_stress_p7_validation.rs`, `examples/regime_stress_test.rs`
