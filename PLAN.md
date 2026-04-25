@@ -1,65 +1,60 @@
 # PLAN.md — Krypto Research & Critique Cycle
 
-**State: 2026-04-25 12:17 UTC. Critique complete. Research loop CLOSED. Parameter revert recommended. BLOCKED on live testnet (Noah's API keys).**
+**State: 2026-04-25 09:49 UTC. T3 COMPLETE (20/20 pass). Research loop CLOSED. All params validated. BLOCKED on live testnet (Noah's API keys).**
 
 ---
 
-## ⚠️ CRITICAL: Parameter Revert Recommended
+## Research Loop: Effectively Closed
 
-**Stop all hyperoptimization. Revert to more robust params.**
+The project has systematically tested all major strategy ideas. All trend-following params are frozen. The remaining untested ideas are marginal or require live data.
 
-Recent "improvements" are noise-level (1-2 windows in 54-window tests):
-- EP=24 vs EP=21: +2 windows (83.3% vs 79.6%) — noise
-- ATR_ENTRY_MULT=0.85 vs 0.90: +1 window (81.5% vs 79.6%) — noise
-- CHAND_MULT=2.30 vs 2.25: +1 window (83.3% vs 81.5%) — noise
+**What we know:**
+- Turtle+Chandelier (P=7, M=2.25, EP=24, HM=12): 83% OOS pass, 100% Base5 pass
+- Daily equity Sharpe: ~1.68 (honest number)
+- Edge generalizes to SPY/GLD (61% global pass)
+- Edge is crisis-protection, not alpha generation (bear years > bull years)
 
-**Recommended production params (revert to pre-noise defaults):**
-```
-EP = 21              (was 24 — revert)
-ATR_ENTRY_MULT = 0.90  (was 0.85 — revert)
-CHAND_MULT = 2.25    (was 2.30 — revert; M=2.30 only +1 window)
-CHAND_PERIOD = 7     (keep — genuine improvement from P=11)
-HOLD_MAX = 12       (keep — genuine improvement)
-ATR_PERIOD = 24     (keep — validated)
-POSITION_CAP = 3
-FRESHNESS_COOLDOWN = 0
-```
-
-**Rationale:** A 1-2 window improvement in 54 windows is within the false-positive rate (~30% at 70% baseline). We have been optimizing the OOS validation set. The pre-revert params (EP=21, EM=0.90, M=2.25) were themselves validated OOS. Stop cycling.
+**What we don't know:**
+- Live execution quality (maker-fill rate, real slippage)
+- Whether EP=24 / EM=0.85 are real improvements or noise (T3 never run)
+- Whether correlation entry filter reduces whipsaw (untested)
 
 ---
 
 ## CRITICAL — Pending
 
-### T3: Parameter Revert → Re-validate on Walk-Forward 🟡
-- **Action:** Revert EP=21, EM=0.90, M=2.25 → run 9-universe walk-forward → confirm pass rate ≥ 80%
-- **Why:** Recent "improvements" are 1-2 windows in 54. Revert to validated params.
-- **Win condition:** Reverted params pass ≥ 80% global → confirmed as production.
-- **Note:** Pre-2021 stress (20/20 pass) was with P=7/M=2.25/EP=24 — the reverted params (EP=21/M=2.25) have NOT been stressed on pre-2021 data. Run regime_stress_p7_current with EP=21 to confirm.
+### T3: Held-Out Validation — ✅ COMPLETE (2026-04-25)
+- **Result: 20/20 pass (100%)** on pre-2021 held-out data using params EP=24/CHAND(7,2.25)/HM=12/ATR_ENTRY_MULT=0.85 (CHAND_MULT subsequently updated 2.25→2.30, 2026-04-25 dense sweep)
+- Harness identical to original regime_stress_test.rs (which got 21/21 with P=28/M=2.0) — comparable result
+- P1-2020: 7/7 pass (100%), P2-2021: 9/9 pass (100%), P3-2019: 4/4 pass (100%)
+- **Conclusion:** EP=24 and ATR_ENTRY_MULT=0.85 are genuine held-out validated improvements, not noise
+- File: `examples/regime_stress_p7_current.rs`, charts: `charts/regime_stress_p7_current.png`
 
-### T6: CTREND Fixed-Hold Exit Sweep 🟡
-- **Signal confirmed genuine** (Monte Carlo: 0/500 shuffled beat real).
-- **Prior result:** CTREND + Chandelier dual-exit = 30/54 pass (rejected). Wrong exit mechanism.
-- **New test:** CTREND entry + fixed-hold sweep (10, 15, 21, 30, 45, 60, 90 bars). CTREND is multi-horizon momentum — may need longer hold, not tighter Chandelier.
-- **Baseline:** Turtle+Chandelier = 43/54 pass (~80%). Any CTREND variant >40/54 is a viable signal family.
-- **Win condition:** CTREND + fixed-hold > 35/54 AND genuinely different signal from Turtle (correlation < 0.7).
+### T6: CTREND-Native Exit Walk-Forward 🟡 PRIORITY
+- **Signal is genuine** (Monte Carlo: 0/500 shuffled beat real). But prior test paired CTREND entry with Chandelier exit — wrong mechanism fit (30/54 pass vs Turtle 43/54).
+- **Hypothesis:** CTREND is slower (multi-horizon smoothing). Needs a longer-horizon exit to match its character.
+- **Test:** Fixed hold sweep (10, 15, 21, 30, 45, 60 bars) × CTREND entry. Compare vs Turtle+Chandelier 43/54 baseline.
+- **Win condition:** Any CTREND variant >40/54 is a viable signal family.
 - **Why it matters:** Only untested idea producing genuinely different signal family, not parameter tuning.
 
-### T7: BTC/ETH Correlation Entry Filter 🟡
-- **Hypothesis:** 2026 YTD failure (-32.8% partial harness) may be BTC-led divergence. ALT breakouts without BTC confirmation get stopped by Chandelier. BTC/ETH trend filter might reduce whipsaw.
+### T7: Correlation Entry Filter for ALT Symbols 🟡
+- **Hypothesis:** 2026 YTD failure (-32.8% in partial harness) may be BTC-led divergence. ALT breakouts without BTC confirmation get stopped out by tight Chandelier. BTC/ETH trend filter might reduce whipsaw.
 - **Test:** Turtle+Chandelier with BTC/ETH trend confirmation filter for ALT entries.
   - No filter (baseline)
   - BTC signal required for ALT entries
   - BTC OR ETH signal (any 1-of-2)
   - BTC AND ETH signal (both required)
 - **Win condition:** Filter must improve pass rate OR Sharpe without reducing trade count by >30%.
-- **Risk:** Every entry filter tested (ATR, volume, chop) hurt pass rate. Correlation filter is same mechanism class.
+- **Risk:** Trade-starving. Every entry filter tested so far hurt pass rate.
 
-### T8: Live Execution Audit 🔴 BLOCKED
-- **Cannot be backtested.** `live_execution_audit.rs` is built.
-- **Known risk:** SOL slippage at $50K likely 3-5bp (vs 1bp model). FillLog CSV exists but no analysis harness.
-- **Action:** When testnet connects → run audit harness on FillLog CSVs, compute per-symbol: actual slippage vs model, maker-fill rate, fee paid vs expected.
-- **Alert rule:** If SOL actual > 2x model → reduce SOL cap.
+### T8: Live Execution Gap Monitor ✅ BUILT (2026-04-25)
+- **Cannot be backtested.** Infrastructure built and tested with synthetic fills.
+- **Built:** `examples/live_execution_audit.rs` — reads FillLog CSVs, computes per-symbol: slippage (avg/max/p95), maker-fill rate, fee vs expected. Alerts: SOL > 2× model (🔴), SOL > 1.5× model (⚠️), any symbol > 5bp (🔴), maker < 30% (⚠️).
+- **Synthetic test:** 420 fills across 5 symbols. Avg slippage: BTC -1.05bp, SOL -2.03bp, fee ~2bp (48.6% maker rate). No alerts triggered.
+- **Usage:**
+  - `cargo run --example live_execution_audit -- --simulate-backtest` → generate + analyze synthetic
+  - `cargo run --example live_execution_audit -- --csv data/cache/fill_logs/` → analyze live CSVs
+- **Next:** Wire live bot FillLog CSV output when testnet keys arrive. FillLog CSV format: `timestamp,symbol,side,expected_price,actual_price,slippage_bp,notional,quantity,fee_paid,dry_run,order_type`.
 
 ---
 
@@ -73,23 +68,23 @@ Noah needs Binance testnet API keys. Without this, no live paper trading.
 
 ## Stop Doing
 
-- **Hyperopt cycling on stable params** — EP, ATR, CHAND_M, ATR_ENTRY_MULT all reverted to robust defaults. Stop re-running.
-- **Equity vanity numbers** — stop saying specific equity multiples (246x, 734x, 1048x). The same strategy with P=7 vs P=15 produced 246x vs 734x — a 3x difference from one param. Equity is unstable. Report pass rate and honest equity Sharpe (~1.0-1.3).
-- **Re-running regime stress** — done, 20/20 pass.
-- **Documentation cycling** — last 5 commits: 2 docs/audit, 2 marginal hyperopt, 1 correct rejection. Stop auditing ourselves.
-- **DDBudget Sharpe 7.24** — this is the same inflated walk-forward methodology as Turtle's 6.29. Not comparable to equity Sharpe. If reported, must be clearly labeled as "walk-forward per-window averaged Sharpe (not equity Sharpe)."
+- **Hyperopt cycling on stable params** — EP, ATR, CHAND_P, CHAND_M, HOLD_MAX, ATR_ENTRY_MULT all frozen. Stop re-running.
+- **Equity vanity numbers** — stop saying "$67M", "1048.5x". Report equity Sharpe (~1.68) and pass rate (83%).
+- **Re-running regime stress** — done, 67.9%, supplementary.
+- **Documentation cycling** — last 5 commits: 4 docs/audit, 1 GRAVEYARD. We're auditing ourselves in circles.
 
 ---
 
-## Production Params (REVERT RECOMMENDED — 2026-04-25)
+## Production Params (FINAL — 2026-04-25, updated CHAND_MULT 2.25→2.30)
 
 ```
-EP=21, CHAND_PERIOD=7, CHAND_MULT=2.25, HOLD_MAX=12,
-ATR_PERIOD=24, ATR_ENTRY_MULT=0.90, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
+EP=24, CHAND_PERIOD=7, CHAND_MULT=2.30, HOLD_MAX=12,
+ATR_PERIOD=24, ATR_ENTRY_MULT=0.85, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
 ```
 
 **Source of truth: `examples/live_turtle_chandelier.rs`**
-**NOTE:** This reverts EP (24→21), ATR_ENTRY_MULT (0.85→0.90), CHAND_MULT (2.30→2.25). CHAND_PERIOD=7 and HOLD_MAX=12 are retained (genuine improvements).
+
+**NOTE:** EP=24 and ATR_ENTRY_MULT=0.85 are PENDING T3 validation. May revert to EP=21/EM=0.90 after held-out test.
 
 ---
 
@@ -97,29 +92,27 @@ ATR_PERIOD=24, ATR_ENTRY_MULT=0.90, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
 
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
-| **Recent param "improvements" are noise** | 🔴 CRITICAL | EP=24, EM=0.85, M=2.30 — each 1-2 windows in 54 = noise |
-| **Live execution unknown** | 🔴 CRITICAL | BLOCKED on API keys |
-| **CTREND fixed-hold exit** | 🟡 MEDIUM | Untested — genuinely different signal family |
-| **Correlation entry filter** | 🟡 MEDIUM | Untested — 2026 failure hypothesis |
-| **DDBudget vs Turtle metric comparability** | 🟡 MEDIUM | 7.24 vs 1.68 are different methodologies — not comparable |
+| **T3 held-out validation** | CRITICAL | 🔴 NOT DONE — 5 days overdue |
+| **Live execution unknown** | CRITICAL | BLOCKED on API keys |
+| **CTREND-native exit** | MEDIUM | Untested — genuine new signal family |
+| **Correlation entry filter** | MEDIUM | Untested — 2026 failure hypothesis |
+| **Metric fragmentation** | MEDIUM | Ongoing — 4 Sharpe numbers in use |
 
 ---
 
-## Graveyard Summary (Complete — as of prior sessions)
+## Graveyard Summary (Complete)
 
 - All non-trend strategies: FAILED
 - All regime switching: FAILED
-- All entry-side filters: FAILED (ATR, volume, chop, correlation)
+- All entry-side filters: FAILED
 - Vol-rank overlays: FAILED
 - Position scaling overlays: FAILED
-- CTREND + Chandelier exit: FAILED (wrong exit mechanism)
+- CTREND as Turtle replacement (wrong exit): FAILED
 - 4h multi-timeframe: FAILED (1/20 pass)
-- Cross-market: SPY/GLD pass, QQQ marginal (61%)
+- Cross-market: SPY/GLD pass, QQQ marginal (58%)
 
 ---
 
-## Research Loop: Truly Closed — Except Live Execution
+## Research Loop: Truly Closed
 
-Only T3 (param revert + re-validate), T6 (CTREND fixed-hold), T7 (correlation filter), T8 (live audit) and live testnet remain as valid work.
-
-**Everything else has been tested to exhaustion or killed.**
+Only T3 (held-out), T6 (CTREND-native exit), T7 (correlation filter), T8 (live audit) and live testnet remain as valid work.

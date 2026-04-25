@@ -457,3 +457,77 @@ Baseline comparison: Turtle+Chandelier = 45/54 (83.3%). Any CTREND variant beati
 | **T3** | Held-out validation EP=24/EM=0.85 | 🔴 NOT DONE — 5 days overdue |
 | **T4** | BTC/ETH correlation entry filter (#31) | 🟢 New — 2026 failure hypothesis |
 | **T5** | Live execution gap monitor | 🟢 New — no backtest possible |
+
+---
+
+## 2026-04-25 Critique Additions
+
+### ⚠️ EP=24, ATR_ENTRY_MULT=0.85, CHAND_MULT=2.30 — All Noise
+
+**Evidence:**
+- EP=24 vs EP=21: +2 windows in 54-window test (83.3% vs 79.6%). Expected false-positive at 70% threshold ≈ 30%. 2 extra windows = noise.
+- ATR_ENTRY_MULT=0.85 vs 0.90: +1 window in 54 (81.5% vs 79.6%). 1 extra window = noise.
+- CHAND_MULT=2.30 vs 2.25: +1 window in 54 (83.3% vs 81.5%). 1 extra window = noise.
+
+**Root cause:** We have run too many hyperparameter sweeps on the same walk-forward validation set. Each sweep introduces ~30% false-positive rate at the window level. Layering 3 "improvements" each at 1-2 window delta is compounding noise.
+
+**Recommended action:** Revert EP→21, ATR_ENTRY_MULT→0.90, CHAND_MULT→2.25. Retain CHAND_PERIOD=7 and HOLD_MAX=12 (these are genuine).
+
+**Pre-2021 stress test (20/20 pass):** Run was with EP=24. Re-run with EP=21 to confirm the reverted params also pass.
+
+### ⚠️ DDBudget Sharpe 7.24 = Same Inflated Methodology
+
+`reports/daily_progress.csv` shows DDBudget Sharpe = 7.24. This is the **walk-forward per-window averaged Sharpe** — identical methodology to Turtle's 6.29. It is NOT the daily compounded equity Sharpe.
+
+**If DDBudget equity Sharpe were computed the same way as Turtle's 1.68** (daily compounded equity from 2078-day curve), it would be in the 0.8-1.5 range — comparable to Turtle's 1.68.
+
+**Never compare 7.24 to 1.68.** They measure different things. The 7.24 is inflated by the same per-window averaging that inflates Turtle's 6.29. Both are upper bounds.
+
+### ⚠️ Equity Numbers Are Unstable — Stop Quoting Specific Values
+
+Same strategy, one param change:
+- 2026-04-20: Turtle = **734.2x** (CHAND_P=15)
+- 2026-04-25: Turtle = **246.4x** (CHAND_P=7)
+
+A single parameter change (P=15 → P=7) produced a **3x difference** in final equity. This means equity is highly sensitive to param selection and we have no stable reference value.
+
+**Rule:** Report equity in terms of Sharpe (~1.0-1.3 honest) and pass rate (83% global / 100% Base5). Equity multiples are unstable and not comparable across runs.
+
+### New Concept: CTREND Fixed-Hold Exit Sweep (Different from #23)
+
+**Status:** Untested variant of previously rejected idea.
+
+**Prior result (#23):** CTREND entry + Chandelier dual-exit = 30/54 pass (44% fail). Chandelier is wrong exit for CTREND's character (multi-horizon smoothing fires too slowly).
+
+**New test:** CTREND entry + fixed-hold sweep (10, 15, 21, 30, 45, 60, 90 bars). CTREND is a slower signal — it may need TIME to develop, not a tight trailing stop. Fixed hold lets the multi-horizon signal work.
+
+**Why different from #23:** The previous test used Chandelier (tight ATR-based stop). Fixed hold is the opposite mechanism — it gives the position room. CTREND's signal is confirmed genuine (Monte Carlo). The question is whether the EXIT matches the signal's character.
+
+**Baseline:** Turtle+Chandelier = 43/54 pass (80%). Any CTREND variant >35/54 is a viable signal family.
+
+**Status:** Untested. T6 in PLAN.md.
+
+### Updated Top 3 Priorities (2026-04-25)
+
+| # | Priority | Status |
+|---|----------|--------|
+| **T1** | Equity chart column verification | ✅ DONE (2026-04-25) |
+| **T2** | Param revert: EP=21, EM=0.90, M=2.25 + re-validate | 🟡 New — noise-level improvements should be reverted |
+| **T3** | CTREND fixed-hold exit sweep (#26 variant) | 🟡 Untested — genuine different signal family |
+| **T4** | BTC/ETH correlation entry filter | 🟡 Untested — 2026 failure hypothesis |
+| **T5** | Live execution gap monitor | 🔴 BLOCKED on API keys |
+
+### What NOT to Research (Confirmed 2026-04-25)
+
+| Strategy | Status | Reason |
+|----------|--------|--------|
+| EP re-optimization | REVERT | +2 windows in 54 = noise, revert EP=21 |
+| ATR_ENTRY_MULT optimization | REVERT | +1 window in 54 = noise, revert EM=0.90 |
+| CHAND_MULT dense sweep | REVERT | +1 window in 54 = noise, revert M=2.25 |
+| ATR_MULT re-sweep | CLOSED | M=2.0 confirmed, done twice |
+| Vol regime filters | CLOSED | All failed |
+| Position scaling | CLOSED | All failed |
+| Non-trend strategies | CLOSED | All failed |
+| CTREND + Chandelier | CLOSED | Wrong exit mechanism |
+| 4h timeframe | CLOSED | Structural failure |
+| Regime switching | CLOSED | Worse than either component |
