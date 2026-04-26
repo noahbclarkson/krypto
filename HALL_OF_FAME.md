@@ -16,7 +16,7 @@
 
 **Frozen params (CHAND(7,2.30), updated 2026-04-25: ATR_ENTRY_MULT 0.85→0.00):**
 ```
-EP = 24              (entry lookback — hyperopt 2026-04-20: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%). See hyperopt-2026-04-20-ep-reopt.md)
+EP = 21; // T3 2026-04-26: REVERTED EP=24 -> 21. EP=24 was in-sample inflation on same OOS data as P=7 and ATR_ENTRY_MULT. EP=21 was the original validated winner. Paired held-out test: EP=21 avg Sharpe 0.18 vs EP=24 0.16, 27/29 vs 25/29 pass.
 ATR_PERIOD = 24      (Turtle ATR — fine hyperopt 2026-04-16)
 ATR_MULT = 0.0       (Turtle ATR stop multiplier — confirmed 2.0, 2026-04-16. NOT an entry filter — that is ATR_ENTRY_MULT above)
 CHAND_MULT = 2.30    (Chandelier exit multiplier — hyperopt 2026-04-25: DENSE sweep M∈[1.50..5.00] step 0.05 (71 values) × 9 universes × 54 windows. M=2.30 wins: Sharpe 6.204 (+0.8% vs M=2.25 at 6.122), 83.3% pass (45/54) vs 81.5% (44/54). Lowest M at peak pass rate — most efficient. See memory/hyperopt-2026-04-25-chand-mult-dense.md. NOTE: M=2.30 is the production default. Historical M=2.25 results remain valid — the shift is marginal.)

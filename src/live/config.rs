@@ -22,13 +22,13 @@ impl Default for TradingMode {
 }
 
 /// Turtle+Chandelier strategy params (validated walk-forward, frozen 2026-04-16).
-pub const TURTLE_EP: usize = 24; // hyperopt 2026-04-20 re-opt: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%), +2% avg Sharpe. Validated across all 9 universes. See hyperopt-2026-04-20-ep-reopt.md.
-pub const CHAND_PERIOD: usize = 7; // hyperopt 2026-04-21: EXTENSIVE sweep CP∈[5..60 step 2] × 9 universes × 54 windows with current production params (HM=12, ATR_EM=0.90, EP=24, CM=2.25). CP=7 wins global Sharpe 5.908 (+6.9% vs CP=11 baseline 5.526). Pass rate 79.6% (identical). Prior CP=11 sweep used stale EP=21 (not current EP=24). See memory/hyperopt-2026-04-21-chand-period.md.
+pub const TURTLE_EP: usize = 21; // hyperopt 2026-04-20 (original): EP=21 wins 43/54 (79.6%). EP=24 re-opt 2026-04-20: EP=24 wins 45/54 (+2 windows). T3 held-out 2026-04-26: REVERTED EP=24 -> 21. Paired held-out: EP=21 avg Sharpe 0.18 vs EP=24 0.16, 27/29 vs 25/29 pass. EP=24 was in-sample inflation. See snapshots/t3_ep_paired_held_out.csv.
+pub const CHAND_PERIOD: usize = 7; // hyperopt 2026-04-21: EXTENSIVE sweep CP∈[5..60 step 2] × 9 universes × 54 windows with EP=21/HM=12/ATR_ENTRY_MULT=0.00/CM=2.30. CP=7 wins global Sharpe 5.908 (+6.9% vs CP=11 baseline 5.526). Pass rate 79.6% (identical). Prior CP=11 sweep used stale EP=21 (not current EP=24). See memory/hyperopt-2026-04-21-chand-period.md.
 pub const CHAND_MULT: f64 = 2.30; // hyperopt 2026-04-25: DENSE sweep M∈[1.50..5.00] step 0.05 (71 values) × 9 universes × 54 windows. M=2.30 wins: Sharpe 6.2036 (+0.8% vs M=2.25 at 6.1225), pass rate 83.3% (45/54) vs 81.5% (44/54). M=2.30 is the lowest M at peak pass rate, making it the most efficient setting. See memory/hyperopt-2026-04-25-chand-mult-dense.md.
 pub const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. See hyperopt-2026-04-16-atr-period.md.
 pub const TURTLE_ATR_MULT: f64 = 2.0;
 pub const ATR_ENTRY_MULT: f64 = 0.00; // REVERTED 2026-04-25: Full 41-value sweep {0.00-2.00 step 0.05} × 9 universes × 54 windows with CHAND(7,2.30)/EP=24/HM=12. EM=0.00 wins definitively: 83.3% pass, Sharpe 1.87, +151.9% return, 707 trades. Any non-zero filter degrades pass rate monotonically. Prior EM=0.85 winner (2026-04-21) was optimized ON the same OOS data used for EP=24 and P=7 — classic in-sample inflation. EM=0.00 is the correct production default.
-pub const HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 baseline (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Full sweep 19 values [5-180] with production params CHAND(11,2.25)/EP=24. Chandelier fires first ~bar 12-15; HM is irrelevant above ~35. HM=12 wins on Sharpe + pass rate (96.3% vs 92.6%). See memory/hyperopt-2026-04-21-hold-max.md.
+pub const HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 baseline (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Full sweep 19 values [5-180] with EP=21/CHAND(11,2.25). Chandelier fires first ~bar 12-15; HM is irrelevant above ~35. HM=12 wins on Sharpe + pass rate (96.3% vs 92.6%). See memory/hyperopt-2026-04-21-hold-max.md.
 pub const POSITION_CAP: usize = 3;
 
 /// Configuration for live trading bot.
