@@ -1,29 +1,30 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-26 18:35 UTC. S6 DONE — Chandelier REDUNDANT. Turtle-only is NON-INFERIOR. W05 live failure still UNEXPLAINED. Live testnet BLOCKED on API keys. Turtle-only (ATR 24, 2.0) is the sole validated production exit.**
+**State: 2026-04-27 20:05 UTC. T14 (live bot audit) — CRITICAL. S8 (Donchian entry) — UNTESTED. S9 (W05 diagnostic) — STILL UNDONE after 2+ weeks. Live testnet BLOCKED on API keys.**
 
 ---
 
-## Brutal Self-Assessment (2026-04-26 Critique)
+## Brutal Self-Assessment (2026-04-27 Critique)
 
 **What we got right:**
 - Anti-overfitting: EP=24 + ATR_EM=0.85 properly rejected for in-sample inflation.
 - T10 HOF script: code is truth, not markdown.
 - Honest equity Sharpe (~1.29) vs inflated walk-forward Sharpe (6.29).
-- Cross-market audit: edge generalizes to SPY/GLD/QQQ (Sharpe 0.76–0.87). Not crypto survivorship bias.
-- MIN_TRADES threshold never binds (natural trade rate ~15-18/window).
+- Base5 (production universe) is clean: 6/6 pass.
+- S6 proved Chandelier redundant via proper walk-forward comparison.
+- Cross-market edge is REAL (SPY✓ GLD✓ QQQ✓) — though weaker than previously claimed (61% pass, QQQ fails individually at 58%).
 
 **Where we're fooling ourselves:**
-- 83% global pass = bull-era weighted. Pre-2021 stress = 67.9%.
-- **W05 live failure (-22.7% YTD vs BTC +12.7%) is the real story.** Strategy is losing in current live regime. No explanation exists.
-- No diversification: all eggs in Turtle+Chandelier. No choppy-regime strategy.
-- All structural attempts to fix chop (position scaling, vol-adaptive Chandelier, 4h timeframe, correlation filter) FAILED or tied.
-- CTREND portfolio never tested with CURRENT production params (T6 used stale params).
-- Documentation loop: last 5 commits, 3/5 are docs/hygiene. Nothing new shipped since S4 GRAVEYARD.
+- **True global pass rate is ~67% (S6 head-to-head), not 83%.** The 83% figure is from an earlier stale-param sweep.
+- **W05 live failure (-22.7% YTD vs BTC +12.7%) is the #1 unresolved problem.** Unexplained for 2+ weeks.
+- **S6 result not deployed to live code.** The harness proved Turtle-Only non-inferior but `live_turtle_chandelier.rs` still has Chandelier logic.
+- VOL_LOOKBACK hyperopt changes the walk-forward harness ranking only — zero impact on live trading. Spent a cycle on a harness-only parameter.
+- Documentation loop: 3/5 last commits are docs/hygiene. The project documents itself faster than it builds.
+- All choppy-regime fixes FAILED (10+ approaches). The problem is structural to Turtle+Chandelier.
 
 **What needs to change:**
-- Must have a SEPARATE strategy for choppy regimes, not a modification of Turtle+Chandelier.
-- Metrics are inconsistent (DDBudget milestone vs Turtle daily equity — NOT comparable).
+- Must audit live bot code — does it match validated harness?
+- Must have a SEPARATE strategy for choppy regimes (CTREND regime-conditional switching is the best untested candidate).
 - Research loop cannot be declared "closed" while W05 live failure is unresolved.
 
 ---
@@ -49,26 +50,21 @@ FRESHNESS_COOLDOWN = 0
 
 ## Next 3 Execution Tasks
 
-### S7: Turtle + CTREND Portfolio with Current Params — MEDIUM
-**Concept:** Test Turtle(75%) + CTREND(EMA8/32, hold=30)(25%) using CURRENT production params.
-**Why this matters:** T6 (2026-04-25) used STALE params (P=15, M=1.50, EP=21) and found Sharpe destroyed (1.38→0.33). Current params might produce a different result. CTREND fixed-hold (73% pass) is genuinely uncorrelated — different entry mechanics.
-**Note:** Turtle-only is now the sole exit. CTREND portfolio test should use Turtle-only for both sleeves.
-**Status:** Untested with current production params.
+### T14: Live Bot Code Audit + Chandelier Removal — CRITICAL
+**Concept:** Verify `live_turtle_chandelier.rs` matches S6 conclusion. Does it still have Chandelier dual-exit logic? S6 proved Chandelier fires first in 0/54 windows. Turtle ATR(24, 2.0) is the sole validated exit. Live code may still have Chandelier — needs audit and cleanup.
+**Why this matters:** S6 was a backtest harness comparison, not a live code change. The validated walk-forward harness uses Turtle-Only, but we never verified `live_turtle_chandelier.rs` matches. Gap between validated theory and deployed code.
+**Status:** Never audited. Highest priority.
 
-### S8: Donchian Entry vs Turtle Entry — MEDIUM
-**Concept:** Donchian entry: `close > max(high, EP)` vs Turtle: `close > max(close, high, EP)`.
-**Hypothesis:** Donchian requires close above highest high ever (stricter). Might produce fewer but higher-quality signals.
-**Why this matters:** Entry signal space is NOT fully explored. We only tested Turtle variants.
-**Test:** Walk-forward on Base5 (6 windows), Donchian vs Turtle with Turtle-only (ATR 24, 2.0) exit.
-**Status:** Never tested.
+### S8: Donchian Entry vs Turtle Entry — HIGH
+**Concept:** Donchian entry: `close > highest_high_ever` vs Turtle: `close > max(high, close)_21bar`. Donchian is the original Richard Dennis 1983 entry — strictly tighter than Turtle (requires breakout above all-time high, not just 21-bar max).
+**Why this matters:** Entry signal space is almost completely unexplored. We've spent all time on exit optimization. Entry is the other half of the problem. Donchian might produce fewer but higher-quality signals.
+**Test:** Walk-forward on Base5 (6 windows), Donchian vs Turtle, Turtle ATR(24, 2.0) as sole exit.
+**Status:** Never tested. Genuinely novel.
 
 ### S9: W05 Live Failure Diagnostic — CRITICAL
-**Concept:** Run W05 historical data through current production strategy to understand why it's losing.
-**Why this matters:** -22.7% YTD vs BTC +12.7% is the #1 unresolved problem. Need to identify whether this is:
-  (a) A regime-specific failure (chop/whipsaw, expected)
-  (b) A data/API bug
-  (c) A parameter issue
-**Status:** Never diagnosed. Highest priority after S7/S8.
+**Concept:** Run W05 (2024-10 to 2025-04, 2026 YTD equivalent) through current production strategy. Decompose every losing trade. Is it whipsaw chopt, bad entries, wrong exit timing, or a data/API issue?
+**Why this matters:** -22.7% YTD vs BTC +12.7% is 2+ weeks unexplained. BTC is UP 12.7% in the same period. Strategy losing in a nominally bull market = whipsaw in chop. Must identify the mechanism before we can fix it.
+**Status:** Never done. #1 unresolved problem in the project.
 
 ---
 
@@ -99,6 +95,8 @@ FRESHNESS_COOLDOWN = 0
 - **Documentation-only sprints** — last 5 commits: 3/5 docs. Move the project or stand still.
 - **Claiming research loop is "closed"** — W05 live failure is unresolved. The loop is not closed.
 - **Re-adding Chandelier** — S6 confirmed it adds zero value.
+- **Harness-only parameter tuning** — VOL_LOOKBACK is a walk-forward ranking param, not a production param. It doesn't affect live trading. Don't spend cycles on it.
+- **Fixed CTREND portfolio sleeve (S7)** — Fixed 25/75 blend destroys Sharpe. Regime-conditional switching is the viable variant (untested).
 
 ---
 
@@ -106,13 +104,14 @@ FRESHNESS_COOLDOWN = 0
 
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
-| **W05 live failure — no explanation** | CRITICAL | Strategy losing live. No fix identified. |
-| **No choppy-regime strategy** | CRITICAL | Turtle+Chandelier requires trending markets. Nothing for chop. |
-| **Metrics inconsistency** | HIGH | DDBudget Sharpe is milestone-aggregated, not comparable to equity Sharpe |
-| **Turtle-only exit untested** | ~~HIGH~~ → DONE ✅ | S6: NON-INFERIOR, 36/54 pass, avg Sharpe 4.12 |
-| **CTREND portfolio never tested with current params** | MEDIUM | T6 used stale params. Real result unknown with current production. |
-| **Entry signal space unexplored** | MEDIUM | Donchian, other variants untested |
-| **No live testnet** | CRITICAL | Still blocked on Noah's API keys. Cannot validate any of this. |
+| **W05 live failure — no explanation** | CRITICAL | 2+ weeks, no diagnostic run. BTC up +12.7%, strategy down -22.7%. |
+| **Live bot still has Chandelier?** | CRITICAL | S6 was harness-only. `live_turtle_chandelier.rs` not verified. |
+| **True global pass rate** | HIGH | ~67% (S6 head-to-head) vs claimed 83% (stale-param sweep) |
+| **No choppy-regime strategy** | CRITICAL | 10+ approaches failed. CTREND reg-conditional switching untested. |
+| **Entry signal space unexplored** | MEDIUM | Donchian entry, other variants never tested |
+| **VOL_LOOKBACK = harness only** | LOW | Zero live impact. Don't spend cycles on it. |
+| **Cross-market edge marginal** | MEDIUM | QQQ individually fails (58% < 60%). Overall 61% (just above threshold). |
+| **No live testnet** | CRITICAL | Blocked on Noah's API keys. Nothing else matters until unblocked. |
 
 ---
 
