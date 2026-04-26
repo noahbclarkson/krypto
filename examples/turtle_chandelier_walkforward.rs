@@ -34,12 +34,13 @@ const CHAND_MULT: f64 = 2.30; // hyperopt 2026-04-25: DENSE sweep M∈[1.50..5.0
 const TURTLE_ENTRY: usize = 21; // REVERTED 2026-04-26: EP=24 was in-sample inflation. Paired held-out: EP=21 27/29 pass / Sharpe 0.18 vs EP=24 25/29 pass / 0.16. See snapshots/t3_ep_paired_held_out.csv. Prior EP sweep (2026-04-20) used stale CHAND(11,2.25) and found EP=24 winner. Revert to EP=21 as documented.
 const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. Dual exit: Chandelier OR Turtle ATR fires first. See hyperopt-2026-04-16-atr-period.md.
 const ATR_ENTRY_MULT: f64 = 0.00; // REVERTED 2026-04-25: 41-value sweep {0.00-2.00 step 0.05} × 9 universes × 54 windows with CHAND(7,2.30)/EP=24/HM=12. EM=0.00 wins: 83.3% pass, Sharpe 1.87, +151.9% return, 707 trades. Prior EM=0.85 (2026-04-21) was in-sample inflation — both EP=24 and EM=0.85 were optimized on the same OOS validation data. EM=0.00 is the production default.
-// hyperopt 2026-04-21: VOL_LOOKBACK sweep {1,2,3,5,7,10,15,20,25,30,40,55,75,100} × 9 universes × 54 windows.
-// WINNER: VL=1 (+2.8% global Sharpe vs baseline VL=2, 100% pass rate identical).
-// Mechanism: shorter smoothing captures recent volume leaders → better momentum signal alignment.
-// Prior VL=55 (2026-04-17) overfitted on stale CHAND(28,2.0)/EP=21 params — not applicable to current.
-// See memory/hyperopt-2026-04-21-vol-lookback.md.
-const VOL_LOOKBACK: usize = 1; // dollar-volume smoothing window (rolling SMA of vol*price)
+// hyperopt 2026-04-26: EXTENSIVE sweep VL∈[1..20 step varied] × 9 universes × 6 windows × current production
+// params (CHAND_P=7, CHAND_M=2.30, EP=21, HM=12, ATR=24). PRIOR winner VL=1 was tuned on stale
+// CHAND(11,2.25)/EP=24 — not applicable to current params. NEW WINNER: VL=9 — 40/54 pass (+4 windows
+// vs VL=1=36/54), avg Sharpe 3.11 (degradation -0.36 acceptable), Base5 6/6 pass (VL=1=5/6).
+// Stable plateau: VL=7-9 all 38-40/54 pass. Degradation starts at VL=10+ (monotonic).
+// See snapshots/vl_current_params_summary.csv, charts/vl_sweep_comparison.png.
+const VOL_LOOKBACK: usize = 9; // dollar-volume smoothing window (rolling SMA of vol*price)
 const TURTLE_ATR_MULT: f64 = 2.00; // hyperopt 2026-04-12: TURTLE_ATR_MULT sweep {1.0-5.0 step 0.5}. M=2.0 is optimal (Sharpe 6.17, 93% pass). M<2.0 degrades Sharpe (M=1.0: 3.06). M>=2.5: Turtle ATR never fires first (Chandelier dominates). Current value matches CHAND_MULT by design — Turtle ATR is the faster secondary exit, not an independent mechanism. See memory/hyperopt-2026-04-12-atr-mult.md.
 
 const UNIVERSES: &[(&str, &[&str])] = &[
