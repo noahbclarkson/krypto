@@ -6,25 +6,22 @@
 
 ## Top 3 Genuinely Untested Ideas (Priority Order)
 
-### 1. S6: Turtle-Only Exit Test (HIGH — HIGHEST PRIORITY)
-**Concept:** Turtle breakout (EP=21) with ONLY Turtle ATR(24, 2.0) exit. NO Chandelier.
-**Question:** Does removing Chandelier improve performance in choppy regimes (where P=7 fires too aggressively)?
-**Hypothesis:** Turtle ATR(24) is slower than Chandelier(P=7, M=2.30). In choppy regimes like 2026 YTD, Chandelier constantly stops out positions — Turtle ATR might hold through noise.
-**Test:** Side-by-side walk-forward on Base5 (6 windows) + specifically on the 13 failing windows.
-**Why this matters NOW:** W05 live failure is -22.7% YTD. If Turtle-only handles chop better, it's the live deployment config.
-**Status:** Genuinely untested. Not in GRAVEYARD. Highest priority.
+### 1. T14: Live Bot Code Audit — CRITICAL
+**Concept:** Audit `live_turtle_chandelier.rs` to verify it matches S6 conclusion (Chandelier redundant). S6 proved Turtle ATR(24, 2.0) fires first in 0/54 windows. But S6 was a backtest harness comparison — the live production code was never updated.
+**Why this matters:** The project validated that Turtle-Only is non-inferior, but `live_turtle_chandelier.rs` still has `CHAND_PERIOD=7` and `CHAND_MULT=2.30` in config.rs. Gap between validated theory and deployed code. Must verify.
+**Status:** Never audited. Highest priority.
 
-### 2. S7: Turtle + CTREND Portfolio with Current Params (MEDIUM)
-**Concept:** Turtle(75%) + CTREND(EMA8/32, hold=30 bars)(25%) using CURRENT production params (CHAND_P=7, M=2.30, EP=21, HM=12, ATR=24).
-**Why this matters:** T6 (2026-04-25) used STALE params (P=15, M=1.50, EP=21) and found Sharpe destroyed (1.38→0.33). Current params are significantly different (P=7 is much tighter). CTREND fixed-hold (73% pass) is genuinely uncorrelated with Turtle — different entry mechanics, different exit timing. A 2-sleeve portfolio might handle both trending AND choppy regimes better than Turtle alone.
-**Note:** Even if S6 shows Turtle-only wins standalone, Turtle+CTREND might improve DD coverage.
-**Status:** Untested with current production params.
+### 2. S8: Donchian Entry vs Turtle Entry (HIGH)
+**Concept:** Turtle uses `close > max(close, high) [21-bar max of either].` Donchian uses `close > highest(high) [strictest — all-time high breakout].` Donchian is the original Richard Dennis 1983 Turtle system entry.
+**Why this might matter:** Entry signal space is almost completely unexplored. All our work has been on exit optimization. Donchian might produce fewer but higher-quality signals. Test with Turtle ATR(24, 2.0) as sole exit.
+**Test:** Walk-forward on Base5 (6 windows), Donchian vs Turtle.
+**Status:** Never tested. Genuinely novel.
 
-### 3. S8: Donchian Entry vs Turtle Entry (MEDIUM)
-**Concept:** Turtle uses `close > max(close, high) [21-bar max of either close or high]`. Donchian uses `close > highest(high) [strict high-only breakout]`.
-**Why this might matter:** Donchian is the original trend-following entry (Richard Dennis, 1983). It's strictly tighter than Turtle (requires close above highest high ever, not just a 21-bar max). Might produce fewer but higher-quality signals.
-**Test:** Walk-forward on Base5 (6 windows), Donchian vs Turtle, current production params.
-**Status:** Never tested. Entry signal space is NOT fully explored.
+### 3. CTREND Regime-Conditional Switching (HIGH — NEW 2026-04-27)
+**Concept:** NOT the same as fixed S7 blend. Conditional switching: if ATR percentile rank < 25th (low volatility, choppy), enter CTREND instead of Turtle. CTREND has 73% OOS pass and works in choppy regimes where Turtle whipsaws. Turtle wins in trending regimes.
+**Why this matters:** 10+ approaches to fix the chop problem failed. All were overlays on Turtle+Chandelier. CTREND conditional switching is a fundamentally different mechanism — a separate strategy for chop, not a modification of trend-following.
+**Different from S7:** S7 tested fixed 75/25 Turtle/CTREND portfolio blend → Sharpe destroyed. Conditional switching (use one OR the other based on regime) is a different mechanism.
+**Status:** Never tested. Best untested candidate for the chop problem.
 
 ---
 
