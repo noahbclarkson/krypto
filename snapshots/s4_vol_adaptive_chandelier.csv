@@ -1,0 +1,6 @@
+config,pass_windows,total_windows,pass_pct,avg_dd_pct,total_trades,avg_sharpe
+M=3.00,7,7,100,33.32,587,6.89
+ADAPTIVE,7,7,100,26.53,587,6.70
+M=2.00,7,7,100,25.44,587,6.68
+STATIC M=2.30,7,7,100,28.08,587,6.59
+M=1.75,7,7,100,22.61,587,6.48

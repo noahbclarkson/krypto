@@ -13,7 +13,8 @@
 | Cross-sectional momentum | 2026-04-10 | 60% | Short side noise, long side = trend-following |
 | Correlation breakout | 2026-04-11 | 50% | Underperforms random entry |
 | BTC→ETH lead-lag | 2026-04-11 | 56% | Fails in bear regimes |
-| Vol-contingent Chandelier | 2026-04-12 | GRAVEYARD | All configs produce identical results |
+| Vol-contingent Chandelier | 2026-04-12 | GRAVEYARD | 21-bar vol rank: all configs identical |
+| Vol-contingent Chandelier (252-bar) | 2026-04-26 | GRAVEYARD | 252-bar vol rank: tied (Sharpe Δ+0.12 noise) — no adaptive benefit |
 | Vol-rank A/D×Turtle switching | 2026-04-12 | 60.5% | Worse than either component alone |
 | MACD+Regime | 2026-04-14 | 29% | Previously 4/4 from stale cache |
 | 4h Mean Reversion | 2026-04-11 | 0/4 | Fees destroy thin edge |
