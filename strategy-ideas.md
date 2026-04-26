@@ -1,27 +1,40 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-25. Research loop closed. Only T3 (EP held-out), T6-NEXT (CTREND sleeve), and T9 (live testnet) advance the project.*
+*Last updated: 2026-04-26. T3 + T3-Next complete. All production params validated. New priority: T11 failure mode diagnostic.*
 
 ---
 
 ## Top 3 Genuinely Untested Ideas
 
-### 1. T3: EP=24 Paired Held-Out Validation (CRITICAL — OVERDUE)
-**Concept:** Current production params (EP=24, P=7, M=2.30, HM=12, ATR_ENTRY_MULT=0.00) have NEVER been tested in a paired held-out comparison against EP=21. The M=2.25 pre-2021 stress (19/28 = 67.9%) was run on different params than current production.
-**Test:** `regime_stress_ep24_paired.rs` — EP=21 vs EP=24 on current production params against pre-2021 held-out data
-**Decision:** If EP=24 < EP=21 on held-out → revert EP=24→21. If EP=24 ≥ EP=21 → keep EP=24.
-**Status:** T3 is OVERDUE. Was due 2026-04-25. EP=24 won by only +2 windows on the same data used to select it.
+### 1. T11: Failure Mode Diagnostic (HIGH — NOT STARTED)
+**Concept:** 13/54 global walk-forward windows fail (24%). We know LTC/EOS/BCH are primary culprits but have never classified HOW MANY are purely asset-specific vs. regime-specific failures.
 
-### 2. T6-NEXT: CTREND Fixed-Hold Portfolio Sleeve Test (HIGH — NOT STARTED)
+**Question:** In how many failing windows do BTC/ETH/SOL also fail? If regime-wide failures exist (2+ production-universe symbols fail), Base5's 100% pass rate may be partially bull-era survivorship bias.
+
+**Test:** For each of the 13 failing windows, report per-symbol pass/fail. Classify as:
+- Asset-specific: only LTC/EOS/BCH fail, BTC/ETH/SOL/DOGE/XRP pass → clean for production
+- Regime-wide: 2+ production symbols fail → potential tail risk in live deployment
+
+**Decision:** If ≥3 regime-wide failures found, CTREND sleeve becomes urgent portfolio protection. If all 13 are asset-specific, production universe is clean and T6-NEXT is optional diversification.
+
+**Status:** Not started.
+
+### 2. T6-NEXT: CTREND Fixed-Hold Portfolio Sleeve Test (MEDIUM — NOT STARTED)
 **Result (2026-04-25):** CTREND fixed-hold (hold=30 bars) = 44/60 pass (73%) — genuine signal, weaker than Turtle (80%+). Win condition met (>35/54) but CTREND is NOT a standalone replacement.
+
 **Concept:** Test CTREND fixed-hold (hold=30) as 20-30% portfolio sleeve alongside Turtle+Chandelier (70-80%). Walk-forward comparing Turtle-only vs Turtle+CTREND sleeve.
+
 **Win condition:** Adding CTREND sleeve reduces MaxDD by >3pp without reducing Sharpe by >10%.
-**Why:** Single-strategy risk. Turtle+Chandelier is the only validated strategy. CTREND fixed-hold is the only untested idea that produces a genuinely different signal family (not just parameter tuning).
-**Status:** T6 complete (signal family confirmed). T6-NEXT not started.
+
+**Why:** Single-strategy risk. Turtle+Chandelier is the only validated strategy. CTREND fixed-hold is the only untested idea that produces a genuinely different signal family (not just parameter tuning). Different regime sensitivity provides genuine diversification.
+
+**Status:** T6 complete (signal confirmed). T6-NEXT not started.
 
 ### 3. T10: HOF Generation Script (MEDIUM — NOT STARTED)
 **Concept:** Build `scripts/generate_hall_of_fame.rs` — parse `src/live/config.rs` + `examples/live_turtle_chandelier.rs` → auto-generate HALL_OF_FAME.md from code.
-**Why:** HOF has been manually updated and contradictory 5+ times. Source of truth should be code, not markdown. Critical hygiene before live testnet.
+
+**Why:** HOF has been manually updated and contradictory 5+ times. Source of truth should be code, not markdown. Critical hygiene before live testnet deployment.
+
 **Status:** Not started.
 
 ---
@@ -70,24 +83,31 @@ If SOL slippage consistently >2× model → reduce SOL cap to $25K.
 
 ---
 
-## Anti-Overfitting Rules (Established 2026-04-25)
+## Anti-Overfitting Rules (Established 2026-04-25, Applied 2026-04-26)
 
 1. **Minimum win margin:** ≥3 windows (5.5%) improvement on OOS before accepting any param change
 2. **No sequential optimization on same data:** If EP is optimized on data D, you cannot also optimize ATR_EM on data D and claim both are valid
 3. **Held-out validation required for marginal wins:** 1-2 window delta = noise until pre-2021 stress confirms
 4. **Equity curve dominance:** Winner must dominate baseline at >80% of time bars
-5. **Never re-run confirmed params:** ATR_PERIOD confirmed 3×. CHAND_MULT confirmed 2×. Stop.
+5. **Never re-run confirmed params:** ATR_PERIOD confirmed 3×. CHAND_MULT confirmed 2×. P=7 confirmed 2×. Stop.
+
+**Application history:**
+- EP=24 REJECTED: in-sample inflation on same OOS data as P=7 and ATR_ENTRY_MULT (2026-04-26)
+- ATR_ENTRY_MULT=0.85 REJECTED: same violation (2026-04-25)
+- P=7 VALIDATED: held-out confirmed with EP=21 (2026-04-26 T3-Next: 27/29 vs 27/29, delta +0.01 Sharpe)
+- EP=21 VALIDATED: held-out confirmed (2026-04-26 T3: 27/29 pass)
 
 ---
 
-## What NOT to Research (Confirmed 2026-04-25)
+## What NOT to Research (Confirmed 2026-04-26)
 
 | Strategy | Reason |
 |----------|--------|
-| EP re-optimization | EP=24 marginal (+2 windows), T3 held-out overdue and incomplete |
-| ATR_ENTRY_MULT | EM=0.00 definitive winner — full sweep 41 values |
+| EP re-optimization | ✅ EP=21 confirmed. EP=24 was in-sample inflation. |
+| ATR_ENTRY_MULT | EM=0.00 definitive winner — full 41-value sweep |
 | ATR_MULT re-sweep | M=2.0 confirmed, done 2× |
-| ATR_PERIOD re-sweep | ATR=24 confirmed 3× — NULL result 2026-04-25 |
+| ATR_PERIOD re-sweep | ATR=24 confirmed 3× — null result 2026-04-25 |
+| CHAND_PERIOD re-sweep | P=7 confirmed vs P=11 on held-out (EP=21) |
 | Vol regime filters | All failed, Chandelier handles it |
 | Position scaling | All failed — Chandelier sufficient |
 | Regime switching | All failed |
@@ -105,4 +125,4 @@ If SOL slippage consistently >2× model → reduce SOL cap to $25K.
 **Role:** Secondary signal family, NOT a standalone replacement. Expected role: 20-30% portfolio sleeve.
 **Baseline comparison:** Turtle+Chandelier = 80%+ pass rate. CTREND fixed-hold is weaker standalone.
 
-*Source of truth for production params: `src/live/config.rs`. Last verified: 2026-04-25.*
+*Source of truth for production params: `src/live/config.rs`. Last verified: 2026-04-26.*
