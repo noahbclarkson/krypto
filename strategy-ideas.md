@@ -1,10 +1,10 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-26. T3 + T3-Next complete. All production params validated. New priority: T11 failure mode diagnostic.*
+*Last updated: 2026-04-26. T11 (failure mode diagnostic) and S4 (vol-adaptive Chandelier) are next priority. T9 (live testnet) blocked on Noah's API keys.*
 
 ---
 
-## Top 3 Genuinely Untested Ideas
+## Top 3 Genuinely Untested Ideas (Priority Order)
 
 ### 1. T11: Failure Mode Diagnostic (HIGH — NOT STARTED)
 **Concept:** 13/54 global walk-forward windows fail (24%). We know LTC/EOS/BCH are primary culprits but have never classified HOW MANY are purely asset-specific vs. regime-specific failures.
@@ -15,44 +15,61 @@
 - Asset-specific: only LTC/EOS/BCH fail, BTC/ETH/SOL/DOGE/XRP pass → clean for production
 - Regime-wide: 2+ production symbols fail → potential tail risk in live deployment
 
-**Decision:** If ≥3 regime-wide failures found, CTREND sleeve becomes urgent portfolio protection. If all 13 are asset-specific, production universe is clean and T6-NEXT is optional diversification.
+**Decision:** If ≥3 regime-wide failures found, CTREND sleeve becomes urgent portfolio protection. If all 13 are asset-specific, production universe is clean.
+
+**Why this matters NOW:** 2026 YTD live performance (-22.7% vs BTC +12.7%) is a W05-equivalent regime. Classifying the historical failures tells us if the live failure is structural or just bad luck.
+
+**Status:** Not started. Highest priority.
+
+### 2. S4: Vol-Adaptive Chandelier (Structural Rethink — MEDIUM)
+**Concept:** Current Chandelier(P=7, M=2.30) is static. In choppy high-vol regimes (like 2026 YTD), the tight multiplier fires constantly causing whipsaw losses.
+
+**Idea:** Use 252-bar realized vol rank (matching our ATR baseline):
+- Vol > 75th percentile of 252-bar history → M=3.0+ (wider stop, holds through noise)
+- Vol < 25th percentile → M=1.75 (tighter stop)
+- Middle range → M=2.30 (production default)
+
+**Why this might work when previous attempt failed:**
+The prior vol-contingent test (2026-04-12) used 21-bar realized vol rank. This is too fast-moving — it doesn't capture the multi-month vol regime shifts that cause W05-style chop. 252-bar vol rank is the standard for ATR calculations and matches our regime detection baseline.
+
+**Test:** Chandelier P=7, M ∈ {1.75, 2.30, 3.00} conditional on 252-bar vol percentile. Walk-forward on Base5 (6 windows).
+
+**Win condition:** Vol-adaptive M reduces MaxDD by >3pp in failing windows without reducing Sharpe in passing windows.
 
 **Status:** Not started.
 
-### 2. T6-NEXT: CTREND Fixed-Hold Portfolio Sleeve Test (MEDIUM — NOT STARTED)
-**Result (2026-04-25):** CTREND fixed-hold (hold=30 bars) = 44/60 pass (73%) — genuine signal, weaker than Turtle (80%+). Win condition met (>35/54) but CTREND is NOT a standalone replacement.
+### 3. S5: Turtle Entry Only, No Chandelier (MEDIUM — NOT STARTED)
+**Concept:** Test Turtle breakout (EP=21) with ONLY Turtle ATR(24, 2.0) exit — no Chandelier. Single-exit vs dual-exit.
 
-**Concept:** Test CTREND fixed-hold (hold=30) as 20-30% portfolio sleeve alongside Turtle+Chandelier (70-80%). Walk-forward comparing Turtle-only vs Turtle+CTREND sleeve.
+**Hypothesis:** In choppy high-vol regimes, Chandelier(P=7, M=2.30) fires too early. Turtle ATR(24) is slower and might hold positions through noise that Chandelier would stop out.
 
-**Win condition:** Adding CTREND sleeve reduces MaxDD by >3pp without reducing Sharpe by >10%.
+**Test:** Side-by-side comparison of:
+- Turtle only: EP=21, exit=Turtle ATR(24, 2.0), no Chandelier
+- Turtle+Chandelier (production): EP=21, exit=dual (Chandelier OR Turtle ATR fires first)
 
-**Why:** Single-strategy risk. Turtle+Chandelier is the only validated strategy. CTREND fixed-hold is the only untested idea that produces a genuinely different signal family (not just parameter tuning). Different regime sensitivity provides genuine diversification.
+Walk-forward on Base5 (6 windows) + failing windows specifically (T11 results).
 
-**Status:** T6 complete (signal confirmed). T6-NEXT not started.
+**Risk:** Chandelier is what makes the strategy work in trending markets. Removing it might break the edge entirely. This is a hedge against W05-style chop, not a replacement for the production strategy.
 
-### 3. T10: HOF Generation Script (MEDIUM — NOT STARTED)
-**Concept:** Build `scripts/generate_hall_of_fame.rs` — parse `src/live/config.rs` + `examples/live_turtle_chandelier.rs` → auto-generate HALL_OF_FAME.md from code.
-
-**Why:** HOF has been manually updated and contradictory 5+ times. Source of truth should be code, not markdown. Critical hygiene before live testnet deployment.
-
-**Status:** Not started.
+**Status:** Not started. Depends on T11 results.
 
 ---
 
-## Post-Live-Testnet Concepts
-
-These require live fill data to test. Not actionable until T9 (live testnet) completes.
+## Post-Live-Testnet Concepts (Cannot be backtested)
 
 ### S1. Maker-Fill Adaptive Position Sizing
-**Concept:** After 30 days of live testnet: measure actual maker-fill rate per symbol. If <50% → reduce position 30%. If >70% → full position. The maker-fill rate is a market microstructure signal.
-**Status:** Cannot be backtested. FillLog infrastructure built (`src/live/executor.rs`).
+**Concept:** After 30 days of live testnet: measure actual maker-fill rate per symbol.
+- If <50% → reduce position 30% (execution degraded)
+- If >70% → full position (execution optimal)
+The maker-fill rate is a market microstructure signal.
+**Status:** Cannot be backtested. FillLog infrastructure built in `src/live/executor.rs`.
 
 ### S2. Vol Regime Live Dashboard
 **Concept:** Display live ATR percentile rank (vs 252-bar history) per symbol. Helps interpret drawdowns in real-time.
 **Status:** ATR calculation exists. Missing: percentile rank + display output.
 
 ### S3. Live Slippage → Position Adjustment
-If SOL slippage consistently >2× model → reduce SOL cap to $25K.
+If SOL slippage consistently >2× model → reduce SOL cap to $25K notional.
 
 ---
 
