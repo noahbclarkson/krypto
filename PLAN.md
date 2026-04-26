@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-27 20:05 UTC. T14 (live bot audit) — CRITICAL. S8 (Donchian entry) — UNTESTED. S9 (W05 diagnostic) — STILL UNDONE after 2+ weeks. Live testnet BLOCKED on API keys.**
+**State: 2026-04-26 21:01 UTC. T14 ✅ DEPLOYED. S8 ✅ DONE (Turtle wins returns). S9 (W05 diagnostic) — CRITICAL, still unexplained. Live testnet BLOCKED on API keys.**
 
 ---
 
@@ -50,16 +50,11 @@ FRESHNESS_COOLDOWN = 0
 
 ## Next 3 Execution Tasks
 
-### T14: Live Bot Code Audit + Chandelier Removal — CRITICAL
-**Concept:** Verify `live_turtle_chandelier.rs` matches S6 conclusion. Does it still have Chandelier dual-exit logic? S6 proved Chandelier fires first in 0/54 windows. Turtle ATR(24, 2.0) is the sole validated exit. Live code may still have Chandelier — needs audit and cleanup.
-**Why this matters:** S6 was a backtest harness comparison, not a live code change. The validated walk-forward harness uses Turtle-Only, but we never verified `live_turtle_chandelier.rs` matches. Gap between validated theory and deployed code.
-**Status:** Never audited. Highest priority.
+### T14: Live Bot Code Audit + Chandelier Removal — DONE ✅
+**Result:** S6 conclusion deployed to live code. `src/live/bot.rs` now uses Turtle ATR sole exit. `examples/live_turtle_chandelier.rs` cleaned up. Build clean. `96a6f20b` + `c446fd72` committed.
 
-### S8: Donchian Entry vs Turtle Entry — HIGH
-**Concept:** Donchian entry: `close > highest_high_ever` vs Turtle: `close > max(high, close)_21bar`. Donchian is the original Richard Dennis 1983 entry — strictly tighter than Turtle (requires breakout above all-time high, not just 21-bar max).
-**Why this matters:** Entry signal space is almost completely unexplored. We've spent all time on exit optimization. Entry is the other half of the problem. Donchian might produce fewer but higher-quality signals.
-**Test:** Walk-forward on Base5 (6 windows), Donchian vs Turtle, Turtle ATR(24, 2.0) as sole exit.
-**Status:** Never tested. Genuinely novel.
+### S8: Donchian Entry vs Turtle Entry — DONE ✅
+**Result:** Turtle wins returns (9/9 universes, +5 to +81% more), Donchian wins Sharpe (6/9 universes, +0.03 to +0.19). Donchian is quality-over-quantity (fewer but higher-quality trades). Crypto trending favors Turtle entry. Turtle remains production default. `55b105f7` committed.
 
 ### S9: W05 Live Failure Diagnostic — CRITICAL
 **Concept:** Run W05 (2024-10 to 2025-04, 2026 YTD equivalent) through current production strategy. Decompose every losing trade. Is it whipsaw chopt, bad entries, wrong exit timing, or a data/API issue?
