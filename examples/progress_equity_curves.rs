@@ -62,17 +62,17 @@ const AD_PERIOD: usize = 8; // walk-forward winner 2026-04-14: p=8 Sharpe 2.00, 
 // CHAND_P = 11 (hyperopt 2026-04-20: full sweep P∈[5..60 step 2] × 9 universes × 54 windows. CP=11 wins globally:
 //   Sharpe 4.775 vs CP=15 baseline 4.688, +1.9%. Pass rate 43/54 (79.6%) vs 42/54 (77.8%).
 //   Wins on ALL production universes: Base5, NoDOGE, LargeCaps5, Legacy5BNB, Legacy4.)
-const CHAND_P: usize = 7;  // hyperopt 2026-04-21: CP=7 wins +6.9% Sharpe vs CP=11 on current production params (EP=24, HM=12, ATR_EM=0.90, CM=2.25). CP=11 sweep used stale EP=21. Updated to CP=7 in src/live/config.rs + turtle_chandelier_walkforward.rs.
+const CHAND_P: usize = 7;  // hyperopt 2026-04-21: CP=7 wins +6.9% Sharpe vs CP=11 on current production params (EP=21, HM=12, ATR_EM=0.00, CM=2.30). CP=7 wins globally (Sharpe 5.908 vs CP=11=5.526, pass 43/54 identical). Note: prior CP sweep used EP=24 (stale). See memory/hyperopt-2026-04-21-chand-period.md.
 
 // CHAND_M = 2.25 (hyperopt 2026-04-20: EXTENSIVE sweep M∈[0.50,5.00] step 0.25. M=2.25 wins globally.)
-const CHAND_M: f64 = 2.25;         // hyperopt 2026-04-20: M=2.25 — +47% global Sharpe vs M=1.50, Base5 100% pass
+const CHAND_M: f64 = 2.30;         // hyperopt 2026-04-25: DENSE sweep M∈[1.50..5.00] step 0.05. M=2.30 wins: Sharpe 6.204 (+0.8% vs M=2.25=6.122), pass 83.3% vs 81.5%. Lowest M at peak pass rate — most efficient. See memory/hyperopt-2026-04-25-chand-mult-dense.md.
 
 // TURTLE_ATR_P = 24 (hyperopt 2026-04-17: fine sweep 18-35 step1: +3.6% Sharpe, -10.8pp DD vs coarse 25)
 const TURTLE_ATR_P: usize = 24;    // hyperopt 2026-04-17
 
 const TURTLE_ATR_M: f64 = 2.0;     // hyperopt 2026-04-12
 
-const TURTLE_EP: usize = 24;       // hyperopt 2026-04-20 re-opt: EP=24 wins 45/54 (83.3%) vs EP=21 43/54 (79.6%). See memory/hyperopt-2026-04-20-ep-reopt.md.
+const TURTLE_EP: usize = 21;       // REVERTED 2026-04-26: EP=24 was in-sample inflation. Paired held-out: EP=21 27/29 pass / Sharpe 0.18 vs EP=24 25/29 pass / 0.16. EP=21 is the original validated winner. See snapshots/t3_ep_paired_held_out.csv.
 
 const TURTLE_HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 on production engine
 
