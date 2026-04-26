@@ -439,3 +439,26 @@ All prior walk-forward validation is daily (1d). Hypothesis: Turtle breakout at 
 **Conclusion:** Turtle+Chandelier requires daily bars to work. The strategy captures multi-day trend dynamics that need room to develop. 4h simply doesn't have the same "bar per day" resolution for the trailing stops to function as designed. **Requires structural re-think, not parameter tuning.**
 
 File: `examples/turtle_4h_walkforward.rs`.
+
+## 2026-04-26 — 14:46 UTC — MIN_TRADES Extensive Hyperopt
+
+**Parameter:** `MIN_TRADES` — walk-forward minimum trade threshold per window.
+**Range tested:** {1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 20} (12 values, extensive)
+**Previous validation:** only {1..6} — never tested 7+
+**Strategy:** Turtle+Chandelier (EP=21, CHAND_P=7, CHAND_M=2.30, ATR_P=24, ATR_M=2.0)
+**Test harness:** `examples/min_trades_extensive_sweep.rs`
+
+**RESULT: Zero sensitivity across 1-10. MIN_TRADES=3 CONFIRMED.**
+
+All values MT ∈ {1,2,3,4,5,6,7,8,10} produce IDENTICAL results:
+- avg Sharpe: 2.8317 | pass rate: 37/54 (69%) | avg return: +94.5% | DD: 33.2% | trades: 903
+- The strategy naturally generates ~15-18 trades per 252-bar window, so MIN_TRADES threshold of 3-10 never binds.
+- MT=12 → 67%, MT=15 → 57%, MT=20 → 13% (degraded — threshold exceeds natural trade rate)
+- Winner technically MT=1 (simplest), but no statistical difference from MT=3.
+
+**No change to production default.** MIN_TRADES=3 remains.
+**Chart:** `snapshots/min_trades_comparison.png`
+
+**Files:** `examples/min_trades_extensive_sweep.rs`, `snapshots/min_trades_sweep.csv`, `snapshots/min_trades_equity.csv`, `snapshots/min_trades_summary.md`
+
+**Next candidates:** TURTLE_ATR_MULT (coarse-swept only at step=0.5), CHAND_PERIOD (finer sweep 5-15 step 1), HOLD_MAX (finer sweep {8..24}), POSITION_CAP (finer {2,3,4}).

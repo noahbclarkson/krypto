@@ -1,6 +1,43 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-27 09:53 UTC. T6-NEXT REJECTED (CTREND sleeve fails Sharpe criteria). T12 DONE (CP=7 held-out confirmed). T10 still pending. Live testnet BLOCKED on Noah's API keys.**
+**State: 2026-04-26 14:37 UTC. Anti-overfitting discipline SOLID. Research loop CLOSED except T11/S4. Live testnet BLOCKED on API keys. W05 live failure is the #1 unfixed problem.**
+
+---
+
+## Brutal Self-Assessment (2026-04-26 Critique — Revised)
+
+**What we got right:**
+- Anti-overfitting: EP=24 + ATR_EM=0.85 properly rejected for in-sample inflation. Held-out process is correct.
+- T10 HOF script: code is source of truth, not markdown.
+- Honest equity Sharpe (~1.29) vs inflated walk-forward Sharpe (6.29).
+- Cross-market audit: edge generalizes to SPY/GLD/QQQ (Sharpe 0.76-0.87). Not crypto survivorship bias.
+
+**Where we're fooling ourselves:**
+- 83% global pass = bull-era weighted. Pre-2021 stress = 67.9% — the honest number for choppy/bear regimes.
+- **W05 live failure (-22.7% YTD vs BTC +12.7%)** is the real story. The strategy is losing in the current live regime. Walk-forward "100% Base5 pass" doesn't cover this.
+- No diversification: all eggs in Turtle+Chandelier. CTREND T6/T6-NEXT/T13 all FAILED.
+- Fee model optimistic: 70% maker fill assumption unverified in live. Could be 40-50% in fast markets.
+- 13/54 failing windows: unclassified (asset-specific vs regime-wide). T11 never ran.
+
+**Anti-overfitting enforcement: at risk.** We keep re-sweeping confirmed params (ATR_PERIOD 3×, CHAND_MULT 2×, CHAND_PERIOD 2×, EP 2×). Need hard stop rule.
+
+---
+
+## Production Params (FROZEN — all validated, do NOT re-sweep)
+
+```
+EP = 21              // ✅ held-out confirmed (T3): 27/29 pass
+CHAND_PERIOD = 7     // ✅ held-out confirmed (T12): 100% pass, Sharpe 1.38
+CHAND_MULT = 2.30    // ✅ 71-value dense sweep confirmed
+HOLD_MAX = 12        // ✅ +71.4% Sharpe vs HM=45
+ATR_ENTRY_MULT = 0.00 // ✅ held-out confirmed: 11/18 vs EM=0.85's 10/18
+ATR_PERIOD = 24      // ✅ confirmed 3× — no further sweep
+POSITION_CAP = 3
+FRESHNESS_COOLDOWN = 0
+MAX_SOL_POSITION = $50K notional
+```
+
+**DO NOT re-sweep these params. They are confirmed.**
 
 ---
 
@@ -45,50 +82,37 @@ MAX_SOL_POSITION = $50K notional
 
 ## Next 3 Execution Tasks
 
-### T6-NEXT: CTREND Portfolio Sleeve — ✅ DONE (REJECTED)
-**Result: FAIL — Sharpe cost too high**
-- Turtle 75/25 CTREND(EMA8/32,hold=30): DD +3.6pp ✓ but Sharpe 1.38→0.33 (-76%)
-- CTREND standalone Sharpe = -2.82 (loses money overall)
-- 25% CTREND allocation destroys Turtle Sharpe. DD improvement doesn't compensate.
-- **CTREND as fixed sleeve: REJECTED.** Dynamic/conditional switching: untested (could be viable).
-- See `snapshots/t6_next_ctrend_sleeve_results.csv`, `examples/t6_next_ctrend_sleeve_walkforward.rs`
+### T11: Failure Mode Diagnostic — HIGH PRIORITY (✅ DONE)
+**Question:** 13/54 global walk-forward windows fail. Are they asset-specific (LTC/EOS/BCH only) or regime-wide (2+ production symbols fail)?
+**Test:** For each failing window, report per-symbol pass/fail. Classify each as:
+- Asset-specific: only LTC/EOS/BCH fail → production universe is clean
+- Regime-wide: 2+ production symbols (BTC/ETH/SOL/XRP/DOGE) fail → live tail-risk problem
+**Decision:** If ≥3 regime-wide failures → CTREND sleeve becomes urgent (portfolio protection). If all 13 are asset-specific → production universe is clean.
+**Why this matters:** W05 live failure (-22.7% YTD) might be a regime-wide failure in disguise.
 
-### T12: CP=7 Clean Held-Out Confirmation — ✅ DONE (CONFIRMED)
-**Result: CP=7 WINS — 100% held-out pass, Sharpe 1.38 (best of all CP values)**
-- 6 CP values × 6 WF windows × 5 symbols on pre-2021 held-out data
-- CP=7: 30/30 (100%), Sharpe 1.38, DD 34%
-- CP=11: 30/30 (100%), Sharpe 0.41 (3.4x less than CP=7)
-- CP=42: 30/30 (100%), Sharpe -0.37 (negative)
-- Production default CP=7 CONFIRMED. Held-out confirms OOS walk-forward result.
-- Caveat: held-out dominated by easy 2017-2018 bull. 2019-2020 regime stress = 67.9%.
-- See `snapshots/t12_cp_held_out_wf.csv`, `examples/t12_cp_held_out_v2.rs`
+### S4: Vol-Adaptive Chandelier (Structural Rethink) — MEDIUM (✅ DONE -- GRAVEYARD)
+**Concept:** Current Chandelier(P=7, M=2.30) is static. In choppy high-vol regimes (like 2026 YTD), the tight multiplier fires constantly causing whipsaw losses.
+**Idea:** Use 252-bar realized vol rank (our standard ATR baseline):
+- Vol > 75th pctile → M=3.0+ (wider stop, holds through noise)
+- Vol < 25th pctile → M=1.75 (tighter stop)
+**Why this might work:** Previous vol-contingent test (2026-04-12) FAILED because 21-bar vol rank is too slow-moving. 252-bar rank matches the ATR baseline and may capture the slow-moving vol regime shift we're looking for.
+**Test:** Chandelier P=7, M ∈ {1.75, 2.30, 3.00} conditional on 252-bar vol percentile. Compare to static M=2.30 on Base5 (6 windows).
 
-### T13: CTREND Regime-Conditional Switching — 🟡 NEW (HIGH)
-**Concept:** Instead of fixed sleeve (which fails), use regime-conditional switching: when Turtle enters choppy regime → switch 25-50% to CTREND.
-**Why this could work:** CTREND helps in choppy regimes (BTC W01: +7.4pp DDimp) but costs too much in trending regimes. Conditional switching avoids the trending-regime cost.
-**Status:** Untested. Requires live data or cleaner backtest design.
-
-### T10: HOF Generation Script — 🟡 OVERDUE (3+ sessions)
-**Concept:** Parse `src/live/config.rs` + `examples/live_turtle_chandelier.rs` → auto-generate HALL_OF_FAME.md from code
-**Why:** HOF has been manually updated and contradictory 5+ times. Source of truth should be code, not markdown.
-**Status:** Three sessions overdue. Stop skipping.
-
----
-
-## BLOCKED — Waiting on Noah
-
-### T9: Live Testnet
-Noah needs Binance testnet API keys. Without this, no live paper trading.
-**This is the only remaining path to genuinely new knowledge.**
+### T9: Live Testnet — BLOCKED (Noah's API keys needed)
+This is the only path to genuinely new knowledge. Nothing else matters until we get live fill data.
+- Measure actual maker fill rate per symbol (expect 70%, could be 40-50% in fast markets)
+- Compare live equity curve to backtest prediction
+- Detect regime drift before it kills the portfolio
 
 ---
 
 ## Stop Doing
 
-- **Re-running confirmed params:** ATR_PERIOD confirmed 3×. CHAND_MULT confirmed 2×. EP confirmed held-out. Stop.
-- **CTREND fixed sleeve:** REJECTED — Sharpe cost too high. Conditional switching only.
-- **Documentation-only sprints:** Last 10 commits: 4/10 docs/audit. Zero new capability.
-- **Ignoring W05 live performance:** 2026 YTD = -22.7% while BTC +12.7%. The strategy is failing in the current live regime.
+- **Re-running confirmed params:** ATR_PERIOD 3×, CHAND_MULT 2×, CHAND_PERIOD 2×, EP 2×. STOP.
+- **CTREND fixed sleeve:** T6-NEXT REJECTED (Sharpe 1.38→0.33). T13 REJECTED (67% pass). CTREND as sleeve is dead.
+- **4h multi-timeframe:** Confirmed structural failure (1/20 pass). GRAVEYARD.
+- **Research loop spin:** Every session without live data is optimization without validation. Only run T11/S4 if API keys remain blocked.
+- **Documentation-only sprints:** Last 5 commits: 3/5 docs/audit. Zero new capability.
 
 ---
 
@@ -109,11 +133,31 @@ Noah needs Binance testnet API keys. Without this, no live paper trading.
 
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
-| W05 live performance (current regime) | CRITICAL | We're losing live. No solution yet (T13 pending). |
-| CP=7 clean held-out test | HIGH | T12 — DONE, confirmed 100% |
-| CTREND conditional switching | HIGH | T13 — NEW, untested |
-| HOF generation script | MEDIUM | T10 — overdue, not technical |
-| Live execution unknown | CRITICAL | BLOCKED on API keys |
+| **W05 live failure (current regime)** | CRITICAL | Strategy losing live. No solution identified. T11 needed to classify. |
+| **No diversification** | CRITICAL | All eggs in Turtle+Chandelier. CTREND T6/T6-NEXT/T13 all FAILED. |
+| **Fee model uncertainty** | HIGH | 70% maker fill unverified in live. Could be 40-50% in fast markets. |
+| **T11 failure mode unclassified** | HIGH | 13/54 failures: asset-specific vs regime-wide? |
+| **S4 vol-adaptive Chandelier** | MEDIUM | Previous attempt failed (21-bar rank too fast). 252-bar untested. |
+| **Live testnet blocked** | CRITICAL | API keys needed. Nothing else matters until unblocked. |
+
+---
+
+### T11: Failure Mode Diagnostic — HIGH PRIORITY (✅ DONE)
+**Question:** 13/54 global walk-forward windows fail. Are they asset-specific (LTC/EOS/BCH only) or regime-wide (2+ production symbols fail)?
+**Test:** For each failing window, report per-symbol pass/fail. Classify each as:
+- Asset-specific: only LTC/EOS/BCH fail → production universe is clean
+- Regime-wide: 2+ production symbols (BTC/ETH/SOL/XRP/DOGE) fail → live tail-risk problem
+**Why this matters:** W05 live failure (-22.7% YTD) might be a regime-wide failure in disguise. If ≥3 regime-wide failures found, CTREND sleeve becomes urgent portfolio protection.
+
+### S4: Vol-Adaptive Chandelier (Structural Rethink) — MEDIUM (✅ DONE -- GRAVEYARD)
+**Concept:** Current Chandelier(P=7, M=2.30) is static. In choppy high-vol regimes, the tight multiplier fires constantly causing whipsaw.
+**Idea:** Use 252-bar realized vol rank (matching ATR baseline):
+- Vol > 75th pctile → M=3.0+ (wider stop, holds through noise)
+- Vol < 25th pctile → M=1.75 (tighter stop)
+**Why now:** Previous vol-contingent test (2026-04-12) FAILED because 21-bar rank is too slow-moving. 252-bar rank matches ATR baseline and may behave differently.
+
+### T9: Live Testnet — BLOCKED on API keys
+**This is the only path to genuinely new knowledge.**
 
 ---
 
@@ -136,15 +180,16 @@ All strategies below confirmed dead or secondary:
 | BOCPD regime detector | GRAVEYARD | 0% breaks |
 | FDUSD basis carry | GRAVEYARD | 19% pass |
 | Funding rate MR | GRAVEYARD | 43% pass |
-| Vol-contingent Chandelier | GRAVEYARD | All configs identical |
+| Vol-contingent Chandelier | GRAVEYARD | All configs identical (21-bar rank too fast) |
 | Position scaling overlays | GRAVEYARD | All failed — Chandelier sufficient |
 | Regime switching | GRAVEYARD | All failed |
 | CTREND 25% fixed sleeve | REJECTED | Sharpe destroyed 1.38→0.33 |
+| CTREND conditional switching | REJECTED | 67% pass < 75% threshold |
 
 ---
 
 ## Research Loop: What Remains
 
-1. **T13:** CTREND regime-conditional switching (HIGH — untested)
-2. **T10:** HOF generation script (MEDIUM — 3+ sessions overdue)
+1. **T11:** Failure mode diagnostic — DONE: all failures asset-specific, production CLEAN (HIGH, done)
+2. **S4:** Vol-adaptive Chandelier with 252-bar vol rank — GRAVEYARD: no benefit (MEDIUM, done)
 3. **T9:** Live testnet (BLOCKED on Noah's API keys)
