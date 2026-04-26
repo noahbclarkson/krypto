@@ -192,13 +192,16 @@ fn run_sim(
 
                         let mut highest_high_chand = sd.high[bar];
                         let mut lowest_low_turtle = sd.low[bar];
-                        // BUGFIX: max_bar bounded by HOLD_MAX (bars held = exit_bar - entry_bar_next)
-                        // This matches the turtle_chandelier_walkforward.rs logic exactly
+                        // FIXED: forward search (matches turtle_chandelier_walkforward.rs)
+                        // Backward search (rev()) found LATEST exit — WRONG. Forward finds EARLIEST.
                         let max_bar = (entry_bar_next + HOLD_MAX).min(n - 1);
                         let mut exit_bar = max_bar;
 
-                        for b in (entry_bar_next..=max_bar).rev() {
-                            if b >= n { continue; }
+                        for b in entry_bar_next..=max_bar {
+                            // Update trailing stops BEFORE checking exit (forward order)
+                            highest_high_chand = highest_high_chand.max(sd.high[b]);
+                            lowest_low_turtle = lowest_low_turtle.min(sd.low[b]);
+
                             let atr_chand = atr_at(&sd.high, &sd.low, &sd.close, cp, b);
                             if atr_chand > 0.0 {
                                 let trail_chand = highest_high_chand - CHAND_MULT * atr_chand;
@@ -206,13 +209,13 @@ fn run_sim(
                                 if atr_turtle > 0.0 {
                                     let trail_turtle = lowest_low_turtle - TURTLE_ATR_MULT * atr_turtle;
                                     let stop = trail_chand.max(trail_turtle);
-                                    if sd.low[b] <= stop {
-                                        exit_bar = b; break;
+                                    // Forward search: exit on FIRST close below stop
+                                    if sd.close[b] < stop {
+                                        exit_bar = b;
+                                        break;
                                     }
                                 }
                             }
-                            if sd.high[b] > highest_high_chand { highest_high_chand = sd.high[b]; }
-                            if sd.low[b] < lowest_low_turtle { lowest_low_turtle = sd.low[b]; }
                         }
                         // No additional HOLD_MAX cap — max_bar already bounded it
                         if let Some(&exit_px) = sd.close.get(exit_bar) {
@@ -292,8 +295,10 @@ fn run_equity_curve(
                         let max_bar = (entry_bar_next + HOLD_MAX).min(n - 1);
                         let mut exit_bar = max_bar;
 
-                        for b in (entry_bar_next..=max_bar).rev() {
-                            if b >= n { continue; }
+                        for b in entry_bar_next..=max_bar {
+                            highest_high_chand = highest_high_chand.max(sd.high[b]);
+                            lowest_low_turtle = lowest_low_turtle.min(sd.low[b]);
+
                             let atr_chand = atr_at(&sd.high, &sd.low, &sd.close, cp, b);
                             if atr_chand > 0.0 {
                                 let trail_chand = highest_high_chand - CHAND_MULT * atr_chand;
@@ -301,13 +306,12 @@ fn run_equity_curve(
                                 if atr_turtle > 0.0 {
                                     let trail_turtle = lowest_low_turtle - TURTLE_ATR_MULT * atr_turtle;
                                     let stop = trail_chand.max(trail_turtle);
-                                    if sd.low[b] <= stop {
-                                        exit_bar = b; break;
+                                    if sd.close[b] < stop {
+                                        exit_bar = b;
+                                        break;
                                     }
                                 }
                             }
-                            if sd.high[b] > highest_high_chand { highest_high_chand = sd.high[b]; }
-                            if sd.low[b] < lowest_low_turtle { lowest_low_turtle = sd.low[b]; }
                         }
                         if let Some(&exit_px) = sd.close.get(exit_bar) {
                             let exit = exit_px * (1.0 - TAKER_FEE);
