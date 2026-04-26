@@ -6,52 +6,25 @@
 
 ## Top 3 Genuinely Untested Ideas (Priority Order)
 
-### 1. T11: Failure Mode Diagnostic (HIGH — NOT STARTED)
-**Concept:** 13/54 global walk-forward windows fail (24%). We know LTC/EOS/BCH are primary culprits but have never classified HOW MANY are purely asset-specific vs. regime-specific failures.
+### 1. S6: Turtle-Only Exit Test (HIGH — HIGHEST PRIORITY)
+**Concept:** Turtle breakout (EP=21) with ONLY Turtle ATR(24, 2.0) exit. NO Chandelier.
+**Question:** Does removing Chandelier improve performance in choppy regimes (where P=7 fires too aggressively)?
+**Hypothesis:** Turtle ATR(24) is slower than Chandelier(P=7, M=2.30). In choppy regimes like 2026 YTD, Chandelier constantly stops out positions — Turtle ATR might hold through noise.
+**Test:** Side-by-side walk-forward on Base5 (6 windows) + specifically on the 13 failing windows.
+**Why this matters NOW:** W05 live failure is -22.7% YTD. If Turtle-only handles chop better, it's the live deployment config.
+**Status:** Genuinely untested. Not in GRAVEYARD. Highest priority.
 
-**Question:** In how many failing windows do BTC/ETH/SOL also fail? If regime-wide failures exist (2+ production-universe symbols fail), Base5's 100% pass rate may be partially bull-era survivorship bias.
+### 2. S7: Turtle + CTREND Portfolio with Current Params (MEDIUM)
+**Concept:** Turtle(75%) + CTREND(EMA8/32, hold=30 bars)(25%) using CURRENT production params (CHAND_P=7, M=2.30, EP=21, HM=12, ATR=24).
+**Why this matters:** T6 (2026-04-25) used STALE params (P=15, M=1.50, EP=21) and found Sharpe destroyed (1.38→0.33). Current params are significantly different (P=7 is much tighter). CTREND fixed-hold (73% pass) is genuinely uncorrelated with Turtle — different entry mechanics, different exit timing. A 2-sleeve portfolio might handle both trending AND choppy regimes better than Turtle alone.
+**Note:** Even if S6 shows Turtle-only wins standalone, Turtle+CTREND might improve DD coverage.
+**Status:** Untested with current production params.
 
-**Test:** For each of the 13 failing windows, report per-symbol pass/fail. Classify as:
-- Asset-specific: only LTC/EOS/BCH fail, BTC/ETH/SOL/DOGE/XRP pass → clean for production
-- Regime-wide: 2+ production symbols fail → potential tail risk in live deployment
-
-**Decision:** If ≥3 regime-wide failures found, CTREND sleeve becomes urgent portfolio protection. If all 13 are asset-specific, production universe is clean.
-
-**Why this matters NOW:** 2026 YTD live performance (-22.7% vs BTC +12.7%) is a W05-equivalent regime. Classifying the historical failures tells us if the live failure is structural or just bad luck.
-
-**Status:** Not started. Highest priority.
-
-### 2. S4: Vol-Adaptive Chandelier (Structural Rethink — MEDIUM)
-**Concept:** Current Chandelier(P=7, M=2.30) is static. In choppy high-vol regimes (like 2026 YTD), the tight multiplier fires constantly causing whipsaw losses.
-
-**Idea:** Use 252-bar realized vol rank (matching our ATR baseline):
-- Vol > 75th percentile of 252-bar history → M=3.0+ (wider stop, holds through noise)
-- Vol < 25th percentile → M=1.75 (tighter stop)
-- Middle range → M=2.30 (production default)
-
-**Why this might work when previous attempt failed:**
-The prior vol-contingent test (2026-04-12) used 21-bar realized vol rank. This is too fast-moving — it doesn't capture the multi-month vol regime shifts that cause W05-style chop. 252-bar vol rank is the standard for ATR calculations and matches our regime detection baseline.
-
-**Test:** Chandelier P=7, M ∈ {1.75, 2.30, 3.00} conditional on 252-bar vol percentile. Walk-forward on Base5 (6 windows).
-
-**Win condition:** Vol-adaptive M reduces MaxDD by >3pp in failing windows without reducing Sharpe in passing windows.
-
-**Status:** Not started.
-
-### 3. S5: Turtle Entry Only, No Chandelier (MEDIUM — NOT STARTED)
-**Concept:** Test Turtle breakout (EP=21) with ONLY Turtle ATR(24, 2.0) exit — no Chandelier. Single-exit vs dual-exit.
-
-**Hypothesis:** In choppy high-vol regimes, Chandelier(P=7, M=2.30) fires too early. Turtle ATR(24) is slower and might hold positions through noise that Chandelier would stop out.
-
-**Test:** Side-by-side comparison of:
-- Turtle only: EP=21, exit=Turtle ATR(24, 2.0), no Chandelier
-- Turtle+Chandelier (production): EP=21, exit=dual (Chandelier OR Turtle ATR fires first)
-
-Walk-forward on Base5 (6 windows) + failing windows specifically (T11 results).
-
-**Risk:** Chandelier is what makes the strategy work in trending markets. Removing it might break the edge entirely. This is a hedge against W05-style chop, not a replacement for the production strategy.
-
-**Status:** Not started. Depends on T11 results.
+### 3. S8: Donchian Entry vs Turtle Entry (MEDIUM)
+**Concept:** Turtle uses `close > max(close, high) [21-bar max of either close or high]`. Donchian uses `close > highest(high) [strict high-only breakout]`.
+**Why this might matter:** Donchian is the original trend-following entry (Richard Dennis, 1983). It's strictly tighter than Turtle (requires close above highest high ever, not just a 21-bar max). Might produce fewer but higher-quality signals.
+**Test:** Walk-forward on Base5 (6 windows), Donchian vs Turtle, current production params.
+**Status:** Never tested. Entry signal space is NOT fully explored.
 
 ---
 
