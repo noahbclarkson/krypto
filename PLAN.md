@@ -31,7 +31,7 @@ The project has been in "audit mode" since 2026-04-21. Last 8 commits: 5/8 are d
 ## Known Production Params (VERIFIED vs src/live/config.rs)
 
 ```
-EP = 24              // ⚠️ MARGINAL: +2 windows over EP=21 — T3 OVERDUE for held-out validation
+EP = 21              // ✅ T3 2026-04-26: EP=24 REVERTED — EP=24 was in-sample inflation
 CHAND_PERIOD = 7     // +6.9% Sharpe vs P=11, same pass rate — plausible
 CHAND_MULT = 2.30    // ⚠️ MARGINAL: +1 window over M=2.25 — T3 must also validate M=2.30
 ATR_ENTRY_MULT = 0.00 // CONFIRMED: definitive sweep winner, NOT marginal
@@ -42,28 +42,37 @@ FRESHNESS_COOLDOWN = 0
 MAX_SOL_POSITION = $50K notional
 ```
 
-**⚠️ Anti-overfitting rules (established 2026-04-25):**
+**✅ Anti-overfitting rules (established 2026-04-25, APPLIED 2026-04-26):**
 - Minimum win margin: ≥3 windows (5.5%) on OOS before accepting param change
-- No sequential optimization on same OOS data — applied to ATR_ENTRY_MULT but NOT to EP=24 (same session)
+- No sequential optimization on same OOS data
 - Held-out validation required for marginal wins (1-2 window delta)
-- Equity curve must dominate at >80% of time bars
+- EP=24 was rejected for violating rules 2+3 (sequential optimization on same data, marginal 2-window win)
+- ATR_ENTRY_MULT=0.85 was rejected for same reason (2026-04-25)
+- EP=21 is the validated winner; EP=24 was in-sample inflation
 
 ---
 
 ## CRITICAL — Pending
 
-### T3: EP=24 Held-Out Validation (PAIRED comparison on CURRENT params) — 🔴 STILL OVERDUE
+### T3: EP=24 Held-Out Validation (PAIRED comparison on CURRENT params) — ✅ COMPLETE 2026-04-26
 
 **What happened:** Commit `996b46bc` claimed T3 complete. Reality: `regime_stress_p7_validation.rs` tests P=7/M=2.25, NOT current production P=7/M=2.30. The paired comparison (EP=21 vs EP=24 on current params) was never run.
 
 **What needs to be done:**
 Build/run `regime_stress_ep24_paired.rs` comparing EP=21 vs EP=24 using **current production params** (CHAND_P=7, CHAND_M=2.30, HM=12, ATR_ENTRY_MULT=0.00) against pre-2021 held-out data.
 
-**Decision rule:**
-- If EP=24 < EP=21 on held-out → revert EP=24→21 (and reconsider whether P=7 and M=2.30 need reverification)
-- If EP=24 ≥ EP=21 on held-out → keep EP=24 (marginal but validated)
+**Decision rule:** ✅ APPLIED — EP=24 REVERTED to EP=21.
+- Result: EP=21 avg Sharpe 0.18 vs EP=24 0.16 on held-out (27/29 vs 25/29 pass).
+- EP=24 was in-sample inflation (same session as P=7 and ATR_ENTRY_MULT).
+- See snapshots/t3_ep_paired_held_out.csv.
 
 **Why this matters:** The same OOS data was used to optimize EP=24 AND to validate it. ATR_ENTRY_MULT was rejected for exactly this. EP=24 has the same structural flaw — it's a 2-window winner on data used to select it.
+
+### T3-NEXT: EP=21/P=7 vs EP=21/P=11 Sanity Check — 🟡 NOT STARTED
+
+**Why:** EP=24 was the reason CHAND_P=7 won over CHAND_P=11 in the CP sweep (the sweep used EP=24 as entry). Now that EP=24 is reverted, need to verify that CP=7 is still the right default for EP=21.
+
+**Action:** Fast 2-universe (Base5) test comparing EP=21/CHAND_P=7 vs EP=21/CHAND_P=11. If P=11 wins or ties, revert CP=7→11.
 
 ### T6-NEXT: CTREND Fixed-Hold Portfolio Sleeve Test — 🟡 NOT STARTED
 
