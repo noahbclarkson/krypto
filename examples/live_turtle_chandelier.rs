@@ -32,7 +32,7 @@ const ATR_P: usize = 24;     // Turtle ATR period (2026-04-16: fine hyperopt 18-
 const ATR_M: f64 = 2.0;     // Turtle ATR multiplier
 const ATR_ENTRY_MULT: f64 = 0.00; // NO entry-side ATR filter — confirmed 2026-04-25 (revert from 0.85)
 const HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 baseline (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Full sweep 19 values [5-180] with EP=21/CHAND(11,2.25). Chandelier fires first ~bar 12-15; HM is irrelevant above ~35. HM=12 wins on Sharpe + pass rate (96.3% vs 92.6%). See memory/hyperopt-2026-04-21-hold-max.md.
-const POS_CAP: usize = 3;   // Max concurrent positions
+const POS_CAP: usize = 3;   // CONFIRMED 2026-04-27: extensive CAP sweep [1..10] on current Turtle-only walk-forward. CAP=3 is the robustness winner (72.2% pass, Sharpe 4.58, 9/9 positive universes). CAP=4-10 increases raw return but degrades pass rate too much.
 
 // =============================================================================
 // Turtle+Chandelier Strategy (matches walk-forward harness exactly)

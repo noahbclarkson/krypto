@@ -1,0 +1,18 @@
+{
+  "parameter": "POSITION_CAP",
+  "baseline": 3,
+  "winner": 3,
+  "selection_rule": "pass_rate > positive_universes > avg_sharpe > lower_avg_max_dd",
+  "values": [
+    {"cap":3,"avg_sharpe":4.577109,"median_sharpe":6.701778,"avg_return":148.872829,"avg_max_dd":32.943707,"avg_win_rate":55.509018,"pass_rate":72.222222,"total_trades":658,"positive_universes":9,"base5_pass_rate":83.333333,"windows":54},
+    {"cap":1,"avg_sharpe":2.266066,"median_sharpe":5.515046,"avg_return":44.668522,"avg_max_dd":27.425288,"avg_win_rate":48.378895,"pass_rate":70.370370,"total_trades":445,"positive_universes":8,"base5_pass_rate":83.333333,"windows":54},
+    {"cap":2,"avg_sharpe":4.813590,"median_sharpe":9.157139,"avg_return":111.258136,"avg_max_dd":27.903569,"avg_win_rate":55.901506,"pass_rate":68.518519,"total_trades":572,"positive_universes":8,"base5_pass_rate":83.333333,"windows":54},
+    {"cap":4,"avg_sharpe":4.442194,"median_sharpe":5.499275,"avg_return":168.146545,"avg_max_dd":36.959841,"avg_win_rate":55.134202,"pass_rate":61.111111,"total_trades":725,"positive_universes":9,"base5_pass_rate":83.333333,"windows":54},
+    {"cap":5,"avg_sharpe":4.713839,"median_sharpe":4.535463,"avg_return":251.275383,"avg_max_dd":37.147708,"avg_win_rate":56.441671,"pass_rate":59.259259,"total_trades":778,"positive_universes":9,"base5_pass_rate":83.333333,"windows":54},
+    {"cap":6,"avg_sharpe":4.290934,"median_sharpe":4.399318,"avg_return":188.786421,"avg_max_dd":38.266208,"avg_win_rate":55.389122,"pass_rate":57.407407,"total_trades":802,"positive_universes":9,"base5_pass_rate":83.333333,"windows":54},
+    {"cap":7,"avg_sharpe":4.290934,"median_sharpe":4.399318,"avg_return":188.786421,"avg_max_dd":38.266208,"avg_win_rate":55.389122,"pass_rate":57.407407,"total_trades":802,"positive_universes":9,"base5_pass_rate":83.333333,"windows":54},
+    {"cap":8,"avg_sharpe":4.290934,"median_sharpe":4.399318,"avg_return":188.786421,"avg_max_dd":38.266208,"avg_win_rate":55.389122,"pass_rate":57.407407,"total_trades":802,"positive_universes":9,"base5_pass_rate":83.333333,"windows":54},
+    {"cap":9,"avg_sharpe":4.290934,"median_sharpe":4.399318,"avg_return":188.786421,"avg_max_dd":38.266208,"avg_win_rate":55.389122,"pass_rate":57.407407,"total_trades":802,"positive_universes":9,"base5_pass_rate":83.333333,"windows":54},
+    {"cap":10,"avg_sharpe":4.290934,"median_sharpe":4.399318,"avg_return":188.786421,"avg_max_dd":38.266208,"avg_win_rate":55.389122,"pass_rate":57.407407,"total_trades":802,"positive_universes":9,"base5_pass_rate":83.333333,"windows":54}
+  ]
+}
