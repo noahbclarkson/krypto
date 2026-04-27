@@ -1,44 +1,67 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-27. T18 (S17 deploy/revert) is top priority. S8 Donchian genuinely untested. Live testnet BLOCKED on Noah's API keys.*
+*Last updated: 2026-04-27. T19 (Donchian harness) is #1 priority. T20 (ATR-rank filter) is #2. Live testnet BLOCKED on Noah's API keys — nothing else matters.*
 
 ---
 
 ## Top 3 Genuinely Untested Ideas (Priority Order)
 
-### 1. T18: S17 Conclusion — Deploy or Revert (CRITICAL)
-**Concept:** S17 walk-forward (2026-04-27) proved: with production params EP=21/CHAND_P=7/M=2.30, Chandelier fires first in 336/336 trades (100%) and degrades Sharpe by -1.47 vs Turtle-only. But the POSITION_CAP commit (`049b13ed`, 20 min later) reverted the bot code back to `check_dual_exit`. The S17 conclusion is NOT in HEAD.
-**Two paths:**
-- **Deploy Turtle-only:** Actually remove Chandelier from `src/live/bot.rs`. Then re-run POSITION_CAP under Turtle-only to confirm CAP=3 still holds.
-- **Keep Chandelier:** Document why Chandelier is kept despite S17 showing it degrades Sharpe. The CAP=3 validation (under dual-exit) would then be applicable.
-**Status:** CRITICAL. Decision required before any further work.
+### 1. T19: Donchian Entry Walk-Forward (HIGH — genuinely untested, #1 priority)
+**Concept:** Turtle uses `close > max(close, high) [21-bar]`. Donchian uses `close > highest(high) [strictest — all-time high breakout]`. The original 1983 Richard Dennis Turtle system used Donchian entry. Fewer signals, potentially higher quality.
+**Why this matters:** All our work has been on exit optimization. Entry signal space is almost completely unexplored. Every strategy comparison held entry constant and varied exit. Donchian tests an alternative entry hypothesis — whether a stricter breakout threshold (all-time high vs 21-bar high of close/high) produces better risk-adjusted returns.
+**Test:** Walk-forward on Base5 (6 windows), Donchian entry vs Turtle entry, Turtle ATR(24, 2.0) as sole exit.
+**Status:** Never tested. No harness exists. No chart. No snapshots. PLAN.md falsely marked this as DONE.
+**Execution:** Build `examples/donchian_walkforward.rs`, run 6-window Base5 walk-forward, compare to Turtle baseline.
 
-### 2. S8: Donchian Entry vs Turtle Entry (HIGH — GENUINELY UNTESTED)
-**Concept:** Turtle uses `close > max(close, high) [21-bar max of either].` Donchian uses `close > highest(high) [strictest — all-time high breakout].` Donchian is the original Richard Dennis 1983 Turtle system entry.
-**Why this might matter:** Entry signal space is almost completely unexplored. All our work has been on exit optimization. Donchian might produce fewer but higher-quality signals. Test with Turtle ATR(24, 2.0) as sole exit.
-**Test:** Walk-forward on Base5 (6 windows), Donchian vs Turtle entry, Turtle ATR(24, 2.0) sole exit.
-**Status:** Never tested. No harness exists. PLAN.md falsely marked this as DONE — it was never executed.
+### 2. T20: ATR-Rank Conditional Entry Filter (MEDIUM — genuinely untested, #2 priority)
+**Concept:** Not a fixed ATR_MULT (failed at all values). Instead: only enter if current 21-bar ATR is above its 60th percentile in 252-bar history. High ATR = trending environment = valid Turtle setup. Low ATR = choppy = filter out.
+**Why this matters:** ATR_MULT is a fixed threshold — it treats all market regimes the same. ATR-rank is regime-dependent: in high-vol regimes (which trend), the threshold is automatically higher; in low-vol chop, it's automatically stricter. This is mechanistically different from every failed approach which tried overlays/exits/position sizing rather than entry quality control.
+**Test:** Sweep threshold {50th, 60th, 70th percentile} × Base5 6-window walk-forward. Compare pass rate and Sharpe to baseline (no filter).
+**Status:** Never tested. Genuinely novel. No prior art in our codebase.
+**Execution:** Build harness, run sweep. If 60th beats baseline, test 55th and 65th for fine calibration.
 
 ### 3. Regime-Adaptive EP Switch (NEW — genuinely untested)
-**Concept:** Not CTREND switching (failed). Not strategy switching. Instead: if 21-bar ATR percentile rank > 70th (high vol = trending), use EP=21. If < 30th (low vol = choppy), widen entry to EP=28 or switch to Donchian entry. This adapts the entry threshold, not the strategy.
-**Why this matters:** 10+ approaches to fix the chop problem failed (overlays, regime switching, position scaling). Adapting the entry threshold is a fundamentally different mechanism — it changes what constitutes a valid breakout signal based on vol regime.
-**Different from all failed approaches:** All failed approaches tried to modify/exit/overlay Turtle+Chandelier. This changes the entry condition itself.
-**Status:** Never tested. Genuinely novel. Depends on S8 (need Donchian harness first).
+**Concept:** If 21-bar ATR percentile rank > 70th (trending) → EP=21. If < 30th (choppy) → EP=28 or Donchian entry. Adapts entry threshold based on vol regime, not strategy classifier.
+**Why this matters:** 10+ approaches to fix the chop problem failed (overlays, regime switching, position scaling). All tried to modify/exit/overlay Turtle+Chandelier. This changes the entry condition itself — a fundamentally different mechanism.
+**Different from all failed approaches:** CTREND regime switching (67% fail), Vol-contingent Chandelier (identical results), position scaling (all failed). This adapts entry threshold, not strategy/exit/position.
+**Status:** Never tested. Depends on T19 results (need Donchian harness first).
+**Priority:** LOW for now — build T19 first, then T20, then assess whether regime-adaptive EP is needed.
+
+---
+
+## Live Testnet Blocker
+
+**Status: CRITICAL BLOCKER — nothing else advances without this.**
+
+The entire project is simulation. All metrics are upper bounds:
+- Walk-forward Sharpe 5.46 (Base5) — upper bound
+- Equity Sharpe ~1.29 — upper bound
+- $10K→$67M — simulation maximum
+
+We need:
+- Binance testnet API key + secret (NOT production keys)
+- Testnet endpoint configured in `src/live/executor.rs`
+
+What live testnet validates:
+1. Maker-fill rate: is 70% estimate accurate in live conditions?
+2. Slippage model: does actual execution match our 5bps assumption?
+3. Strategy execution: does the bot actually run without errors?
+4. Real-time data: does Binance WebSocket feed work correctly?
+
+**Escalation: This has been blocked for weeks. Every session identifies this as critical. Nothing advances the project until Noah provides testnet keys.**
 
 ---
 
 ## Post-Live-Testnet Concepts (Cannot be backtested)
 
 ### S1. Maker-Fill Adaptive Position Sizing
-**Concept:** After 30 days of live testnet: measure actual maker-fill rate per symbol.
+After 30 days of live testnet: measure actual maker-fill rate per symbol.
 - If <50% → reduce position 30% (execution degraded)
 - If >70% → full position (execution optimal)
 The maker-fill rate is a market microstructure signal.
-**Status:** Cannot be backtested. FillLog infrastructure built in `src/live/executor.rs`.
 
 ### S2. Vol Regime Live Dashboard
-**Concept:** Display live ATR percentile rank (vs 252-bar history) per symbol. Helps interpret drawdowns in real-time.
-**Status:** ATR calculation exists. Missing: percentile rank + display output.
+Display live ATR percentile rank (vs 252-bar history) per symbol. Helps interpret drawdowns in real-time.
 
 ### S3. Live Slippage → Position Adjustment
 If SOL slippage consistently >2× model → reduce SOL cap to $25K notional.
@@ -54,12 +77,12 @@ If SOL slippage consistently >2× model → reduce SOL cap to $25K notional.
 | FDUSD basis carry | 2026-04-10 | 19% pass | Structural premium, autocorrelation 0.88 |
 | Funding rate MR | 2026-04-10 | 43% pass | Highly autocorrelated |
 | Vol-contingent Chandelier | 2026-04-12 | GRAVEYARD | All configs identical |
-| ATR entry filter | 2026-04-13 + 04-25 | mult=0.0 wins | Any non-zero filter hurts |
+| ATR entry filter (fixed mult) | 2026-04-13 + 04-25 | mult=0.0 wins | Any non-zero filter hurts |
 | Chop filter | 2026-04-13 | REJECTED | Trade-starving |
-| Correlation entry filter | 2026-04-25 (T7) | REJECTED | Chandelier already handles it |
+| Correlation entry filter | 2026-04-25 | REJECTED | Chandelier already handles it |
 | CTREND + Chandelier exit | 2026-04-20 | 30/54 pass | Wrong exit mechanism for CTREND |
-| CTREND fixed-hold exit | 2026-04-25 (T6) | 44/60 pass | VIABLE but secondary (not standalone) |
-| **CTREND regime-conditional switching** | **2026-04-25 (T13)** | **67% pass — FAIL** | **67% < 70% threshold. NOT best candidate.** |
+| CTREND fixed-hold exit | 2026-04-25 | 44/60 pass | VIABLE but secondary (not standalone) |
+| CTREND regime-conditional switching | 2026-04-25 | 67% pass — FAIL | 67% < 70% threshold. NOT best candidate. |
 | 4h Multi-Timeframe Turtle | 2026-04-25 | 1/20 pass | Structural — dual exit collapses on 4h |
 | Cross-market equity integration | 2026-04-16 | REJECTED | Combined Sharpe -2.94 vs crypto-only |
 | DynamicTrend EMA signal | 2026-04-16 | REJECTED | Turtle wins 21/24 windows |
@@ -72,6 +95,8 @@ If SOL slippage consistently >2× model → reduce SOL cap to $25K notional.
 | EP=43 | 2026-04-27 | REVERTED | Found same session as EP=21 validation |
 | ATR_ENTRY_MULT=0.85 | 2026-04-25 | REVERTED | In-sample inflation, same session as EP=24/P=7 |
 | Position scaling overlays | various | GRAVEYARD | All failed — Chandelier already handles it |
+| Donchian entry | UNTESTED | S8 | Never built harness |
+| ATR-rank conditional filter | UNTESTED | T20 | Never built harness |
 
 **Conclusion:** The reliable crypto edge is directional trend-following on daily data. Everything else has failed or is secondary.
 
@@ -120,4 +145,14 @@ If SOL slippage consistently >2× model → reduce SOL cap to $25K notional.
 **Role:** Secondary signal family, NOT a standalone replacement. Expected role: 20-30% portfolio sleeve.
 **Baseline comparison:** Turtle+Chandelier = 80%+ pass rate. CTREND fixed-hold is weaker standalone.
 
-*Source of truth for production params: `src/live/config.rs`. Last verified: 2026-04-27.*
+---
+
+## Key Insight: All Metrics Are Upper Bounds
+
+Everything in HALL_OF_FAME.md is a simulation maximum. The real validation path is:
+1. Run live testnet paper trading
+2. Compare actual vs predicted metrics (maker fill rate, slippage, Sharpe)
+3. Calibrate the execution model based on real feedback
+4. Only then can we say whether the strategy is genuinely robust
+
+**Source of truth for production params: `src/live/config.rs`. Last verified: 2026-04-27.**
