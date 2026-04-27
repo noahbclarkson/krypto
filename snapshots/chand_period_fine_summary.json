@@ -1,0 +1,109 @@
+{
+  "baseline": 7,
+  "baseline_sharpe": 33.173676041469555,
+  "parameter": "CHAND_PERIOD",
+  "results": [
+    {
+      "avg_dd": 271.703137750372,
+      "avg_ret": 977.4507211860066,
+      "avg_sharpe": 38.665229078253084,
+      "chand_period": 5,
+      "pass_rate": 75.55555555555556,
+      "total_trades": 1223,
+      "winner": false
+    },
+    {
+      "avg_dd": 289.37299866750845,
+      "avg_ret": 905.0652128246361,
+      "avg_sharpe": 34.480316650217524,
+      "chand_period": 6,
+      "pass_rate": 75.55555555555556,
+      "total_trades": 1217,
+      "winner": false
+    },
+    {
+      "avg_dd": 288.0045263055995,
+      "avg_ret": 899.4058174202283,
+      "avg_sharpe": 33.173676041469555,
+      "chand_period": 7,
+      "pass_rate": 73.33333333333333,
+      "total_trades": 1215,
+      "winner": false
+    },
+    {
+      "avg_dd": 305.2700392521847,
+      "avg_ret": 775.4731650299289,
+      "avg_sharpe": 28.373405464143815,
+      "chand_period": 8,
+      "pass_rate": 71.11111111111111,
+      "total_trades": 1219,
+      "winner": false
+    },
+    {
+      "avg_dd": 308.84673378971297,
+      "avg_ret": 660.25157559269,
+      "avg_sharpe": 27.735978099419782,
+      "chand_period": 9,
+      "pass_rate": 70.0,
+      "total_trades": 1227,
+      "winner": false
+    },
+    {
+      "avg_dd": 294.59597438694203,
+      "avg_ret": 739.2297267450622,
+      "avg_sharpe": 32.6286756337149,
+      "chand_period": 10,
+      "pass_rate": 77.77777777777779,
+      "total_trades": 1219,
+      "winner": true
+    },
+    {
+      "avg_dd": 277.6543476601488,
+      "avg_ret": 820.9657850793618,
+      "avg_sharpe": 36.027452129576076,
+      "chand_period": 11,
+      "pass_rate": 75.55555555555556,
+      "total_trades": 1214,
+      "winner": false
+    },
+    {
+      "avg_dd": 278.7421716821989,
+      "avg_ret": 799.4732994659877,
+      "avg_sharpe": 34.208729546686655,
+      "chand_period": 12,
+      "pass_rate": 76.66666666666667,
+      "total_trades": 1228,
+      "winner": false
+    },
+    {
+      "avg_dd": 272.6467908974703,
+      "avg_ret": 838.9862115020851,
+      "avg_sharpe": 35.339118394479215,
+      "chand_period": 13,
+      "pass_rate": 73.33333333333333,
+      "total_trades": 1233,
+      "winner": false
+    },
+    {
+      "avg_dd": 274.13359959496927,
+      "avg_ret": 818.3968059945335,
+      "avg_sharpe": 34.659135155435195,
+      "chand_period": 14,
+      "pass_rate": 73.33333333333333,
+      "total_trades": 1240,
+      "winner": false
+    },
+    {
+      "avg_dd": 280.7849711470932,
+      "avg_ret": 817.059419783114,
+      "avg_sharpe": 31.869711114106842,
+      "chand_period": 15,
+      "pass_rate": 71.11111111111111,
+      "total_trades": 1255,
+      "winner": false
+    }
+  ],
+  "sweep_range": "[5..15] step 1",
+  "winner": 10,
+  "winner_sharpe": 32.6286756337149
+}

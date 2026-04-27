@@ -1,53 +1,56 @@
-//! CHAND_PERIOD Fine Sweep — Step 1 in Critical Region [5-30]
+//! CHAND_PERIOD Fine Sweep — Step 1 around P=7 region
 //!
-//! Prior coarse sweep (step 2) found CP=11 as winner with +1.9% Sharpe.
-//! This fine sweep uses step=1 in the critical region [5-30] to:
-//!   1. Confirm CP=11 is the true optimum (not CP=10 or CP=12)
-//!   2. Map the full shape of the Sharpe curve around the optimum
-//!   3. Export equity curves for winner + runner-ups for charting
-//!
-//! Fixed params (current production):
-//!   CHAND_MULT=2.25, EP=21, ATR=24, ATR_M=2.0, HM=45, CAP=3, VOL=2
-//!
-//! Universe: Base5 (6 windows) for fine sweep
-//! Validation: 9 universes for winner confirmation
+//! PRIOR: coarse sweep CP∈[5..60 step 2] × 9u×54w with EP=24/CHAND_M=2.25/HM=12 → P=7 winner
+//! CURRENT params: EP=21, CHAND_M=2.30, ATR_P=24, ATR_M=2.0, HM=12, CAP=3, ATR_EM=0.00, VL=9
+//! GAP: P=8 never tested. P=7 was optimal with stale params — may shift with CM=2.30 vs 2.25
+//! 
+//! Range: P ∈ [5..15] step 1 (11 values) — focused fine grid around the known winner
+//! Harness: walk-forward 252/252, dual exit (Chandelier OR Turtle ATR fires first)
+//! Metrics: pass rate, avg Sharpe, avg return, avg DD, trade count per P value
 
 use anyhow::Result;
 use krypto::data::loader::DataLoader;
+use polars::prelude::*;
 use std::collections::HashMap;
-use std::fs::OpenOptions;
+use std::fs::File;
 use std::io::Write;
+use std::time::Instant;
 
 const CANDLES: u32 = 3000;
 const TRAIN_BARS: usize = 252;
 const TEST_BARS: usize = 252;
-const HOLD_MAX: usize = 45;
+const HOLD_MAX: usize = 12;
 const TAKER_FEE: f64 = 0.001;
 const POSITION_CAP: usize = 3;
 const MIN_TRADES: usize = 3;
-const CHAND_MULT: f64 = 2.25;
+// Current production params
 const TURTLE_ENTRY: usize = 21;
+const CHAND_MULT: f64 = 2.30;
 const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
-const VOL_LOOKBACK: usize = 2;
+const ATR_ENTRY_MULT: f64 = 0.00;
+const VOL_LOOKBACK: usize = 9;
+const BASELINE_P: usize = 7;
 
-// Fine sweep range: step 1 from 5 to 30 (26 values)
-const CP_START: usize = 5;
-const CP_END: usize = 30;
+// Fine sweep: P ∈ [5..15] step 1 (11 values)
+const CHAND_PERIODS: &[usize] = &[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
-const BASE5: [&str; 6] = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT"];
-
-const UNIVERSES: [(&str, [&str; 6]); 9] = [
-    ("Base5",     ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]),
-    ("NoDOGE",   ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT",    "BNBUSDT"]),
-    ("Legacy4",  ["BTCUSDT","ETHUSDT","XRPUSDT","LTCUSDT","EOSUSDT",    "BNBUSDT"]),
-    ("Legacy5",  ["BTCUSDT","ETHUSDT","XRPUSDT","LTCUSDT","BNBUSDT",   "EOSUSDT"]),
-    ("OldGuard", ["BTCUSDT","ETHUSDT","XRPUSDT","LTCUSDT","EOSUSDT",   "BCHUSDT"]),
-    ("LargeCap",["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","BNBUSDT",   "ADAUSDT"]),
-    ("Legacy3",  ["BTCUSDT","XRPUSDT","LTCUSDT","EOSUSDT",   "BCHUSDT", "BNBUSDT"]),
-    ("LowVol",   ["XRPUSDT","LTCUSDT","EOSUSDT","BCHUSDT","ADAUSDT",  "BNBUSDT"]),
-    ("OldGuard4",["BTCUSDT","XRPUSDT","LTCUSDT","EOSUSDT",   "BCHUSDT", "BNBUSDT"]),
+const UNIVERSES: &[(&str, &[&str])] = &[
+    ("Base5",        &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]),
+    ("NoDOGE",       &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT"]),
+    ("Legacy4",      &["BTCUSDT","ETHUSDT","XRPUSDT","LTCUSDT","EOSUSDT"]),
+    ("Legacy5BNB",   &["BTCUSDT","ETHUSDT","XRPUSDT","LTCUSDT","BNBUSDT","EOSUSDT"]),
+    ("OldGuardNoBNB",&["BTCUSDT","ETHUSDT","XRPUSDT","LTCUSDT","EOSUSDT","BCHUSDT"]),
+    ("LargeCaps5",   &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","BNBUSDT","ADAUSDT"]),
+    ("Legacy3",      &["BTCUSDT","XRPUSDT","LTCUSDT","EOSUSDT"]),
+    ("LowVolume5",   &["XRPUSDT","LTCUSDT","EOSUSDT","BCHUSDT","ADAUSDT"]),
+    ("OldGuard4",    &["BTCUSDT","XRPUSDT","LTCUSDT","EOSUSDT","BCHUSDT"]),
 ];
+
+const SUMMARY_CSV: &str = "snapshots/chand_period_fine_summary.csv";
+const DETAIL_CSV: &str = "snapshots/chand_period_fine_detail.csv";
+const EQUITY_CSV: &str = "snapshots/chand_period_fine_equity.csv";
+const JSON_OUT: &str = "snapshots/chand_period_fine_summary.json";
 
 struct SymData {
     close: Vec<f64>,
@@ -69,338 +72,351 @@ fn atr_at(high: &[f64], low: &[f64], close: &[f64], period: usize, idx: usize) -
     trs.iter().sum::<f64>() / period as f64
 }
 
-fn rolling_dv(close: &[f64], vol: &[f64], lookback: usize, bar: usize) -> f64 {
-    if bar < lookback.saturating_sub(1) {
-        return close.get(bar).copied().unwrap_or(0.0) * vol.get(bar).copied().unwrap_or(0.0);
-    }
-    let start = bar + 1 - lookback;
-    let mut sum = 0.0;
-    for i in start..=bar {
-        let c = close.get(i).copied().unwrap_or(0.0);
-        let v = vol.get(i).copied().unwrap_or(0.0);
-        sum += c * v;
-    }
-    sum / lookback as f64
+fn rolling_avg(vals: &[f64], window: usize, idx: usize) -> f64 {
+    if idx < window { return *vals.get(idx).unwrap_or(&0.0); }
+    let start = idx + 1 - window;
+    vals[start..=idx].iter().sum::<f64>() / window as f64
 }
 
-struct WindowResult {
-    trades: usize,
+fn turtle_signal(close: &[f64], high: &[f64], low: &[f64], entry_period: usize, atr_period: usize, atr_mult: f64, idx: usize) -> bool {
+    if idx < entry_period + 1 { return false; }
+    let start = idx + 1 - entry_period;
+    let mut max_close = f64::NEG_INFINITY;
+    for i in start..idx {
+        if let Some(&c) = close.get(i) { max_close = max_close.max(c); }
+    }
+    if let Some(&curr_close) = close.get(idx) {
+        let breakout = curr_close > max_close;
+        if breakout && atr_mult > 0.0 {
+            let atr_val = atr_at(high, low, close, atr_period, idx);
+            return curr_close >= max_close + atr_mult * atr_val;
+        }
+        breakout
+    } else {
+        false
+    }
+}
+
+fn annualised_sharpe(daily_rets: &[f64]) -> f64 {
+    if daily_rets.len() < 2 { return 0.0; }
+    let mn: f64 = daily_rets.iter().sum::<f64>() / daily_rets.len() as f64;
+    let sd = (daily_rets.iter().map(|x| (x - mn).powi(2)).sum::<f64>() / daily_rets.len() as f64).sqrt();
+    if sd == 0.0 { return 0.0; }
+    mn * 365.0_f64.sqrt() / sd
+}
+
+fn max_dd_from(equity: &[f64]) -> f64 {
+    let mut peak = f64::NEG_INFINITY;
+    let mut max_dd = 0.0_f64;
+    for &e in equity {
+        if e > peak { peak = e; }
+        let dd = (peak - e) / peak;
+        if dd > max_dd { max_dd = dd; }
+    }
+    max_dd * 100.0
+}
+
+struct WfResult {
     ret: f64,
     sharpe: f64,
     max_dd: f64,
+    trades: usize,
     win_rate: f64,
-    equity_bars: Vec<f64>, // equity at each test bar (for charting)
+    pass: bool,
 }
 
-fn run_window(
+fn run_sim(
     sym_data: &HashMap<String, SymData>,
-    symbols: &[&str],
-    train_end: usize,
+    symbols: &[String],
+    test_start: usize,
     test_end: usize,
     chand_period: usize,
-) -> WindowResult {
-    let warmup = chand_period.max(TURTLE_ATR_PERIOD).max(TURTLE_ENTRY) + TURTLE_ATR_PERIOD;
-    let test_start = train_end;
-    let n = test_end.min(sym_data.values().next().map(|s| s.close.len()).unwrap_or(0));
-
-    // Rank by dollar volume
-    let mut scores: Vec<(&str, f64)> = symbols.iter().filter_map(|s| {
-        sym_data.get(*s).and_then(|sd| {
-            if test_start < sd.close.len() {
-                let dv = rolling_dv(&sd.close, &sd.vol, VOL_LOOKBACK, test_start);
-                Some((*s, if dv.is_finite() && dv > 0.0 { dv } else { 0.0 }))
-            } else { None }
-        })
-    }).collect();
-    scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-    let top: Vec<&str> = scores.iter().take(POSITION_CAP).map(|(s, _)| *s).collect();
-
-    let mut trades = 0usize;
-    let mut rets = Vec::new();
+) -> (WfResult, Vec<f64>) {
     let mut equity = 1.0_f64;
-    let mut peak = 1.0_f64;
-    let mut max_dd = 0.0_f64;
-    let mut equity_bars = Vec::new();
+    let mut equity_curve = vec![1.0_f64];
+    let mut peak = equity;
+    let mut wins = 0usize;
+    let mut total_trades = 0usize;
+    let mut daily_rets = Vec::new();
 
-    // Record equity at each test bar (for equity curve)
-    equity_bars.push(equity);
+    let mut bar = test_start;
+    while bar + 2 < test_end {
+        let mut scores: Vec<(&str, f64)> = Vec::new();
+        for sym in symbols {
+            if let Some(sd) = sym_data.get(sym) {
+                if bar >= sd.close.len() { continue; }
+                let rol_vol = rolling_avg(&sd.vol, VOL_LOOKBACK, bar);
+                let price = sd.close.get(bar).copied().unwrap_or(0.0);
+                let dv = rol_vol * price;
+                scores.push((sym.as_str(), if dv.is_finite() && dv > 0.0 { dv } else { 0.0 }));
+            }
+        }
+        scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        let top_syms: Vec<String> = scores.into_iter().take(POSITION_CAP).map(|(s, _)| s.to_string()).collect();
 
-    let mut bar = test_start.max(warmup);
-    while bar < n {
-        equity_bars.push(equity);
+        if top_syms.is_empty() {
+            equity_curve.push(equity);
+            bar += 1;
+            continue;
+        }
 
         let mut entered = false;
-        for &sym in &top {
+        for sym in &top_syms {
             if let Some(sd) = sym_data.get(sym) {
                 if bar >= TURTLE_ENTRY + 1 && bar < sd.close.len() {
-                    let start_idx = bar + 1 - TURTLE_ENTRY;
-                    let mut max_close = f64::NEG_INFINITY;
-                    for i in start_idx..bar {
-                        if let Some(&c) = sd.close.get(i) { max_close = max_close.max(c); }
-                    }
-                    let curr_close = sd.close.get(bar).copied().unwrap_or(0.0);
-                    if curr_close > max_close {
+                    if turtle_signal(&sd.close, &sd.high, &sd.low, TURTLE_ENTRY, TURTLE_ATR_PERIOD, ATR_ENTRY_MULT, bar) {
                         let entry_px = sd.close[bar];
                         let entry = entry_px * (1.0 - TAKER_FEE);
-                        let next_bar = bar + 1;
-                        let max_hold = (next_bar + HOLD_MAX).min(sd.close.len().saturating_sub(1));
-                        let mut exit_bar = max_hold;
-                        let mut hh_c = sd.high.get(next_bar).copied().unwrap_or(0.0);
-                        let mut hh_t = sd.high.get(next_bar).copied().unwrap_or(0.0);
+                        let entry_bar_next = bar + 1;
+                        let n = sd.close.len();
 
-                        for b in next_bar..=max_hold {
-                            hh_c = hh_c.max(sd.high.get(b).copied().unwrap_or(0.0));
-                            let atr_c = atr_at(&sd.high, &sd.low, &sd.close, chand_period, b);
-                            let trail_c = hh_c - CHAND_MULT * atr_c;
-                            hh_t = hh_t.max(sd.high.get(b).copied().unwrap_or(0.0));
-                            let atr_t = atr_at(&sd.high, &sd.low, &sd.close, TURTLE_ATR_PERIOD, b);
-                            let trail_t = hh_t - TURTLE_ATR_MULT * atr_t;
-                            if sd.close.get(b).copied().unwrap_or(0.0) < trail_c
-                            || sd.close.get(b).copied().unwrap_or(0.0) < trail_t {
-                                exit_bar = b; break;
+                        let mut highest_high_chand = sd.high[entry_bar_next];
+                        let mut lowest_low_turtle = sd.low[entry_bar_next];
+                        let max_bar = (entry_bar_next + HOLD_MAX).min(n.saturating_sub(1));
+                        let mut exit_bar = max_bar;
+                        for b in entry_bar_next..=max_bar.min(n.saturating_sub(1)) {
+                            highest_high_chand = highest_high_chand.max(sd.high[b]);
+                            let atr_chand = atr_at(&sd.high, &sd.low, &sd.close, chand_period, b);
+                            let trail_chand = highest_high_chand - CHAND_MULT * atr_chand;
+                            lowest_low_turtle = lowest_low_turtle.min(sd.low[b]);
+                            let atr_turtle = atr_at(&sd.high, &sd.low, &sd.close, TURTLE_ATR_PERIOD, b);
+                            let trail_turtle = lowest_low_turtle - TURTLE_ATR_MULT * atr_turtle;
+                            if sd.close[b] < trail_chand || sd.close[b] < trail_turtle {
+                                exit_bar = b;
+                                break;
                             }
                         }
 
-                        let exit_px = sd.close.get(exit_bar).copied().unwrap_or(entry_px);
-                        let exit = exit_px * (1.0 - TAKER_FEE);
-                        let gross_ret = exit / entry - 1.0;
-                        equity *= 1.0 + gross_ret;
-                        peak = peak.max(equity);
-                        let dd = (equity / peak - 1.0).min(0.0);
-                        max_dd = max_dd.min(dd);
-                        rets.push(gross_ret);
-                        trades += 1;
-                        bar = exit_bar + 1;
-                        entered = true;
-                        break;
+                        if let Some(&exit_px) = sd.close.get(exit_bar) {
+                            let exit = exit_px * (1.0 - TAKER_FEE);
+                            let gross_ret = exit / entry - 1.0;
+                            let bars_held = (exit_bar as i64 - entry_bar_next as i64).max(1) as usize;
+                            wins += if gross_ret > 0.0 { 1 } else { 0 };
+                            total_trades += 1;
+                            equity *= 1.0 + gross_ret;
+                            let avg_daily = gross_ret / bars_held as f64;
+                            for _ in 0..bars_held {
+                                daily_rets.push(avg_daily);
+                            }
+                            if equity > peak { peak = equity; }
+                            equity_curve.push(equity);
+                            bar = exit_bar + 1;
+                            entered = true;
+                            break;
+                        }
                     }
                 }
             }
         }
-        if !entered { bar += 1; }
-    }
 
-    let sharpe = if rets.len() >= 2 {
-        let mean = rets.iter().sum::<f64>() / rets.len() as f64;
-        let var = rets.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / (rets.len() - 1) as f64;
-        let std = var.sqrt();
-        if std > 1e-10 { mean / std * (252f64).sqrt() } else { 0.0 }
-    } else { 0.0 };
-
-    let wins = rets.iter().filter(|&&r| r > 0.0).count();
-    let win_rate = if !rets.is_empty() { wins as f64 / rets.len() as f64 * 100.0 } else { 0.0 };
-
-    WindowResult { trades, ret: equity - 1.0, sharpe, max_dd, win_rate, equity_bars }
-}
-
-fn run_universe(
-    sym_data: &HashMap<String, SymData>,
-    symbols: &[&str],
-    chand_periods: &[usize],
-    universe_name: &str,
-    total_windows: usize,
-) -> Vec<(usize, usize, f64, f64, f64, f64, f64, bool, Vec<f64>)> {
-    // Vec of (cp, window, ret%, sharpe, max_dd%, trades, win_rate%, pass, equity_bars)
-    let mut results = Vec::new();
-    for &cp in chand_periods {
-        for wi in 0..total_windows {
-            let train_end = TRAIN_BARS + wi * TEST_BARS;
-            let test_end = (train_end + TEST_BARS).min(sym_data.values().next().map(|s| s.close.len()).unwrap_or(0));
-            let wr = run_window(sym_data, symbols, train_end, test_end, cp);
-            let pass = wr.trades >= MIN_TRADES && wr.ret > 0.0;
-            results.push((
-                cp, wi,
-                wr.ret * 100.0,
-                wr.sharpe,
-                wr.max_dd * 100.0,
-                wr.trades as f64,
-                wr.win_rate,
-                pass,
-                wr.equity_bars,
-            ));
+        if !entered {
+            equity_curve.push(equity);
+            bar += 1;
         }
     }
-    results
+
+    let ret = (equity - 1.0) * 100.0;
+    let sharpe = annualised_sharpe(&daily_rets);
+    let max_dd = max_dd_from(&equity_curve);
+    let pass = total_trades >= MIN_TRADES && ret > 0.0;
+    let win_rate = if total_trades > 0 { wins as f64 / total_trades as f64 } else { 0.0 };
+
+    (WfResult { ret, sharpe, max_dd, trades: total_trades, win_rate, pass }, equity_curve)
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    eprintln!("=== CHAND_PERIOD Fine Sweep (step 1, critical region [5-30]) ===");
-    eprintln!("Fixed: CM=2.25, EP=21, ATR=24, ATR_M=2.0, HM=45, CAP=3");
-
-    // ── Load Base5 data ───────────────────────────────────────────────────────
+    let start = Instant::now();
     let loader = DataLoader::new(None, None);
-    let mut base5_data: HashMap<String, SymData> = HashMap::new();
-    for &sym in &BASE5 {
-        let df = loader.fetch_with_cache(sym, "1d", CANDLES).await?;
-        let c = df.column("close")?.f64()?;
-        let h = df.column("high")?.f64()?;
-        let l = df.column("low")?.f64()?;
-        let v = df.column("volume")?.f64()?;
-        base5_data.insert(sym.to_string(), SymData {
-            close: c.into_iter().filter_map(|x| x).collect(),
-            high:  h.into_iter().filter_map(|x| x).collect(),
-            low:   l.into_iter().filter_map(|x| x).collect(),
-            vol:   v.into_iter().filter_map(|x| x).collect(),
-        });
+    let mut data: HashMap<String, SymData> = HashMap::new();
+
+    let mut all_syms = std::collections::HashSet::new();
+    for (_, syms) in UNIVERSES {
+        for s in *syms { all_syms.insert(s.to_string()); }
     }
 
-    let min_len_base5 = base5_data.values().map(|s| s.close.len()).min().unwrap_or(0);
-    let total_windows = (min_len_base5.saturating_sub(TRAIN_BARS + TEST_BARS)) / TEST_BARS;
-    eprintln!("Base5: {} bars, {} windows", min_len_base5, total_windows);
-
-    // ── Generate CP values (step 1 from 5 to 30) ─────────────────────────────
-    let cp_values: Vec<usize> = (CP_START..=CP_END).collect();
-    eprintln!("Testing {} CHAND_PERIOD values: {:?}",
-        cp_values.len(),
-        if cp_values.len() <= 10 { format!("{:?}", cp_values) }
-        else { format!("{:?} ... {:?}", &cp_values[..5], &cp_values[cp_values.len()-3..]) }
-    );
-
-    // ── Fine sweep on Base5 ──────────────────────────────────────────────────
-    eprintln!("\n─── Phase 1: Fine sweep on Base5 ({} windows) ───", total_windows);
-    let base5_results = run_universe(&base5_data, &BASE5, &cp_values, "Base5", total_windows);
-
-    // ── Aggregate and find winner ──────────────────────────────────────────────
-    #[derive(Clone)]
-    struct CpAgg { cp: usize, avg_sharpe: f64, avg_ret: f64, avg_dd: f64,
-                   avg_trades: f64, pass_rate: f64, passed: usize, total: usize }
-    let mut cp_agg: Vec<CpAgg> = Vec::new();
-    for &cp in &cp_values {
-        let runs: Vec<_> = base5_results.iter().filter(|(c, _, _, _, _, _, _, _, _)| *c == cp).collect();
-        if runs.is_empty() { continue; }
-        let n = runs.len();
-        let avg_sharpe: f64 = runs.iter().map(|r| r.3).sum::<f64>() / n as f64;
-        let avg_ret: f64 = runs.iter().map(|r| r.2).sum::<f64>() / n as f64;
-        let avg_dd: f64 = runs.iter().map(|r| r.4).sum::<f64>() / n as f64;
-        let avg_trades: f64 = runs.iter().map(|r| r.5).sum::<f64>() / n as f64;
-        let passed = runs.iter().filter(|r| r.7).count();
-        let pass_rate = passed as f64 / n as f64 * 100.0;
-        cp_agg.push(CpAgg { cp, avg_sharpe, avg_ret, avg_dd, avg_trades, pass_rate, passed, total: n });
+    for sym in all_syms {
+        match loader.fetch_with_cache(&sym, "1d", CANDLES).await {
+            Ok(df) => {
+                let close: Vec<f64> = df.column("close")?.f64()?.into_no_null_iter().collect();
+                let high: Vec<f64> = df.column("high")?.f64()?.into_no_null_iter().collect();
+                let low: Vec<f64> = df.column("low")?.f64()?.into_no_null_iter().collect();
+                let vol: Vec<f64> = df.column("volume")?.f64()?.into_no_null_iter().collect();
+                data.insert(sym, SymData { close, high, low, vol });
+            }
+            Err(e) => { eprintln!("WARNING: {} load failed: {}", sym, e); }
+        }
     }
 
-    // Sort by Sharpe
-    cp_agg.sort_by(|a, b| b.avg_sharpe.partial_cmp(&a.avg_sharpe).unwrap());
+    let min_len = UNIVERSES.iter().filter_map(|(_, s)| {
+        data.get(s[0]).map(|d| d.close.len())
+    }).min().unwrap_or(0);
 
-    eprintln!("\n=== Base5 Fine Sweep Results (sorted by Sharpe) ===");
-    eprintln!("{:>8} {:>10} {:>10} {:>10} {:>10} {:>10}", "CP", "AvgRet%", "AvgSharpe", "AvgDD%", "AvgTrades", "PassRate%");
-    eprintln!("{}", "-".repeat(60));
-    for agg in &cp_agg {
-        let marker = if agg.cp == 11 { " ← prior winner" } else { "" };
-        eprintln!("{:>8} {:>10.2} {:>10.3} {:>10.1} {:>10.1} {:>10.1}%{}", agg.cp, agg.avg_ret, agg.avg_sharpe, agg.avg_dd, agg.avg_trades, agg.pass_rate, marker);
+    let n_windows = (min_len.saturating_sub(TRAIN_BARS)) / TEST_BARS;
+    println!("CHAND_PERIOD Fine Sweep: P ∈ [5..15] step 1, {} values", CHAND_PERIODS.len());
+    println!("Bars: {}, Windows: {}, Universes: {}", min_len, n_windows, UNIVERSES.len());
+    println!("Total runs: {} × {} × {} = {}",
+        CHAND_PERIODS.len(), UNIVERSES.len(), n_windows,
+        CHAND_PERIODS.len() * UNIVERSES.len() * n_windows);
+
+    let mut summary_csv = File::create(SUMMARY_CSV)?;
+    writeln!(summary_csv, "chand_period,universe,pass_windows,total_windows,pass_rate,avg_sharpe,avg_ret,avg_dd,total_trades")?;
+
+    let mut detail_csv = File::create(DETAIL_CSV)?;
+    writeln!(detail_csv, "chand_period,universe,window,ret,sharpe,trades,max_dd,win_rate,pass")?;
+
+    let mut equity_csv = File::create(EQUITY_CSV)?;
+    writeln!(equity_csv, "day,chand_period,universe,equity")?;
+
+    // Per-universe, per-P equity accumulation for charting
+    let mut equity_by_p: HashMap<usize, HashMap<String, Vec<f64>>> = HashMap::new();
+
+    let mut global: HashMap<usize, (usize, usize, f64, f64, f64, usize)> = HashMap::new();
+
+    for cp in CHAND_PERIODS {
+        equity_by_p.insert(*cp, HashMap::new());
     }
 
-    let winner_cp = cp_agg.first().map(|a| a.cp).unwrap_or(11);
-    let winner_sharpe = cp_agg.first().map(|a| a.avg_sharpe).unwrap_or(0.0);
-    eprintln!("\n🏆 WINNER: CHAND_PERIOD={} (Sharpe {:.3})", winner_cp, winner_sharpe);
+    for (uname, symbols) in UNIVERSES {
+        for cp in CHAND_PERIODS {
+            let mut total_pass = 0usize;
+            let mut total_ret = 0.0f64;
+            let mut total_sharpe = 0.0f64;
+            let mut total_dd = 0.0f64;
+            let mut total_trades = 0usize;
+            let mut n = 0usize;
+            let mut agg_equity: Vec<f64> = vec![1.0_f64];
 
-    // ── Write CSV summary ──────────────────────────────────────────────────────
-    let mut csv = String::from("chand_period,avg_return,avg_sharpe,avg_max_dd,avg_trades,pass_rate_pct,windows_passed,total_windows\n");
-    for agg in &cp_agg {
-        csv.push_str(&format!("{},{:.2},{:.4},{:.1},{:.1},{:.1},{},{}\n",
-            agg.cp, agg.avg_ret, agg.avg_sharpe, agg.avg_dd, agg.avg_trades, agg.pass_rate, agg.passed, agg.total));
-    }
-    std::fs::write("snapshots/chand_period_fine_sweep.csv", &csv)?;
-    eprintln!("Written: snapshots/chand_period_fine_sweep.csv");
+            for w in 0..n_windows {
+                let train_end = TRAIN_BARS + w * TEST_BARS;
+                let test_end = (train_end + TEST_BARS).min(min_len);
+                if test_end <= train_end + 30 { continue; }
 
-    // ── Export equity curves for top 3 candidates ─────────────────────────────
-    eprintln!("\n─── Exporting equity curves for top 3 candidates ───");
-    let top3_cps: Vec<usize> = cp_agg.iter().take(3).map(|a| a.cp).collect();
+                let syms: Vec<String> = symbols.iter().map(|s| s.to_string()).collect();
+                let (result, eq_curve) = run_sim(&data, &syms, train_end, test_end, *cp);
 
-    // Build mean equity across windows for each top CP
-    for &cp in &top3_cps {
-        let window_equities: Vec<Vec<f64>> = base5_results.iter()
-            .filter(|(c, _, _, _, _, _, _, _, _)| *c == cp)
-            .map(|r| r.8.clone())
-            .collect();
+                total_pass += result.pass as usize;
+                total_ret += result.ret;
+                total_sharpe += result.sharpe;
+                total_dd += result.max_dd;
+                total_trades += result.trades;
+                n += 1;
 
-        if window_equities.is_empty() { continue; }
-        let max_bars = window_equities.iter().map(|e| e.len()).max().unwrap_or(0);
-        let mut mean_equity = vec![0.0; max_bars];
-        for eq in &window_equities {
-            for (i, &v) in eq.iter().enumerate() {
-                mean_equity[i] += v / window_equities.len() as f64;
+                writeln!(detail_csv, "{},{},{},{:.2},{:.3},{},{:.2},{:.3},{}",
+                    cp, uname, w, result.ret, result.sharpe, result.trades, result.max_dd, result.win_rate, result.pass)?;
+
+                // Compound equity across windows
+                let start_eq = *agg_equity.last().unwrap();
+                for &e in &eq_curve {
+                    agg_equity.push(start_eq * e);
+                }
+            }
+
+            if n > 0 {
+                let avg_sharpe = total_sharpe / n as f64;
+                let avg_ret = total_ret / n as f64;
+                let avg_dd = total_dd / n as f64;
+                let pass_rate = total_pass as f64 / n as f64 * 100.0;
+                writeln!(summary_csv, "{},{},{},{},{:.1},{:.3},{:.1},{:.1},{}",
+                    cp, uname, total_pass, n, pass_rate, avg_sharpe, avg_ret, avg_dd, total_trades)?;
+
+                global.entry(*cp).or_insert_with(|| (0, 0, 0.0, 0.0, 0.0, 0));
+                if let Some(g) = global.get_mut(cp) {
+                    g.0 += total_pass;
+                    g.1 += n;
+                    g.2 += avg_ret;
+                    g.3 += avg_sharpe;
+                    g.4 += avg_dd;
+                    g.5 += total_trades;
+                }
+
+                // Write equity curve
+                if let Some(uni_map) = equity_by_p.get_mut(cp) {
+                    for (day_idx, &eq) in agg_equity.iter().enumerate() {
+                        writeln!(equity_csv, "{},{},{},{:.6}", day_idx, cp, uname, eq)?;
+                    }
+                    uni_map.insert(uname.to_string(), agg_equity);
+                }
             }
         }
+    }
 
-        let mut eq_csv = String::from("universe,window,bar,equity\n");
-        for (bi, &val) in mean_equity.iter().enumerate() {
-            eq_csv.push_str(&format!("Base5_mean,0,{},{}\n", bi, val));
+    // Print global summary sorted by P
+    let mut sorted: Vec<_> = global.iter().collect();
+    sorted.sort_by_key(|(p, _)| *p);
+
+    println!("\n=== Global Results (P ∈ [5..15] step 1) ===");
+    println!("{:>4} {:>8} {:>10} {:>10} {:>8} {:>8}",
+        "P", "PassRate", "AvgSharpe", "AvgRet%", "AvgDD%", "Trades");
+    println!("{}", "-".repeat(54));
+
+    let baseline_sharpe = {
+        let mut bs = 0.0_f64;
+        for (p, (_, _, _, sh, _, _)) in &sorted {
+            if **p == BASELINE_P { bs = *sh; }
         }
-        std::fs::write(&format!("snapshots/chand_period_cp{}_equity.csv", cp), &eq_csv)?;
-        eprintln!("  Exported equity for CP={}", cp);
-    }
+        bs
+    };
 
-    // ── Phase 2: Validate winner across all 9 universes ───────────────────────
-    eprintln!("\n─── Phase 2: 9-Universe Validation for CP={} ───", winner_cp);
-    let mut universe_results: Vec<(String, usize, f64, f64, f64, f64, f64, bool)> = Vec::new();
+    let mut winner_p = BASELINE_P;
+    let mut winner_sharpe = baseline_sharpe;
+    let mut winner_pass_rate = 0.0f64;
 
-    for (uni_name, uni_symbols) in &UNIVERSES {
-        let mut uni_data: HashMap<String, SymData> = HashMap::new();
-        for sym in *uni_symbols {
-            let df = loader.fetch_with_cache(&sym, "1d", CANDLES).await?;
-            let c = df.column("close")?.f64()?;
-            let h = df.column("high")?.f64()?;
-            let l = df.column("low")?.f64()?;
-            let v = df.column("volume")?.f64()?;
-            uni_data.insert(sym.to_string(), SymData {
-                close: c.into_iter().filter_map(|x| x).collect(),
-                high:  h.into_iter().filter_map(|x| x).collect(),
-                low:   l.into_iter().filter_map(|x| x).collect(),
-                vol:   v.into_iter().filter_map(|x| x).collect(),
-            });
-        }
-        let min_len = uni_data.values().map(|s| s.close.len()).min().unwrap_or(0);
-        let uni_windows = (min_len.saturating_sub(TRAIN_BARS + TEST_BARS)) / TEST_BARS;
-
-        for wi in 0..uni_windows {
-            let train_end = TRAIN_BARS + wi * TEST_BARS;
-            let test_end = (train_end + TEST_BARS).min(min_len);
-            let wr = run_window(&uni_data, uni_symbols, train_end, test_end, winner_cp);
-            let pass = wr.trades >= MIN_TRADES && wr.ret > 0.0;
-            universe_results.push((uni_name.to_string(), wi, wr.ret * 100.0, wr.sharpe, wr.max_dd * 100.0, wr.trades as f64, wr.win_rate, pass));
+    for (p, (pass, total, _, sh, _, trades)) in &sorted {
+        let pr = *pass as f64 / *total as f64 * 100.0;
+        let delta = if baseline_sharpe > 0.0 { (*sh - baseline_sharpe) / baseline_sharpe * 100.0 } else { 0.0 };
+        let marker = if **p == BASELINE_P { " [BASE]" } else { "" };
+        println!("{:4}{} {:7.1}% {:10.3} {:8}",
+            p, marker, pr, sh, trades);
+        
+        // Winner selection: pass rate first, then Sharpe
+        let pr_winner = *pass as f64 / *total as f64 * 100.0;
+        if pr_winner > winner_pass_rate || (pr_winner == winner_pass_rate && *sh > winner_sharpe) {
+            winner_p = **p;
+            winner_sharpe = *sh;
+            winner_pass_rate = pr_winner;
         }
     }
 
-    // Aggregate 9-universe results
-    let mut uni_agg: Vec<(String, f64, f64, f64, f64, usize, usize)> = Vec::new();
-    for (uni_name, _) in &UNIVERSES {
-        let runs: Vec<_> = universe_results.iter().filter(|(n, _, _, _, _, _, _, _)| n == *uni_name).collect();
-        if runs.is_empty() { continue; }
-        let n = runs.len();
-        let avg_sharpe: f64 = runs.iter().map(|r| r.3).sum::<f64>() / n as f64;
-        let avg_ret: f64 = runs.iter().map(|r| r.2).sum::<f64>() / n as f64;
-        let avg_dd: f64 = runs.iter().map(|r| r.4).sum::<f64>() / n as f64;
-        let avg_trades: f64 = runs.iter().map(|r| r.5).sum::<f64>() / n as f64;
-        let passed = runs.iter().filter(|r| r.7).count();
-        uni_agg.push((uni_name.to_string(), avg_sharpe, avg_ret, avg_dd, avg_trades, passed, n));
+    println!("\n=== Winner: P={} (Sharpe {:.3}, pass {:.1}%) ===", winner_p, winner_sharpe, winner_pass_rate);
+    if winner_p != BASELINE_P as usize {
+        let delta = (winner_sharpe - baseline_sharpe) / baseline_sharpe * 100.0;
+        println!("Change from baseline P={}: {:+.2}% Sharpe", BASELINE_P, delta);
     }
 
-    uni_agg.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-
-    eprintln!("\n=== 9-Universe Validation (CP={}) ===", winner_cp);
-    eprintln!("{:>12} {:>10} {:>10} {:>10} {:>10} {:>10}", "Universe", "AvgRet%", "AvgSharpe", "AvgDD%", "AvgTrades", "PassRate%");
-    eprintln!("{}", "-".repeat(65));
-    let mut total_passed = 0usize;
-    let mut total_runs = 0usize;
-    for (n, sh, ret, dd, trades, passed, total) in &uni_agg {
-        let pr = *passed as f64 / *total as f64 * 100.0;
-        eprintln!("{:>12} {:>10.2} {:>10.3} {:>10.1} {:>10.1} {:>10.1}%", n, ret, sh, dd, trades, pr);
-        total_passed += passed;
-        total_runs += total;
+    // Write JSON summary
+    let mut json_entries = Vec::new();
+    for (p, (pass, total, ret, sh, dd, trades)) in &sorted {
+        let pr = *pass as f64 / *total as f64 * 100.0;
+        json_entries.push(serde_json::json!({
+            "chand_period": p,
+            "pass_rate": pr,
+            "avg_sharpe": sh,
+            "avg_ret": ret,
+            "avg_dd": dd,
+            "total_trades": trades,
+            "winner": **p == winner_p
+        }));
     }
-    let global_pass = total_passed as f64 / total_runs as f64 * 100.0;
-    eprintln!("\nGlobal pass rate: {}/{} ({:.1}%)", total_passed, total_runs, global_pass);
 
-    // Write 9-universe CSV
-    let mut uni_csv = String::from("universe,avg_return,avg_sharpe,avg_max_dd,avg_trades,windows_passed,total_windows,pass_rate_pct\n");
-    for (n, sh, ret, dd, trades, passed, total) in &uni_agg {
-        let pr = *passed as f64 / *total as f64 * 100.0;
-        uni_csv.push_str(&format!("{},{:.2},{:.4},{:.1},{:.1},{},{},{:.1}\n", n, ret, sh, dd, trades, passed, total, pr));
-    }
-    std::fs::write("snapshots/chand_period_fine_9u_validation.csv", &uni_csv)?;
-    eprintln!("Written: snapshots/chand_period_fine_9u_validation.csv");
+    let json_obj = serde_json::json!({
+        "parameter": "CHAND_PERIOD",
+        "sweep_range": "[5..15] step 1",
+        "baseline": BASELINE_P,
+        "winner": winner_p,
+        "baseline_sharpe": baseline_sharpe,
+        "winner_sharpe": winner_sharpe,
+        "results": json_entries
+    });
+    let mut jf = File::create(JSON_OUT)?;
+    jf.write_all(serde_json::to_string_pretty(&json_obj)?.as_bytes())?;
 
-    println!("\nDone.");
+    println!("\nFiles written:");
+    println!("  {}", SUMMARY_CSV);
+    println!("  {}", DETAIL_CSV);
+    println!("  {}", EQUITY_CSV);
+    println!("  {}", JSON_OUT);
+    println!("\nRuntime: {:.1}s", start.elapsed().as_secs_f64());
+
     Ok(())
 }
