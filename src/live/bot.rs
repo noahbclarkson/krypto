@@ -1,14 +1,14 @@
-//! Live trading bot — Turtle+Chandelier breakout strategy.
+//! Live trading bot — Turtle breakout strategy.
 //!
 //! Signal: Turtle breakout — close > max_close (EP bars lookback)
-//! Exit: Chandelier ATR trailing stop OR Turtle ATR stop OR HOLD_MAX reached.
-//! Dual exit: whichever stop fires first.
+//! Exit: Turtle ATR trailing stop ONLY (sole exit)
 //!
-//! Production params (frozen 2026-04-26):
-//!   EP=21, CHAND(7, 2.30), ATR(24, 2.0), ATR_ENTRY_MULT=0.00, HM=12, CAP=3
-//!   See HALL_OF_FAME.md and PLAN.md for full documentation.
+//! S17 (2026-04-27): Chandelier(P=7,M=2.30) fires FIRST in 100% of trades (336/336).
+//! Turtle-only exit wins +1.47 Sharpe over Turtle+Chandelier dual-exit. Chandelier is
+//! redundant with current tight params — Turtle ATR(24,2.0) is the sole validated exit.
 //!
-//! Freshness Filter: DISABLED (cd=0) — counterproductive with current tight Chandelier.
+//! Production params (frozen 2026-04-27):
+//!   EP=21, TurtleATR(24, 2.0), HM=12, CAP=3, FRESHNESS_COOLDOWN=0
 
 const FRESHNESS_COOLDOWN: usize = 0; // bars to wait after exit before re-entry (0=disabled)
 
@@ -247,8 +247,8 @@ impl LiveBot {
                 }
             }
             Position::Long { .. } => {
-                // Update trailing state and check dual exit
-                if let Some(exit) = self.check_dual_exit(symbol, &bar) {
+                // Update trailing state and check Turtle ATR exit
+                if let Some(_exit) = self.check_turtle_exit(symbol, &bar) {
                     self.close_long(symbol, &bar).await?;
                     // Log slippage summary after each trade cycle
                     if let Ok(exec) = self.executor.lock() {
@@ -357,9 +357,9 @@ impl LiveBot {
     }
 
     // =========================================================================
-    // Dual exit: Chandelier ATR OR Turtle ATR (whichever fires first)
+    // Turtle ATR sole exit
     // =========================================================================
-    fn check_dual_exit(&mut self, symbol: &str, bar: &Bar) -> Option<()> {
+    fn check_turtle_exit(&mut self, symbol: &str, bar: &Bar) -> Option<()> {
         let s = self.turtle_state.get_mut(symbol)?;
         let bars = self.bars.get(symbol)?;
 
@@ -368,37 +368,31 @@ impl LiveBot {
         if bar.low < s.lowest_low { s.lowest_low = bar.low; }
         s.bars_held += 1;
 
-        // Update ATR buffer
+        // Update ATR buffer using True Range
         if let Some(prev) = bars.last() {
             let tr = (bar.high - bar.low)
                 .max((bar.high - prev.close).abs())
                 .max((bar.low - prev.close).abs());
             s.atr_buf.push_back(tr);
         }
-        if s.atr_buf.len() > self.config.chand_period {
+        if s.atr_buf.len() > self.config.atr_period {
             s.atr_buf.pop_front();
         }
 
         // Compute ATR
-        if s.atr_buf.len() < self.config.chand_period {
-            return None; // Not enough data for ATR
+        if s.atr_buf.len() < self.config.atr_period {
+            return None; // Not enough data
         }
-        let atr = s.atr_buf.iter().sum::<f64>() / self.config.chand_period as f64;
+        let atr = s.atr_buf.iter().sum::<f64>() / self.config.atr_period as f64;
         if atr <= 0.0 { return None; }
 
-        // Chandelier trailing stop: highest_high - M * ATR
-        let chand_stop = s.highest_high - self.config.chand_mult * atr;
-
-        // Turtle ATR stop: lowest_low - M * ATR
+        // Turtle ATR trailing stop: lowest_low - atr_mult * ATR
         let turtle_stop = s.lowest_low - self.config.atr_mult * atr;
 
-        // Combined stop: the tighter of the two (higher stop price)
-        let stop = chand_stop.max(turtle_stop);
-
-        if bar.low <= stop {
+        if bar.low <= turtle_stop {
             tracing::info!(
-                "[{}] EXIT: low {} <= stop {} (chand={}, turtle={}), held={} bars",
-                symbol, bar.low, stop, chand_stop, turtle_stop, s.bars_held
+                "[{}] EXIT: low {} <= turtle_stop {} (trail={}, low={}), held={} bars",
+                symbol, bar.low, turtle_stop, turtle_stop, s.lowest_low, s.bars_held
             );
             return Some(());
         }
