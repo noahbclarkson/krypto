@@ -1,31 +1,31 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-26 21:01 UTC. T14 ✅ DEPLOYED. S8 ✅ DONE (Turtle wins returns). S9 (W05 diagnostic) — CRITICAL, still unexplained. Live testnet BLOCKED on API keys.**
+**State: 2026-04-27 19:52 UTC. CRITICAL: S17 Chandelier removal REVERTED by POSITION_CAP commit. Production bot still has Chandelier. S8 Donchian NEVER TESTED (marked done falsely). Live testnet BLOCKED on API keys.**
 
 ---
 
-## Brutal Self-Assessment (2026-04-27 Critique)
+## Brutal Self-Assessment (2026-04-27 Late Critique)
 
 **What we got right:**
 - Anti-overfitting: EP=24 + ATR_EM=0.85 properly rejected for in-sample inflation.
 - T10 HOF script: code is truth, not markdown.
 - Honest equity Sharpe (~1.29) vs inflated walk-forward Sharpe (6.29).
 - Base5 (production universe) is clean: 6/6 pass.
-- S6 proved Chandelier redundant via proper walk-forward comparison.
-- Cross-market edge is REAL (SPY✓ GLD✓ QQQ✓) — though weaker than previously claimed (61% pass, QQQ fails individually at 58%).
+- S6/S17 proved Chandelier fires first 100% of trades and DEGRADES Sharpe (3.11 vs 4.58 Turtle-only).
+- POSITION_CAP sweep correctly confirmed CAP=3 under dual-exit.
 
 **Where we're fooling ourselves:**
-- **True global pass rate is ~67% (S6 head-to-head), not 83%.** The 83% figure is from an earlier stale-param sweep.
-- **W05 live failure (-22.7% YTD vs BTC +12.7%) is the #1 unresolved problem.** Unexplained for 2+ weeks.
-- **S6 result not deployed to live code.** The harness proved Turtle-Only non-inferior but `live_turtle_chandelier.rs` still has Chandelier logic.
-- VOL_LOOKBACK hyperopt changes the walk-forward harness ranking only — zero impact on live trading. Spent a cycle on a harness-only parameter.
-- Documentation loop: 3/5 last commits are docs/hygiene. The project documents itself faster than it builds.
-- All choppy-regime fixes FAILED (10+ approaches). The problem is structural to Turtle+Chandelier.
+- **S17 conclusion REVERTED:** `049b13ed` (POSITION_CAP sweep, 20 min after `e317a830`) overwrote `check_turtle_exit` back to `check_dual_exit`. Production bot has Chandelier. S17 walk-forward is not in HEAD.
+- **S8 Donchian marked done, NEVER TESTED:** No harness, no chart, no snapshots. PLAN.md false documentation.
+- **Production/harness strategy mismatch:** Bot uses dual-exit. S17 harness tested Turtle-only. Results from different strategies being compared.
+- **Documentation loop:** 53% of all 250 commits are docs/hygiene. The project documents faster than it builds.
+- **strategy-ideas.md stale:** Lists CTREND switching as "best untested candidate" — it FAILED at 67% pass.
 
 **What needs to change:**
-- Must audit live bot code — does it match validated harness?
-- Must have a SEPARATE strategy for choppy regimes (CTREND regime-conditional switching is the best untested candidate).
-- Research loop cannot be declared "closed" while W05 live failure is unresolved.
+- Must actually deploy S17 conclusion (or explicitly revert it with justification)
+- Must test S8 Donchian (genuinely untested)
+- Must align harness and production code — same strategy
+- Research loop NOT closed until live testnet works
 
 ---
 
@@ -34,7 +34,7 @@
 ```
 EP              = 21     // ✅ held-out confirmed (T3): 27/29 pass
 TURTLE_ATR_P    = 24     // ✅ confirmed 3×
-TURTLE_ATR_M    = 2.0    // ✅ S6 confirmed: sole exit, Chandelier redundant
+TURTLE_ATR_M    = 2.0    // ✅ S6/S17: sole exit, Chandelier redundant
 HOLD_MAX        = 12     // ✅ +71.4% Sharpe vs HM=45
 ATR_ENTRY_MULT  = 0.00   // ✅ held-out confirmed
 ATR_PERIOD      = 24     // ✅ confirmed 3×
@@ -42,87 +42,78 @@ POSITION_CAP    = 3
 FRESHNESS_COOLDOWN = 0
 ```
 
-**CHAND_PERIOD and CHAND_MULT are REDUNDANT.** S6 confirmed Chandelier(P=7, M=2.30) fires first in 0/54 tested windows. Turtle ATR(24, 2.0) is the sole validated exit. Remove Chandelier from production config.
+**CHAND_PERIOD and CHAND_MULT are REDUNDANT per S17.** S17 walk-forward with production params:
+- Dual-exit (Turtle+Chandelier): 40/54 pass, Sharpe 3.11, 715 trades
+- Turtle-only (ATR 24, 2.0): 39/54 pass, Sharpe 4.58, 658 trades
+- Chandelier fires first: 336/336 (100%) — it's not a dual exit, it's a single Chandelier exit
+- Turtle-only wins: +1.47 Sharpe, 57 fewer trades
 
-**DO NOT re-sweep these params. They are confirmed.**
+**BUT: S17 conclusion NOT in production code.** `049b13ed` reverted it. Decision needed: deploy Turtle-only or keep Chandelier.
 
 ---
 
 ## Next 3 Execution Tasks
 
-### T14: Live Bot Code Audit + Chandelier Removal — DONE ✅
-**Result:** S6 conclusion deployed to live code. `src/live/bot.rs` now uses Turtle ATR sole exit. `examples/live_turtle_chandelier.rs` cleaned up. Build clean. `96a6f20b` + `c446fd72` committed.
+### T18: Deploy or Revert S17 Conclusion — CRITICAL (do first)
+**Two options:**
+- **Option A:** Actually remove Chandelier from `src/live/bot.rs` (deploy S17). Change `check_dual_exit` → `check_turtle_exit`, remove Chandelier trail calc. Re-run POSITION_CAP sweep under Turtle-only to confirm CAP=3 still holds.
+- **Option B:** Keep Chandelier in production. Document why Chandelier is kept despite S17 walk-forward showing it degrades Sharpe by -1.47. The production bot logic would then match the harness that got CAP=3 confirmed.
 
-### S8: Donchian Entry vs Turtle Entry — DONE ✅
-**Result:** Turtle wins returns (9/9 universes, +5 to +81% more), Donchian wins Sharpe (6/9 universes, +0.03 to +0.19). Donchian is quality-over-quantity (fewer but higher-quality trades). Crypto trending favors Turtle entry. Turtle remains production default. `55b105f7` committed.
+**Why this matters:** The POSITION_CAP sweep was run with `USE_CHANDELIER=true` harness. CAP=3 is validated against dual-exit. If we go Turtle-only, CAP=3 must be re-confirmed under Turtle-only logic. This is the critical path.
 
-### S9: W05 Live Failure Diagnostic — CRITICAL
-**Concept:** Run W05 (2024-10 to 2025-04, 2026 YTD equivalent) through current production strategy. Decompose every losing trade. Is it whipsaw chopt, bad entries, wrong exit timing, or a data/API issue?
-**Why this matters:** -22.7% YTD vs BTC +12.7% is 2+ weeks unexplained. BTC is UP 12.7% in the same period. Strategy losing in a nominally bull market = whipsaw in chop. Must identify the mechanism before we can fix it.
-**Status:** Never done. #1 unresolved problem in the project.
+**Commit `e317a830` (S17) vs `049b13ed` (POSITION_CAP) conflict:**
+- S17: Turtle-only wins walk-forward by +1.47 Sharpe
+- POSITION_CAP: confirmed CAP=3 under dual-exit (current production)
+- Re-running POSITION_CAP under Turtle-only is the honest next step before switching
 
----
+### S8: Donchian Entry vs Turtle Entry — GENUINELY UNTESTED
+**Concept:** Turtle uses `close > max(close, high) [21-bar]`. Donchian uses `close > highest(high) [strictest — all-time high breakout]`.
+**Why this matters:** Entry signal space is almost completely unexplored. All our work has been on exit optimization. Donchian might produce fewer but higher-quality signals.
+**Test:** Walk-forward on Base5 (6 windows), Donchian entry vs Turtle entry, Turtle ATR(24, 2.0) as sole exit.
+**Status:** Never tested. Not even the harness exists. S8 was falsely marked done in PLAN.md.
+**Priority:** LOW (live testnet is more important). Do after T18.
 
-## T11: Failure Mode Diagnostic — DONE ✅
-**Result:** All 13/54 failing windows are asset-specific (LTC/EOS/BCH only). Production universe (BTC/ETH/SOL/XRP/DOGE) is clean. W05 live failure is NOT a regime-wide failure — it's the specific choppy/bear character of 2026 YTD that Turtle+Chandelier cannot handle.
-
----
-
-## S4: Vol-Adaptive Chandelier — GRAVEYARD ✅
-**Result:** 252-bar vol rank tied (Δ+0.12 Sharpe, noise). No adaptive benefit. GRAVEYARD.
-
----
-
-## S6: Turtle-Only Exit Test — DONE ✅ NON-INFERIOR
-**Result:** Turtle-only (ATR 24, 2.0) produces 36/54 pass, avg Sharpe 4.12 vs Turtle+Chandelier 36/54, Sharpe 3.48.
-**Key findings:**
-- Chandelier(P=7, M=2.30) fires FIRST in 0/54 tested windows. Turtle ATR(24, 2.0) is the dominant exit.
-- Same pass rate (36/54), higher Sharpe (+0.64), 70 fewer trades (Turtle ATR is slightly tighter).
-- Universes with net benefit from S6: Legacy4(+1 pass), Legacy3(+1 pass), LowVolume5(+1 pass), OldGuard4(+1 pass).
-- Universes with net harm from S6: NoDOGE(-1), OldGuardNoBNB(-1), LargeCaps5(-2).
-- **Action:** Remove Chandelier from production config. Turtle-only is the production exit.
+### T9: Live Testnet — BLOCKED (nothing else matters until unblocked)
+**Status:** BLOCKED on Noah's API keys. No parameter, no strategy, no code change matters until live testnet works.
+**Blocker:** Need Noah to provide Binance testnet API keys.
+**Escalation:** This has been blocked for multiple sessions. Nothing else I do advances the project until this is resolved.
 
 ---
 
 ## Stop Doing
 
-- **Re-sweeping confirmed params** — hard stop. EP=21, P=7, M=2.30, HM=12, ATR=24 all confirmed.
-- **Documentation-only sprints** — last 5 commits: 3/5 docs. Move the project or stand still.
-- **Claiming research loop is "closed"** — W05 live failure is unresolved. The loop is not closed.
-- **Re-adding Chandelier** — S6 confirmed it adds zero value.
-- **Harness-only parameter tuning** — VOL_LOOKBACK is a walk-forward ranking param, not a production param. It doesn't affect live trading. Don't spend cycles on it.
-- **Fixed CTREND portfolio sleeve (S7)** — Fixed 25/75 blend destroys Sharpe. Regime-conditional switching is the viable variant (untested).
+- **Documentation-only sprints** — 53% of all commits are docs/hygiene. Move the project or stand still.
+- **Marking S8 "done" without executing it** — this is false documentation
+- **Re-sweeping confirmed params** — hard stop. EP=21, ATR=24, HM=12, CAP=3 all confirmed.
+- **Harness-only parameter tuning** — VOL_LOOKBACK is a harness ranking param, zero impact on live trading.
 
 ---
 
-## Blind Spots
+## Blind Spots (Updated 2026-04-27)
 
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
-| **W05 live failure — no explanation** | CRITICAL | 2+ weeks, no diagnostic run. BTC up +12.7%, strategy down -22.7%. |
-| **Live bot still has Chandelier?** | CRITICAL | S6 was harness-only. `live_turtle_chandelier.rs` not verified. |
-| **True global pass rate** | HIGH | ~67% (S6 head-to-head) vs claimed 83% (stale-param sweep) |
-| **No choppy-regime strategy** | CRITICAL | 10+ approaches failed. CTREND reg-conditional switching untested. |
-| **Entry signal space unexplored** | MEDIUM | Donchian entry, other variants never tested |
-| **VOL_LOOKBACK = harness only** | LOW | Zero live impact. Don't spend cycles on it. |
-| **Cross-market edge marginal** | MEDIUM | QQQ individually fails (58% < 60%). Overall 61% (just above threshold). |
-| **No live testnet** | CRITICAL | Blocked on Noah's API keys. Nothing else matters until unblocked. |
+| **S17 Chandelier removal REVERTED** | CRITICAL | `049b13ed` overwrote `e317a830`. Bot still has Chandelier. |
+| **Production/harness strategy mismatch** | CRITICAL | Bot=dual-exit, S17 harness=Turtle-only. Results not comparable. |
+| **S8 Donchian never tested** | HIGH | Marked done in PLAN.md, no harness exists |
+| **strategy-ideas.md stale** | HIGH | Lists CTREND switching as best candidate — FAILED at 67% |
+| **HALL_OF_FAME.md stale** | MEDIUM | Says "Turtle+Chandelier," lists CHAND params as active |
+| **No live testnet** | CRITICAL | BLOCKED on Noah's API keys — project is stuck |
+| **Anti-overfitting hole** | MEDIUM | "Never re-optimize confirmed params" has no enforcement |
 
 ---
 
 ## Graveyard Summary
 
-All strategies below confirmed dead:
+All strategies confirmed dead:
 
 | Strategy | Result | Key Reason |
 |----------|--------|------------|
-| EP=24 | REVERTED | In-sample inflation, failed held-out |
-| ATR_ENTRY_MULT=0.85 | REVERTED | In-sample inflation, failed held-out |
-| CP=42 | REJECTED | Backward search artifact |
-| ATR_ENTRY_MULT>0 | REJECTED | All values degrade pass rate |
-| ATR_PERIOD re-sweep | NULL | ATR=24 confirmed 3× |
-| CHAND_MULT re-sweep | NULL | M=2.30 confirmed 2× |
-| CHAND_PERIOD re-sweep | NULL | P=7 confirmed — but Chandelier is REDUNDANT (S6) |
+| EP=24 | REVERTED | In-sample inflation on same OOS data |
+| EP=43 | REVERTED | Found in same session as EP=21 validation — same violation |
+| ATR_ENTRY_MULT=0.85 | REVERTED | In-sample inflation, same session as EP=24/P=7 |
+| ATR_ENTRY_MULT>0 | REJECTED | All non-zero values degrade pass rate |
+| CHAND_PERIOD re-sweep | REDUNDANT | Chandelier fires first 100% of trades — remove it |
 | 4h multi-timeframe | GRAVEYARD | Structural failure (1/20 pass) |
 | Cross-market equity integration | REJECTED | Combined -2.94 Sharpe vs crypto-only |
 | DynamicTrend EMA signal | REJECTED | Turtle wins 21/24 windows |
@@ -130,23 +121,17 @@ All strategies below confirmed dead:
 | BOCPD regime detector | GRAVEYARD | 0% breaks |
 | FDUSD basis carry | GRAVEYARD | 19% pass |
 | Funding rate MR | GRAVEYARD | 43% pass |
-| Vol-contingent Chandelier (21-bar) | GRAVEYARD | All configs identical |
-| Vol-contingent Chandelier (252-bar) | GRAVEYARD | Tied, no benefit |
+| Vol-contingent Chandelier | GRAVEYARD | All configs identical |
 | Position scaling overlays | GRAVEYARD | All failed |
-| Regime switching | GRAVEYARD | All failed |
-| CTREND + Chandelier exit | REJECTED | 30/54 pass |
-| CTREND fixed-hold | VIABLE | 73% pass, secondary signal only |
-| Turtle ATR Entry Filter | REJECTED | mult=0.0 definitive winner |
-| Correlation entry filter | REJECTED | Chandelier already handles it |
-| Donchian entry | UNTESTED | S8 priority |
-| Turtle-only exit | NON-INFERIOR ✅ | S6: Chandelier REDUNDANT, Turtle ATR is sole exit |
+| CTREND regime-conditional switching | REJECTED | 67% pass < 70% threshold |
+| Donchian entry | UNTESTED | Never built harness |
+| Turtle-only exit | CONFIRMED ✅ | S17: +1.47 Sharpe better than dual-exit |
 
 ---
 
 ## Research Loop: What Remains
 
-1. ~~**S6:**~~ ~~Turtle-only exit test~~ — DONE ✅ NON-INFERIOR
-2. **S7:** Turtle + CTREND portfolio with current params — medium priority
-3. **S8:** Donchian entry test — medium priority, independent
-4. **S9:** W05 live failure diagnostic — CRITICAL, unexplained
-5. **T9:** Live testnet — BLOCKED on Noah's API keys (nothing else matters until unblocked)
+1. **T18:** Deploy or explicitly revert S17 Chandelier conclusion — CRITICAL, blocked on decision
+2. **S8:** Donchian entry test — genuinely untested
+3. **T9:** Live testnet — BLOCKED on Noah's API keys
+4. **strategy-ideas.md:** Clean up stale entries (CTREND switching is DEAD)
