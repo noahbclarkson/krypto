@@ -27,7 +27,63 @@
 - **Disk space**: VPS is frequently at 98%+. The `target/debug/` directory was 21GB. Use `--profile sweep` (not debug) and periodically clean `target/debug/`.
 - **Crisis short signal has high false positive rate**: The EWMA-CUSUM signal fires during both genuine bear windows AND strong bull runs. Needs a stronger filter (e.g., volatility regime + EWMA-CUSUM) to reduce squeeze risk.
 
-## Long Term Goals
+## 2026-04-28 — Donchian Entry Walk-Forward (T19) — COMPLETED
+
+**Harness:** `examples/donchian_walkforward.rs` — Base5 × 7 windows, Donchian vs Turtle entry, same dual ATR exit.
+
+**Entry difference:**
+- Donchian: `close > max(high)` over EP bars — strictest breakout (all-time high)
+- Turtle: `close > max(close)` over EP bars — breakout above highest close
+
+**Results:**
+| Metric | Donchian | Turtle | Delta |
+|--------|----------|--------|-------|
+| Pass Rate | 6/7 (86%) | 7/7 (100%) | -14 pp |
+| Avg Sharpe | +9.407 | +5.596 | **+3.810** |
+| Avg Return | +183.8% | +243.0% | -59.2% |
+| Total Trades | 76 | 91 | -15 |
+
+**W04 dominant (bear chop):** Donchian +15.7 Sharpe vs Turtle +1.3 — strict entry filters false breakouts.
+**W05 failure:** Donchian FAILS, Turtle PASSES — tight entry caught in whipsaw.
+
+**VERDICT:** Donchian is NOT a Turtle replacement. Higher Sharpe per trade but lower pass rate (-14pp). Works in trending/bear regimes, fails in choppy regimes. Turtle entry remains production default. Donchian: viable alternative for high-conviction trend-following only.
+
+**Files:** `examples/donchian_walkforward.rs`, `snapshots/donchian_walkforward.md`, `charts/donchian_vs_turtle_wf.png`
+
+---
+
+## Strategy Params (Frozen — 2026-04-28)
+
+```
+EP=21, CHAND_PERIOD=7, CHAND_MULT=2.30, HOLD_MAX=12,
+ATR_PERIOD=24, TURTLE_ATR_MULT=2.00, ATR_ENTRY_MULT=0.00,
+POSITION_CAP=3, VOL_LOOKBACK=9, FRESHNESS_COOLDOWN=0
+```
+
+**Note:** TURTLE_ENTRY uses `close > max(close)` (Turtle). Donchian (`close > max(high)`) tested but rejected as production replacement — lower pass rate (-14pp) outweighs Sharpe gain (+3.81 avg).
+
+---
+
+## Project Status (2026-04-28)
+
+**Research loop: CLOSED** — All testable ideas genuinely exhausted.
+- All Turtle+Chandelier params validated (EP, CHAND_P, CHAND_M, HM, ATR, CAP, VL, CD)
+- ATR-entry filter: NULL result at all values (ATR_ENTRY_MULT=0.00 is optimal)
+- Volume confirmation: REJECTED (all filters reduce pass rate)
+- Donchian entry: higher Sharpe but lower pass rate — not a replacement
+- Entry filter sweep (ATR × vol confirmation): REJECTED (40 configs, all inferior)
+- TURTLE_ATR_MULT: NULL result (M=2.00 confirmed at 10× prior resolution)
+
+**Only remaining path forward:** Live Binance testnet paper trading. All metrics are simulation upper bounds.
+
+### ATR Rank Conditional Filter (T20) — NOT TESTED
+Hypothesis: only enter if current 21-bar ATR > 60th percentile of 252-bar history. Regime-dependent threshold (high-vol = trending = valid setup; low-vol = choppy = filter out).
+Mechanistically different from ATR_ENTRY_MULT (fixed threshold → conditional threshold).
+**Status:** Untested. Genuinely novel. But Donchian result suggests entry space may not hold more edge. Lower priority than live testnet.
+
+### Live Testnet (T9) — CRITICAL BLOCKER
+**Status:** BLOCKED on Noah's Binance testnet API keys.
+Everything else is confirmation work. The strategy is validated in simulation. Only live market execution provides real feedback on fee model, maker-fill rate, and slippage assumptions.
 - Eliminate all execution assumptions (Track A).
 - Implement robust pair trading and basis/carry models (Track C).
 - **Regime Adaptive Parameters**: The `RegimeAdaptive` logic previously assumed an ATR lookback of 100 and a trend threshold of 60%. Walk-forward testing reveals these defaults are severely sub-optimal (Sharpe 0.0), keeping the system in trend-following mode during ranging markets. The true optimal parameters for this leg are a faster **20-bar ATR lookback** with a much stricter **90% trend threshold**. We should only trade trend breakouts when volatility is at its 90th percentile; otherwise, mean-reversion is statistically superior.

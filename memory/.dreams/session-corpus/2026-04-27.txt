@@ -1,1 +1,3 @@
 [krypto/sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl#L1118] Assistant: hold_max_sweep_comparison.png
+[krypto/sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl#L1119] Assistant: 📊 Daily Progress Report — 2026-04-27 Best Sharpe: DDBudget 3-Sleeve @ 7.32 | Turtle+Chandelier best equity @ 223.3x (Sharpe 1.91) Progress: Stagnating — 2026 bear continues to drag. No new signals. All metrics remain simulation upper bounds.
+[krypto/sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl#L1120] Assistant: comparison_chart.png

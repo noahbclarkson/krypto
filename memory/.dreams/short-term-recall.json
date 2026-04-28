@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-27T18:58:36.454Z",
+  "updatedAt": "2026-04-28T10:29:25.588Z",
   "entries": {
     "memory:memory/2026-04-13.md:5:7": {
       "key": "memory:memory/2026-04-13.md:5:7",
@@ -134664,18 +134664,19 @@
       "source": "memory",
       "snippet": "Git State: `ac8d946d` — feat(T6): CTREND fixed-hold walk-forward — VIABLE signal family (44/60 pass); `1a177976` — docs: critique and plan update",
       "recallCount": 0,
-      "dailyCount": 2,
+      "dailyCount": 3,
       "groundedCount": 0,
-      "totalScore": 1.24,
+      "totalScore": 1.8599999999999999,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-25T07:59:40.868Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "90c0a0f693f1"
       ],
       "recallDays": [
         "2026-04-25",
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "fixed-hold",
@@ -134696,18 +134697,19 @@
       "source": "memory",
       "snippet": "Discord Session: Empty (no new messages since last cron summary)",
       "recallCount": 0,
-      "dailyCount": 2,
+      "dailyCount": 3,
       "groundedCount": 0,
-      "totalScore": 1.24,
+      "totalScore": 1.8599999999999999,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-25T07:59:40.868Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "90c0a0f693f1"
       ],
       "recallDays": [
         "2026-04-25",
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "discord",
@@ -134758,18 +134760,19 @@
       "source": "memory",
       "snippet": "Commit 1: \"docs(PLAN): state update\" — No new knowledge: Last session identified hyperparameter cycling as the core problem. This commit changes no code, runs no test. The project is still auditing itself in circles.",
       "recallCount": 0,
-      "dailyCount": 2,
+      "dailyCount": 3,
       "groundedCount": 0,
-      "totalScore": 1.24,
+      "totalScore": 1.8599999999999999,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-25T07:59:40.868Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "90c0a0f693f1"
       ],
       "recallDays": [
         "2026-04-25",
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "commit",
@@ -136669,18 +136672,19 @@
       "source": "memory",
       "snippet": "Orientation: Read PLAN.md, MEMORY.md; Git pulled: `f5e21708` docs: update ATR_ENTRY_MULT to 0.85 in MEMORY.md and HALL_OF_FAME.md (latest); Discord channel: recent posts from prior cron sessions (all charts posted by prior Kira cycles)",
       "recallCount": 0,
-      "dailyCount": 2,
+      "dailyCount": 3,
       "groundedCount": 0,
-      "totalScore": 1.24,
+      "totalScore": 1.8599999999999999,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-25T07:59:40.868Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "f52400c81d76"
       ],
       "recallDays": [
         "2026-04-25",
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "plan.md",
@@ -136701,18 +136705,19 @@
       "source": "memory",
       "snippet": "Equity Tracking Cycle Run: Three suites executed with `--profile sweep`:",
       "recallCount": 0,
-      "dailyCount": 2,
+      "dailyCount": 3,
       "groundedCount": 0,
-      "totalScore": 1.24,
+      "totalScore": 1.8599999999999999,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-25T07:59:40.868Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "f52400c81d76"
       ],
       "recallDays": [
         "2026-04-25",
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "equity",
@@ -136733,18 +136738,19 @@
       "source": "memory",
       "snippet": "Equity Tracking Cycle Run: **1. progress_equity_curves:** Final equities (2079 days, Base5 universe):",
       "recallCount": 0,
-      "dailyCount": 2,
+      "dailyCount": 3,
       "groundedCount": 0,
-      "totalScore": 1.24,
+      "totalScore": 1.8599999999999999,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-25T07:59:40.868Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "f52400c81d76"
       ],
       "recallDays": [
         "2026-04-25",
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "progress-equity-curves",
@@ -136765,18 +136771,19 @@
       "source": "memory",
       "snippet": "Equity Tracking Cycle Run: Turtle+Chandelier: **248.0x** (daily Sharpe **1.68**); A/D Momentum: **40.3x** (daily Sharpe 3.62); FactorSmallByDV: **13.1x** (daily Sharpe 1.89); DDBudget 3-Sleeve: **59.3x** (Sharpe 7.21)",
       "recallCount": 0,
-      "dailyCount": 2,
+      "dailyCount": 3,
       "groundedCount": 0,
-      "totalScore": 1.24,
+      "totalScore": 1.8599999999999999,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-25T07:59:40.868Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "f52400c81d76"
       ],
       "recallDays": [
         "2026-04-25",
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "248.0x",
@@ -136797,18 +136804,19 @@
       "source": "memory",
       "snippet": "Equity Tracking Cycle Run: Chart: `charts/progress_equity_curves_daily.png`",
       "recallCount": 0,
-      "dailyCount": 2,
+      "dailyCount": 3,
       "groundedCount": 0,
-      "totalScore": 1.24,
+      "totalScore": 1.8599999999999999,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-25T07:59:40.868Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "f52400c81d76"
       ],
       "recallDays": [
         "2026-04-25",
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "equity",
@@ -136828,18 +136836,19 @@
       "source": "memory",
       "snippet": "Equity Tracking Cycle Run: **2. hall_of_fame_validator:**",
       "recallCount": 0,
-      "dailyCount": 2,
+      "dailyCount": 3,
       "groundedCount": 0,
-      "totalScore": 1.24,
+      "totalScore": 1.8599999999999999,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-25T07:59:40.868Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "f52400c81d76"
       ],
       "recallDays": [
         "2026-04-25",
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "hall-of-fame-validator",
@@ -136857,18 +136866,19 @@
       "source": "memory",
       "snippet": "Equity Tracking Cycle Run: OBV Trend (BTC 4h): 15% SL/15% TP → Sharpe 2.32, 68 trades; BollingerReversion (XRP/DOGE): 0.5× ATR stop → XRP Sharpe 9.39, DOGE Sharpe 48.0 — BOTH IN GRAVEYARD (2026-04-11 definitive kill); Passive Execution: Taker -3.0%, Maker -0.2% — not viable; **No",
       "recallCount": 0,
-      "dailyCount": 2,
+      "dailyCount": 3,
       "groundedCount": 0,
-      "totalScore": 1.24,
+      "totalScore": 1.8599999999999999,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-25T07:59:40.868Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "f52400c81d76"
       ],
       "recallDays": [
         "2026-04-25",
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "sl/15",
@@ -136889,18 +136899,19 @@
       "source": "memory",
       "snippet": "Equity Tracking Cycle Run: **3. head_to_head_comparison:** Hung on LTC/BTC data load. Killed. Not re-run (low priority — equity tracking harness provides sufficient daily data).",
       "recallCount": 0,
-      "dailyCount": 2,
+      "dailyCount": 3,
       "groundedCount": 0,
-      "totalScore": 1.24,
+      "totalScore": 1.8599999999999999,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-25T07:59:40.868Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "f52400c81d76"
       ],
       "recallDays": [
         "2026-04-25",
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "head-to-head-comparison",
@@ -137698,29 +137709,30 @@
       "startLine": 43,
       "endLine": 43,
       "source": "memory",
-      "snippet": "CRITICAL 1: EP=43 vs EP=21 — Production Code and S9 Recommendation Are in Direct Conflict: The anti-overfitting rules say \"never re-optimize confirmed params.\" But EP=21 was confirmed in a held-out test (T3: 27/29 pass). Then the very next day, the same session found EP=43 in a b",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: At 19:47 UTC, commit `049b13ed` (POSITION_CAP re-validation) changed `src/live/bot.rs` from:",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
-        "anti-overfitting",
-        "re-optimize",
-        "held-out",
-        "27/29",
+        "position-cap",
+        "re-validation",
+        "src/live/bot.rs",
         "critical",
-        "production",
-        "code",
-        "recommendation"
+        "s17",
+        "chandelier",
+        "removed",
+        "was"
       ]
     },
     "memory:memory/2026-04-27.md:45:45": {
@@ -137729,29 +137741,30 @@
       "startLine": 45,
       "endLine": 45,
       "source": "memory",
-      "snippet": "CRITICAL 1: EP=43 vs EP=21 — Production Code and S9 Recommendation Are in Direct Conflict: **Root cause:** The EP=43 hyperopt was justified because \"Chandelier was removed per S6, so EP needs re-validation.\" But Chandelier is STILL in the production code (see CRITICAL 2 below). T",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: if let Some(_exit) = self.check_turtle_exit(symbol, &bar)",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
-        "re-validation",
+        "self.check-turtle-exit",
         "critical",
-        "production",
-        "code",
-        "recommendation",
-        "direct",
-        "conflict",
-        "root"
+        "s17",
+        "chandelier",
+        "removed",
+        "was",
+        "reverted",
+        "minutes"
       ]
     },
     "memory:memory/2026-04-27.md:47:47": {
@@ -137760,29 +137773,30 @@
       "startLine": 47,
       "endLine": 47,
       "source": "memory",
-      "snippet": "CRITICAL 1: EP=43 vs EP=21 — Production Code and S9 Recommendation Are in Direct Conflict: **Immediate action required:** Revert EP to 21 in all production files. This is not optional — the S9 diagnostic proves EP=43 is wrong for current regime.",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: back to:",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "critical",
-        "production",
-        "code",
-        "recommendation",
-        "direct",
-        "conflict",
-        "immediate",
-        "action"
+        "s17",
+        "chandelier",
+        "removed",
+        "was",
+        "reverted",
+        "minutes",
+        "later"
       ]
     },
     "memory:memory/2026-04-27.md:53:53": {
@@ -137791,29 +137805,30 @@
       "startLine": 53,
       "endLine": 53,
       "source": "memory",
-      "snippet": "CRITICAL 2: S6 \"Chandelier Removal\" Was Never Deployed: S6 (commit `d68733c5`) proved Chandelier fires first in 0/54 windows. The conclusion: \"Remove Chandelier from production.\"",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: //! Live trading bot — Turtle-only breakout strategy.",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
-        "0/54",
+        "turtle-only",
         "critical",
+        "s17",
         "chandelier",
-        "removal",
+        "removed",
         "was",
-        "never",
-        "deployed",
-        "commit"
+        "reverted",
+        "minutes"
       ]
     },
     "memory:memory/2026-04-27.md:55:55": {
@@ -137822,29 +137837,30 @@
       "startLine": 55,
       "endLine": 55,
       "source": "memory",
-      "snippet": "CRITICAL 2: S6 \"Chandelier Removal\" Was Never Deployed: The `turtle_chandelier_walkforward.rs` harness still has Chandelier:",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: back to:",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
-        "turtle-chandelier-walkforward.rs",
         "critical",
+        "s17",
         "chandelier",
-        "removal",
+        "removed",
         "was",
-        "never",
-        "deployed",
-        "harness"
+        "reverted",
+        "minutes",
+        "later"
       ]
     },
     "memory:memory/2026-04-27.md:57:58": {
@@ -137915,29 +137931,30 @@
       "startLine": 64,
       "endLine": 64,
       "source": "memory",
-      "snippet": "CRITICAL 2: S6 \"Chandelier Removal\" Was Never Deployed: And `src/live/config.rs` still has:",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: **Why this happened:** POSITION_CAP is a harness parameter. The POSITION_CAP sweep (`examples/position_cap_hyperopt.rs`) uses `USE_CHANDELIER=true` in the harness reporting code, and the script updated `examples/",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
-        "src/live/config.rs",
+        "position-cap",
+        "use-chandelier",
         "critical",
+        "s17",
         "chandelier",
-        "removal",
+        "removed",
         "was",
-        "never",
-        "deployed",
-        "src"
+        "reverted"
       ]
     },
     "memory:memory/2026-04-27.md:66:67": {
@@ -138008,29 +138025,30 @@
       "startLine": 72,
       "endLine": 72,
       "source": "memory",
-      "snippet": "CRITICAL 2: S6 \"Chandelier Removal\" Was Never Deployed: **The gap between validated theory and deployed code is real and unfixed.**",
+      "snippet": "CRITICAL 2: The EP Oscillation Is a Real Pattern, Not Just a Past Problem: The S9 diagnostic (EP=43 fragile in range-bound regimes) was supposed to stabilize EP at 21. But the HEAD now has EP=21 in config.rs. That's fine. However, the **anti-overfitting rules have a hole**: they",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
+        "range-bound",
+        "config.rs",
+        "anti-overfitting",
         "critical",
-        "chandelier",
-        "removal",
-        "was",
-        "never",
-        "deployed",
-        "gap",
-        "validated"
+        "oscillation",
+        "real",
+        "pattern",
+        "not"
       ]
     },
     "memory:memory/2026-04-27.md:78:78": {
@@ -138132,29 +138150,30 @@
       "startLine": 85,
       "endLine": 85,
       "source": "memory",
-      "snippet": "HIGH 1: S8 Donchian — Marked Done But No Evidence of Execution: **Verdict:** S8 was marked done in PLAN.md without being executed. This is the documentation-loop problem — documenting planned work as completed work.",
+      "snippet": "HIGH 1: S8 Donchian Is Genuinely Untested — Not \"Done\": No Donchian harness. No chart. No snapshots. No mention in any commit beyond the PLAN.md update. The \"done\" status is false documentation.",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "plan.md",
-        "documentation-loop",
         "high",
         "donchian",
-        "marked",
+        "genuinely",
+        "untested",
+        "not",
         "done",
-        "but",
-        "evidence"
+        "harness"
       ]
     },
     "memory:memory/2026-04-27.md:91:91": {
@@ -138194,29 +138213,30 @@
       "startLine": 93,
       "endLine": 93,
       "source": "memory",
-      "snippet": "HIGH 2: T13 CTREND Regime-Conditional Switching — Already FAILED, Not \"Best Candidate\": Commit `ac44ea16`: \"feat(T13): CTREND regime-conditional switching walk-forward — **FAIL (67% pass, Sharpe 2.53)**\"",
+      "snippet": "HIGH 2: strategy-ideas.md Is Stale: The file lists three ideas:",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
-        "regime-conditional",
-        "walk-forward",
-        "2.53",
+        "strategy-ideas.md",
         "high",
-        "t13",
-        "ctrend",
-        "regime",
-        "conditional"
+        "strategy",
+        "ideas.md",
+        "stale",
+        "lists",
+        "three",
+        "ideas"
       ]
     },
     "memory:memory/2026-04-27.md:95:95": {
@@ -138411,29 +138431,30 @@
       "startLine": 116,
       "endLine": 116,
       "source": "memory",
-      "snippet": "MEDIUM 1: Anti-Overfitting Violation in EP=43 Decision: EP=21 was validated via T3 held-out test (27/29 pass). EP=43 was found in the same session's 96-value sweep — same OOS windows, same data. The T3 held-out and the EP sweep were run on the same day. EP=43 was optimized on the",
+      "snippet": "MEDIUM 1: Documentation Loop — Same Problem Since April 12: Git history breakdown (250 total commits):",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
-        "anti-overfitting",
-        "held-out",
-        "27/29",
-        "96-value",
         "medium",
-        "anti",
-        "overfitting",
-        "violation"
+        "documentation",
+        "loop",
+        "problem",
+        "april",
+        "git",
+        "history",
+        "breakdown"
       ]
     },
     "memory:memory/2026-04-27.md:118:118": {
@@ -138473,27 +138494,30 @@
       "startLine": 124,
       "endLine": 124,
       "source": "memory",
-      "snippet": "MEDIUM 2: Documentation Loop Continues: Last 8 commits:",
+      "snippet": "MEDIUM 1: Documentation Loop — Same Problem Since April 12: Key recent examples:",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "medium",
         "documentation",
         "loop",
-        "continues",
-        "last",
-        "commits"
+        "problem",
+        "april",
+        "key",
+        "recent",
+        "examples"
       ]
     },
     "memory:memory/2026-04-27.md:125:128": {
@@ -138811,29 +138835,30 @@
       "startLine": 178,
       "endLine": 178,
       "source": "memory",
-      "snippet": "T15: Fix EP=43/EP=21 Conflict — IMMEDIATE: **Justification:** S9 diagnostic proves EP=21 outperforms EP=43 in YTD (+10.0% vs unresolved losses). S9 explicitly recommends EP=21. The EP=43 → EP=21 oscillation must stop. Lock EP=21 and do NOT re-sweep it.",
+      "snippet": "Regime-Adaptive EP Switch: Not CTREND switching (failed). Instead: if 21-bar ATR percentile rank < 30th (chop), widen EP from 21→28 or use Donchian entry instead of Turtle. This adapts the entry threshold, not the regime classifier. Genuinely different from all failed approaches",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
-        "43/ep",
-        "10.0",
-        "re-sweep",
-        "t15",
-        "fix",
-        "conflict",
-        "immediate",
-        "justification"
+        "regime-adaptive",
+        "21-bar",
+        "regime",
+        "adaptive",
+        "switch",
+        "not",
+        "ctrend",
+        "switching"
       ]
     },
     "memory:memory/2026-04-27.md:182:183": {
@@ -139329,28 +139354,30 @@
       "startLine": 247,
       "endLine": 247,
       "source": "memory",
-      "snippet": "Key Result: **HM=12 is confirmed as production default. No code change needed.**",
+      "snippet": "CRITICAL 1: The \"S17 Revert\" Narrative Was Wrong — Slightly: My 19:52 UTC session claimed S17's Chandelier removal was \"reverted by POSITION_CAP commit.\" The evidence was that `check_dual_exit` was in `src/live/bot.rs`. This is TRUE but the conclusion was WRONG.",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
-        "key",
-        "result",
-        "confirmed",
-        "production",
-        "code",
-        "change",
-        "needed"
+        "position-cap",
+        "check-dual-exit",
+        "src/live/bot.rs",
+        "critical",
+        "s17",
+        "revert",
+        "narrative",
+        "was"
       ]
     },
     "memory:memory/2026-04-27.md:248:250": {
@@ -139421,27 +139448,30 @@
       "startLine": 257,
       "endLine": 257,
       "source": "memory",
-      "snippet": "Files Generated: `memory/hyperopt-2026-04-27-hold-max.md` — full report",
+      "snippet": "CRITICAL 1: The \"S17 Revert\" Narrative Was Wrong — Slightly: The real problem isn't that S17 was \"reverted\" — it's that the POSITION_CAP sweep never actually tested the production strategy. It tested a different strategy (Turtle-only) and applied the result to a different executi",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
-        "generated",
-        "hyperopt",
-        "hold",
-        "max.md",
-        "full",
-        "report"
+        "position-cap",
+        "turtle-only",
+        "critical",
+        "s17",
+        "revert",
+        "narrative",
+        "was",
+        "wrong"
       ]
     },
     "memory:memory/2026-04-27.md:260:261": {
@@ -139480,29 +139510,30 @@
       "startLine": 264,
       "endLine": 266,
       "source": "memory",
-      "snippet": "What's Next: Continue hyperopt: next parameter to audit (POSITION_CAP, FRESHNESS_COOLDOWN, or re-sweep ATR_ENTRY_MULT); S9 W05 diagnostic: still unresolved; Live testnet: BLOCKED on Noah's API keys",
+      "snippet": "CRITICAL 2: All Metrics Are Upper Bounds — Nothing Is Live: How consistent is the maker fill rate in live trading?; Does the 70% figure hold in bear markets, high-vol regimes, or during liquidity crises?; What is the actual slippage vs our model?",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "6c24d11cf4d7"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
-        "position-cap",
-        "freshness-cooldown",
-        "re-sweep",
-        "atr-entry-mult",
-        "what's",
-        "continue",
-        "hyperopt",
-        "parameter"
+        "high-vol",
+        "critical",
+        "all",
+        "metrics",
+        "upper",
+        "bounds",
+        "nothing",
+        "live"
       ]
     },
     "memory:memory/2026-04-26.md:3:3": {
@@ -141339,17 +141370,18 @@
       "source": "memory",
       "snippet": "2026-04-25 — Critique & Research Cycle (22:00 UTC): **Session:** 22:00 UTC, 4h cron. Author: Kira. **Trigger:** Autonomous research + critique cycle.",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "90c0a0f693f1"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "critique",
@@ -141370,17 +141402,18 @@
       "source": "memory",
       "snippet": "Git State: Branch: v2-rewrite (fast-forwarded 2026-04-25 16:00 UTC session); Last 8 commits:; `8545df3c` — docs(PLAN): state update — bugs fixed, stale quick-fix items checked off; `5d1f8a4d` — fix(live_bot): add missing ATR_ENTRY_MULT constant, update equity harness to productio",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "90c0a0f693f1"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "v2-rewrite",
@@ -141401,17 +141434,18 @@
       "source": "memory",
       "snippet": "Git State: `996b46bc` — feat(T3): EP held-out validation — EP=24 confirmed vs EP=21 on pre-2021 data; `15221207` — feat(hyperopt): SLIPPAGE_BPS audit — 21-value sweep confirms 10 bps default; `741b76f6` — fix: HALL_OF_FAME.md duplicate CHAND_MULT=2.25 line removed; `9b08ce18` — d",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "90c0a0f693f1"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "held-out",
@@ -141432,17 +141466,18 @@
       "source": "memory",
       "snippet": "Commit 3: \"feat(T3): EP held-out validation — EP=24 confirmed vs EP=21 on pre-2021 data\": **CLAIMED:** EP=24 confirmed valid **REALITY:** `regime_stress_p7_validation.rs` uses CHAND_M=2.25, NOT current CHAND_M=2.30. The paired comparison (`regime_stress_paired.rs`) comparing EP=2",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "90c0a0f693f1"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "held-out",
@@ -141463,17 +141498,18 @@
       "source": "memory",
       "snippet": "Commit 7: \"feat(T6): CTREND fixed-hold walk-forward — VIABLE signal family (44/60 pass)\": **CLAIMED:** T6 complete — viable signal family **REALITY:** 44/60 = 73% pass is better than the original 30/54 (50%) but well below Turtle+Chandelier's 80%+ pass rate. The win condition (>3",
       "recallCount": 0,
-      "dailyCount": 1,
+      "dailyCount": 2,
       "groundedCount": 0,
-      "totalScore": 0.62,
+      "totalScore": 1.24,
       "maxScore": 0.62,
       "firstRecalledAt": "2026-04-27T18:57:57.429Z",
-      "lastRecalledAt": "2026-04-27T18:57:57.429Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
       "queryHashes": [
         "90c0a0f693f1"
       ],
       "recallDays": [
-        "2026-04-27"
+        "2026-04-27",
+        "2026-04-28"
       ],
       "conceptTags": [
         "fixed-hold",
@@ -143180,6 +143216,4217 @@
       ],
       "conceptTags": [
         "hold-max-sweep-comparison.png"
+      ]
+    },
+    "memory:memory/2026-04-28.md:4:5": {
+      "key": "memory:memory/2026-04-28.md:4:5",
+      "path": "memory/2026-04-28.md",
+      "startLine": 4,
+      "endLine": 5,
+      "source": "memory",
+      "snippet": "[00:01 UTC] Cron — TURTLE_ATR_MULT Fine Sweep — NULL RESULT: **Session:** 2026-04-28 00:01 UTC | Kira cron **Trigger:** Cron research loop",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "turtle-atr-mult",
+        "utc",
+        "cron",
+        "fine",
+        "sweep",
+        "null",
+        "result",
+        "kira"
+      ]
+    },
+    "memory:memory/2026-04-28.md:9:12": {
+      "key": "memory:memory/2026-04-28.md:9:12",
+      "path": "memory/2026-04-28.md",
+      "startLine": 9,
+      "endLine": 12,
+      "source": "memory",
+      "snippet": "What I Did: **Orient:** Read PLAN.md, MEMORY.md, today/yesterday memory files; **Git:** Already up to date (v2-rewrite, 12 latest commits); **Discord:** No new Noah messages in channel history; **Code audit:** Verified config.rs has EP=21, CHAND_PERIOD=7, HOLD_MAX=12, POSITION_CA",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "memory.md",
+        "today/yesterday",
+        "v2-rewrite",
+        "config.rs",
+        "chand-period",
+        "hold-max",
+        "position-ca"
+      ]
+    },
+    "memory:memory/2026-04-28.md:13:15": {
+      "key": "memory:memory/2026-04-28.md:13:15",
+      "path": "memory/2026-04-28.md",
+      "startLine": 13,
+      "endLine": 15,
+      "source": "memory",
+      "snippet": "What I Did: **Build:** `cargo build --profile sweep` ✅; **Ran:** `turtle_chandelier_walkforward` — confirmed base state: 40/54 pass (74%), avg Sharpe 3.11; **Built + ran:** `turtle_atr_mult_fine_sweep.rs` — 81-value sweep M∈[1.00..5.00] step 0.05 × 9 universes × 6 windows",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "turtle-chandelier-walkforward",
+        "40/54",
+        "3.11",
+        "turtle-atr-mult-fine-sweep.rs",
+        "81-value",
+        "1.00",
+        "5.00",
+        "0.05"
+      ]
+    },
+    "memory:memory/2026-04-28.md:19:19": {
+      "key": "memory:memory/2026-04-28.md:19:19",
+      "path": "memory/2026-04-28.md",
+      "startLine": 19,
+      "endLine": 19,
+      "source": "memory",
+      "snippet": "Key Result: **TURTLE_ATR_MULT is completely insensitive.** 79 of 81 tested values produce **statistically identical results** (Sharpe 9.280, pass 44/54, return 1123%). The only outlier is M=3.30 (43/54 pass, Sharpe 9.22 — noise-level difference).",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "turtle-atr-mult",
+        "9.280",
+        "44/54",
+        "3.30",
+        "43/54",
+        "9.22",
+        "noise-level",
+        "key"
+      ]
+    },
+    "memory:memory/2026-04-28.md:21:21": {
+      "key": "memory:memory/2026-04-28.md:21:21",
+      "path": "memory/2026-04-28.md",
+      "startLine": 21,
+      "endLine": 21,
+      "source": "memory",
+      "snippet": "Key Result: **Winner: M=1.00 (not 2.00)** — but the delta is ZERO (9.2801 vs 9.2801). M=2.00 is confirmed as the production default because it's the center of the flat plateau and was the prior winner. Fine sweep at 10× resolution confirms coarse sweep was accurate.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "1.00",
+        "2.00",
+        "9.2801",
+        "key",
+        "result",
+        "winner",
+        "not",
+        "but"
+      ]
+    },
+    "memory:memory/2026-04-28.md:23:23": {
+      "key": "memory:memory/2026-04-28.md:23:23",
+      "path": "memory/2026-04-28.md",
+      "startLine": 23,
+      "endLine": 23,
+      "source": "memory",
+      "snippet": "Key Result: **No change to production defaults.** TURTLE_ATR_MULT = 2.00 remains.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "turtle-atr-mult",
+        "2.00",
+        "key",
+        "result",
+        "change",
+        "production",
+        "defaults",
+        "remains"
+      ]
+    },
+    "memory:memory/2026-04-28.md:25:25": {
+      "key": "memory:memory/2026-04-28.md:25:25",
+      "path": "memory/2026-04-28.md",
+      "startLine": 25,
+      "endLine": 25,
+      "source": "memory",
+      "snippet": "Key Result: **This is the last parameter with a remaining gap.** All hyperopt gaps are now closed.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "key",
+        "result",
+        "last",
+        "parameter",
+        "remaining",
+        "gap",
+        "all",
+        "hyperopt"
+      ]
+    },
+    "memory:memory/2026-04-28.md:29:29": {
+      "key": "memory:memory/2026-04-28.md:29:29",
+      "path": "memory/2026-04-28.md",
+      "startLine": 29,
+      "endLine": 29,
+      "source": "memory",
+      "snippet": "Anti-Overfitting Assessment: The fine sweep was justified: one parameter still only coarse-swept (step=0.5, 9 values), so a higher-resolution test was warranted. The result was a definitive null — confirming the coarse sweep was accurate and no hidden optimum exists.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "anti-overfitting",
+        "coarse-swept",
+        "0.5",
+        "higher-resolution",
+        "anti",
+        "overfitting",
+        "assessment",
+        "fine"
+      ]
+    },
+    "memory:memory/2026-04-28.md:32:35": {
+      "key": "memory:memory/2026-04-28.md:32:35",
+      "path": "memory/2026-04-28.md",
+      "startLine": 32,
+      "endLine": 35,
+      "source": "memory",
+      "snippet": "Files Generated: `examples/turtle_atr_mult_fine_sweep.rs` — 81-value fine sweep harness; `snapshots/turtle_atr_mult_fine_sweep.csv` — 81-row summary; `snapshots/turtle_atr_mult_fine_sweep_detail.csv` — 729-row per-universe detail; `charts/plot_turtle_atr_mult_sweep.py` — chart sc",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "81-value",
+        "81-row",
+        "729-row",
+        "per-universe",
+        "generated",
+        "examples",
+        "turtle-atr-mult-fine-sweep.rs",
+        "value"
+      ]
+    },
+    "memory:memory/2026-04-28.md:36:36": {
+      "key": "memory:memory/2026-04-28.md:36:36",
+      "path": "memory/2026-04-28.md",
+      "startLine": 36,
+      "endLine": 36,
+      "source": "memory",
+      "snippet": "Files Generated: `memory/hyperopt-2026-04-28-turtle-atr-mult.md` — full report",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "generated",
+        "hyperopt",
+        "turtle",
+        "atr",
+        "mult.md",
+        "full",
+        "report"
+      ]
+    },
+    "memory:memory/2026-04-28.md:39:39": {
+      "key": "memory:memory/2026-04-28.md:39:39",
+      "path": "memory/2026-04-28.md",
+      "startLine": 39,
+      "endLine": 39,
+      "source": "memory",
+      "snippet": "Commit: `86afc01d` — pushed to v2-rewrite",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "v2-rewrite",
+        "commit",
+        "86afc01d",
+        "pushed",
+        "rewrite"
+      ]
+    },
+    "memory:memory/2026-04-28.md:43:43": {
+      "key": "memory:memory/2026-04-28.md:43:43",
+      "path": "memory/2026-04-28.md",
+      "startLine": 43,
+      "endLine": 43,
+      "source": "memory",
+      "snippet": "Project State: **Hyperopt: COMPLETE.** All Turtle parameters have been validated at adequate resolution. No remaining meaningful hyperopt gaps.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "project",
+        "state",
+        "hyperopt",
+        "complete",
+        "all",
+        "turtle",
+        "parameters",
+        "been"
+      ]
+    },
+    "memory:memory/2026-04-28.md:45:45": {
+      "key": "memory:memory/2026-04-28.md:45:45",
+      "path": "memory/2026-04-28.md",
+      "startLine": 45,
+      "endLine": 45,
+      "source": "memory",
+      "snippet": "Project State: **Research loop: CLOSED.** The project has exhausted all live-testable backtest hypotheses. All strategies tested (ATR entry filter, ATR mult, Chandelier params, volume confirmation, freshness cooldown, hold_max, position_cap, EP, etc.) are validated or dead.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "live-testable",
+        "hold-max",
+        "position-cap",
+        "project",
+        "state",
+        "research",
+        "loop",
+        "closed"
+      ]
+    },
+    "memory:memory/2026-04-28.md:47:47": {
+      "key": "memory:memory/2026-04-28.md:47:47",
+      "path": "memory/2026-04-28.md",
+      "startLine": 47,
+      "endLine": 47,
+      "source": "memory",
+      "snippet": "Project State: **Live testnet: BLOCKED on Noah's API keys.** Nothing else matters until credentials are provided.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "project",
+        "state",
+        "live",
+        "testnet",
+        "blocked",
+        "noah's",
+        "api",
+        "keys"
+      ]
+    },
+    "memory:memory/2026-04-28.md:50:52": {
+      "key": "memory:memory/2026-04-28.md:50:52",
+      "path": "memory/2026-04-28.md",
+      "startLine": 50,
+      "endLine": 52,
+      "source": "memory",
+      "snippet": "What Remains: **Live testnet** — blocked on Noah's Binance testnet API keys; **S9: W05 diagnostic** — still documented as unresolved in PLAN.md, but S17/Chandelier removal and EP=21 reversion have already addressed it. The YTD -22.7% is structural whipsawing in chop, not a parame",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "s17/chandelier",
+        "22.7",
+        "what",
+        "remains",
+        "live",
+        "testnet",
+        "blocked"
+      ]
+    },
+    "memory:memory/2026-04-28.md:55:55": {
+      "key": "memory:memory/2026-04-28.md:55:55",
+      "path": "memory/2026-04-28.md",
+      "startLine": 55,
+      "endLine": 55,
+      "source": "memory",
+      "snippet": "PLAN.md Status: No changes needed — S8 (Donchian) and S9 (W05) are already correctly documented as untested and blocked respectively. The TURTLE_ATR_MULT hyperopt is a new task completing Track A (trust the lab) — no param changes warranted, document result.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "1174d07d7efc"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "turtle-atr-mult",
+        "status",
+        "changes",
+        "needed",
+        "donchian",
+        "w05",
+        "already"
+      ]
+    },
+    "memory:memory/2026-04-27.md:5:6": {
+      "key": "memory:memory/2026-04-27.md:5:6",
+      "path": "memory/2026-04-27.md",
+      "startLine": 5,
+      "endLine": 6,
+      "source": "memory",
+      "snippet": "[19:52 UTC] Cron — Strategy Research & Critique Cycle: **Session:** 2026-04-27 19:52 UTC | Kira cron — critique only **Mission:** Read, think, criticize. Do NOT execute.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "utc",
+        "cron",
+        "strategy",
+        "research",
+        "critique",
+        "cycle",
+        "kira",
+        "only"
+      ]
+    },
+    "memory:memory/2026-04-27.md:14:15": {
+      "key": "memory:memory/2026-04-27.md:14:15",
+      "path": "memory/2026-04-27.md",
+      "startLine": 14,
+      "endLine": 15,
+      "source": "memory",
+      "snippet": "Git State: 049b13ed feat(hyperopt): revalidate POSITION_CAP under turtle-only live logic cf9bce2a docs: S17 session log — Chandelier removed",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "position-cap",
+        "turtle-only",
+        "git",
+        "state",
+        "049b13ed",
+        "feat",
+        "hyperopt",
+        "revalidate"
+      ]
+    },
+    "memory:memory/2026-04-27.md:17:17": {
+      "key": "memory:memory/2026-04-27.md:17:17",
+      "path": "memory/2026-04-27.md",
+      "startLine": 17,
+      "endLine": 17,
+      "source": "memory",
+      "snippet": "Git State: HEAD of v2-rewrite = `049b13ed` (POSITION_CAP re-validation).",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "v2-rewrite",
+        "position-cap",
+        "re-validation",
+        "git",
+        "state",
+        "head",
+        "rewrite",
+        "049b13ed"
+      ]
+    },
+    "memory:memory/2026-04-27.md:19:19": {
+      "key": "memory:memory/2026-04-27.md:19:19",
+      "path": "memory/2026-04-27.md",
+      "startLine": 19,
+      "endLine": 19,
+      "source": "memory",
+      "snippet": "Git State: **CRITICAL DISCOVERY:** Commit `049b13ed` (latest, POSITION_CAP sweep) **REVERTED** the S17 Chandelier removal from `e317a830` (just 20 minutes earlier). The POSITION_CAP sweep changed `src/live/bot.rs` from `check_turtle_exit` back to `check_dual_exit`, re-adding Chan",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "position-cap",
+        "src/live/bot.rs",
+        "check-turtle-exit",
+        "check-dual-exit",
+        "re-adding",
+        "git",
+        "state",
+        "critical"
+      ]
+    },
+    "memory:memory/2026-04-27.md:22:22": {
+      "key": "memory:memory/2026-04-27.md:22:22",
+      "path": "memory/2026-04-27.md",
+      "startLine": 22,
+      "endLine": 22,
+      "source": "memory",
+      "snippet": "Discord: No new messages. Session history empty.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "discord",
+        "new",
+        "messages",
+        "history",
+        "empty"
+      ]
+    },
+    "memory:memory/2026-04-27.md:25:25": {
+      "key": "memory:memory/2026-04-27.md:25:25",
+      "path": "memory/2026-04-27.md",
+      "startLine": 25,
+      "endLine": 25,
+      "source": "memory",
+      "snippet": "Today's Memory: `memory/2026-04-27.md` shows three separate sessions:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "memory/2026-04-27.md",
+        "today's",
+        "shows",
+        "three",
+        "separate"
+      ]
+    },
+    "memory:memory/2026-04-27.md:26:28": {
+      "key": "memory:memory/2026-04-27.md:26:28",
+      "path": "memory/2026-04-27.md",
+      "startLine": 26,
+      "endLine": 28,
+      "source": "memory",
+      "snippet": "Today's Memory: [19:01 UTC]: S17 (Chandelier removal) — said done, committed `e317a830`; [01:50 UTC]: Critique session — identified EP=43/EP=21 conflict, S6 not deployed, S8 never executed, CTREND failed but listed as best candidate; [19:29 UTC]: POSITION_CAP re-validation — actu",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "43/ep",
+        "position-cap",
+        "re-validation",
+        "today's",
+        "utc",
+        "s17",
+        "chandelier",
+        "removal"
+      ]
+    },
+    "memory:memory/2026-04-27.md:36:36": {
+      "key": "memory:memory/2026-04-27.md:36:36",
+      "path": "memory/2026-04-27.md",
+      "startLine": 36,
+      "endLine": 36,
+      "source": "memory",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: This is the most embarrassing finding of the session.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "critical",
+        "s17",
+        "chandelier",
+        "removed",
+        "was",
+        "reverted",
+        "minutes",
+        "later"
+      ]
+    },
+    "memory:memory/2026-04-27.md:38:39": {
+      "key": "memory:memory/2026-04-27.md:38:39",
+      "path": "memory/2026-04-27.md",
+      "startLine": 38,
+      "endLine": 39,
+      "source": "memory",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: At 19:27 UTC, commit `e317a830` declared: > \"VERDICT: Remove Chandelier from production. Turtle ATR(24,2.0) sole exit.\"",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "2.0",
+        "critical",
+        "s17",
+        "chandelier",
+        "removed",
+        "was",
+        "reverted",
+        "minutes"
+      ]
+    },
+    "memory:memory/2026-04-27.md:41:41": {
+      "key": "memory:memory/2026-04-27.md:41:41",
+      "path": "memory/2026-04-27.md",
+      "startLine": 41,
+      "endLine": 41,
+      "source": "memory",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: Files changed: `src/live/bot.rs` (check_turtle_exit), `config.rs` (CHANDELIER REDUNDANT).",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "src/live/bot.rs",
+        "check-turtle-exit",
+        "config.rs",
+        "critical",
+        "s17",
+        "chandelier",
+        "removed",
+        "was"
+      ]
+    },
+    "memory:memory/2026-04-27.md:49:49": {
+      "key": "memory:memory/2026-04-27.md:49:49",
+      "path": "memory/2026-04-27.md",
+      "startLine": 49,
+      "endLine": 49,
+      "source": "memory",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: if let Some(exit) = self.check_dual_exit(symbol, &bar)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "self.check-dual-exit",
+        "critical",
+        "s17",
+        "chandelier",
+        "removed",
+        "was",
+        "reverted",
+        "minutes"
+      ]
+    },
+    "memory:memory/2026-04-27.md:51:51": {
+      "key": "memory:memory/2026-04-27.md:51:51",
+      "path": "memory/2026-04-27.md",
+      "startLine": 51,
+      "endLine": 51,
+      "source": "memory",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: and from:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "critical",
+        "s17",
+        "chandelier",
+        "removed",
+        "was",
+        "reverted",
+        "minutes",
+        "later"
+      ]
+    },
+    "memory:memory/2026-04-27.md:57:57": {
+      "key": "memory:memory/2026-04-27.md:57:57",
+      "path": "memory/2026-04-27.md",
+      "startLine": 57,
+      "endLine": 57,
+      "source": "memory",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: //! Live trading bot — Turtle+Chandelier breakout strategy.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "critical",
+        "s17",
+        "chandelier",
+        "removed",
+        "was",
+        "reverted",
+        "minutes",
+        "later"
+      ]
+    },
+    "memory:memory/2026-04-27.md:60:60": {
+      "key": "memory:memory/2026-04-27.md:60:60",
+      "path": "memory/2026-04-27.md",
+      "startLine": 60,
+      "endLine": 60,
+      "source": "memory",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: The S17 conclusion was **inverted by the next commit**.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "critical",
+        "s17",
+        "chandelier",
+        "removed",
+        "was",
+        "reverted",
+        "minutes",
+        "later"
+      ]
+    },
+    "memory:memory/2026-04-27.md:62:62": {
+      "key": "memory:memory/2026-04-27.md:62:62",
+      "path": "memory/2026-04-27.md",
+      "startLine": 62,
+      "endLine": 62,
+      "source": "memory",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: The HEAD of v2-rewrite has Chandelier in `src/live/bot.rs` line 251-362. `check_dual_exit` is the live exit function. The S17 result is not in the production code.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "v2-rewrite",
+        "src/live/bot.rs",
+        "251-362",
+        "check-dual-exit",
+        "critical",
+        "s17",
+        "chandelier",
+        "removed"
+      ]
+    },
+    "memory:memory/2026-04-27.md:66:66": {
+      "key": "memory:memory/2026-04-27.md:66:66",
+      "path": "memory/2026-04-27.md",
+      "startLine": 66,
+      "endLine": 66,
+      "source": "memory",
+      "snippet": "CRITICAL 1: S17 \"Chandelier REMOVED\" Was Reverted 20 Minutes Later: **The production bot STILL has Chandelier.** The S17 walk-forward result is correct, but the code change didn't survive to HEAD.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "walk-forward",
+        "critical",
+        "s17",
+        "chandelier",
+        "removed",
+        "was",
+        "reverted",
+        "minutes"
+      ]
+    },
+    "memory:memory/2026-04-27.md:74:74": {
+      "key": "memory:memory/2026-04-27.md:74:74",
+      "path": "memory/2026-04-27.md",
+      "startLine": 74,
+      "endLine": 74,
+      "source": "memory",
+      "snippet": "CRITICAL 2: The EP Oscillation Is a Real Pattern, Not Just a Past Problem: EP=24 was found in the same session that found P=7. EP=43 was found in the same session that validated EP=21. The pattern is sequential optimization on the same OOS data. The rules exist but the enforcemen",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "critical",
+        "oscillation",
+        "real",
+        "pattern",
+        "not",
+        "problem",
+        "was",
+        "found"
+      ]
+    },
+    "memory:memory/2026-04-27.md:76:76": {
+      "key": "memory:memory/2026-04-27.md:76:76",
+      "path": "memory/2026-04-27.md",
+      "startLine": 76,
+      "endLine": 76,
+      "source": "memory",
+      "snippet": "CRITICAL 2: The EP Oscillation Is a Real Pattern, Not Just a Past Problem: **The bigger risk:** With Chandelier still active in production, all the param sweeps run since S17 (POSITION_CAP, any future sweeps) may be using wrong strategy logic. The harness might not reflect what t",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "position-cap",
+        "critical",
+        "oscillation",
+        "real",
+        "pattern",
+        "not",
+        "problem",
+        "bigger"
+      ]
+    },
+    "memory:memory/2026-04-27.md:82:83": {
+      "key": "memory:memory/2026-04-27.md:82:83",
+      "path": "memory/2026-04-27.md",
+      "startLine": 82,
+      "endLine": 83,
+      "source": "memory",
+      "snippet": "HIGH 1: S8 Donchian Is Genuinely Untested — Not \"Done\": Commit `135ec31d` (\"docs: PLAN.md update — T14 deployed, S8 done\") marked S8 as complete. Evidence from that session's critique: > \"S8: Donchian entry vs Turtle entry — marked done in PLAN.md but never executed.\"",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "high",
+        "donchian",
+        "genuinely",
+        "untested",
+        "not",
+        "done",
+        "commit"
+      ]
+    },
+    "memory:memory/2026-04-27.md:87:87": {
+      "key": "memory:memory/2026-04-27.md:87:87",
+      "path": "memory/2026-04-27.md",
+      "startLine": 87,
+      "endLine": 87,
+      "source": "memory",
+      "snippet": "HIGH 1: S8 Donchian Is Genuinely Untested — Not \"Done\": The strategy-ideas.md still says Donchian is \"NEVER TESTED\" — correctly.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "high",
+        "donchian",
+        "genuinely",
+        "untested",
+        "not",
+        "done",
+        "strategy"
+      ]
+    },
+    "memory:memory/2026-04-27.md:94:96": {
+      "key": "memory:memory/2026-04-27.md:94:96",
+      "path": "memory/2026-04-27.md",
+      "startLine": 94,
+      "endLine": 96,
+      "source": "memory",
+      "snippet": "HIGH 2: strategy-ideas.md Is Stale: \"T14: Live Bot Code Audit — CRITICAL\" — partially done but S17 conclusion reverted; \"S8: Donchian Entry vs Turtle Entry — marked done, actually NEVER TESTED\"; \"CTREND Regime-Conditional Switching — best untested candidate\"",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "regime-conditional",
+        "high",
+        "strategy",
+        "ideas.md",
+        "stale",
+        "t14",
+        "live"
+      ]
+    },
+    "memory:memory/2026-04-27.md:98:98": {
+      "key": "memory:memory/2026-04-27.md:98:98",
+      "path": "memory/2026-04-27.md",
+      "startLine": 98,
+      "endLine": 98,
+      "source": "memory",
+      "snippet": "HIGH 2: strategy-ideas.md Is Stale: **Point 3 is wrong.** CTREND regime-conditional switching was tested and FAILED:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "regime-conditional",
+        "high",
+        "strategy",
+        "ideas.md",
+        "stale",
+        "point",
+        "wrong"
+      ]
+    },
+    "memory:memory/2026-04-27.md:99:100": {
+      "key": "memory:memory/2026-04-27.md:99:100",
+      "path": "memory/2026-04-27.md",
+      "startLine": 99,
+      "endLine": 100,
+      "source": "memory",
+      "snippet": "HIGH 2: strategy-ideas.md Is Stale: Commit `ac44ea16`: \"feat(T13): CTREND regime-conditional switching walk-forward — FAIL (67% pass, Sharpe 2.53)\"; 67% < 70% threshold. It is NOT the \"best untested candidate.\"",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "regime-conditional",
+        "walk-forward",
+        "2.53",
+        "high",
+        "strategy",
+        "ideas.md",
+        "stale"
+      ]
+    },
+    "memory:memory/2026-04-27.md:102:102": {
+      "key": "memory:memory/2026-04-27.md:102:102",
+      "path": "memory/2026-04-27.md",
+      "startLine": 102,
+      "endLine": 102,
+      "source": "memory",
+      "snippet": "HIGH 2: strategy-ideas.md Is Stale: The file also still lists ATR_ENTRY_MULT=0.85 as a candidate (REJECTED), EP=24 as a candidate (REVERTED), and various other stale ideas.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "atr-entry-mult",
+        "0.85",
+        "high",
+        "strategy",
+        "ideas.md",
+        "stale",
+        "still"
+      ]
+    },
+    "memory:memory/2026-04-27.md:108:108": {
+      "key": "memory:memory/2026-04-27.md:108:108",
+      "path": "memory/2026-04-27.md",
+      "startLine": 108,
+      "endLine": 108,
+      "source": "memory",
+      "snippet": "HIGH 3: HALL_OF_FAME.md Is Stale: Auto-generated from config.rs. Describes production as \"Turtle+Chandelier\" with dual exit. But S17 said to remove Chandelier (and it wasn't removed in production). The HOF says `CHAND_PERIOD=7, CHAND_MULT=2.30` as production params — these are ma",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "hall-of-fame.md",
+        "auto-generated",
+        "config.rs",
+        "chand-period",
+        "chand-mult",
+        "2.30",
+        "high",
+        "stale"
+      ]
+    },
+    "memory:memory/2026-04-27.md:110:110": {
+      "key": "memory:memory/2026-04-27.md:110:110",
+      "path": "memory/2026-04-27.md",
+      "startLine": 110,
+      "endLine": 110,
+      "source": "memory",
+      "snippet": "HIGH 3: HALL_OF_FAME.md Is Stale: The HOF equity figure ($10K → $67M) was generated from `live_turtle_chandelier.rs` which uses dual Chandelier+Turtle exit. If we're going Turtle-only, the equity figure is different.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "hall-of-fame.md",
+        "live-turtle-chandelier.rs",
+        "turtle-only",
+        "high",
+        "stale",
+        "hof",
+        "equity",
+        "figure"
+      ]
+    },
+    "memory:memory/2026-04-27.md:117:118": {
+      "key": "memory:memory/2026-04-27.md:117:118",
+      "path": "memory/2026-04-27.md",
+      "startLine": 117,
+      "endLine": 118,
+      "source": "memory",
+      "snippet": "MEDIUM 1: Documentation Loop — Same Problem Since April 12: Actual work (`feat`/`fix`/`feat(hyperopt)`): 81 commits (32%); Documentation/hygiene (`docs`/`chore`): 133 commits (53%)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "documentation/hygiene",
+        "medium",
+        "documentation",
+        "loop",
+        "problem",
+        "april",
+        "actual",
+        "feat"
+      ]
+    },
+    "memory:memory/2026-04-27.md:120:120": {
+      "key": "memory:memory/2026-04-27.md:120:120",
+      "path": "memory/2026-04-27.md",
+      "startLine": 120,
+      "endLine": 120,
+      "source": "memory",
+      "snippet": "MEDIUM 1: Documentation Loop — Same Problem Since April 12: Last 10 commits: 8/10 are docs/hygiene. Last 5: 4/5 docs.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "8/10",
+        "docs/hygiene",
+        "4/5",
+        "medium",
+        "documentation",
+        "loop",
+        "problem",
+        "april"
+      ]
+    },
+    "memory:memory/2026-04-27.md:122:122": {
+      "key": "memory:memory/2026-04-27.md:122:122",
+      "path": "memory/2026-04-27.md",
+      "startLine": 122,
+      "endLine": 122,
+      "source": "memory",
+      "snippet": "MEDIUM 1: Documentation Loop — Same Problem Since April 12: The project is in a documentation loop. Every critique session identifies this, every PLAN update promises to stop, and it continues.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "medium",
+        "documentation",
+        "loop",
+        "problem",
+        "april",
+        "project",
+        "critique",
+        "identifies"
+      ]
+    },
+    "memory:memory/2026-04-27.md:125:127": {
+      "key": "memory:memory/2026-04-27.md:125:127",
+      "path": "memory/2026-04-27.md",
+      "startLine": 125,
+      "endLine": 127,
+      "source": "memory",
+      "snippet": "MEDIUM 1: Documentation Loop — Same Problem Since April 12: `049b13ed` (POSITION_CAP re-validation) — actual work, but the harness uses dual-exit for \"reporting consistency\" — this is actually a logic mismatch dressed up as a reporting choice; `cf9bce2a` (docs: S17 session log) —",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "position-cap",
+        "re-validation",
+        "dual-exit",
+        "medium",
+        "documentation",
+        "loop",
+        "problem",
+        "april"
+      ]
+    },
+    "memory:memory/2026-04-27.md:133:133": {
+      "key": "memory:memory/2026-04-27.md:133:133",
+      "path": "memory/2026-04-27.md",
+      "startLine": 133,
+      "endLine": 133,
+      "source": "memory",
+      "snippet": "MEDIUM 2: Live Bot / Harness Codebase Split: There are two execution paths:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "medium",
+        "live",
+        "bot",
+        "harness",
+        "codebase",
+        "split",
+        "two",
+        "execution"
+      ]
+    },
+    "memory:memory/2026-04-27.md:134:135": {
+      "key": "memory:memory/2026-04-27.md:134:135",
+      "path": "memory/2026-04-27.md",
+      "startLine": 134,
+      "endLine": 135,
+      "source": "memory",
+      "snippet": "MEDIUM 2: Live Bot / Harness Codebase Split: **Production live bot** (`src/live/bot.rs`): Currently dual-exit (Chandelier+Turtle); **Walk-forward harness** (`examples/turtle_chandelier_walkforward.rs`): Uses `USE_CHANDELIER=true` for reporting",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "src/live/bot.rs",
+        "dual-exit",
+        "walk-forward",
+        "use-chandelier",
+        "medium",
+        "live",
+        "bot",
+        "harness"
+      ]
+    },
+    "memory:memory/2026-04-27.md:137:137": {
+      "key": "memory:memory/2026-04-27.md:137:137",
+      "path": "memory/2026-04-27.md",
+      "startLine": 137,
+      "endLine": 137,
+      "source": "memory",
+      "snippet": "MEDIUM 2: Live Bot / Harness Codebase Split: The harness that validated POSITION_CAP uses `USE_CHANDELIER=true`. The bot (head) uses `check_dual_exit` with Chandelier. So the POSITION_CAP re-validation was run against dual-exit logic — same as the live bot currently, so the resul",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "position-cap",
+        "use-chandelier",
+        "check-dual-exit",
+        "re-validation",
+        "dual-exit",
+        "medium",
+        "live",
+        "bot"
+      ]
+    },
+    "memory:memory/2026-04-27.md:139:139": {
+      "key": "memory:memory/2026-04-27.md:139:139",
+      "path": "memory/2026-04-27.md",
+      "startLine": 139,
+      "endLine": 139,
+      "source": "memory",
+      "snippet": "MEDIUM 2: Live Bot / Harness Codebase Split: But the S17 conclusion (Turtle-only wins +1.47 Sharpe) is only valid for the harness. It has not been deployed to the live bot.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "turtle-only",
+        "1.47",
+        "medium",
+        "live",
+        "bot",
+        "harness",
+        "codebase",
+        "split"
+      ]
+    },
+    "memory:memory/2026-04-27.md:141:141": {
+      "key": "memory:memory/2026-04-27.md:141:141",
+      "path": "memory/2026-04-27.md",
+      "startLine": 141,
+      "endLine": 141,
+      "source": "memory",
+      "snippet": "MEDIUM 2: Live Bot / Harness Codebase Split: This split is a persistent source of confusion: which result applies to which code path?",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "medium",
+        "live",
+        "bot",
+        "harness",
+        "codebase",
+        "split",
+        "persistent",
+        "source"
+      ]
+    },
+    "memory:memory/2026-04-27.md:147:150": {
+      "key": "memory:memory/2026-04-27.md:147:150",
+      "path": "memory/2026-04-27.md",
+      "startLine": 147,
+      "endLine": 150,
+      "source": "memory",
+      "snippet": "What We Got Right: **S17 methodology was correct.** Running head-to-head walk-forward comparison with proper metrics is the right approach.; **Anti-overfitting rules exist and are applied to some decisions.** EP=24 and EP=43 were both caught as in-sample inflation.; **The 01:50 U",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "head-to-head",
+        "walk-forward",
+        "anti-overfitting",
+        "in-sample",
+        "what",
+        "got",
+        "right",
+        "s17"
+      ]
+    },
+    "memory:memory/2026-04-27.md:151:151": {
+      "key": "memory:memory/2026-04-27.md:151:151",
+      "path": "memory/2026-04-27.md",
+      "startLine": 151,
+      "endLine": 151,
+      "source": "memory",
+      "snippet": "What We Got Right: **The repo is honest about failures.** GRAVEYARD is thorough. Multiple ideas killed properly.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "what",
+        "got",
+        "right",
+        "repo",
+        "honest",
+        "failures",
+        "graveyard",
+        "thorough"
+      ]
+    },
+    "memory:memory/2026-04-27.md:157:160": {
+      "key": "memory:memory/2026-04-27.md:157:160",
+      "path": "memory/2026-04-27.md",
+      "startLine": 157,
+      "endLine": 160,
+      "source": "memory",
+      "snippet": "Biggest Blind Spots: | Blind Spot | Severity | Status | |-----------|----------|--------| | **S17 Chandelier removal NOT in HEAD** | CRITICAL | Reverted by POSITION_CAP commit | | **Production strategy mismatch** | CRITICAL | Bot uses dual-exit, harness says Turtle-only wins |",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "position-cap",
+        "dual-exit",
+        "turtle-only",
+        "biggest",
+        "blind",
+        "spots",
+        "spot",
+        "severity"
+      ]
+    },
+    "memory:memory/2026-04-27.md:161:164": {
+      "key": "memory:memory/2026-04-27.md:161:164",
+      "path": "memory/2026-04-27.md",
+      "startLine": 161,
+      "endLine": 164,
+      "source": "memory",
+      "snippet": "Biggest Blind Spots: | **No live testnet** | CRITICAL | BLOCKED on Noah's API keys | | **S8 Donchian never tested** | HIGH | Listed as \"done,\" actually untested | | **strategy-ideas.md stale** | HIGH | Lists CTREND switching as best candidate (FAILED) | | **HALL_OF_FAME.md stale*",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "hall-of-fame.md",
+        "biggest",
+        "blind",
+        "spots",
+        "live",
+        "testnet",
+        "critical"
+      ]
+    },
+    "memory:memory/2026-04-27.md:165:166": {
+      "key": "memory:memory/2026-04-27.md:165:166",
+      "path": "memory/2026-04-27.md",
+      "startLine": 165,
+      "endLine": 166,
+      "source": "memory",
+      "snippet": "Biggest Blind Spots: | **Documentation loop** | MEDIUM | 53% of all commits are docs/hygiene | | **Anti-overfitting hole** | MEDIUM | \"Don't re-optimize confirmed params\" has no enforcement mechanism |",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "docs/hygiene",
+        "anti-overfitting",
+        "re-optimize",
+        "biggest",
+        "blind",
+        "spots",
+        "documentation",
+        "loop"
+      ]
+    },
+    "memory:memory/2026-04-27.md:172:172": {
+      "key": "memory:memory/2026-04-27.md:172:172",
+      "path": "memory/2026-04-27.md",
+      "startLine": 172,
+      "endLine": 172,
+      "source": "memory",
+      "snippet": "3 Most Promising Unbuilt Ideas (from strategy-ideas.md review): After removing already-tested dead ends:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "already-tested",
+        "promising",
+        "unbuilt",
+        "ideas",
+        "strategy",
+        "ideas.md",
+        "review"
+      ]
+    },
+    "memory:memory/2026-04-27.md:175:175": {
+      "key": "memory:memory/2026-04-27.md:175:175",
+      "path": "memory/2026-04-27.md",
+      "startLine": 175,
+      "endLine": 175,
+      "source": "memory",
+      "snippet": "Donchian Entry (genuinely untested): Original Turtle uses `max(close, high)` as breakout reference. Donchian uses `highest(high)` only (strictest Richard Dennis original). Fewer but potentially higher-quality signals. S8 was supposed to test this, never executed.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "higher-quality",
+        "donchian",
+        "entry",
+        "genuinely",
+        "untested",
+        "original",
+        "turtle",
+        "uses"
+      ]
+    },
+    "memory:memory/2026-04-27.md:181:181": {
+      "key": "memory:memory/2026-04-27.md:181:181",
+      "path": "memory/2026-04-27.md",
+      "startLine": 181,
+      "endLine": 181,
+      "source": "memory",
+      "snippet": "Vol-Rank Conditional TP/SL Targets (untested): Instead of trailing stop, use a fixed ATR-based target (e.g., 3× ATR profit target) + Chandelier stop. This is different from all tested approaches which focused on entry/exit mechanism. Target-based exits behave differently in chopp",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "vol-rank",
+        "tp/sl",
+        "atr-based",
+        "e.g",
+        "entry/exit",
+        "target-based",
+        "vol",
+        "rank"
+      ]
+    },
+    "memory:memory/2026-04-27.md:187:187": {
+      "key": "memory:memory/2026-04-27.md:187:187",
+      "path": "memory/2026-04-27.md",
+      "startLine": 187,
+      "endLine": 187,
+      "source": "memory",
+      "snippet": "Research Loop Status: NOT CLOSED: The research loop CANNOT be declared closed while:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "research",
+        "loop",
+        "status",
+        "not",
+        "closed",
+        "cannot",
+        "declared",
+        "while"
+      ]
+    },
+    "memory:memory/2026-04-27.md:188:191": {
+      "key": "memory:memory/2026-04-27.md:188:191",
+      "path": "memory/2026-04-27.md",
+      "startLine": 188,
+      "endLine": 191,
+      "source": "memory",
+      "snippet": "Research Loop Status: NOT CLOSED: S17 conclusion is not in production code; S8 Donchian is genuinely untested; The live bot / harness strategy mismatch exists; Live testnet is blocked (nothing else matters until this is unblocked)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "research",
+        "loop",
+        "status",
+        "not",
+        "closed",
+        "s17",
+        "conclusion",
+        "production"
+      ]
+    },
+    "memory:memory/2026-04-27.md:197:200": {
+      "key": "memory:memory/2026-04-27.md:197:200",
+      "path": "memory/2026-04-27.md",
+      "startLine": 197,
+      "endLine": 200,
+      "source": "memory",
+      "snippet": "What I Will Do: **Write this critique** to `memory/2026-04-27.md` (this file, appending to existing); **Update PLAN.md** with corrected next tasks; **Update strategy-ideas.md** — remove stale entries, add regime-adaptive EP idea; **Commit** without code changes (critique session",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "memory/2026-04-27.md",
+        "plan.md",
+        "strategy-ideas.md",
+        "regime-adaptive",
+        "what",
+        "will",
+        "write",
+        "critique"
+      ]
+    },
+    "memory:memory/2026-04-27.md:202:202": {
+      "key": "memory:memory/2026-04-27.md:202:202",
+      "path": "memory/2026-04-27.md",
+      "startLine": 202,
+      "endLine": 202,
+      "source": "memory",
+      "snippet": "What I Will Do: **I am NOT fixing the S17 revert this session.** The instruction was critique-only. Fixing requires running the actual Turtle-only walk-forward on current HEAD to confirm the revert didn't break anything, and that's execution. The critique will surface this clearl",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "critique-only",
+        "turtle-only",
+        "walk-forward",
+        "what",
+        "will",
+        "not",
+        "fixing",
+        "s17"
+      ]
+    },
+    "memory:memory/2026-04-27.md:208:208": {
+      "key": "memory:memory/2026-04-27.md:208:208",
+      "path": "memory/2026-04-27.md",
+      "startLine": 208,
+      "endLine": 208,
+      "source": "memory",
+      "snippet": "Appendix: Code State Evidence: **`src/live/bot.rs` (HEAD, line 251):**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "src/live/bot.rs",
+        "appendix",
+        "code",
+        "state",
+        "evidence",
+        "src",
+        "live",
+        "bot.rs"
+      ]
+    },
+    "memory:memory/2026-04-27.md:210:210": {
+      "key": "memory:memory/2026-04-27.md:210:210",
+      "path": "memory/2026-04-27.md",
+      "startLine": 210,
+      "endLine": 210,
+      "source": "memory",
+      "snippet": "Appendix: Code State Evidence: if let Some(exit) = self.check_dual_exit(symbol, &bar) {",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "self.check-dual-exit",
+        "appendix",
+        "code",
+        "state",
+        "evidence",
+        "let",
+        "exit",
+        "symbol"
+      ]
+    },
+    "memory:memory/2026-04-27.md:213:213": {
+      "key": "memory:memory/2026-04-27.md:213:213",
+      "path": "memory/2026-04-27.md",
+      "startLine": 213,
+      "endLine": 213,
+      "source": "memory",
+      "snippet": "Appendix: Code State Evidence: **`src/live/bot.rs` (HEAD, line 362):**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "src/live/bot.rs",
+        "appendix",
+        "code",
+        "state",
+        "evidence",
+        "src",
+        "live",
+        "bot.rs"
+      ]
+    },
+    "memory:memory/2026-04-27.md:215:215": {
+      "key": "memory:memory/2026-04-27.md:215:215",
+      "path": "memory/2026-04-27.md",
+      "startLine": 215,
+      "endLine": 215,
+      "source": "memory",
+      "snippet": "Appendix: Code State Evidence: fn check_dual_exit(&mut self, symbol: &str, bar: &Bar) -> Option<()> {",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "check-dual-exit",
+        "appendix",
+        "code",
+        "state",
+        "evidence",
+        "mut",
+        "self",
+        "symbol"
+      ]
+    },
+    "memory:memory/2026-04-27.md:218:218": {
+      "key": "memory:memory/2026-04-27.md:218:218",
+      "path": "memory/2026-04-27.md",
+      "startLine": 218,
+      "endLine": 218,
+      "source": "memory",
+      "snippet": "Appendix: Code State Evidence: **`src/live/bot.rs` (HEAD, line 370):**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "src/live/bot.rs",
+        "appendix",
+        "code",
+        "state",
+        "evidence",
+        "src",
+        "live",
+        "bot.rs"
+      ]
+    },
+    "memory:memory/2026-04-27.md:220:220": {
+      "key": "memory:memory/2026-04-27.md:220:220",
+      "path": "memory/2026-04-27.md",
+      "startLine": 220,
+      "endLine": 220,
+      "source": "memory",
+      "snippet": "Appendix: Code State Evidence: // Dual exit: Chandelier ATR OR Turtle ATR (whichever fires first)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "appendix",
+        "code",
+        "state",
+        "evidence",
+        "dual",
+        "exit",
+        "chandelier",
+        "atr"
+      ]
+    },
+    "memory:memory/2026-04-27.md:223:223": {
+      "key": "memory:memory/2026-04-27.md:223:223",
+      "path": "memory/2026-04-27.md",
+      "startLine": 223,
+      "endLine": 223,
+      "source": "memory",
+      "snippet": "Appendix: Code State Evidence: **S17 committed at `e317a830` changed bot to `check_turtle_exit`. This was reverted by `049b13ed`.**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "check-turtle-exit",
+        "appendix",
+        "code",
+        "state",
+        "evidence",
+        "s17",
+        "committed",
+        "e317a830"
+      ]
+    },
+    "memory:memory/2026-04-27.md:229:230": {
+      "key": "memory:memory/2026-04-27.md:229:230",
+      "path": "memory/2026-04-27.md",
+      "startLine": 229,
+      "endLine": 230,
+      "source": "memory",
+      "snippet": "[21:56 UTC] Cron — Strategy Research & Critique (4h session): **Session:** 2026-04-27 21:56 UTC | Kira cron — research & critique cycle **Mission:** Read, think, criticize. Do NOT execute.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "utc",
+        "cron",
+        "strategy",
+        "research",
+        "critique",
+        "kira",
+        "cycle",
+        "mission"
+      ]
+    },
+    "memory:memory/2026-04-27.md:236:239": {
+      "key": "memory:memory/2026-04-27.md:236:239",
+      "path": "memory/2026-04-27.md",
+      "startLine": 236,
+      "endLine": 239,
+      "source": "memory",
+      "snippet": "Orientation Summary: Git HEAD: `2dbf773b` (docs: critique and plan update — S17 reverted, S8 untested, CTREND FAILED); Last commit is itself a critique session (this session ran at 19:52 UTC); No Discord messages since last session; strategy-ideas.md, PLAN.md, MEMORY.md all read",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "plan.md",
+        "memory.md",
+        "orientation",
+        "summary",
+        "git",
+        "head",
+        "2dbf773b"
+      ]
+    },
+    "memory:memory/2026-04-27.md:249:249": {
+      "key": "memory:memory/2026-04-27.md:249:249",
+      "path": "memory/2026-04-27.md",
+      "startLine": 249,
+      "endLine": 249,
+      "source": "memory",
+      "snippet": "CRITICAL 1: The \"S17 Revert\" Narrative Was Wrong — Slightly: **What I got wrong:** I assumed the POSITION_CAP sweep used `check_dual_exit()` in `bot.rs`. It doesn't. The harness (`examples/position_cap_hyperopt.rs`) has its OWN exit logic (lines 279-285) which is a standalone Tur",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "position-cap",
+        "check-dual-exit",
+        "bot.rs",
+        "279-285",
+        "critical",
+        "s17",
+        "revert",
+        "narrative"
+      ]
+    },
+    "memory:memory/2026-04-27.md:251:251": {
+      "key": "memory:memory/2026-04-27.md:251:251",
+      "path": "memory/2026-04-27.md",
+      "startLine": 251,
+      "endLine": 251,
+      "source": "memory",
+      "snippet": "CRITICAL 1: The \"S17 Revert\" Narrative Was Wrong — Slightly: **What this means:**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "critical",
+        "s17",
+        "revert",
+        "narrative",
+        "was",
+        "wrong",
+        "slightly",
+        "what"
+      ]
+    },
+    "memory:memory/2026-04-27.md:252:255": {
+      "key": "memory:memory/2026-04-27.md:252:255",
+      "path": "memory/2026-04-27.md",
+      "startLine": 252,
+      "endLine": 255,
+      "source": "memory",
+      "snippet": "CRITICAL 1: The \"S17 Revert\" Narrative Was Wrong — Slightly: POSITION_CAP sweep ran with Turtle-only ATR logic — correct, that's what it claimed to do; Production bot uses dual-exit (Chandelier + Turtle ATR) — this was never tested in the CAP=3 validation; CAP=3 = 72.2% pass (Tur",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "position-cap",
+        "turtle-only",
+        "dual-exit",
+        "72.2",
+        "critical",
+        "s17",
+        "revert",
+        "narrative"
+      ]
+    },
+    "memory:memory/2026-04-27.md:261:261": {
+      "key": "memory:memory/2026-04-27.md:261:261",
+      "path": "memory/2026-04-27.md",
+      "startLine": 261,
+      "endLine": 261,
+      "source": "memory",
+      "snippet": "CRITICAL 2: All Metrics Are Upper Bounds — Nothing Is Live: The entire project is a backtest. Walk-forward Sharpe 5.46 (Base5), equity Sharpe 1.29, 67,000x returns — all from simulation. The project has been running for months and nothing is live. This isn't a critique of quality",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "walk-forward",
+        "5.46",
+        "1.29",
+        "critical",
+        "all",
+        "metrics",
+        "upper",
+        "bounds"
+      ]
+    },
+    "memory:memory/2026-04-27.md:263:263": {
+      "key": "memory:memory/2026-04-27.md:263:263",
+      "path": "memory/2026-04-27.md",
+      "startLine": 263,
+      "endLine": 263,
+      "source": "memory",
+      "snippet": "CRITICAL 2: All Metrics Are Upper Bounds — Nothing Is Live: **The fee gap is the biggest unmeasured variable.** We know ~70% of fills are maker (saving 8.8bp/trade), but we don't know:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "8.8bp/trade",
+        "critical",
+        "all",
+        "metrics",
+        "upper",
+        "bounds",
+        "nothing",
+        "live"
+      ]
+    },
+    "memory:memory/2026-04-27.md:268:268": {
+      "key": "memory:memory/2026-04-27.md:268:268",
+      "path": "memory/2026-04-27.md",
+      "startLine": 268,
+      "endLine": 268,
+      "source": "memory",
+      "snippet": "CRITICAL 2: All Metrics Are Upper Bounds — Nothing Is Live: The production bot's maker-order entry logic (place limit at bar close, Post Only) is unvalidated in real market conditions.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "maker-order",
+        "critical",
+        "all",
+        "metrics",
+        "upper",
+        "bounds",
+        "nothing",
+        "live"
+      ]
+    },
+    "memory:memory/2026-04-27.md:272:272": {
+      "key": "memory:memory/2026-04-27.md:272:272",
+      "path": "memory/2026-04-27.md",
+      "startLine": 272,
+      "endLine": 272,
+      "source": "memory",
+      "snippet": "HIGH 1: S8 Donchian — Genuinely Untested: Confirmed: No Donchian harness exists. No chart. No snapshots. PLAN.md marked it done falsely. The strategy-ideas.md correctly says it's \"never tested.\"",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "strategy-ideas.md",
+        "high",
+        "donchian",
+        "genuinely",
+        "untested",
+        "confirmed",
+        "harness"
+      ]
+    },
+    "memory:memory/2026-04-27.md:274:274": {
+      "key": "memory:memory/2026-04-27.md:274:274",
+      "path": "memory/2026-04-27.md",
+      "startLine": 274,
+      "endLine": 274,
+      "source": "memory",
+      "snippet": "HIGH 1: S8 Donchian — Genuinely Untested: Donchian entry (highest(high) breakout, not max(close,high)) is the original 1983 Turtle system entry. It produces fewer but potentially higher-quality signals. This is the single most promising genuinely-untested idea.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "higher-quality",
+        "genuinely-untested",
+        "high",
+        "donchian",
+        "genuinely",
+        "untested",
+        "entry",
+        "highest"
+      ]
+    },
+    "memory:memory/2026-04-27.md:276:276": {
+      "key": "memory:memory/2026-04-27.md:276:276",
+      "path": "memory/2026-04-27.md",
+      "startLine": 276,
+      "endLine": 276,
+      "source": "memory",
+      "snippet": "HIGH 1: S8 Donchian — Genuinely Untested: **Why it's promising:** All our optimization work has been on exit mechanics. Entry signal space is almost completely unexplored. Every strategy comparison we've done held entry constant and varied exit. Donchian tests an alternative entr",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "high",
+        "donchian",
+        "genuinely",
+        "untested",
+        "why",
+        "it's",
+        "promising",
+        "all"
+      ]
+    },
+    "memory:memory/2026-04-27.md:280:280": {
+      "key": "memory:memory/2026-04-27.md:280:280",
+      "path": "memory/2026-04-27.md",
+      "startLine": 280,
+      "endLine": 280,
+      "source": "memory",
+      "snippet": "HIGH 2: strategy-ideas.md Is Stale: Current file (last updated 2026-04-27 19:52 UTC from the previous session) lists:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "high",
+        "strategy",
+        "ideas.md",
+        "stale",
+        "current",
+        "last",
+        "updated"
+      ]
+    },
+    "memory:memory/2026-04-27.md:281:283": {
+      "key": "memory:memory/2026-04-27.md:281:283",
+      "path": "memory/2026-04-27.md",
+      "startLine": 281,
+      "endLine": 283,
+      "source": "memory",
+      "snippet": "HIGH 2: strategy-ideas.md Is Stale: \"T18: S17 Conclusion — Deploy or Revert (CRITICAL)\" — S17 conclusion IS in the code (dual-exit, which is what the production bot actually does). The \"deploy/revert\" framing is based on the false \"revert\" narrative.; \"S8: Donchian Entry vs Turtl",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "dual-exit",
+        "deploy/revert",
+        "high",
+        "strategy",
+        "ideas.md",
+        "stale",
+        "t18"
+      ]
+    },
+    "memory:memory/2026-04-27.md:285:285": {
+      "key": "memory:memory/2026-04-27.md:285:285",
+      "path": "memory/2026-04-27.md",
+      "startLine": 285,
+      "endLine": 285,
+      "source": "memory",
+      "snippet": "HIGH 2: strategy-ideas.md Is Stale: The file is better than yesterday, but still conflates \"S17 conclusion not deployed\" with the false revert narrative.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "strategy-ideas.md",
+        "high",
+        "strategy",
+        "ideas.md",
+        "stale",
+        "better",
+        "yesterday",
+        "but"
+      ]
+    },
+    "memory:memory/2026-04-27.md:289:289": {
+      "key": "memory:memory/2026-04-27.md:289:289",
+      "path": "memory/2026-04-27.md",
+      "startLine": 289,
+      "endLine": 289,
+      "source": "memory",
+      "snippet": "HIGH 3: The Walk-Forward Sharpe 5.46 Is Not What It Appears: Walk-forward Sharpe is the mean of per-window Sharpe ratios. Each window's Sharpe = (mean daily return × √252) / std. This methodology:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "walk-forward",
+        "5.46",
+        "per-window",
+        "high",
+        "walk",
+        "forward",
+        "sharpe",
+        "not"
+      ]
+    },
+    "memory:memory/2026-04-27.md:290:292": {
+      "key": "memory:memory/2026-04-27.md:290:292",
+      "path": "memory/2026-04-27.md",
+      "startLine": 290,
+      "endLine": 292,
+      "source": "memory",
+      "snippet": "HIGH 3: The Walk-Forward Sharpe 5.46 Is Not What It Appears: **Inflates the number** vs true compounded equity Sharpe (1.29); Is NOT comparable across strategies unless they have identical window counts and return distributions; Masks the fact that some windows are very bad (2021",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "walk-forward",
+        "5.46",
+        "1.29",
+        "high",
+        "walk",
+        "forward",
+        "sharpe",
+        "not"
+      ]
+    },
+    "memory:memory/2026-04-27.md:294:294": {
+      "key": "memory:memory/2026-04-27.md:294:294",
+      "path": "memory/2026-04-27.md",
+      "startLine": 294,
+      "endLine": 294,
+      "source": "memory",
+      "snippet": "HIGH 3: The Walk-Forward Sharpe 5.46 Is Not What It Appears: The 5.46 number should NEVER appear on a chart. It should only be used as a relative ranking metric across parameter candidates within the same harness. When comparing to other strategies or reporting to Noah, use the d",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "walk-forward",
+        "5.46",
+        "high",
+        "walk",
+        "forward",
+        "sharpe",
+        "not",
+        "what"
+      ]
+    },
+    "memory:memory/2026-04-27.md:298:298": {
+      "key": "memory:memory/2026-04-27.md:298:298",
+      "path": "memory/2026-04-27.md",
+      "startLine": 298,
+      "endLine": 298,
+      "source": "memory",
+      "snippet": "MEDIUM 1: Documentation Loop Is Structural, Not Accidental: 53% of all commits are docs/hygiene. This isn't sloppiness — it's what happens when research is \"complete\" but live deployment is blocked. The project has nothing concrete to build, so it documents itself. Breaking this",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "docs/hygiene",
+        "medium",
+        "documentation",
+        "loop",
+        "structural",
+        "not",
+        "accidental",
+        "all"
+      ]
+    },
+    "memory:memory/2026-04-27.md:299:300": {
+      "key": "memory:memory/2026-04-27.md:299:300",
+      "path": "memory/2026-04-27.md",
+      "startLine": 299,
+      "endLine": 300,
+      "source": "memory",
+      "snippet": "MEDIUM 1: Documentation Loop Is Structural, Not Accidental: Live testnet working → new execution problems to solve; Genuinely new research (Donchian, regime-adaptive EP) → real work to do",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "regime-adaptive",
+        "medium",
+        "documentation",
+        "loop",
+        "structural",
+        "not",
+        "accidental",
+        "live"
+      ]
+    },
+    "memory:memory/2026-04-27.md:302:302": {
+      "key": "memory:memory/2026-04-27.md:302:302",
+      "path": "memory/2026-04-27.md",
+      "startLine": 302,
+      "endLine": 302,
+      "source": "memory",
+      "snippet": "MEDIUM 1: Documentation Loop Is Structural, Not Accidental: Without one of these, the documentation loop continues regardless of how many times we critique it.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "medium",
+        "documentation",
+        "loop",
+        "structural",
+        "not",
+        "accidental",
+        "without",
+        "one"
+      ]
+    },
+    "memory:memory/2026-04-27.md:306:306": {
+      "key": "memory:memory/2026-04-27.md:306:306",
+      "path": "memory/2026-04-27.md",
+      "startLine": 306,
+      "endLine": 306,
+      "source": "memory",
+      "snippet": "MEDIUM 2: The Bot/Harness Split Is a Permanent Risk: `src/live/bot.rs` and `examples/turtle_chandelier_walkforward.rs` have separate exit logic implementations. They can diverge silently. The POSITION_CAP sweep is the clearest example: it claimed to test \"current live logic\" but",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "bot/harness",
+        "src/live/bot.rs",
+        "position-cap",
+        "medium",
+        "bot",
+        "harness",
+        "split",
+        "permanent"
+      ]
+    },
+    "memory:memory/2026-04-27.md:308:308": {
+      "key": "memory:memory/2026-04-27.md:308:308",
+      "path": "memory/2026-04-27.md",
+      "startLine": 308,
+      "endLine": 308,
+      "source": "memory",
+      "snippet": "MEDIUM 2: The Bot/Harness Split Is a Permanent Risk: **The fix:** Either (a) make the harness import and call the actual bot code, or (b) accept that harness results always need re-validation when applied to the bot.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "bot/harness",
+        "re-validation",
+        "medium",
+        "bot",
+        "harness",
+        "split",
+        "permanent",
+        "risk"
+      ]
+    },
+    "memory:memory/2026-04-27.md:314:317": {
+      "key": "memory:memory/2026-04-27.md:314:317",
+      "path": "memory/2026-04-27.md",
+      "startLine": 314,
+      "endLine": 317,
+      "source": "memory",
+      "snippet": "What We Got Right: **Anti-overfitting is genuinely baked in.** EP=24 and EP=43 rejected as in-sample inflation. Rules exist and work when applied.; **Equity Sharpe reporting is honest.** The daily 1.29 number is verified via `gen_pr.py`. 5.46 never appears on charts. This is corr",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "anti-overfitting",
+        "in-sample",
+        "1.29",
+        "gen-pr.py",
+        "5.46",
+        "what",
+        "got",
+        "right"
+      ]
+    },
+    "memory:memory/2026-04-27.md:318:319": {
+      "key": "memory:memory/2026-04-27.md:318:319",
+      "path": "memory/2026-04-27.md",
+      "startLine": 318,
+      "endLine": 319,
+      "source": "memory",
+      "snippet": "What We Got Right: **Cross-market validation:** SPY/QQQ/GLD all pass at ~60%+. Strategy is not crypto-survivorship bias. This is a genuine finding.; **The production universe (Base5: BTC/ETH/SOL/XRP/ADA) is clean.** 6/6 pass. The failures are all LTC/EOS/BCH — structural non-tren",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "cross-market",
+        "spy/qqq/gld",
+        "crypto-survivorship",
+        "btc/eth/sol/xrp/ada",
+        "6/6",
+        "ltc/eos/bch",
+        "non-tren",
+        "what"
+      ]
+    },
+    "memory:memory/2026-04-27.md:325:328": {
+      "key": "memory:memory/2026-04-27.md:325:328",
+      "path": "memory/2026-04-27.md",
+      "startLine": 325,
+      "endLine": 328,
+      "source": "memory",
+      "snippet": "Biggest Blind Spots: | Blind Spot | Severity | Why It Matters | |-----------|----------|----------------| | **No live testnet** | CRITICAL | Everything is simulation. Fee model, maker-fill rate, slippage — all unvalidated. | | **POSITION_CAP validated for wrong strategy** | HIGH",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "maker-fill",
+        "position-cap",
+        "biggest",
+        "blind",
+        "spots",
+        "spot",
+        "severity",
+        "why"
+      ]
+    },
+    "memory:memory/2026-04-27.md:329:332": {
+      "key": "memory:memory/2026-04-27.md:329:332",
+      "path": "memory/2026-04-27.md",
+      "startLine": 329,
+      "endLine": 332,
+      "source": "memory",
+      "snippet": "Biggest Blind Spots: | **S8 Donchian genuinely untested** | HIGH | Entry signal space unexplored. Biggest potential upside. | | **Walk-forward Sharpe 5.46 vs equity 1.29** | MEDIUM | Misreporting risk if 5.46 used in external communications. Internal ranking only. | | **Documenta",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "walk-forward",
+        "5.46",
+        "1.29",
+        "biggest",
+        "blind",
+        "spots",
+        "donchian",
+        "genuinely"
+      ]
+    },
+    "memory:memory/2026-04-27.md:339:339": {
+      "key": "memory:memory/2026-04-27.md:339:339",
+      "path": "memory/2026-04-27.md",
+      "startLine": 339,
+      "endLine": 339,
+      "source": "memory",
+      "snippet": "Donchian Entry (S8 — genuinely untested): Uses `highest(high)` breakout, not `max(close,high)`. Fewer, potentially higher-quality signals. Original 1983 Turtle entry. Test on Base5 (6 windows) with Turtle ATR(24,2.0) as sole exit.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "higher-quality",
+        "2.0",
+        "donchian",
+        "entry",
+        "genuinely",
+        "untested",
+        "uses",
+        "highest"
+      ]
+    },
+    "memory:memory/2026-04-27.md:342:342": {
+      "key": "memory:memory/2026-04-27.md:342:342",
+      "path": "memory/2026-04-27.md",
+      "startLine": 342,
+      "endLine": 342,
+      "source": "memory",
+      "snippet": "Regime-Adaptive EP (genuinely untested): If 21-bar ATR percentile rank > 70th (trending) → EP=21. If < 30th (chop) → EP=28 or Donchian entry. Adapts entry threshold, not strategy. Different mechanism from all failed approaches (which all tried overlays/exits/position sizing).",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "regime-adaptive",
+        "21-bar",
+        "overlays/exits/position",
+        "regime",
+        "adaptive",
+        "genuinely",
+        "untested",
+        "bar"
+      ]
+    },
+    "memory:memory/2026-04-27.md:345:345": {
+      "key": "memory:memory/2026-04-27.md:345:345",
+      "path": "memory/2026-04-27.md",
+      "startLine": 345,
+      "endLine": 345,
+      "source": "memory",
+      "snippet": "ATR-Rank Conditional Entry Filter (NEW — genuinely untested): Instead of a fixed ATR entry multiplier (failed at all values), use a percentile-rank threshold: only enter if current ATR is above the 60th percentile of its 252-bar history. High ATR = high volatility = trending = va",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "atr-rank",
+        "percentile-rank",
+        "252-bar",
+        "atr",
+        "rank",
+        "conditional",
+        "entry",
+        "filter"
+      ]
+    },
+    "memory:memory/2026-04-27.md:351:351": {
+      "key": "memory:memory/2026-04-27.md:351:351",
+      "path": "memory/2026-04-27.md",
+      "startLine": 351,
+      "endLine": 351,
+      "source": "memory",
+      "snippet": "Research Loop Status: **Status: STALLED — live testnet is the only thing that matters**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "research",
+        "loop",
+        "status",
+        "stalled",
+        "live",
+        "testnet",
+        "only",
+        "thing"
+      ]
+    },
+    "memory:memory/2026-04-27.md:353:353": {
+      "key": "memory:memory/2026-04-27.md:353:353",
+      "path": "memory/2026-04-27.md",
+      "startLine": 353,
+      "endLine": 353,
+      "source": "memory",
+      "snippet": "Research Loop Status: The research loop cannot advance meaningfully until live testnet works because:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "research",
+        "loop",
+        "status",
+        "cannot",
+        "advance",
+        "meaningfully",
+        "until",
+        "live"
+      ]
+    },
+    "memory:memory/2026-04-27.md:354:357": {
+      "key": "memory:memory/2026-04-27.md:354:357",
+      "path": "memory/2026-04-27.md",
+      "startLine": 354,
+      "endLine": 357,
+      "source": "memory",
+      "snippet": "Research Loop Status: All metrics are upper bounds (no live validation); Fee model is unvalidated (maker fill rate unknown in live conditions); Execution path (limit order at bar close) is unvalidated; Every \"next step\" in the research agenda is secondary to getting live data",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "research",
+        "loop",
+        "status",
+        "all",
+        "metrics",
+        "upper",
+        "bounds",
+        "live"
+      ]
+    },
+    "memory:memory/2026-04-27.md:359:359": {
+      "key": "memory:memory/2026-04-27.md:359:359",
+      "path": "memory/2026-04-27.md",
+      "startLine": 359,
+      "endLine": 359,
+      "source": "memory",
+      "snippet": "Research Loop Status: The three unbuilt ideas (Donchian, Regime-Adaptive EP, ATR-rank filter) are genuine research opportunities but none of them change the fundamental constraint: the project needs live market data to make forward progress.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "regime-adaptive",
+        "atr-rank",
+        "research",
+        "loop",
+        "status",
+        "three",
+        "unbuilt",
+        "ideas"
+      ]
+    },
+    "memory:memory/2026-04-27.md:361:361": {
+      "key": "memory:memory/2026-04-27.md:361:361",
+      "path": "memory/2026-04-27.md",
+      "startLine": 361,
+      "endLine": 361,
+      "source": "memory",
+      "snippet": "Research Loop Status: **Only unblocker: Noah's Binance testnet API keys.**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "research",
+        "loop",
+        "status",
+        "only",
+        "unblocker",
+        "noah's",
+        "binance",
+        "testnet"
+      ]
+    },
+    "memory:memory/2026-04-27.md:367:370": {
+      "key": "memory:memory/2026-04-27.md:367:370",
+      "path": "memory/2026-04-27.md",
+      "startLine": 367,
+      "endLine": 370,
+      "source": "memory",
+      "snippet": "What I Will Do (Critique Only — No Execution): Update `memory/2026-04-27.md` with this critique; Update `PLAN.md` with corrected research tasks (Donchian first, ATR-rank filter second); Update `strategy-ideas.md` with new ideas and stale entry removal; Commit and push — docs only",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "memory/2026-04-27.md",
+        "plan.md",
+        "atr-rank",
+        "strategy-ideas.md",
+        "what",
+        "will",
+        "critique",
+        "only"
+      ]
+    },
+    "memory:memory/2026-04-27.md:372:372": {
+      "key": "memory:memory/2026-04-27.md:372:372",
+      "path": "memory/2026-04-27.md",
+      "startLine": 372,
+      "endLine": 372,
+      "source": "memory",
+      "snippet": "What I Will Do (Critique Only — No Execution): **I am NOT building the Donchian harness this session.** The instruction was critique-only. Building requires running the walk-forward which is execution. The critique correctly surfaces this as the top priority.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "critique-only",
+        "walk-forward",
+        "what",
+        "will",
+        "critique",
+        "only",
+        "execution",
+        "not"
+      ]
+    },
+    "memory:memory/2026-04-27.md:378:378": {
+      "key": "memory:memory/2026-04-27.md:378:378",
+      "path": "memory/2026-04-27.md",
+      "startLine": 378,
+      "endLine": 378,
+      "source": "memory",
+      "snippet": "Appendix: Updated Understanding of the \"Revert\": The S17 walk-forward (`d68733c5` feat(S6): Turtle-only exit walk-forward — NON-INFERIOR) compared:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "walk-forward",
+        "turtle-only",
+        "non-inferior",
+        "appendix",
+        "updated",
+        "understanding",
+        "revert",
+        "s17"
+      ]
+    },
+    "memory:memory/2026-04-27.md:379:381": {
+      "key": "memory:memory/2026-04-27.md:379:381",
+      "path": "memory/2026-04-27.md",
+      "startLine": 379,
+      "endLine": 381,
+      "source": "memory",
+      "snippet": "Appendix: Updated Understanding of the \"Revert\": Dual-exit (Chandelier + Turtle ATR): 40/54 pass, Sharpe 3.11; Turtle-only (ATR 24, 2.0): 39/54 pass, Sharpe 4.58; Chandelier fires first: 336/336 (100%)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "dual-exit",
+        "40/54",
+        "3.11",
+        "turtle-only",
+        "2.0",
+        "39/54",
+        "4.58",
+        "336/336"
+      ]
+    },
+    "memory:memory/2026-04-27.md:383:383": {
+      "key": "memory:memory/2026-04-27.md:383:383",
+      "path": "memory/2026-04-27.md",
+      "startLine": 383,
+      "endLine": 383,
+      "source": "memory",
+      "snippet": "Appendix: Updated Understanding of the \"Revert\": S17's conclusion: Turtle-only is better (+1.47 Sharpe).",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "turtle-only",
+        "1.47",
+        "appendix",
+        "updated",
+        "understanding",
+        "revert",
+        "s17",
+        "conclusion"
+      ]
+    },
+    "memory:memory/2026-04-27.md:385:385": {
+      "key": "memory:memory/2026-04-27.md:385:385",
+      "path": "memory/2026-04-27.md",
+      "startLine": 385,
+      "endLine": 385,
+      "source": "memory",
+      "snippet": "Appendix: Updated Understanding of the \"Revert\": The production bot (`src/live/bot.rs`) uses `check_dual_exit` which computes BOTH Chandelier and Turtle ATR stops and exits on whichever is tighter. This is NOT the same as Turtle-only.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "src/live/bot.rs",
+        "check-dual-exit",
+        "turtle-only",
+        "appendix",
+        "updated",
+        "understanding",
+        "revert",
+        "production"
+      ]
+    },
+    "memory:memory/2026-04-27.md:387:387": {
+      "key": "memory:memory/2026-04-27.md:387:387",
+      "path": "memory/2026-04-27.md",
+      "startLine": 387,
+      "endLine": 387,
+      "source": "memory",
+      "snippet": "Appendix: Updated Understanding of the \"Revert\": The POSITION_CAP harness used Turtle-only exit logic (no Chandelier). So CAP=3 is validated for Turtle-only, not for the dual-exit that the production bot actually runs.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "position-cap",
+        "turtle-only",
+        "dual-exit",
+        "appendix",
+        "updated",
+        "understanding",
+        "revert",
+        "harness"
+      ]
+    },
+    "memory:memory/2026-04-27.md:389:389": {
+      "key": "memory:memory/2026-04-27.md:389:389",
+      "path": "memory/2026-04-27.md",
+      "startLine": 389,
+      "endLine": 389,
+      "source": "memory",
+      "snippet": "Appendix: Updated Understanding of the \"Revert\": This doesn't mean CAP=3 is wrong for dual-exit — it likely holds, because in dual-exit the Turtle ATR is the tighter stop most of the time. But it's an untested assumption.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "dual-exit",
+        "appendix",
+        "updated",
+        "understanding",
+        "revert",
+        "doesn't",
+        "mean",
+        "cap"
+      ]
+    },
+    "memory:memory/2026-04-27.md:394:396": {
+      "key": "memory:memory/2026-04-27.md:394:396",
+      "path": "memory/2026-04-27.md",
+      "startLine": 394,
+      "endLine": 396,
+      "source": "memory",
+      "snippet": "[22:15 UTC] Cron — Daily Progress Report (2026-04-27 Evening): **Session:** 2026-04-27 22:15 UTC | Kira cron — daily progress report **Git:** `49feb2e4` (already up to date). No new commits were pending. **Discord:** No new messages from Noah. Channel history shows only prior cha",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "utc",
+        "cron",
+        "progress",
+        "report",
+        "evening",
+        "kira",
+        "git",
+        "49feb2e4"
+      ]
+    },
+    "memory:memory/2026-04-27.md:402:402": {
+      "key": "memory:memory/2026-04-27.md:402:402",
+      "path": "memory/2026-04-27.md",
+      "startLine": 402,
+      "endLine": 402,
+      "source": "memory",
+      "snippet": "Equity Tracking Results: Ran three tracking suites:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "equity",
+        "tracking",
+        "results",
+        "ran",
+        "three",
+        "suites"
+      ]
+    },
+    "memory:memory/2026-04-27.md:403:404": {
+      "key": "memory:memory/2026-04-27.md:403:404",
+      "path": "memory/2026-04-27.md",
+      "startLine": 403,
+      "endLine": 404,
+      "source": "memory",
+      "snippet": "Equity Tracking Results: `hall_of_fame_validator` — confirmed strategies still producing valid signals; `progress_equity_curves` — full history equity + Sharpe",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "hall-of-fame-validator",
+        "progress-equity-curves",
+        "equity",
+        "tracking",
+        "results",
+        "confirmed",
+        "strategies",
+        "still"
+      ]
+    },
+    "memory:memory/2026-04-27.md:406:406": {
+      "key": "memory:memory/2026-04-27.md:406:406",
+      "path": "memory/2026-04-27.md",
+      "startLine": 406,
+      "endLine": 406,
+      "source": "memory",
+      "snippet": "Equity Tracking Results: **Results (2026-04-27, 2085 days):**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "equity",
+        "tracking",
+        "results",
+        "days"
+      ]
+    },
+    "memory:memory/2026-04-27.md:408:411": {
+      "key": "memory:memory/2026-04-27.md:408:411",
+      "path": "memory/2026-04-27.md",
+      "startLine": 408,
+      "endLine": 411,
+      "source": "memory",
+      "snippet": "Equity Tracking Results: | Strategy | Equity | Sharpe | Status | |----------|--------|--------|--------| | Turtle+Chandelier | 223.3x | 1.91 | ✅ Active | | DDBudget 3-Sleeve | 64.0x | 7.32 | ✅ Validated |",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "223.3x",
+        "1.91",
+        "3-sleeve",
+        "64.0x",
+        "7.32",
+        "equity",
+        "tracking",
+        "results"
+      ]
+    },
+    "memory:memory/2026-04-27.md:412:413": {
+      "key": "memory:memory/2026-04-27.md:412:413",
+      "path": "memory/2026-04-27.md",
+      "startLine": 412,
+      "endLine": 413,
+      "source": "memory",
+      "snippet": "Equity Tracking Results: | A/D Momentum | 40.3x | 3.61 | ✅ Validated | | FactorSmallByDV | 14.8x | 1.97 | ✅ Validated |",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "a/d",
+        "40.3x",
+        "3.61",
+        "14.8x",
+        "1.97",
+        "equity",
+        "tracking",
+        "results"
+      ]
+    },
+    "memory:memory/2026-04-27.md:415:415": {
+      "key": "memory:memory/2026-04-27.md:415:415",
+      "path": "memory/2026-04-27.md",
+      "startLine": 415,
+      "endLine": 415,
+      "source": "memory",
+      "snippet": "Equity Tracking Results: **vs prior session (2026-04-26):**",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "equity",
+        "tracking",
+        "results",
+        "prior"
+      ]
+    },
+    "memory:memory/2026-04-27.md:416:419": {
+      "key": "memory:memory/2026-04-27.md:416:419",
+      "path": "memory/2026-04-27.md",
+      "startLine": 416,
+      "endLine": 419,
+      "source": "memory",
+      "snippet": "Equity Tracking Results: Turtle+Chandelier: 229.1x → 223.3x (-5.8x, -2.5%) — slip from ongoing 2026 bear; DDBudget: 64.0x → 64.0x (unchanged — same harness); A/D Momentum: 40.3x → 40.3x (unchanged); FactorSmallByDV: 14.8x → 14.8x (unchanged)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "229.1x",
+        "223.3x",
+        "5.8x",
+        "2.5",
+        "64.0x",
+        "a/d",
+        "40.3x",
+        "14.8x"
+      ]
+    },
+    "memory:memory/2026-04-27.md:421:421": {
+      "key": "memory:memory/2026-04-27.md:421:421",
+      "path": "memory/2026-04-27.md",
+      "startLine": 421,
+      "endLine": 421,
+      "source": "memory",
+      "snippet": "Equity Tracking Results: **Progress verdict: STAGNATING.** 2026 bear market continues to drag Turtle+Chandelier. A/D and DDBudget appear more resilient. No new research run today — critique-only session per cron instructions.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "a/d",
+        "critique-only",
+        "equity",
+        "tracking",
+        "results",
+        "progress",
+        "verdict",
+        "stagnating"
+      ]
+    },
+    "memory:memory/2026-04-27.md:423:423": {
+      "key": "memory:memory/2026-04-27.md:423:423",
+      "path": "memory/2026-04-27.md",
+      "startLine": 423,
+      "endLine": 423,
+      "source": "memory",
+      "snippet": "Equity Tracking Results: **Best strategy by Sharpe:** DDBudget 3-Sleeve (7.32 daily Sharpe) — but this is a walk-forward metric not directly comparable to equity Sharpe.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "3-sleeve",
+        "7.32",
+        "walk-forward",
+        "equity",
+        "tracking",
+        "results",
+        "best",
+        "strategy"
+      ]
+    },
+    "memory:memory/2026-04-27.md:425:425": {
+      "key": "memory:memory/2026-04-27.md:425:425",
+      "path": "memory/2026-04-27.md",
+      "startLine": 425,
+      "endLine": 425,
+      "source": "memory",
+      "snippet": "Equity Tracking Results: **Best equity growth:** Turtle+Chandelier (223.3x) — still the best absolute return despite 2026 drag.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "223.3x",
+        "equity",
+        "tracking",
+        "results",
+        "best",
+        "growth",
+        "turtle",
+        "chandelier"
+      ]
+    },
+    "memory:memory/2026-04-27.md:427:427": {
+      "key": "memory:memory/2026-04-27.md:427:427",
+      "path": "memory/2026-04-27.md",
+      "startLine": 427,
+      "endLine": 427,
+      "source": "memory",
+      "snippet": "Equity Tracking Results: **Progress trend:** No improvement. 2026 YTD continues to be a headwind. All metrics remain simulation upper bounds.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "equity",
+        "tracking",
+        "results",
+        "progress",
+        "trend",
+        "improvement",
+        "ytd",
+        "continues"
+      ]
+    },
+    "memory:memory/2026-04-27.md:432:435": {
+      "key": "memory:memory/2026-04-27.md:432:435",
+      "path": "memory/2026-04-27.md",
+      "startLine": 432,
+      "endLine": 435,
+      "source": "memory",
+      "snippet": "Actions Taken: Generated `charts/progress_equity_curves_daily.png`; Updated `reports/daily_progress.csv` with 2026-04-27 data; Wrote this session log to `memory/2026-04-27.md`; No git changes needed (repo was already up to date)",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "reports/daily-progress.csv",
+        "memory/2026-04-27.md",
+        "actions",
+        "taken",
+        "generated",
+        "charts",
+        "progress-equity-curves-daily.png",
+        "updated"
+      ]
+    },
+    "memory:memory/2026-04-27.md:438:438": {
+      "key": "memory:memory/2026-04-27.md:438:438",
+      "path": "memory/2026-04-27.md",
+      "startLine": 438,
+      "endLine": 438,
+      "source": "memory",
+      "snippet": "Discord Report: Posted to #krypto: \"📈 Turtle+Chandelier 223.3x (Sharpe 1.91). DDBudget 3-Sleeve best Sharpe at 7.32. No new signals. 2026 bear continues to drag — progress stagnating.\"",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "223.3x",
+        "1.91",
+        "3-sleeve",
+        "7.32",
+        "discord",
+        "report",
+        "posted",
+        "krypto"
+      ]
+    },
+    "memory:memory/2026-04-27.md:442:442": {
+      "key": "memory:memory/2026-04-27.md:442:442",
+      "path": "memory/2026-04-27.md",
+      "startLine": 442,
+      "endLine": 442,
+      "source": "memory",
+      "snippet": "[19:29 UTC] Cron — POSITION_CAP re-validation under current Turtle-only live logic: **Mission:** Strip assumptions, but on the current validated strategy — not stale Turtle+Chandelier history.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "position-cap",
+        "re-validation",
+        "turtle-only",
+        "utc",
+        "cron",
+        "validation",
+        "under",
+        "current"
+      ]
+    },
+    "memory:memory/2026-04-27.md:445:445": {
+      "key": "memory:memory/2026-04-27.md:445:445",
+      "path": "memory/2026-04-27.md",
+      "startLine": 445,
+      "endLine": 445,
+      "source": "memory",
+      "snippet": "What I audited: Reviewed hardcoded live-family params in:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "live-family",
+        "what",
+        "audited",
+        "reviewed",
+        "hardcoded",
+        "live",
+        "family",
+        "params"
+      ]
+    },
+    "memory:memory/2026-04-27.md:446:449": {
+      "key": "memory:memory/2026-04-27.md:446:449",
+      "path": "memory/2026-04-27.md",
+      "startLine": 446,
+      "endLine": 449,
+      "source": "memory",
+      "snippet": "What I audited: `src/live/config.rs`; `src/live/bot.rs`; `examples/live_turtle_chandelier.rs`; `examples/turtle_chandelier_walkforward.rs`",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "src/live/config.rs",
+        "src/live/bot.rs",
+        "what",
+        "audited",
+        "src",
+        "live",
+        "config.rs",
+        "bot.rs"
+      ]
+    },
+    "memory:memory/2026-04-27.md:450:451": {
+      "key": "memory:memory/2026-04-27.md:450:451",
+      "path": "memory/2026-04-27.md",
+      "startLine": 450,
+      "endLine": 451,
+      "source": "memory",
+      "snippet": "What I audited: `examples/s6_turtle_only_exit_wf.rs`; `src/algo/strategies.rs`",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "src/algo/strategies.rs",
+        "what",
+        "audited",
+        "examples",
+        "s6-turtle-only-exit-wf.rs",
+        "src",
+        "algo",
+        "strategies.rs"
+      ]
+    },
+    "memory:memory/2026-04-27.md:453:453": {
+      "key": "memory:memory/2026-04-27.md:453:453",
+      "path": "memory/2026-04-27.md",
+      "startLine": 453,
+      "endLine": 453,
+      "source": "memory",
+      "snippet": "What I audited: Current live-family assumptions found: `EP=21`, `ATR_P=24`, `ATR_M=2.0`, `ATR_ENTRY_MULT=0.00`, `HOLD_MAX=12`, `POSITION_CAP=3`, `FRESHNESS_COOLDOWN=0`, plus harness-only `VOL_LOOKBACK=9` and `MIN_TRADES=3`.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "live-family",
+        "atr-p",
+        "atr-m",
+        "2.0",
+        "atr-entry-mult",
+        "0.00",
+        "hold-max",
+        "position-cap"
+      ]
+    },
+    "memory:memory/2026-04-27.md:456:456": {
+      "key": "memory:memory/2026-04-27.md:456:456",
+      "path": "memory/2026-04-27.md",
+      "startLine": 456,
+      "endLine": 456,
+      "source": "memory",
+      "snippet": "Parameter chosen: **POSITION_CAP** — prior CAP sweeps were done before Turtle-only exit became the live production logic.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "position-cap",
+        "turtle-only",
+        "parameter",
+        "chosen",
+        "prior",
+        "cap",
+        "sweeps",
+        "done"
+      ]
+    },
+    "memory:memory/2026-04-27.md:459:459": {
+      "key": "memory:memory/2026-04-27.md:459:459",
+      "path": "memory/2026-04-27.md",
+      "startLine": 459,
+      "endLine": 459,
+      "source": "memory",
+      "snippet": "Harness / charting work: Built/updated:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "built/updated",
+        "harness",
+        "charting",
+        "built",
+        "updated"
+      ]
+    },
+    "memory:memory/2026-04-27.md:460:461": {
+      "key": "memory:memory/2026-04-27.md:460:461",
+      "path": "memory/2026-04-27.md",
+      "startLine": 460,
+      "endLine": 461,
+      "source": "memory",
+      "snippet": "Harness / charting work: `examples/position_cap_hyperopt.rs`; `charts/plot_position_cap_comparison.py`",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "harness",
+        "charting",
+        "examples",
+        "position-cap-hyperopt.rs",
+        "charts",
+        "plot-position-cap-comparison.py"
+      ]
+    },
+    "memory:memory/2026-04-27.md:463:463": {
+      "key": "memory:memory/2026-04-27.md:463:463",
+      "path": "memory/2026-04-27.md",
+      "startLine": 463,
+      "endLine": 463,
+      "source": "memory",
+      "snippet": "Harness / charting work: New exports:",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.62,
+      "maxScore": 0.62,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "6c24d11cf4d7"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "harness",
+        "charting",
+        "new",
+        "exports"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-27.txt:2:2": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-27.txt:2:2",
+      "path": "memory/.dreams/session-corpus/2026-04-27.txt",
+      "startLine": 2,
+      "endLine": 2,
+      "source": "memory",
+      "snippet": "Assistant: 📊 Daily Progress Report — 2026-04-27 Best Sharpe: DDBudget 3-Sleeve @ 7.32 | Turtle+Chandelier best equity @ 223.3x (Sharpe 1.91) Progress: Stagnating — 2026 bear continues to drag. No new signals. All metrics remain simulation upper bounds.",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "e29ad1ab29b1"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "3-sleeve",
+        "7.32",
+        "223.3x",
+        "1.91",
+        "progress",
+        "report",
+        "best",
+        "sharpe"
+      ]
+    },
+    "memory:memory/.dreams/session-corpus/2026-04-27.txt:3:3": {
+      "key": "memory:memory/.dreams/session-corpus/2026-04-27.txt:3:3",
+      "path": "memory/.dreams/session-corpus/2026-04-27.txt",
+      "startLine": 3,
+      "endLine": 3,
+      "source": "memory",
+      "snippet": "Assistant: comparison_chart.png",
+      "recallCount": 0,
+      "dailyCount": 1,
+      "groundedCount": 0,
+      "totalScore": 0.58,
+      "maxScore": 0.58,
+      "firstRecalledAt": "2026-04-28T10:29:25.588Z",
+      "lastRecalledAt": "2026-04-28T10:29:25.588Z",
+      "queryHashes": [
+        "e29ad1ab29b1"
+      ],
+      "recallDays": [
+        "2026-04-28"
+      ],
+      "conceptTags": [
+        "comparison-chart.png"
       ]
     }
   }

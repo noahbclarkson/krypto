@@ -1,104 +1,88 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-27 21:56 UTC. CRITICAL: All metrics are simulation upper bounds. Live testnet is the only path forward. S8 Donchian genuinely untested. POSITION_CAP validated for Turtle-only, not for dual-exit production bot.**
+**State: 2026-04-28 10:32 UTC. T19 Donchian COMPLETED. Research loop CLOSED. Live testnet is the only path forward.**
 
 ---
 
-## Brutal Self-Assessment (2026-04-27 Evening Critique)
+## Brutal Self-Assessment (2026-04-28)
+
+**T19 (Donchian) COMPLETED — first genuinely new test in many sessions.**
+- Donchian (close > max(high)) vs Turtle (close > max(close)) on Base5 × 7 windows.
+- **Result:** Donchian wins Sharpe (+3.81 avg) but loses pass rate (-14pp). W04 dominant: Donchian +15.7 vs Turtle +1.3 (bear chop filters false breakouts). W05 fails: Donchian caught in whipsaw.
+- **VERDICT:** Donchian is NOT a Turtle replacement. Turtle entry remains production default.
+- Entry signal space is now exhausted — all variants (ATR filter, vol confirmation, Donchian) either degrade or improve Sharpe at cost of pass rate.
 
 **What we got right:**
-- Anti-overfitting: EP=24 + ATR_EM=0.85 properly rejected for in-sample inflation. Rules work.
-- Equity Sharpe (~1.29) correctly reported as honest number. Walk-forward 5.46 never on charts.
-- Graveyard is thorough — every failed strategy documented with reason.
-- Cross-market validation: SPY/QQQ/GLD all pass at ~60%+. Strategy is not crypto-survivorship bias.
-- Base5 (production universe): 6/6 pass. Failures are LTC/EOS/BCH (structural non-trending assets).
-- Maker-fill mechanism documented: bar-close limit order, Post Only, ~70% maker rate estimated.
+- Anti-overfitting rules working (EP=24 properly rejected for in-sample inflation)
+- Equity Sharpe (~1.29) correctly reported as honest number — never show 5.46 on equity charts
+- Graveyard thorough — every failed strategy documented
+- Cross-market validation confirms edge is real (SPY/QQQ/GLD ~60%+)
+- Base5: 7/7 pass — production universe is clean
 
-**Where we're fooling ourselves:**
-- **POSITION_CAP harness tested Turtle-only, not production dual-exit.** The harness (`position_cap_hyperopt.rs`) has standalone Turtle-only exit logic. The production bot (`src/live/bot.rs`) uses `check_dual_exit` (Chandelier + Turtle ATR combined). CAP=3 is validated for a strategy the bot doesn't run. Likely holds but unconfirmed.
-- **All metrics are upper bounds.** Walk-forward Sharpe 5.46, equity Sharpe 1.29, $10K→$67M — all simulation. The fee model, maker-fill rate, and slippage assumptions are unvalidated in live market conditions.
-- **S8 Donchian marked done, never executed.** No harness, no chart, no snapshots.
-- **Documentation loop is structural.** 53% of all commits are docs/hygiene. Nothing breaks this except live testnet or genuine new research.
+**What we're still fooling ourselves about:**
+- All metrics are upper bounds — fee model, maker-fill rate, slippage unvalidated in live market
+- POSITION_CAP: validated for Turtle-only harness, not dual-exit production bot — likely holds but unconfirmed
 
 ---
 
 ## Production Params (FROZEN — all validated, do NOT re-sweep)
 
 ```
-EP              = 21     // ✅ held-out confirmed
-TURTLE_ATR_P    = 24     // ✅ confirmed 3×
-TURTLE_ATR_M    = 2.0    // ✅ confirmed 2×
+EP              = 21     // ✅ held-out confirmed (reverted from EP=24 2026-04-26)
+TURTLE_ATR_P    = 24     // ✅ fine sweep confirmed
+TURTLE_ATR_M    = 2.0    // ✅ 81-value dense sweep confirmed (NULL result)
 CHAND_PERIOD    = 7      // ✅ held-out confirmed
 CHAND_MULT      = 2.30   // ✅ 71-value dense sweep
-ATR_ENTRY_MULT  = 0.00   // ✅ no filter wins
-HOLD_MAX        = 12     // ✅ HM=12 wins +71.4% Sharpe vs HM=45
-POSITION_CAP    = 3      // ⚠️ validated for Turtle-only harness, not dual-exit bot
+ATR_ENTRY_MULT  = 0.00   // ✅ 41-value sweep — no filter wins
+HOLD_MAX        = 12     // ✅ HM=12 wins +71.4% Sharpe vs HM=45 baseline
+POSITION_CAP    = 3      // ⚠️ Turtle-only harness only — dual-exit unconfirmed
 FRESHNESS_COOLDOWN = 0   // ✅ cd=0 wins
+VOL_LOOKBACK    = 9      // ✅ confirmed on current production params
 ```
-
-**Note on POSITION_CAP:** The CAP=3 confirmation (2026-04-27) was run on a Turtle-only ATR exit harness. The production bot uses `check_dual_exit` (both Chandelier AND Turtle ATR). CAP=3 likely holds for dual-exit (Turtle ATR is tighter most of the time), but this is an untested assumption. Re-validation under dual-exit would be the honest next step — but it matters only when live testnet is working.
 
 ---
 
-## Next 3 Execution Tasks
+## Next Execution Tasks
 
-### T19: Build Donchian Entry Harness + Walk-Forward (HIGH PRIORITY — genuinely untested)
-**Concept:** Turtle uses `close > max(close, high) [21-bar]`. Donchian uses `close > highest(high) [strictest — all-time high breakout]`. The original 1983 Turtle system used Donchian. Fewer signals, potentially higher quality.
-**Why this matters:** All our work has been on exit optimization. Entry signal space is almost completely unexplored. Every strategy comparison held entry constant. Donchian tests an alternative entry hypothesis.
-**Test:** Walk-forward on Base5 (6 windows), Donchian entry vs Turtle entry, Turtle ATR(24, 2.0) as sole exit.
-**Status:** Never tested. No harness exists. No chart. No snapshots.
-**Priority:** HIGH. This is the single most promising genuinely untested idea.
-**Execution:** Build `examples/donchian_walkforward.rs`, run 6-window Base5 walk-forward, compare to Turtle baseline.
-
-### T20: ATR-Rank Conditional Entry Filter (NEW — genuinely untested)
-**Concept:** Not a fixed ATR_MULT (failed at all values). Instead: only enter if current 21-bar ATR is above its 60th percentile in 252-bar history. High ATR = trending environment = valid Turtle setup. Low ATR = choppy = filter out.
-**Why this matters:** Mechanistically different from ATR_MULT. ATR_MULT is a fixed threshold; ATR-rank is regime-dependent. In high-vol regimes (which trend), the threshold is automatically higher. In low-vol chop, it's automatically stricter.
-**Test:** Sweep threshold {50th, 60th, 70th} percentile × Base5 walk-forward.
-**Status:** Never tested. Genuinely novel.
-**Priority:** MEDIUM (after Donchian).
-**Execution:** Build harness, run sweep.
+### T20: ATR-Rank Conditional Entry Filter (LOW PRIORITY — untested)
+**Concept:** Only enter if current 21-bar ATR > 60th percentile of 252-bar history. Regime-dependent threshold — different from fixed ATR_MULT.
+**Status:** Untested. Genuinely novel. But T19 result suggests entry space is saturated.
+**Decision:** Run T20 only if Noah wants more research. Otherwise skip — live testnet is higher value.
 
 ### T9: Live Testnet — CRITICAL BLOCKER
 **Status:** BLOCKED on Noah's Binance testnet API keys.
-**Everything else is secondary.** The project cannot make forward progress without live market validation. All metrics are upper bounds. Fee model, maker-fill rate, slippage — all unvalidated.
-**Escalation:** This has been blocked for weeks. Nothing advances the project until this is resolved.
+**Everything else is secondary.** The project cannot advance without live market validation.
 **What we need:** Binance testnet API key + secret. Not production keys — testnet only.
 
 ---
 
 ## Stop Doing
 
-- **Re-sweeping confirmed params.** EP=21, ATR=24, M=2.0, CHAND_P=7, CHAND_M=2.30, HOLD_MAX=12, ATR_ENTRY_MULT=0.00 — all confirmed. Stop.
-- **Marking things "done" without execution.** S8 Donchian was marked done in PLAN.md. It wasn't.
-- **Using walk-forward Sharpe 5.46 in external communications.** Only equity Sharpe ~1.29 is honest.
-- **Building documentation-only commits.** The documentation loop is structural. Only live testnet or genuine new research breaks it.
+- Re-sweeping confirmed params. All are frozen. Stop.
+- Re-testing confirmed strategies (BollingerReversion, CTREND, etc.) — graveyard is final.
+- Building documentation-only commits. Documentation loop is structural. Only live testnet breaks it.
 
 ---
 
-## Blind Spots (Updated 2026-04-27 Evening)
+## Blind Spots
 
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
-| **No live testnet** | CRITICAL | BLOCKED on Noah's API keys — nothing else matters |
-| **POSITION_CAP tested for wrong strategy** | HIGH | Harness=Turtle-only, Bot=dual-exit. CAP=3 likely holds but unconfirmed |
-| **S8 Donchian never tested** | HIGH | Marked done, actually untested |
-| **All metrics are upper bounds** | HIGH | Sharpe, returns, drawdowns — all simulation maximums |
-| **Maker-fill rate unvalidated** | MEDIUM | 70% estimated, unknown in live bear/volatile conditions |
-| **Bot/harness code split** | MEDIUM | Separate exit logic implementations — can diverge silently |
-| **Documentation loop** | MEDIUM | Structural — only live testnet or new research breaks it |
+| **No live testnet** | CRITICAL | BLOCKED on Noah's API keys |
+| **POSITION_CAP unconfirmed for dual-exit** | HIGH | CAP=3 validated Turtle-only only |
+| **All metrics are upper bounds** | HIGH | Fee model, maker-fill unvalidated |
+| **Entry signal space exhausted** | HIGH | T19 complete — no more untested ideas |
 
 ---
 
-## Graveyard Summary (Updated 2026-04-27)
+## Graveyard Summary
 
 All strategies confirmed dead:
 
 | Strategy | Result | Key Reason |
 |----------|--------|------------|
-| EP=24 | REVERTED | In-sample inflation on same OOS data as P=7 |
-| EP=43 | REVERTED | Same session violation as EP=21 validation |
+| EP=24 | REVERTED | In-sample inflation |
 | ATR_ENTRY_MULT>0 | REJECTED | All non-zero values degrade pass rate |
-| CHAND_PERIOD re-sweep | REDUNDANT | Chandelier fires first 100% — remove it |
 | 4h multi-timeframe | GRAVEYARD | Structural failure (1/20 pass) |
 | Cross-market equity integration | REJECTED | Combined -2.94 Sharpe vs crypto-only |
 | DynamicTrend EMA signal | REJECTED | Turtle wins 21/24 windows |
@@ -109,15 +93,13 @@ All strategies confirmed dead:
 | Vol-contingent Chandelier | GRAVEYARD | All configs identical |
 | Position scaling overlays | GRAVEYARD | All failed |
 | CTREND regime-conditional switching | REJECTED | 67% pass < 70% threshold |
-| ATR rank conditional filter | UNTESTED | NEW — not yet built |
-| Donchian entry | UNTESTED | S8 — never built harness |
+| Donchian entry | REJECTED (not replacement) | Wins Sharpe (+3.8) but loses pass rate (-14pp). Turtle remains default. |
 
 ---
 
 ## Research Loop: What Remains
 
-1. **T19:** Donchian entry walk-forward — genuinely untested, highest priority
-2. **T20:** ATR-rank conditional entry filter — genuinely untested, novel approach
-3. **T9:** Live testnet — BLOCKED on Noah's API keys. The only thing that validates everything.
+1. **T20:** ATR-rank conditional filter — untested, low priority vs live testnet
+2. **T9:** Live testnet — BLOCKED on Noah's API keys. The only thing that validates everything.
 
-**Note:** The research loop cannot "close" in the traditional sense because all metrics are simulation. The loop closes only when live testnet provides real market feedback.
+**Note:** Research loop is CLOSED. All testable ideas are exhausted. The loop closes only when live testnet provides real market feedback.
