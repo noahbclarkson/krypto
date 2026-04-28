@@ -333,8 +333,9 @@ fn main() -> Result<()> {
         println!("  ⚠  Without --live flag the bot stays in dry_run mode (no real orders).");
         println!("  ⚠  With --live flag it will place real testnet orders.");
         println!();
-        println!("  Signal: Turtle breakout (EP={}) → Chandelier({},{}) + ATR({},{}) dual exit.",
-                 EP, CHAND_P, CHAND_M, ATR_P, ATR_M);
+        println!("  Signal: Turtle breakout (EP={}) → Turtle ATR({},{}) sole exit.\n"
+                 "  (Chandelier params in config are stored but unused by live bot — see bot.rs)",
+                 EP, ATR_P, ATR_M);
     } else {
         println!();
         println!("  {}", "─ Launching LIVE bot (testnet orders) ─".bold().red());
