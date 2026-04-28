@@ -21,6 +21,7 @@
 - **Execution Realism (2026-04-13):** Turtle+Chandelier ATR=25 DUAL_EXIT survives realistic execution costs. Fee model: 0.04% taker + 0.01% slippage per side. Applied to 9 universes × 6 windows (54 runs) at trade-count milestones. Sharpe degradation: 22% (10bp RT) → 33% (15bp RT). Fee-adjusted walk-forward Sharpe ≈ 3.1–3.7 (if gross Sharpe 4.68 is accurate). Pass rate sh>0: 91% gross → 89% conservative. LowVolume5 (LTC/EOS/BCH) fragile under fee pressure (only 4/6 pass at 15bp). Strategy is viable for live paper trading on liquid assets (BTC/ETH/high-caps). Milestone-based Sharpe not directly comparable to daily-return Sharpe; the relative 22-33% degradation is the reliable metric. See `charts/execution_realism_analysis.py`, `charts/execution_realism_turtle_chandelier.png`.
 
 ## Known Issues
+- **Deployment-truth gap (2026-04-27):** Session notes claimed Chandelier had been removed from the live bot, but `src/live/bot.rs` still had stale dual-exit logic. Meta-lesson: do not trust prior summaries on deploy state — verify the actual live code path before declaring research conclusions "deployed".
 - `binance-rs-async` v1.3.3 throws Future-Incompat warnings; we need to monitor this.
 - `ddbudget_3sleeve_walkforward` has compilation warnings (unused indicators/functions) and may contain similar look-ahead EMA/SMA calculation flaws that need auditing.
 - **Disk space**: VPS is frequently at 98%+. The `target/debug/` directory was 21GB. Use `--profile sweep` (not debug) and periodically clean `target/debug/`.
@@ -462,3 +463,14 @@ All values MT ∈ {1,2,3,4,5,6,7,8,10} produce IDENTICAL results:
 **Files:** `examples/min_trades_extensive_sweep.rs`, `snapshots/min_trades_sweep.csv`, `snapshots/min_trades_equity.csv`, `snapshots/min_trades_summary.md`
 
 **Next candidates:** TURTLE_ATR_MULT (coarse-swept only at step=0.5), CHAND_PERIOD (finer sweep 5-15 step 1), HOLD_MAX (finer sweep {8..24}), POSITION_CAP (finer {2,3,4}).
+
+## 2026-04-27 — POSITION_CAP Re-Validation Under Turtle-Only Live Logic
+- **Parameter:** `POSITION_CAP` — max concurrent positions.
+- **Why re-run:** Prior CAP sweep pre-dated the current Turtle-only live exit. Needed a fresh validation on the actual live strategy.
+- **Range:** Extensive full integer sweep **CAP=1..10** across **9 universes × 6 walk-forward windows = 54 OOS windows**.
+- **Selection rule:** Robustness-first — pass rate > positive universes > average Sharpe > lower drawdown. **Not chosen by raw return alone.**
+- **Winner: `CAP=3` remains the production default.** Metrics: **72.2% pass, avg Sharpe 4.58, avg return 148.9%, avg DD 32.9%, 9/9 universes positive.**
+- CAP=4-5 produced higher raw return but weaker robustness (pass falls to 61.1% / 59.3%, DD rises to ~37%). CAP=2 had slightly higher avg Sharpe (4.81) but lower pass rate (68.5%) and only 8/9 positive universes.
+- CAP≥6 is a confirmed plateau: identical metrics from 6 through 10, so the cap stops binding once it exceeds effective universe width.
+- **Conclusion:** No default change. `POSITION_CAP=3` is the best robustness point for the current Turtle-only production logic.
+- Files: `examples/position_cap_hyperopt.rs`, `snapshots/position_cap_sweep_{summary,detail}.csv`, `snapshots/position_cap_{all,selected}_equity.csv`, `charts/comparison_chart.png`, `memory/hyperopt-2026-04-27.md`.
