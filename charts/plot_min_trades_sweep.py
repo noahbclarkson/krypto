@@ -1,124 +1,81 @@
 #!/usr/bin/env python3
-"""
-MIN_TRADES Sweep Analysis Chart
-Generates: snapshots/min_trades_comparison.png
+"""Plot MIN_TRADES sweep comparison: equity curves for baseline, winner, runnerups."""
 
-Key finding: MIN_TRADES is completely insensitive from 1-10.
-All values produce IDENTICAL equity curves and Sharpe ratios.
-Only MT=20 shows degradation (pass rate 13% vs 69%).
-"""
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
-import numpy as np
+import csv
+import sys
+import os
 
-# Load data
-eq_df   = pd.read_csv('snapshots/min_trades_equity.csv')
-sweep_df = pd.read_csv('snapshots/min_trades_sweep.csv')
+BASE = "/home/ubuntu/.openclaw/workspace-krypto/krypto/snapshots"
+OUT  = "/home/ubuntu/.openclaw/workspace-krypto/krypto/charts/min_trades_sweep_comparison.png"
 
-MT_PLATEAU = [1, 3, 10]  # show these distinct MT lines
-MT_FAIL    = 20           # the one that degrades
+def load_csv(path):
+    bars, eqs = [], []
+    with open(path) as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            bars.append(int(row["bar"]))
+            eqs.append(float(row["equity"]))
+    return bars, eqs
 
-UNIVERSE_COLORS = {
-    'Base5':         '#2196F3',  # blue
-    'NoDOGE':        '#4CAF50',  # green
-    'Legacy4':       '#FF9800',  # orange
-    'Legacy5BNB':    '#9C27B0',  # purple
-    'OldGuardNoBNB': '#F44336',  # red
-    'LargeCaps5':    '#00BCD4',  # cyan
-    'Legacy3':       '#795548',  # brown
-    'LowVolume5':    '#607D8B',  # blue-grey
-    'OldGuard4':     '#E91E63',  # pink
+files = {
+    "MT=3 (baseline)":   "min_trades_baseline_equity.csv",
+    "MT=12 (winner)":     "min_trades_winner_equity.csv",
+    "MT=11 (runnerup)":   "min_trades_runnerup_equity.csv",
 }
 
-fig = plt.figure(figsize=(16, 12))
-fig.suptitle('MIN_TRADES Hyperopt — Extensive Sweep (2026-04-26)\n'
-             'Strategy: Turtle+Chandelier | Walk-Forward: 9 Universes × 6 Windows',
-             fontsize=14, fontweight='bold', y=0.98)
+try:
+    curves = {label: load_csv(os.path.join(BASE, fname)) for label, fname in files.items()}
+except FileNotFoundError as e:
+    print(f"ERROR: {e}")
+    sys.exit(1)
 
-# ── Layout ────────────────────────────────────────────────────────────────────
-# Row 1: Equity curves for MT=1, MT=3, MT=10 (all identical → overlapping)
-# Row 2 left:  Pass rate bar chart by MT value
-# Row 2 right: Sharpe bar chart by MT value
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 
-ax1 = fig.add_subplot(2, 2, 1)   # equity: MT=1
-ax2 = fig.add_subplot(2, 2, 2)   # equity: MT=3
-ax3 = fig.add_subplot(2, 2, 3)   # pass rate bars
-ax4 = fig.add_subplot(2, 2, 4)   # sharpe bars
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10), gridspec_kw={"height_ratios": [3, 1]})
+fig.suptitle("MIN_TRADES Hyperparameter Sweep — Turtle+Chandelier\nMT ∈ [1..13] × Base5 + NoDOGE (walk-forward)", fontsize=14, fontweight="bold")
 
-# ── Equity curves (per universe, log scale) ───────────────────────────────────
-for ax, mt_val in [(ax1, 1), (ax2, 3)]:
-    sub = eq_df[eq_df['min_trades'] == mt_val]
-    for univ, color in UNIVERSE_COLORS.items():
-        u_df = sub[sub['universe'] == univ].sort_values('window_idx')
-        if u_df.empty:
-            continue
-        ax.plot(u_df['window_idx'], u_df['cumulative_equity'],
-                color=color, linewidth=1.5, alpha=0.85, label=univ,
-                marker='o', markersize=3)
-    ax.set_title(f'Cumulative Equity — MT={mt_val} (Baseline)', fontsize=11, fontweight='bold')
-    ax.set_xlabel('Walk-Forward Window')
-    ax.set_ylabel('Cumulative Equity (log scale)')
-    ax.set_yscale('log')
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f'{v:.0f}x'))
-    ax.grid(True, alpha=0.3, linestyle='--')
-    ax.legend(loc='upper left', fontsize=7, ncol=2)
-    ax.set_xlim(-0.5, 6.5)
+colors = {"MT=3 (baseline)": "#2196F3", "MT=12 (winner)": "#F44336", "MT=11 (runnerup)": "#FF9800"}
 
-# ── Pass rate bars ─────────────────────────────────────────────────────────────
-mt_vals     = sweep_df['min_trades'].tolist()
-pass_rates  = sweep_df['pass_rate_pct'].tolist()
-sharpes     = sweep_df['avg_sharpe'].tolist()
-colors_bar  = ['#4CAF50' if r >= 60 else '#FF9800' if r >= 40 else '#F44336'
-               for r in pass_rates]
+# ── Top: equity curves (log scale) ──
+for label, (bars, eqs) in curves.items():
+    ax1.plot(bars, eqs, label=label, color=colors[label], linewidth=1.8, alpha=0.9)
 
-bars = ax3.bar([str(v) for v in mt_vals], pass_rates, color=colors_bar,
-               edgecolor='white', linewidth=0.5)
-# Highlight MT=3
-mt_labels = [str(v) for v in mt_vals]
-if '3' in mt_labels:
-    idx = mt_labels.index('3')
-    bars[idx].set_edgecolor('#1a237e')
-    bars[idx].set_linewidth(2.0)
-    bars[idx].set_hatch('///')
+ax1.set_yscale("log")
+ax1.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.2f}"))
+ax1.set_ylabel("Portfolio Equity (log scale)", fontsize=11)
+ax1.set_xlabel("Bar index", fontsize=11)
+ax1.set_title("Equity Curves — baseline MT=3 vs winner MT=12", fontsize=11, style="italic")
+ax1.legend(loc="upper left", fontsize=10)
+ax1.grid(True, linestyle="--", alpha=0.4)
+ax1.set_xlim(0, max(len(b) for b, _ in curves.values()))
 
-ax3.axhline(69, color='#4CAF50', linewidth=1.5, linestyle='--', alpha=0.7,
-            label='Plateau (MT 1-10): 69%')
-ax3.set_title('Walk-Forward Pass Rate by MIN_TRADES', fontsize=11, fontweight='bold')
-ax3.set_xlabel('MIN_TRADES value')
-ax3.set_ylabel('Pass Rate (%)')
-ax3.set_ylim(0, 100)
-ax3.grid(True, axis='y', alpha=0.3, linestyle='--')
-for bar, pr in zip(bars, pass_rates):
-    ax3.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1.5,
-             f'{pr:.0f}%', ha='center', va='bottom', fontsize=7.5)
-ax3.legend(fontsize=9)
+# ── Bottom: bar chart of Sharpe by MT value ──
+sweep_path = os.path.join(BASE, "min_trades_sweep_results.csv")
+mt_sharpe = []
+with open(sweep_path) as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        mt_sharpe.append((int(row["mt"]), float(row["avg_sharpe"])))
 
-# ── Sharpe bars ────────────────────────────────────────────────────────────────
-sharpe_colors = ['#2196F3' if s >= 2.8 else '#FF9800' if s >= 2.0 else '#F44336'
-                  for s in sharpes]
-bars2 = ax4.bar([str(v) for v in mt_vals], sharpes, color=sharpe_colors,
-                edgecolor='white', linewidth=0.5)
-if '3' in mt_labels:
-    idx = mt_labels.index('3')
-    bars2[idx].set_edgecolor('#1a237e')
-    bars2[idx].set_linewidth(2.0)
-    bars2[idx].set_hatch('///')
+mt_sharpe.sort(key=lambda x: x[0])
+mts = [x[0] for x in mt_sharpe]
+sharpes = [x[1] for x in mt_sharpe]
+colored = ["#2196F3" if m == 3 else "#F44336" if m == 12 else "#F48FB1" if m == 11 else "#90CAF9" for m in mts]
 
-ax4.axhline(2.8317, color='#2196F3', linewidth=1.5, linestyle='--', alpha=0.7,
-            label='Plateau Sharpe: 2.8317 (MT 1-10)')
-ax4.set_title('Walk-Forward Avg Sharpe by MIN_TRADES', fontsize=11, fontweight='bold')
-ax4.set_xlabel('MIN_TRADES value')
-ax4.set_ylabel('Annualised Sharpe Ratio')
-ax4.set_ylim(0, 3.2)
-ax4.grid(True, axis='y', alpha=0.3, linestyle='--')
-for bar, sh in zip(bars2, sharpes):
-    ax4.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.05,
-             f'{sh:.2f}', ha='center', va='bottom', fontsize=7.5)
-ax4.legend(fontsize=9)
+ax2.bar(mts, sharpes, color=colored, edgecolor="white", linewidth=0.5)
+ax2.set_xlabel("MIN_TRADES value", fontsize=11)
+ax2.set_ylabel("Avg Sharpe (OOS)", fontsize=11)
+ax2.set_title("Sharpe by MIN_TRADES — winner MT=12 vs baseline MT=3", fontsize=11, style="italic")
+ax2.axhline(y=sharpes[mts.index(3)], color="#2196F3", linestyle="--", alpha=0.6, linewidth=1, label="baseline MT=3")
+ax2.axhline(y=max(sharpes), color="#F44336", linestyle="--", alpha=0.6, linewidth=1, label="winner MT=12")
+ax2.legend(fontsize=9)
+ax2.grid(True, axis="y", linestyle="--", alpha=0.4)
+ax2.set_xticks(mts)
 
-plt.tight_layout(rect=[0, 0, 1, 0.96])
-plt.savefig('snapshots/min_trades_comparison.png', dpi=150, bbox_inches='tight',
-            facecolor='white')
-print("Saved: snapshots/min_trades_comparison.png")
-plt.close()
+plt.tight_layout()
+os.makedirs(os.path.dirname(OUT), exist_ok=True)
+plt.savefig(OUT, dpi=150, bbox_inches="tight", facecolor="white")
+print(f"Saved: {OUT}")
