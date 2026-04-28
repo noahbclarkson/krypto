@@ -21,7 +21,9 @@ This pattern matches every failed entry approach:
 
 ---
 
-## Top 3 Genuinely Untested Ideas (Priority Order)
+## Top 4 Genuinely Untested Ideas (Priority Order)
+
+*(Updated 2026-04-28 19:40 — added vol-norm position sizing as speculative #4)*
 
 ### NEW: T22 — Dual-Exit Attribution (CRITICAL — most important untested question)
 **Concept:** At CHAND_P=7/M=2.30, Chandelier fires at ~bar 7-12. Instrument walk-forward to track which exit fires first — Chandelier or Turtle ATR — per trade and per window.
@@ -80,6 +82,16 @@ Display live ATR percentile rank (vs 252-bar history) per symbol. Helps interpre
 
 ### S3. Live Slippage → Position Adjustment
 If SOL slippage consistently >2× model → reduce SOL cap to $25K notional.
+
+### S4. Volatility-Normalized Position Sizing (Speculative — can be backtested)
+**Concept:** Equal $ exposure per symbol (ATR-normalized notional) vs equal capital allocation.
+- Current: allocate equal capital to each of up to CAP=3 symbols
+- Proposed: allocate equal ATR-normalized notional (e.g., $10K / 21-bar ATR each)
+- Mechanism: high-vol symbols naturally get smaller positions, low-vol symbols get larger — Kelly-style position sizing
+- **Different from failed CAP scaling overlays:** those changed the CAP scalar itself. This keeps CAP=3 but adjusts per-symbol notional within the cap.
+- **Risk:** may reduce return in trending windows (underweights high-vol breakouts that work). Only test to know.
+- Test: 3 configs {equal_capital, atr_norm_10k, atr_norm_20k} × Base5 × 6 windows.
+- **Note:** This is testable NOW, does not require live testnet.
 
 ---
 
