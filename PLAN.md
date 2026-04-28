@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-28 11:15 UTC. T19 done. 3 new structural tasks identified. Live testnet remains critical blocker.**
+**State: 2026-04-28 12:10 UTC. Critique cycle complete. T22 elevated to #1 priority. Live testnet remains critical blocker.**
 
 ---
 
@@ -17,15 +17,16 @@
 - Equity Sharpe (~1.29) correctly reported as honest number — never show 5.46 on equity charts
 - Graveyard thorough — every failed strategy documented
 - Cross-market validation confirms edge is real (SPY/QQQ/GLD ~60%+)
-- Base5: 7/7 pass — production universe is clean
+- Base5: 6/6 pass — production universe is clean
 - Anti-spin check catches self-congratulation (last 5 sessions: mostly null/confirm results)
+- Live bot audit caught stale dual-exit logic — deployment-truth gap fixed
 
 **What we're still fooling ourselves about:**
-- **Pre-2021 stress: 67.9% pass** — BELOW our own 70% threshold. The most honest stress test fails. P=7/M=2.30 is tighter than prior P=28/M=2.00 and struggles in choppy pre-2021 regimes. We may be overfit to bull crypto.
-- **POSITION_CAP unconfirmed for dual-exit** — CAP=3 validated on Turtle-only harness. Production bot uses dual-exit. Structural gap.
-- **All metrics are upper bounds** — fee model, maker-fill rate, slippage unvalidated in live market
-- **Turtle-only vs dual-exit attribution unknown** — if Chandelier fires first >90% of trades, dual-exit validation = Chandelier-only validation. Are we testing what we think we're testing?
-- **Documentation loop is structural** — 6 of last 10 commits are hygiene. Only live testnet breaks this pattern.
+- **Pre-2021 stress: 67.9% pass** — BELOW our own 70% threshold. The most honest stress test fails. We acknowledge it but haven't acted on the implication: the strategy may be overfit to bull crypto 2021+.
+- **T22 (exit attribution) is more critical than T21.** At P=7/M=2.30, Chandelier fires at ~bar 7-12. If it fires first >90% of trades: (a) TURTLE_ATR_PERIOD=24 was curve-fitting noise on a non-binding parameter, (b) TURTLE_ATR_MULT M=2.0 confirmed was also noise — the parameter never fires first, (c) the strategy is effectively Chandelier-only + Turtle ATR safety net. T22 MUST run first — it changes the interpretation of every prior dual-exit hyperopt.
+- **Sequential hyperopt on same OOS grid.** EP, P, M, HM, ATR_P, ATR_M, CAP, VL — 8 params all validated against 9×6 grid. Cumulative implicit overfitting risk. Pre-2021 67.9% is the honest canary. All other robustness metrics are against the same in-sample-out-of-sample grid.
+- **All metrics are upper bounds** — fee model, maker-fill rate, slippage unvalidated in live market.
+- **Documentation loop is structural** — 3/5 recent commits are hygiene. Only live testnet breaks this pattern.
 
 ---
 
@@ -33,38 +34,38 @@
 
 ```
 EP              = 21     // ✅ held-out confirmed (reverted from EP=24 2026-04-26)
-TURTLE_ATR_P    = 24     // ✅ fine sweep confirmed 3×
-TURTLE_ATR_M    = 2.0    // ✅ 81-value dense sweep confirmed (NULL result)
+TURTLE_ATR_P    = 24     // ✅ fine sweep confirmed 3× (but see T22 — may be noise)
+TURTLE_ATR_M    = 2.0    // ✅ 81-value dense sweep confirmed (NULL result — may be non-binding)
 CHAND_PERIOD    = 7      // ✅ held-out confirmed
 CHAND_MULT      = 2.30   // ✅ 71-value dense sweep
 ATR_ENTRY_MULT  = 0.00   // ✅ 41-value sweep — no filter wins
 HOLD_MAX        = 12     // ✅ HM=12 wins +71.4% Sharpe vs HM=45 baseline
 POSITION_CAP    = 3      // ⚠️ Turtle-only harness only — dual-exit unconfirmed
 FRESHNESS_COOLDOWN = 0   // ✅ cd=0 wins
-VOL_LOOKBACK    = 9      // ✅ confirmed on current production params
+VOL_LOOKBACK    = 8      // ✅ dense sweep confirmed (updated 2026-04-28)
 ```
 
 ---
 
-## Next 3 Execution Tasks
+## Next 3 Execution Tasks (Revised Order)
 
-### T21: CAP=3 Dual-Exit Re-Validation (HIGH — structural integrity)
-**Concept:** Re-run POSITION_CAP sweep under actual production dual-exit logic (Chandelier(7,2.30) + Turtle ATR(24,2.0)), not Turtle-only harness.
-**Why this matters:** CAP=3 was validated on Turtle-only exit. Production bot uses dual-exit. CAP=3 "likely holds" but is unconfirmed — structural gap between validated harness and production code.
-**Risk if skipped:** Live testnet goes live with position sizing validated on the wrong exit logic.
-**Execution:** Build harness with dual-exit. Sweep CAP 1-10. Compare to Turtle-only CAP sweep results.
-**Status:** Critical gap. Untested.
-
-### T22: Turtle-Only vs Dual-Exit Attribution (MEDIUM — structural understanding)
+### T22: Turtle vs Chandelier Exit Attribution (HIGH — structural integrity, RUN FIRST)
 **Concept:** Instrument the walk-forward harness to count Chandelier-first vs Turtle ATR-first exits per window.
-**Why this matters:** At P=7/M=2.30, Chandelier is extremely tight (fires at ~bar 7-12). If it fires first >90% of trades, dual-exit ≈ Turtle-only + safety net. If Turtle ATR fires first >50%, dual-exit adds genuine marginal value.
-**Decision value:** Determines whether we're actually testing what we think we're testing.
-**Execution:** Add exit-type tracking to existing walk-forward harness. Report % per window and aggregate.
-**Status:** Structural understanding, not new strategy. Untested.
+**Why this matters:** At P=7/M=2.30, Chandelier is extremely tight (fires at ~bar 7-12). If Chandelier fires first >90% of trades: (a) TURTLE_ATR_PERIOD=24 optimization was noise on a non-binding parameter, (b) TURTLE_ATR_MULT sweep was also noise, (c) the strategy is Chandelier(7,2.30) + Turtle ATR safety net. Every prior dual-exit hyperopt needs reinterpretation.
+**Decision value:** Only run T21 if Turtle ATR fires first >30% of trades. If Chandelier dominates >90%, CAP=3 Turtle-only validation is sufficient — dual-exit doesn't materially change position sizing.
+**Execution:** Add exit-type tracking to existing walk-forward harness. Report % Chandelier-first vs Turtle-first per window and aggregate.
+**Status:** Critical. Untested. MUST RUN before T21.
+
+### T21: CAP=3 Dual-Exit Re-Validation (MEDIUM — conditional on T22)
+**Concept:** Re-run POSITION_CAP sweep under actual production dual-exit logic (Chandelier(7,2.30) + Turtle ATR(24,2.0)), not Turtle-only harness.
+**Why this matters:** CAP=3 was validated on Turtle-only exit harness. Production bot uses dual-exit. CAP=3 "likely holds" but is unconfirmed.
+**Conditional:** Only run if T22 shows Turtle ATR fires first >30% of trades. If Chandelier dominates >90%, Turtle-only CAP validation is sufficient.
+**Execution:** Build harness with dual-exit. Sweep CAP 1-10. Compare to Turtle-only CAP sweep results.
+**Status:** Critical gap. Conditional on T22.
 
 ### T23: ATR-Rank Conditional Entry Filter (MEDIUM — last untested idea)
-**Concept:** Only enter if current 21-bar ATR > Nth percentile of 252-bar history. Regime-dependent threshold — different from fixed ATR_MULT.
-**Why this matters:** ATR_MULT (fixed threshold) failed at all values. ATR-rank is regime-dependent — mechanically different. **Caution:** T19 (Donchian) shows entry alternatives trade pass rate for per-trade Sharpe. ATR-rank may have the same problem.
+**Concept:** Only enter if current 21-bar ATR > Nth percentile of 252-bar history. Regime-dependent threshold — mechanically different from fixed ATR_MULT.
+**Why this matters:** ATR_MULT (fixed threshold) failed at all values. ATR-rank is regime-dependent. **Caution:** T19 (Donchian) shows entry alternatives trade pass rate for per-trade Sharpe. ATR-rank may have the same problem.
 **Test:** Threshold {50th, 60th, 70th percentile} × Base5 × 6 windows.
 **Status:** Last genuinely untested idea. If this fails, research loop closes definitively.
 
@@ -85,6 +86,7 @@ VOL_LOOKBACK    = 9      // ✅ confirmed on current production params
 - Re-testing confirmed strategies (BollingerReversion, CTREND, etc.) — graveyard is final.
 - Building documentation-only commits. Documentation loop is structural. Only live testnet breaks it.
 - Claiming walk-forward Sharpe 5.46 on equity charts — use equity Sharpe 1.29 only.
+- Running T21 before T22 — T22 determines whether T21 matters.
 
 ---
 
@@ -93,11 +95,11 @@ VOL_LOOKBACK    = 9      // ✅ confirmed on current production params
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
 | **No live testnet** | CRITICAL | BLOCKED on Noah's API keys |
-| **Pre-2021 stress: 67.9%** | HIGH | Below our 70% threshold — P=7/M=2.30 may be overfit to bull |
-| **POSITION_CAP unconfirmed for dual-exit** | HIGH | CAP=3 validated Turtle-only only — structural gap |
-| **Turtle vs dual-exit attribution unknown** | MEDIUM | Chandelier fires first >90% of trades? Unknown. |
+| **Pre-2021 stress: 67.9%** | HIGH | Below our 70% threshold — strategy may be overfit to bull crypto |
+| **Turtle ATR exit attribution unknown** | HIGH | Chandelier fires first >90%? Prior ATR hyperopts may be noise |
+| **POSITION_CAP unconfirmed for dual-exit** | MEDIUM | Conditional on T22 result |
+| **Sequential hyperopt on same OOS grid** | MEDIUM | 8 params against 9×6 grid — cumulative implicit overfitting |
 | **All metrics are upper bounds** | HIGH | Fee model, maker-fill unvalidated |
-| **Documentation loop is structural** | MEDIUM | 6/10 recent commits are hygiene |
 
 ---
 
@@ -125,9 +127,9 @@ VOL_LOOKBACK    = 9      // ✅ confirmed on current production params
 
 ## Research Loop: What Remains
 
-1. **T21:** CAP=3 dual-exit re-validation — structural gap, critical before testnet
-2. **T22:** Turtle vs dual-exit attribution — structural understanding
+1. **T22:** Turtle vs Chandelier exit attribution — RUN FIRST — determines everything else
+2. **T21:** CAP=3 dual-exit re-validation — conditional on T22 result
 3. **T23:** ATR-rank conditional filter — last untested idea, closes loop definitively
 4. **T9:** Live testnet — BLOCKED on Noah's API keys
 
-**Note:** The research loop is functionally closed. T21-T23 are structural integrity tasks, not new edge discovery. Live testnet is the only thing that validates everything.
+**Note:** The research loop is functionally closed. T22-T23 are structural integrity tasks, not new edge discovery. T22 may reveal that several prior hyperopts (ATR_P=24, ATR_M=2.0) were noise — a valuable and honest finding. Live testnet is the only thing that validates everything.

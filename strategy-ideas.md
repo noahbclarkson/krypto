@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-28. T19 done. Entry space CLOSED. Live testnet BLOCKED on Noah's API keys — nothing else matters.*
+*Last updated: 2026-04-28. Critique cycle: T22 elevated to #1. Entry space CLOSED. Live testnet BLOCKED on Noah's API keys — nothing else matters.*
 
 ---
 
@@ -23,7 +23,11 @@ This pattern matches every failed entry approach:
 
 ## Top 3 Genuinely Untested Ideas (Priority Order)
 
-### T21: CAP=3 Dual-Exit Re-Validation (HIGH — structural integrity)
+### NEW: T22 — Dual-Exit Attribution (CRITICAL — most important untested question)
+**Concept:** At CHAND_P=7/M=2.30, Chandelier fires at ~bar 7-12. Instrument walk-forward to track which exit fires first — Chandelier or Turtle ATR — per trade and per window.
+**Why this matters (updated 2026-04-28):** If Chandelier fires first >90% of trades, TURTLE_ATR_PERIOD=24 and TURTLE_ATR_MULT=2.0 are non-binding parameters validated on noise. The strategy is effectively Chandelier(7,2.30) + safety net. Every dual-exit hyperopt result needs reinterpretation.
+**This is the most important structural test remaining.** Run it before T21.
+**Status:** MUST RUN.
 **Concept:** Re-run POSITION_CAP sweep under actual production dual-exit logic (Chandelier(7,2.30) + Turtle ATR(24,2.0)), not Turtle-only harness.
 **Why this matters:** CAP=3 was validated on Turtle-only exit harness. Production bot uses dual-exit. CAP=3 "likely holds" but is a structural gap between validated harness and production code.
 **Risk if skipped:** Live testnet goes live with position sizing validated on the wrong exit logic.
