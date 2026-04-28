@@ -28,7 +28,7 @@ const MIN_TRADES: usize = 3;
 const EP: usize = 21;
 const ATR_P: usize = 24;
 const ATR_EM: f64 = 0.00;
-const VOL_LOOKBACK: usize = 9;
+const VOL_LOOKBACK: usize = 8;
 
 const SWEEP_START: f64 = 1.00;
 const SWEEP_END: f64 = 5.00;

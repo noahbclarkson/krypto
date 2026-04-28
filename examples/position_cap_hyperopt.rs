@@ -27,7 +27,7 @@ const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 const ATR_ENTRY_MULT: f64 = 0.00;
-const VOL_LOOKBACK: usize = 9;
+const VOL_LOOKBACK: usize = 8;
 const BASELINE_CAP: usize = 3;
 const POSITION_CAPS: [usize; 10] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
