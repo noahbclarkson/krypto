@@ -26,4 +26,4 @@
 ## Verdict
 **Turtle-only is MARGINAL** — 36 pass vs 36 baseline. Chandelier may contribute in some regimes.
 
-_elapsed: 5.0s_
+_elapsed: 7.1s_
