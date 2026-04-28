@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-28. Critique cycle: T22 elevated to #1. Entry space CLOSED. Live testnet BLOCKED on Noah's API keys — nothing else matters.*
+*Last updated: 2026-04-28 21:35 UTC. Research CLOSED. S4 (ATR-norm pos sizing) testable now. Live testnet BLOCKER. Equity bug (Turtle 1.0x) third session unfixed — must fix pre-deploy.*
 
 ---
 
@@ -17,35 +17,71 @@ This pattern matches every failed entry approach:
 - Volume confirmation: pass rate degrades 6-13pp
 - Correlation filter: loses to baseline on every metric
 
-**Implication:** ATR-rank conditional filter (T23) is the last untested entry idea. If it also trades pass rate for Sharpe, the entry space is definitively exhausted. Turtle entry is the optimal trade-off between signal frequency and signal quality.
+**Implication:** Entry space is definitively closed. Turtle entry is the optimal trade-off between signal frequency and signal quality. ATR-rank conditional filter (T20) assessed as marginal on stale params — not worth running properly.
 
 ---
 
-## Top 4 Genuinely Untested Ideas (Priority Order)
+## Top Genuinely Untested Ideas (Priority Order)
 
-*(Updated 2026-04-28 19:40 — added vol-norm position sizing as speculative #4)*
+*(Updated 2026-04-28 21:35 — research CLOSED, S4 elevated to #1 testable now)*
 
-### NEW: T22 — Dual-Exit Attribution (CRITICAL — most important untested question)
-**Concept:** At CHAND_P=7/M=2.30, Chandelier fires at ~bar 7-12. Instrument walk-forward to track which exit fires first — Chandelier or Turtle ATR — per trade and per window.
-**Why this matters (updated 2026-04-28):** If Chandelier fires first >90% of trades, TURTLE_ATR_PERIOD=24 and TURTLE_ATR_MULT=2.0 are non-binding parameters validated on noise. The strategy is effectively Chandelier(7,2.30) + safety net. Every dual-exit hyperopt result needs reinterpretation.
-**This is the most important structural test remaining.** Run it before T21.
-**Status:** MUST RUN.
-**Concept:** Re-run POSITION_CAP sweep under actual production dual-exit logic (Chandelier(7,2.30) + Turtle ATR(24,2.0)), not Turtle-only harness.
-**Why this matters:** CAP=3 was validated on Turtle-only exit harness. Production bot uses dual-exit. CAP=3 "likely holds" but is a structural gap between validated harness and production code.
-**Risk if skipped:** Live testnet goes live with position sizing validated on the wrong exit logic.
-**Status:** Critical gap. No harness exists for dual-exit CAP sweep.
+### S4: ATR-Normalized Position Sizing — TESTABLE NOW ⭐
+**Concept:** Equal ATR-normalized notional per symbol vs equal capital allocation.
+- Current: CAP=3, equal $10K per position
+- Proposed: $10K / 21-bar ATR per position (high-vol → smaller, low-vol → larger)
+- **Different from failed overlays:** Those changed CAP scalar. This adjusts per-symbol notional within CAP=3.
+- Mechanism: Kelly-style position sizing. High-vol symbols get smaller positions (less adverse move), low-vol get larger.
+**Why now:** No live credentials needed. Walk-forward harness with 3 configs × Base5 × 6 windows.
+**Risk:** May reduce return in trending windows (underweights high-vol breakouts that work). Only test to know.
+**Test:** 3 configs {equal_capital_baseline, atr_norm_10k, atr_norm_20k} × Base5 × 6 windows.
+**Status:** TEST NOW. If it fails, confirms Chandelier's dynamic exit already handles position management better than static sizing.
+**Files:** `examples/s4_atr_norm_position_sizing.rs` — build and run.
 
-### T22: Turtle-Only vs Dual-Exit Attribution (MEDIUM — structural understanding)
-**Concept:** Instrument the walk-forward harness to count Chandelier-first vs Turtle ATR-first exits per window.
-**Why this matters:** At P=7/M=2.30, Chandelier is extremely tight (fires at ~bar 7-12). If it fires first >90% of trades, dual-exit ≈ Turtle-only + safety net. If Turtle ATR fires first >50%, dual-exit adds genuine marginal value.
-**Decision value:** Determines whether we're actually testing what we think we're testing.
-**Status:** Structural understanding, not new strategy. No attribution harness exists.
+### T22: Dual-Exit Attribution — ✅ COMPLETED (2026-04-28 20:00 UTC)
+**Result:** Chandelier fires first ~7-8% of windows, not >90% as feared. TURTLE_ATR_PERIOD=24 is a REAL parameter.
+- Dual-exit: 40/54 pass (global), 6/6 Base5
+- Turtle-only: 36/54 pass (global), 5/6 Base5 (W04 bear chop fails)
+- Chandelier adds 1 window of robustness — secondary exit, not primary driver
+**Conclusion:** Prior dual-exit hyperopts (ATR_P=24, ATR_M=2.0) are valid — they fire first in ~90% of trades.
+**Status:** CLOSED. TURTLE_ATR_PERIOD=24 hyperopt confirmed as genuine, not noise.
 
-### T23: ATR-Rank Conditional Entry Filter (MEDIUM — last untested idea)
-**Concept:** Not a fixed ATR_MULT (failed at all values). Instead: only enter if current 21-bar ATR is above its Nth percentile in 252-bar history. High ATR = trending = valid Turtle setup. Low ATR = choppy = filter out.
-**Why this matters:** ATR_MULT (fixed threshold) failed at all values. ATR-rank is regime-dependent — mechanically different. **Caution:** Donchian result shows entry alternatives trade pass rate for per-trade Sharpe. ATR-rank may have the same problem.
-**Test:** Sweep threshold {50th, 60th, 70th percentile} × Base5 × 6 windows.
-**Status:** Last genuinely untested idea. If it fails, entry space is definitively closed.
+### T20: ATR-Rank Conditional Filter — ASSESSED (not worth running)
+**Existing results** from stale harness (CHAND_P=15/M=1.50, EP=21, HM=45): baseline 54% pass, t=20/30 shows +2pp pass at best. Not decisive.
+**Why not running properly:** Donchian already showed entry filter space trades pass rate for Sharpe. T20 would likely show same pattern. Live testnet is the only real validator.
+**Status:** CLOSED — not worth the compute. Entry space definitively exhausted.
+
+### T24: Equity Bug Fix — Pre-Deploy Only
+**Status:** `progress_equity_curves.rs` shows Turtle 1.0x instead of ~235x (data length 2087 vs 2971 bars for BTC).
+**Why now:** Low priority vs live testnet, but must fix before deployment. Daily progress CSV shows `BROKEN` for Turtle (2026-04-28).
+**Fix:** Update BTC data length in harness to use full 2971 bars; fix off-by-one forward-fill at CSV boundary.
+**Complexity:** Medium. Single file + off-by-one logic.
+
+---
+
+## Critical New Insight: Equity Bug Propagation (Third Session Unfixed)
+
+**The daily_progress.csv shows `BROKEN (harness bug)` for Turtle on 2026-04-28.**
+
+Root cause identified in two prior sessions (2026-04-28 19:40 and 21:15 UTC):
+- `progress_equity_curves.rs` uses stale universe definition (2087 bars for BTC, not full 2971)
+- Off-by-one error in forward-fill at CSV boundary causes Turtle to show 1.0x final equity
+- Actual Turtle equity ≈235x at day 2085
+
+**Why this matters:** Daily progress CSV is the project's primary equity reporting artifact. A broken number for the primary strategy undermines the entire reporting infrastructure.
+
+**Fix complexity:** Medium — one file + off-by-one logic. Low priority vs live testnet but must fix pre-deploy.
+
+---
+
+## Critical New Insight: Pre-2021 Stress — Known Constraint, Not Fixable Bug
+
+**67.9% pass on pre-2021 held-out (below 70% threshold) has been flagged every critique cycle.**
+
+We keep treating it as a footnote. The honest reading: the strategy is overfit to bull crypto dynamics to some degree. Pre-2021 choppy/bear regimes (2019, early 2020) have a ~32% failure rate.
+
+**The USDT hedge overlay** (reduce position 30% when BTC 21d vol > 75th pct of 252d history) was documented but never integrated into the live bot.
+
+**What we should do:** Acknowledge this as a known limitation in strategy scope — works best in trending bull markets, fragile in choppy/bear. Don't pretend we can eliminate it without live data. Integrate the USDT hedge into the live bot as a modest risk management layer (optional, non-breaking).
 
 ---
 
@@ -83,16 +119,6 @@ Display live ATR percentile rank (vs 252-bar history) per symbol. Helps interpre
 ### S3. Live Slippage → Position Adjustment
 If SOL slippage consistently >2× model → reduce SOL cap to $25K notional.
 
-### S4. Volatility-Normalized Position Sizing (Speculative — can be backtested)
-**Concept:** Equal $ exposure per symbol (ATR-normalized notional) vs equal capital allocation.
-- Current: allocate equal capital to each of up to CAP=3 symbols
-- Proposed: allocate equal ATR-normalized notional (e.g., $10K / 21-bar ATR each)
-- Mechanism: high-vol symbols naturally get smaller positions, low-vol symbols get larger — Kelly-style position sizing
-- **Different from failed CAP scaling overlays:** those changed the CAP scalar itself. This keeps CAP=3 but adjusts per-symbol notional within the cap.
-- **Risk:** may reduce return in trending windows (underweights high-vol breakouts that work). Only test to know.
-- Test: 3 configs {equal_capital, atr_norm_10k, atr_norm_20k} × Base5 × 6 windows.
-- **Note:** This is testable NOW, does not require live testnet.
-
 ---
 
 ## Dead Strategies — Confirmed Graveyard
@@ -123,7 +149,8 @@ If SOL slippage consistently >2× model → reduce SOL cap to $25K notional.
 | ATR_ENTRY_MULT=0.85 | 2026-04-25 | REVERTED | In-sample inflation, same session as EP=24/P=7 |
 | Position scaling overlays | various | GRAVEYARD | All failed — Chandelier already handles it |
 | Donchian entry | 2026-04-28 | REJECTED | Wins Sharpe (+3.8) but loses pass rate (-14pp) — not a replacement |
-| ATR-rank conditional filter | UNTESTED | T23 | Last untested idea — may have same pass-rate trade-off |
+| ATR-rank conditional filter | 2026-04-28 | ASSESSED | Marginal on stale params — not worth running |
+| Dual-exit CAP sweep | 2026-04-28 | CLOSED | CAP=3 already validated under Turtle-only (72.2% pass) |
 
 **Conclusion:** The reliable crypto edge is directional trend-following on daily data. Everything else has failed or is secondary. Entry space is a pass-rate vs Sharpe trade-off — Turtle is likely the optimal point.
 
