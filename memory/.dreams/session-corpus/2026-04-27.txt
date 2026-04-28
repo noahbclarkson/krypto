@@ -1,0 +1,1 @@
+[krypto/sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl#L1118] Assistant: hold_max_sweep_comparison.png

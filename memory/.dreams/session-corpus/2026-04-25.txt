@@ -41,3 +41,9 @@
 [krypto/sessions/839d41fd-1e31-4407-a49e-fdef42df8304.jsonl#L50] Assistant: CTREND's multi-horizon character. Fixed-hold sweep for CTREND entry is the only untested idea in a genuinely different signal family. 3. **Held-Out Validation for EP=24 + EM=0.85 (#T3)** — both won by noise-level margins (+1-2 windows in 54). T3 was planned but never 
 [krypto/sessions/839d41fd-1e31-4407-a49e-fdef42df8304.jsonl#L50] Assistant: is different test | | EP=24 / EM=0.85 noise-level, no held-out | 🔴 CRITICAL | T3 never done | | Equity chart column mapping unverified | 🔴 OVERDUE | T1 4+ sessions overdue | | Freshness cooldown contradiction | ✅ RESOLVED | cd=0 is production | | Research loop claim
 [krypto/sessions/839d41fd-1e31-4407-a49e-fdef42df8304.jsonl#L50] Assistant: `strategy-ideas.md`: #21 freshness cooldown corrected (cd=0 production) - Commit `f428313a` pushed to v2-rewrite **Next real step:** T3 (held-out validation for EP=24 + EM=0.85) or T1 (equity chart verification). Both are blocked only on execution time, not on API key
+[krypto/sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl#L1107] Assistant: chand_period_dense_comparison.png
+[krypto/sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl#L1108] Assistant: progress_equity_curves_daily.png
+[krypto/sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl#L1109] Assistant: regime_stress_p7_current.png
+[krypto/sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl#L1110] Assistant: atr_entry_mult_sweep_comparison.png
+[krypto/sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl#L1111] Assistant: atr_prod_sweep_comparison.png
+[krypto/sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl#L1112] Assistant: progress_equity_curves_daily.png
