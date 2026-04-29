@@ -1,24 +1,25 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-29 15:30 UTC. T25 COMPLETE. Equity bug FIXED. Reporting pipeline REPRODUCIBLE. HOF metric reconciled to 221.5x / Sharpe 1.04. USDT hedge INTEGRATED. Research loop CLOSED. Live testnet CRITICAL BLOCKER (3+ weeks).**
+**State: 2026-04-29 16:05 UTC. T25/T24 COMPLETE. T28/T29/T30 NEW. T27 (asymmetric exit) documentation FIXED. Live/testnet STRUCTURAL GAP identified. Research loop CLOSED.**
 
 ---
 
-## Brutal Self-Assessment (2026-04-29 Critique Cycle — Fourth Session)
+## Brutal Self-Assessment (2026-04-29 Critique Cycle — Fifth Session)
 
-**Research loop: CLOSED.** S4 tested and REJECTED (ATR normalization fails — equal capital optimal, 86% vs 57% pass). Every testable idea genuinely exhausted. Entry, exit, position sizing — all validated or rejected.
+**Research loop: CLOSED.** Every testable idea genuinely exhausted or rejected. T27 (asymmetric exit) was previously REJECTED in GRAVEYARD but still listed as "NEW/PROMISING" in strategy-ideas.md — documentation fixed this session.
 
 **What we got right:**
-- Anti-overfitting discipline is REAL and consistent. EP=24, ATR_ENTRY_MULT=0.85, EP=43 all correctly rejected for same-session in-sample inflation.
-- Honest Sharpe distinction: equity Sharpe ~1.29 (compounded daily returns, honest) vs walk-forward Sharpe 5.46 (per-window averaged, upper bound). Never report 5.46 on equity charts.
-- Research loop genuinely closed. S4 (ATR-norm sizing) REJECTED. Donchian definitively closes entry space.
-- USDT hedge overlay: INTEGRATED (2026-04-29, commit 683fe92e). Non-breaking bear-risk overlay.
-- Equity bug: FIXED (e55659e8). Off-by-one recording loop corrected.
+- Anti-overfitting discipline is REAL and consistent (EP=24, ATR_ENTRY_MULT=0.85, EP=43 correctly rejected).
+- Honest Sharpe: equity Sharpe ~1.04 (daily compounded) vs walk-forward Sharpe ~3.15 (per-window averaged). Report equity Sharpe on charts.
+- USDT hedge overlay: INTEGRATED (683fe92e). Non-breaking vol-regime overlay.
+- Equity bug: FIXED (e55659e8). 221.5x / Sharpe 1.04 is authoritative.
 
 **What we're still fooling ourselves about:**
-- Live testnet: 3+ week blocker. All metrics are still simulation upper bounds.
-- Pre-2021 stress: 67.9% — BELOW our own 70% threshold. Choppy/bear regimes remain the real failure mode.
-- Reporting is better but not fully automated by cron. `scripts/run_daily_progress.sh` now makes the run reproducible, but cron integration is still manual/operator work.
+- **Live/testnet exit gap — STRUCTURAL BLIND SPOT.** Live bot uses Turtle ATR sole exit. WF harness validates Turtle+Chandelier dual exit. These are DIFFERENT strategies. 83% global pass rate is for dual-exit, not the live strategy.
+- **DDBudget Sharpe 7.24 is MILESTONE-AGGREGATED, not daily equity.** Cannot compare to Turtle's 1.04 daily Sharpe. Cross-strategy Sharpe comparison is meaningless without same methodology.
+- Live testnet: 3+ week blocker. All metrics remain simulation upper bounds.
+- Pre-2021 stress: 67.9% — BELOW 70% threshold. Known limitation.
+- T27 asymmetric exit: still listed as "NEW" in strategy-ideas despite REJECTED status in GRAVEYARD.
 
 ---
 
@@ -46,6 +47,23 @@ VOL_LOOKBACK    = 8      // ✅ dense production sweep confirmed (harness-only D
 **Everything else is secondary.** All metrics are upper bounds. Fee model, maker-fill rate, slippage — all unvalidated in live conditions.
 **What we need:** Binance testnet API key + secret (not production keys).
 **Escalation:** Surface to Arc explicitly. Nothing advances the project without this.
+
+### T28: Turtle-ATR-Only Walk-Forward Validation — NEW / CRITICAL
+**Hypothesis:** Live bot runs Turtle ATR sole exit. WF harness validates Turtle+Chandelier dual exit. These are DIFFERENT strategies. 83% global pass rate is for dual-exit, NOT the live strategy.
+**What to test:** Run Turtle-ATR-only (no Chandelier) through same 9-universe × 6-window harness with frozen params. Confirm pass rate ≥ 70%.
+**If it fails:** Live strategy is NOT the validated strategy. Must reconcile live bot logic before testnet.
+**Scope:** 1 harness, Base5 + 9-universe × 6 windows. Fast to run.
+
+### T29: Funding Rate Live Observer — NEW / GENUINELY UNTESTED
+**Hypothesis:** Aggregate funding rate from Binance API is genuinely different data from OHLCV. Extreme funding (<-50% ann or violent flips) identifies crowded positioning.
+**Why it matters:** Cannot backtest — no funding parquet. But can observe live RIGHT NOW.
+**Build:** Simple dashboard/logger that polls funding rate every hour, logs vs 30d average, displays current vs threshold.
+**Use:** Qualitative risk overlay, not a trading signal. Addresses bear/chop regime weakness qualitatively.
+
+### T30: Expanded Universe Walk-Forward — NEW / MEDIUM
+**Universe expansion:** Add BNB, LINK, AVAX, MATIC, UNI to Base5. Run full 9-universe walk-forward to test whether edge generalizes to mid-caps.
+**Risk:** Wider spreads, more slippage on mid-caps. Execution costs may break the edge.
+**Reward:** Tests "5-symbol universe" blind spot. If mid-caps pass ≥ 70%, production universe expands safely.
 
 ### T25: Reconcile Metrics + Fix Reporting Pipeline — COMPLETE ✅
 **Status:** Completed 2026-04-29 15:30 UTC. `progress_equity_curves` confirms Turtle+Chandelier **221.5x / daily Sharpe 1.04**. `live_turtle_chandelier` dry-run compiles/runs after fixing a format-string compile error and shows per-symbol historical paper returns (not the portfolio equity source of truth). `HALL_OF_FAME.md` and `scripts/gen_hof.py` now cite the honest validated-harness number, not `$67M`. `reports/daily_progress.csv` has a fresh 2026-04-29 row and `scripts/run_daily_progress.sh` makes refresh reproducible.
