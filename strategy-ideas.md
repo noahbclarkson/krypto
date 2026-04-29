@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-29 13:24 UTC. Critique cycle. Equity bug FIXED (e55659e8). USDT hedge INTEGRATED (683fe92e). Daily reporting STALE. Research loop CLOSED. Live testnet BLOCKED 3+ weeks.*
+*Last updated: 2026-04-29 16:05 UTC. Critique cycle. T27 asymmetric exit FIXED (REJECTED, was stale "NEW"). T28/T29/T30 new tasks. Live/testnet STRUCTURAL GAP identified. Research loop CLOSED.*
 
 ---
 
@@ -76,10 +76,10 @@ This pattern matches every failed entry approach:
 **Why not running properly:** Donchian already showed entry filter space trades pass rate for Sharpe. T20 would likely show same pattern. Live testnet is the only real validator.
 **Status:** CLOSED — not worth the compute. Entry space definitively exhausted.
 
-### T27: Asymmetric Exit Architecture — NEW / PROMISING
-**Hypothesis:** Trend-following payoff is convex; exits should be asymmetric. Cut losers faster with a tight hard stop (e.g., ATR×0.5 from entry), while letting winners use a looser trailing Chandelier (e.g., ATR×3.0) plus Turtle ATR as secondary fail-safe.
-**Why it is different:** Not another entry filter. It changes loss truncation and winner convexity, the core economics of Turtle-style systems.
-**Test:** Baseline vs asymmetric soft-only vs asymmetric hard+soft across Base5×7 windows first. Accept only if pass rate does not degrade and improvement is not a one-window artifact.
+### T27: Asymmetric Exit Architecture — ✅ REJECTED (2026-04-29)
+**Tested:** `examples/asymmetric_exit_walkforward.rs`, 9 universes × 6 windows.
+**Result:** No improvement. baseline 38/54 pass (Sharpe 3.818); asym_soft (CHAND×3.0) 38/54 (Sharpe 3.680); asym_hard (ATR×0.5) 38/54 (Sharpe 3.610). All configs produce identical results on Base5 windows (Turtle ATR fires first, Chandelier never activates). Chandelier multiplier is irrelevant when Turtle ATR dominates. **REJECTED.**
+**File:** `examples/asymmetric_exit_walkforward.rs`, `snapshots/asymmetric_exit_results.csv`.
 
 ### S5: Funding-Rate Regime Overlay — NEW / LIVE-DATA CANDIDATE
 **Hypothesis:** Extreme funding regimes identify crowded positioning. When aggregate perp funding is deeply negative or violently flipping, reduce spot-long exposure or delay new entries.
