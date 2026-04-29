@@ -781,6 +781,8 @@ fn simulate_turtle_chandelier_equity(universe: &UniverseData) -> Result<Vec<f64>
             }
             in_position = true;
             bar = exit_bar + 1;
+            in_position = false; // exited — next bar starts flat
+            if bar < total { equity_curve[bar] = equity; } // record flat equity at bar after exit
         } else {
             // No entry signal; stay flat
             in_position = false;
