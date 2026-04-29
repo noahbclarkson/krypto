@@ -49,14 +49,12 @@ VOL_LOOKBACK    = 8      // ✅ dense sweep confirmed (updated 2026-04-28)
 
 ## Next 3 Execution Tasks
 
-### S4: ATR-Normalized Position Sizing — TESTABLE NOW ⭐
-**Concept:** Equal ATR-normalized notional per symbol vs equal capital allocation.
-- Current: CAP=3, equal $10K per position
-- Proposed: $10K / 21-bar ATR per position (high-vol → smaller, low-vol → larger)
-- **Different from failed overlays:** Those changed CAP scalar. This adjusts per-symbol notional within CAP=3.
-**Why testable now:** No live credentials needed. Walk-forward harness with 3 configs × Base5 × 6 windows.
-**Test:** 3 configs {equal_capital_baseline, atr_norm_10k, atr_norm_20k} × Base5 × 6 windows.
-**Status:** TEST NOW. If it fails, confirms Chandelier's dynamic exit already handles position management better than static sizing.
+### S4: ATR-Normalized Position Sizing — COMPLETED, REJECTED ✓
+**Result:** REJECTED. Equal capital wins (86% pass) vs ATR normalization (57% pass).
+- Root cause: ATR normalization inverts dollar-volume ranking (low-vol assets get oversized)
+- W4 bear/chop: equal_capital +152% (39% DD) vs atr_norm -1866% (**1840% DD**)
+- Equal capital allocation is production default — confirmed optimal
+**Files:** snapshots/s4_atr_norm_position_sizing.md, snapshots/s4_atr_norm_position_sizing.csv
 
 ### T24: Equity Bug Fix — Pre-Deploy Only
 **Status:** `progress_equity_curves.rs` shows Turtle 1.0x instead of ~235x (data length 2087 vs 2971 bars for BTC).
@@ -118,10 +116,13 @@ VOL_LOOKBACK    = 8      // ✅ dense sweep confirmed (updated 2026-04-28)
 
 ---
 
-## Research Loop: What Remains
+## Research Loop: CLOSED (2026-04-29) ✓
 
-1. **S4:** ATR-normalized position sizing — TESTABLE NOW (does not need credentials)
+All testable ideas exhausted:
+1. **S4:** ATR-normalized sizing — REJECTED (equal capital optimal, 86% vs 57% pass)
 2. **T24:** Equity bug fix — pre-deploy only (low priority vs live testnet)
 3. **T9:** Live testnet — BLOCKED on Noah's API keys
 
-**Research status:** Research loop CLOSED. T22 confirmed no structural invalidation needed. TURTLE_ATR_PERIOD=24 hyperopt was valid (not noise). Production Turtle-only strategy is sound. S4 is the last genuinely testable idea without credentials. Only live testnet validates execution assumptions.
+**Research loop: TRULY CLOSED. Only live testnet (BLOCKED on API keys) advances the project.**
+
+**Research status:** Research loop TRULY CLOSED (2026-04-29). S4 tested and REJECTED. Every testable idea (entry, exit, position sizing) exhausted. Equal capital confirmed optimal. Only live testnet advances the project.
