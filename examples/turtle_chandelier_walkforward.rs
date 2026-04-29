@@ -40,6 +40,12 @@ const ATR_ENTRY_MULT: f64 = 0.00; // REVERTED 2026-04-25: 41-value sweep {0.00-2
 // (40/54, Sharpe 3.112, Base5 6/6), so the real finding is a stable plateau around 7-9 with 8 as the
 // best default. See snapshots/vl_extensive_current_params_summary.csv and charts/comparison_chart.png.
 const VOL_LOOKBACK: usize = 8; // dollar-volume smoothing window (rolling SMA of vol*price)
+// ATR_EMA_PERIOD: EMA smoothing of Chandelier ATR values. ATR_EMA=1 = raw SMA ATR (baseline).
+// Extensively swept 2026-04-29: ATR_EMA ∈ [1..200] step 1 × 9 universes × 54 windows.
+// Result: NULL. ATR_EMA=4 wins pass rate (+1 window) but ATR_EMA=1 wins Sharpe (4.12 vs 3.76).
+// ATR_EMA=1 (raw ATR) confirmed as production default — simplest mechanism, best Sharpe.
+// See memory/hyperopt-2026-04-29-atr-ema.md, charts/atr_ema_comparison.png.
+const ATR_EMA_PERIOD: usize = 1;
 const TURTLE_ATR_MULT: f64 = 2.00; // hyperopt 2026-04-12: TURTLE_ATR_MULT sweep {1.0-5.0 step 0.5}. M=2.0 is optimal (Sharpe 6.17, 93% pass). M<2.0 degrades Sharpe (M=1.0: 3.06). M>=2.5: Turtle ATR never fires first (Chandelier dominates). Current value matches CHAND_MULT by design — Turtle ATR is the faster secondary exit, not an independent mechanism. See memory/hyperopt-2026-04-12-atr-mult.md.
 
 const UNIVERSES: &[(&str, &[&str])] = &[
