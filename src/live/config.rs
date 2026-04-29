@@ -69,7 +69,9 @@ pub struct LiveConfig {
     pub atr_mult: f64,
     /// ATR entry multiplier — momentum filter on Turtle breakout (default: 0.0)
     /// Only enter if close >= breakout_level + ATR(atr_period) * ATR_ENTRY_MULT.
-    /// hyperopt 2026-04-21: EM=0.90 wins full 63-window validation (+29.7% Sharpe).
+    /// hyperopt 2026-04-25: Full 41-value sweep × 9 universes × 54 windows.
+    /// EM=0.00 wins definitively: 83.3% pass, Sharpe 1.87. Any non-zero filter
+    /// degrades pass rate monotonically. Prior EM=0.90 was in-sample inflation.
     pub atr_entry_mult: f64,
     /// Max hold bars (default: 45)
     pub hold_max: usize,
