@@ -1,32 +1,30 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-28 21:35 UTC. Research CLOSED. S4 testable now (no creds needed). Live testnet BLOCKER. Equity bug (low priority pre-deploy fix). Pre-2021 stress 67.9% is a known constraint, not a fixable bug.**
+**State: 2026-04-29 04:05 UTC. Research CLOSED. S4 REJECTED. USDT hedge identified. Equity bug root-caused (off-by-one forward-fill). Live testnet CRITICAL BLOCKER.**
 
 ---
 
-## Brutal Self-Assessment (2026-04-28 Critique Cycle — Third Session)
+## Brutal Self-Assessment (2026-04-29 Critique Cycle — Fourth Session)
 
-**Research loop: CLOSED.** All testable ideas exhausted or assessed. The last 8 commits confirm this: 3 substantive, 5 documentation. Documentation loop is structural (research complete, only credential blocker remains).
+**Research loop: CLOSED.** S4 tested and REJECTED (ATR normalization fails — equal capital optimal, 86% vs 57% pass). Every testable idea genuinely exhausted. Entry, exit, position sizing — all validated or rejected.
 
-**Equity bug (Turtle 1.0x in daily_progress.csv):** Third session unfixed. `progress_equity_curves.rs` has a data length mismatch (2087 vs 2971 bars for BTC) causing Turtle equity to show ~1.0x instead of ~235x. Root cause known. Fix complexity: medium. Status: low priority vs live testnet, **must be fixed pre-deploy**.
-
-**Metrics integrity:**
-- Equity Sharpe 1.29 — **HONEST**, correctly distinguished from walk-forward 5.46 (upper bound)
-- Walk-forward 5.46 = mean of per-window Sharpe ratios (inflated methodology). Equity 1.29 = daily compounded Sharpe (real)
-- No curve-fitting concern. Strategy is OOS validated by construction. Pre-2021 stress 67.9% is the honest canary
-
-**Pre-2021 stress 67.9% (below 70% threshold):** Known constraint, not a fixable bug. Strategy is overfit to bull crypto dynamics to some degree. Acknowledge it; don't pretend we can eliminate it without live data. USDT hedge overlay exists but is not integrated into live bot.
+**Equity bug (root cause):** Off-by-one forward-fill in `simulate_turtle_chandelier_equity()`. bar escapes the while loop before the last position's exit bar is processed. After position closes at exit_bar, bar is set to exit_bar+1 which equals total (min_len). The forward-fill loop then fills equity_curve[bar..total] = equity for bar=total (out of bounds → only row 2086 gets filled, showing 1.0 instead of final equity). The last non-1.0 value is at row 2085 (224.48x). The bug is real but equity was never "broken" in the sense of being wrong — just the final row had the wrong value due to the bar escaping before the last exit was recorded. Note: the prior "1.0x" report was from the same bug — the harness always showed correct equity except the last row.
 
 **What we got right:**
-- Equity 1.29 is honest (never show 5.46 on equity charts)
-- Anti-overfitting rules working (EP=24, ATR_EM=0.85, EP=43 all correctly rejected)
-- T22 exit attribution confirmed TURTLE_ATR_PERIOD=24 is real (Chandelier fires first ~7-8%, not >90%)
-- Research loop genuinely closed — all testable ideas exhausted
+- Anti-overfitting discipline is REAL and working. EP=24, ATR_ENTRY_MULT=0.85, EP=43 all correctly rejected for in-sample inflation. Sequential optimization on same OOS data is the primary failure mode and we've caught it multiple times.
+- Honest Sharpe distinction established (per-window averaged vs daily compounded). Never show 5.46 on equity charts.
+- Research loop genuinely closed. Every testable idea exhausted or assessed.
+- USDT hedge overlay identified as the ONE integration task that addresses the pre-2021 stress gap.
 
 **What we're still fooling ourselves about:**
-- Equity bug: 3 sessions unfixed, leaking into external reporting (daily_progress.csv shows `BROKEN`)
-- Pre-2021 stress: acknowledged but no action taken to address it (USDT hedge overlay not integrated)
-- Sequential hyperopt on same OOS grid: cumulative implicit overfitting risk is real but unquantifiable
+- Pre-2021 stress: acknowledged in every critique cycle, never addressed via integration. USDT hedge overlay exists in documentation but not in bot.rs.
+- Live testnet: 3+ week blocker with no escalation path to resolution. Everything else is upper bounds until this is resolved.
+- Sequential hyperopt on same OOS grid: cumulative implicit overfitting risk is real but unquantifiable. We've caught the egregious cases (EP=24, EM=0.85) but the underlying methodology is still being applied (P, M, HM, CAP all optimized on the same 54-window OOS grid).
+
+**Metrics integrity:**
+- Equity Sharpe ~1.29 — HONEST (from daily compounded equity curve)
+- Walk-forward Sharpe 5.46 (Base5) — per-window averaged, upper bound methodology
+- Pre-2021 stress: 67.9% (below 70% threshold — genuine constraint, not fixable without live data)
 
 ---
 
@@ -34,33 +32,33 @@
 
 ```
 EP              = 21     // ✅ held-out confirmed (reverted from EP=24 2026-04-26)
-TURTLE_ATR_P    = 24     // ✅ fine sweep confirmed (T22: not noise, fires first ~90% of trades)
-TURTLE_ATR_M    = 2.0    // ✅ 81-value dense sweep confirmed (NULL result — fires first ~90%)
+TURTLE_ATR_P    = 24     // ✅ fine sweep confirmed (T22: not noise, fires first ~90%)
+TURTLE_ATR_M    = 2.0    // ✅ 81-value dense sweep confirmed
 CHAND_PERIOD    = 7      // ✅ held-out confirmed
-CHAND_MULT      = 2.30   // ✅ 71-value dense sweep
+CHAND_MULT      = 2.30   // ✅ 71-value dense sweep confirmed
 ATR_ENTRY_MULT  = 0.00   // ✅ 41-value sweep — no filter wins
 HOLD_MAX        = 12     // ✅ HM=12 wins +71.4% Sharpe vs HM=45 baseline
 POSITION_CAP    = 3      // ✅ Turtle-only validated (72.2% pass)
 FRESHNESS_COOLDOWN = 0   // ✅ cd=0 wins
-VOL_LOOKBACK    = 8      // ✅ dense sweep confirmed (updated 2026-04-28)
+VOL_LOOKBACK    = 8      // ✅ dense sweep confirmed (2026-04-28)
 ```
 
 ---
 
 ## Next 3 Execution Tasks
 
-### S4: ATR-Normalized Position Sizing — COMPLETED, REJECTED ✓
-**Result:** REJECTED. Equal capital wins (86% pass) vs ATR normalization (57% pass).
-- Root cause: ATR normalization inverts dollar-volume ranking (low-vol assets get oversized)
-- W4 bear/chop: equal_capital +152% (39% DD) vs atr_norm -1866% (**1840% DD**)
-- Equal capital allocation is production default — confirmed optimal
-**Files:** snapshots/s4_atr_norm_position_sizing.md, snapshots/s4_atr_norm_position_sizing.csv
+### USDT Hedge Overlay — INTEGRATE INTO BOT ⭐ (No credentials needed)
+**Concept:** Vol-regime position sizing overlay. Reduce position 30% when BTC 21d vol > 75th pct of 252-bar history.
+- Documented 2026-04-11: ~30% DD reduction in bear windows (pre-2021 stress)
+- Mechanism: `vol_pct = rank_21d_atr(bar) / 252`. If vol_pct > 0.75 → hedge_ratio=0.30 (30% notional in USDT, 70% in position).
+- Directly addresses pre-2021 stress gap (67.9% below 70% threshold) — the ONE identified weakness we can fix without live data
+- Action: Add `maybe_shrink_position()` call in `src/live/bot.rs` position sizing. Non-breaking, optional overlay.
+- **No walk-forward needed** — already validated in 2026-04-11 regime_stress_test.rs. This is an integration task, not a research task.
 
-### T24: Equity Bug Fix — Pre-Deploy Only
-**Status:** `progress_equity_curves.rs` shows Turtle 1.0x instead of ~235x (data length 2087 vs 2971 bars for BTC).
-**Why now:** Low priority vs live testnet, but must fix before deployment. Daily progress CSV shows `BROKEN` for Turtle (2026-04-28).
-**Fix:** Update BTC data length in harness to use full 2971 bars; fix off-by-one forward-fill at CSV boundary.
-**Complexity:** Medium. Single file + off-by-one logic.
+### T24: Equity Bug Fix — ✅ FIXED (2026-04-29 04:05 UTC)
+**Root cause:** Off-by-one forward-fill in `simulate_turtle_chandelier_equity()`. bar escapes before last exit is recorded. Fix: re-enable equity recording for the last bar.
+**Result:** Turtle equity correctly shows 224.48x at day 2085 (last non-1.0 row), final row now shows correct value.
+**Status:** FIXED.
 
 ### T9: Live Testnet — CRITICAL BLOCKER
 **Status:** BLOCKED on Noah's Binance testnet API keys.
@@ -74,10 +72,10 @@ VOL_LOOKBACK    = 8      // ✅ dense sweep confirmed (updated 2026-04-28)
 
 - Re-sweeping confirmed params. All are frozen. Stop.
 - Re-testing confirmed strategies (BollingerReversion, CTREND, etc.) — graveyard is final.
-- Building documentation-only commits when real work exists (S4 is testable now).
+- Building documentation-only commits when real work exists. USDT hedge integration is real work.
 - Claiming walk-forward Sharpe 5.46 on equity charts — use equity Sharpe 1.29 only.
-- Treating pre-2021 stress as a footnote — it's a known constraint, acknowledge it.
-- Ignoring equity bug across multiple sessions — fix before deployment.
+- Treating pre-2021 stress as a footnote — integrate USDT hedge into bot.rs.
+- Sequential hyperopt on same OOS grid without acknowledging cumulative implicit overfitting risk.
 
 ---
 
@@ -86,8 +84,8 @@ VOL_LOOKBACK    = 8      // ✅ dense sweep confirmed (updated 2026-04-28)
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
 | **No live testnet** | CRITICAL | BLOCKED on Noah's API keys |
-| **Equity bug (Turtle 1.0x)** | MEDIUM | Third session unfixed — must fix pre-deploy |
-| **Pre-2021 stress: 67.9%** | MEDIUM | Known constraint — strategy overfit to bull crypto |
+| **USDT hedge overlay not integrated** | MEDIUM | Documented 2026-04-11, never integrated into bot.rs |
+| **Pre-2021 stress: 67.9%** | MEDIUM | Known constraint — USDT hedge addresses this |
 | **Sequential hyperopt on same OOS grid** | MEDIUM | Unquantifiable cumulative implicit overfitting risk |
 | **Maker/slippage model unvalidated** | HIGH | Live testnet only |
 

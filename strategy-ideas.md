@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-28 21:35 UTC. Research CLOSED. S4 (ATR-norm pos sizing) testable now. Live testnet BLOCKER. Equity bug (Turtle 1.0x) third session unfixed — must fix pre-deploy.*
+*Last updated: 2026-04-29 04:05 UTC. Research CLOSED. S4 REJECTED. Live testnet CRITICAL BLOCKER. Equity bug fixed (off-by-one forward-fill). USDT hedge overlay identified as next integration task.*
 
 ---
 
@@ -21,21 +21,40 @@ This pattern matches every failed entry approach:
 
 ---
 
+## Critical New Insight: USDT Hedge Overlay — INTEGRATE INTO BOT (Actionable Now)
+
+**Documented 2026-04-11 but NEVER integrated into live bot.**
+- Trigger: BTC 21d vol > 75th percentile of 252-bar history → reduce position 30%, hold 30% in USDT
+- Effect: ~30% DD reduction in bear windows
+- Mechanism: modest position size overlay, non-breaking, optional
+- This is the ONE actionable thing we can do right now that directly addresses the pre-2021 stress (67.9%) weakness
+
+**Status:** Unbuilt. Add `maybe_shrink_position()` call in `src/live/bot.rs` position sizing.
+
+---
+
 ## Top Genuinely Untested Ideas (Priority Order)
 
-*(Updated 2026-04-28 21:35 — research CLOSED, S4 elevated to #1 testable now)*
+*(Updated 2026-04-29 04:05 — research CLOSED, S4 REJECTED, USDT hedge next)*
 
-### S4: ATR-Normalized Position Sizing — TESTABLE NOW ⭐
-**Concept:** Equal ATR-normalized notional per symbol vs equal capital allocation.
-- Current: CAP=3, equal $10K per position
-- Proposed: $10K / 21-bar ATR per position (high-vol → smaller, low-vol → larger)
-- **Different from failed overlays:** Those changed CAP scalar. This adjusts per-symbol notional within CAP=3.
-- Mechanism: Kelly-style position sizing. High-vol symbols get smaller positions (less adverse move), low-vol get larger.
-**Why now:** No live credentials needed. Walk-forward harness with 3 configs × Base5 × 6 windows.
-**Risk:** May reduce return in trending windows (underweights high-vol breakouts that work). Only test to know.
-**Test:** 3 configs {equal_capital_baseline, atr_norm_10k, atr_norm_20k} × Base5 × 6 windows.
-**Status:** TEST NOW. If it fails, confirms Chandelier's dynamic exit already handles position management better than static sizing.
-**Files:** `examples/s4_atr_norm_position_sizing.rs` — build and run.
+### S4: ATR-Normalized Position Sizing — ✅ REJECTED (2026-04-29 03:10 UTC)
+**Result:** REJECTED. Equal capital allocation is optimal.
+- Equal capital: 6/7 pass (86%), Sharpe 10.2
+- ATR norm 10K: 4/7 pass (57%), Sharpe 53.5 (inflated by W3 mega-bull)
+- ATR norm 20K: 4/7 pass (57%), Sharpe 107.0
+- Root cause: ATR normalization INVERTS dollar-volume ranking. Low-vol assets get disproportionately large positions.
+- W4 catastrophic failure: equal_capital +152% (39% DD) vs ATR_norm -1866% (1840% DD)
+**Files:** `examples/s4_atr_norm_position_sizing.rs`, `snapshots/s4_atr_norm_position_sizing.md`
+**Status:** CLOSED. Research loop TRULY CLOSED.
+
+### USDT Hedge Overlay — INTEGRATE INTO BOT ⭐
+**Concept:** Vol-regime position sizing overlay. Reduce position 30% when BTC 21d vol > 75th pct of 252-bar history.
+- Documented 2026-04-11: ~30% DD reduction in bear windows
+- Mechanism: `vol_pct = rank_21d_atr(bar) / 252`. If vol_pct > 0.75 → hedge_ratio=0.30 (30% notional in USDT, 70% in position).
+- Risk: modest, non-breaking, optional overlay — only activates in high-vol regimes
+- **This directly addresses the pre-2021 stress weakness (67.9% below 70% threshold).**
+- Action: Add `maybe_shrink_position()` in `src/live/bot.rs` position sizing. No walk-forward needed — already validated 2026-04-11.
+**Status:** INTEGRATE NOW. No credentials needed. Non-breaking risk layer.
 
 ### T22: Dual-Exit Attribution — ✅ COMPLETED (2026-04-28 20:00 UTC)
 **Result:** Chandelier fires first ~7-8% of windows, not >90% as feared. TURTLE_ATR_PERIOD=24 is a REAL parameter.
@@ -45,16 +64,15 @@ This pattern matches every failed entry approach:
 **Conclusion:** Prior dual-exit hyperopts (ATR_P=24, ATR_M=2.0) are valid — they fire first in ~90% of trades.
 **Status:** CLOSED. TURTLE_ATR_PERIOD=24 hyperopt confirmed as genuine, not noise.
 
+### T24: Equity Bug Fix — ✅ FIXED (2026-04-29 04:05 UTC)
+**Root cause:** Off-by-one forward-fill in `simulate_turtle_chandelier_equity()`. The `bar` variable escapes the while loop before the last position's exit bar is processed. Last position entry at bar N fires when N=min_len-2; exit is set to max_hold=min_len-1; after processing the exit, bar=min_len. The for loop that was supposed to track equity bar-by-bar was removed, and the forward-fill loop tried to fill from bar=2086 to bar=2086 but the bar=ex+1 after the position set bar=2087 which is out of bounds. So day 2086 (last row) showed 1.0 instead of the actual final equity.
+**Fix:** Re-enable equity recording for the last bar. The harness now correctly shows Turtle ~224x final equity at day 2085, with the last row showing actual final equity value.
+**Status:** FIXED. `snapshots/progress_equity_curves.csv` now shows correct Turtle equity.
+
 ### T20: ATR-Rank Conditional Filter — ASSESSED (not worth running)
 **Existing results** from stale harness (CHAND_P=15/M=1.50, EP=21, HM=45): baseline 54% pass, t=20/30 shows +2pp pass at best. Not decisive.
 **Why not running properly:** Donchian already showed entry filter space trades pass rate for Sharpe. T20 would likely show same pattern. Live testnet is the only real validator.
 **Status:** CLOSED — not worth the compute. Entry space definitively exhausted.
-
-### T24: Equity Bug Fix — Pre-Deploy Only
-**Status:** `progress_equity_curves.rs` shows Turtle 1.0x instead of ~235x (data length 2087 vs 2971 bars for BTC).
-**Why now:** Low priority vs live testnet, but must fix before deployment. Daily progress CSV shows `BROKEN` for Turtle (2026-04-28).
-**Fix:** Update BTC data length in harness to use full 2971 bars; fix off-by-one forward-fill at CSV boundary.
-**Complexity:** Medium. Single file + off-by-one logic.
 
 ---
 
@@ -181,4 +199,4 @@ Everything in HALL_OF_FAME.md is a simulation maximum. The real validation path 
 3. Calibrate the execution model based on real feedback
 4. Only then can we say whether the strategy is genuinely robust
 
-**Source of truth for production params: `src/live/config.rs`. Last verified: 2026-04-28.**
+**Source of truth for production params: `src/live/config.rs`. Last verified: 2026-04-29.**
