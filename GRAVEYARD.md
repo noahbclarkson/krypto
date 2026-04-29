@@ -94,3 +94,13 @@ Everything else has failed OOS validation.
 **Verdict:** Chandelier(P=7, M=2.30) already handles choppy BTC regimes correctly. Correlation filter adds no value and trades off Sharpe for trade frequency.
 
 **Evidence file:** `examples/turtle_correlation_filter_walkforward.rs`, `snapshots/t7_correlation_filter_results.csv`
+
+## 2026-04-29 — Asymmetric Exit Variants (T27)
+
+**Hypothesis:** Separate catastrophic hard stop from looser profit-trailing stop: ATR×0.5 hard stop plus Chandelier(7,3.0) soft trail, or ATR×0.5 hard stop plus TurtleATR only.
+
+**Validation:** `examples/asymmetric_exit_walkforward.rs`, 9 universes × 6 walk-forward windows, current T27 params.
+
+**Result:** No robustness improvement. Baseline remained best: 38/54 pass, avg Sharpe 3.818. `asym_soft`: 38/54, Sharpe 3.680. `asym_hard`: 38/54, Sharpe 3.610. Asymmetric exits add complexity without improving pass rate or Sharpe.
+
+**Verdict:** REJECTED. Keep current exit architecture for this harness.
