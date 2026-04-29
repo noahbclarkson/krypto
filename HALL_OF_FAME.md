@@ -1,48 +1,53 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-_Auto-generated from `src/live/config.rs` + `examples/live_turtle_chandelier.rs`
-on 2026-04-26. DO NOT EDIT MANUALLY — edit source files and regenerate._
+_Auto-generated from production config + validated snapshots on 2026-04-29._
+_Run `python3 scripts/gen_hof.py` to regenerate. Do not hand-edit headline metrics._
 
 ---
 
-## PRODUCTION — DEPLOYABLE
+## PRODUCTION — DEPLOYABLE AFTER TESTNET
 
-### Turtle+Chandelier (NoDOGE Universe)
-- **Universe:** BTC, ETH, SOL, XRP, DOGE (ADA removed — portfolio drag in bull years)
-- **Base5 pass rate:** 6/6 (100%)
-- **Global pass rate:** 45/54 (83%) (9-universe)
-- **Daily equity Sharpe:** ~1.29 (honest, methodology-verified)
-- **Max DD:** 35.4% (W02 COVID-crash)
-- **Historical equity:** $10K → $67M (310 trades)
+### Turtle+Chandelier / Turtle ATR live variant
+- **Equity harness universe:** Base5 — BTC, ETH, SOL, XRP, DOGE, ADA
+- **Live bot universe:** BTC, ETH, SOL, XRP, DOGE
+- **Base5 walk-forward pass rate:** 6/6 (100.0%)
+- **Global walk-forward pass rate:** 40/54 (74.1%) (9-universe, current validated harness)
+- **Walk-forward avg Sharpe:** 3.147 (721 trades, per-window metric)
+- **Daily equity Sharpe:** 1.04 (honest compounded-equity metric)
+- **Validated daily equity:** $10K → $2,215,000 (221.5x)
+
+**Important reconciliation:** The old `$10K → $67M` headline was a stale/full-sample artifact and is no longer cited. The authoritative current daily-equity number is `snapshots/progress_equity_curves.md`: 221.5x / Sharpe 1.04.
 
 **Frozen production params (from `src/live/config.rs`):**
-```
+```text
 EP              = 21     // Turtle entry lookback
-CHAND_PERIOD    = 7  // Chandelier ATR period
-CHAND_MULT      = 2.30   // Chandelier ATR multiplier (71-value dense sweep)
-TURTLE_ATR_P    = 24    // Turtle ATR stop period
+CHAND_PERIOD    = 7      // Stored in config; secondary validation layer
+CHAND_MULT      = 2.30   // Stored in config; secondary validation layer
+TURTLE_ATR_P    = 24     // Turtle ATR stop period
 TURTLE_ATR_M    = 2.0    // Turtle ATR stop multiplier
-ATR_ENTRY_MULT  = 0.00    // Entry filter — any non-zero degrades pass rate
-HOLD_MAX        = 12      // Max hold bars (Chandelier fires ~bar 12-15)
-POSITION_CAP    = 3     // Max concurrent positions
+ATR_ENTRY_MULT  = 0.00   // Entry filter — any non-zero degrades pass rate
+HOLD_MAX        = 12     // Max hold bars
+POSITION_CAP    = 3      // Max concurrent positions
 ```
 
 **Validation evidence:**
-- Walk-forward (Base5): 6/6 (100%)
-- Walk-forward (global 9-universe): 45/54 (83%)
+- Progress equity harness: 221.5x, daily Sharpe 1.04
+- Walk-forward (Base5): 6/6 (100.0%)
+- Walk-forward (global 9-universe): 40/54 (74.1%)
 - Pre-2021 held-out stress: 19/28 (67.9%)
+- T22 exit attribution: Chandelier adds secondary robustness; live bot currently uses Turtle ATR as sole live exit
 - Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76–0.87)
 
-**Fee model:** ~0.04% RT taker, realistic ~0.02% RT. Fee-adj Sharpe ≈ 3.1–3.7.
+**Fee model:** 0.04% taker fee in live dry-run; prior execution realism suggested ~22–33% Sharpe degradation under realistic costs.
 
-**⚠️ VOL_LOOKBACK is harness-only.** The walk-forward harness uses VOL_LOOKBACK for dollar-volume ranking. This is a HARNESS parameter — NOT in production code. Production `src/live/bot.rs` does not use DV ranking.
+**Critical blocker:** Binance testnet API key + secret. All metrics remain simulation upper bounds until 30-day testnet paper trading runs.
 
 ---
 
 ## BORDERLINE — NOT PRODUCTION
 
 ### Turtle+Chandelier (Base5 — with ADA)
-- ADA is a portfolio drag in bull years (+whipsaw, no benefit). Use NoDOGE instead.
+- ADA has been a portfolio drag in bull years (+whipsaw, no benefit). Live bot excludes ADA.
 
 ### A/D Dual-Hat (standalone)
 - 52% walk-forward pass — too weak alone. Potential as a 20% sleeve.
@@ -65,7 +70,7 @@ See `GRAVEYARD.md` for full list. Key invalidations:
 | MACD+Regime | Stale cache, OOS 2/7 pass |
 | BollingerReversion | Full-sample look-ahead contamination, 0/288 OOS |
 | Regime switching | All configs fail |
-| Position scaling overlays | All failed — Chandelier sufficient |
+| Position scaling overlays | All failed — equal capital wins |
 
 ---
 
@@ -82,7 +87,7 @@ See `GRAVEYARD.md` for full list. Key invalidations:
 | File | Contents |
 |------|----------|
 | `src/live/config.rs` | Production constants — frozen params |
-| `examples/live_turtle_chandelier.rs` | Strategy logic + equity figures |
-| `examples/turtle_chandelier_walkforward.rs` | Validation harness (VOL_LOOKBACK is harness-only) |
-
-_Run `python3 scripts/gen_hof.py` to regenerate this file._
+| `examples/live_turtle_chandelier.rs` | Live dry-run / testnet entrypoint |
+| `examples/progress_equity_curves.rs` | Honest daily-equity progress harness |
+| `snapshots/progress_equity_curves.md` | Current daily equity + Sharpe source of truth |
+| `snapshots/turtle_chandelier_9way_wf_latest.md` | Current walk-forward validation source |

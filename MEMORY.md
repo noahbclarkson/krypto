@@ -247,7 +247,7 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 **Equity CSV export cap fixed:** `end_bar = n.min(start_bar + 5000)` (was 2000 → truncating at 2023-07-30).
 
 **Full history results (2018-02-07 to 2026-04-14):**
-- $10K → $67M (+670,515%), 310 trades, MaxDD 62.6%
+- **SUPERSEDED 2026-04-29:** this section previously cited `$10K → $67M`; do not use that headline. Current authoritative progress harness shows **$10K → $2.215M (221.5x), daily equity Sharpe 1.04**.
 - Daily equity Sharpe: ~1.0-1.3 (HONEST number for equity charts)
 - Walk-forward Sharpe 6.29 is NOT directly comparable — it's a per-window averaged Sharpe ratio
 
@@ -284,8 +284,8 @@ EP=21, Chandelier(28, 2.0), CAP=3, HM=45, ATR=25, ATR_mult=2.0
 | Base5 avg Sharpe | 5.46 |
 | Base5 fee-adj Sharpe | ~3.82 (22-33% fee drag) |
 | **Daily equity Sharpe** | **1.04 (honest)** |
-| Equity: $10K → $67M | +670,515% total |
-| Annualised return | +111.3% |
+| Equity | **$10K → $2.215M (221.5x) — reconciled 2026-04-29** |
+| Annualised return | Superseded by progress harness; do not cite stale $67M artifact |
 | MaxDD | 62.6% |
 | Total trades | 310 (full history) / 776 (9-universe WF) |
 
@@ -549,6 +549,18 @@ All values MT ∈ {1,2,3,4,5,6,7,8,10} produce IDENTICAL results:
 **Key insight:** Equal capital allocation is optimal for Turtle+Chandelier. Dollar-volume ranking already selects symbols; ATR normalization undermines that signal. Chandelier exit already manages adverse positions dynamically. Position sizing overlays consistently fail on this strategy.
 
 **Research loop: TRULY CLOSED (2026-04-29).** Every testable idea exhausted. Only live testnet (blocked on API keys) advances the project.
+
+## 2026-04-29 — T25 Metric Reconciliation + Reporting Pipeline: COMPLETE
+
+**Problem:** HALL_OF_FAME still cited `$10K → $67M` while `snapshots/progress_equity_curves.md` showed Turtle+Chandelier **221.5x / daily Sharpe 1.04**. `reports/daily_progress.csv` also ended with 2026-04-28 `BROKEN (harness bug)`.
+
+**Resolution:**
+- Ran `cargo run --example progress_equity_curves --profile sweep`: Turtle+Chandelier **221.5x**, daily Sharpe **1.04**; DDBudget 61.3x / 7.24; A/D 40.3x / 3.61; FactorSmallByDV 14.8x / 1.97.
+- Ran `cargo run --example live_turtle_chandelier --profile sweep`: fixed a Rust format-string compile error first; dry-run now compiles and reports per-symbol paper results. This is NOT the portfolio-equity source of truth.
+- Added `scripts/run_daily_progress.sh`: runs the validated progress harness, renders `charts/progress_equity_curves_daily.png`, and updates `reports/daily_progress.csv` idempotently for the date.
+- Updated `scripts/gen_hof.py` and regenerated `HALL_OF_FAME.md`; HOF now cites **$10K → $2.215M (221.5x), daily Sharpe 1.04** and explicitly marks `$67M` as stale/full-sample artifact.
+
+**Meta-lesson:** HOF headline metrics must be generated from validated snapshots, not hardcoded constants. Do not cite `$67M` again.
 
 ## 2026-04-29 — VOL_LOOKBACK Production Hyperopt: VL=8 CONFIRMED
 

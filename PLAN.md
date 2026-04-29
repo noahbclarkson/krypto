@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-29 13:24 UTC. Critique Cycle. Equity bug FIXED (e55659e8). Daily reporting STALE (2026-04-28 "BROKEN"). USDT hedge INTEGRATED. Research loop CLOSED. Live testnet CRITICAL BLOCKER (3+ weeks).**
+**State: 2026-04-29 15:30 UTC. T25 COMPLETE. Equity bug FIXED. Reporting pipeline REPRODUCIBLE. HOF metric reconciled to 221.5x / Sharpe 1.04. USDT hedge INTEGRATED. Research loop CLOSED. Live testnet CRITICAL BLOCKER (3+ weeks).**
 
 ---
 
@@ -16,10 +16,9 @@
 - Equity bug: FIXED (e55659e8). Off-by-one recording loop corrected.
 
 **What we're still fooling ourselves about:**
-- Daily reporting infrastructure is AD-HOC. `daily_progress.csv` still shows "BROKEN (harness bug)" dated 2026-04-28. No automated pipeline. Someone must manually run harnesses.
-- Equity numbers are INCONSISTENT: HALL_OF_FAME says "$10K→$67M" but harness shows 221.5x. These cannot both be correct. HOF number may be full-sample artifact.
-- Live testnet: 3+ week blocker with no escalation. All metrics are upper bounds.
+- Live testnet: 3+ week blocker. All metrics are still simulation upper bounds.
 - Pre-2021 stress: 67.9% — BELOW our own 70% threshold. Choppy/bear regimes remain the real failure mode.
+- Reporting is better but not fully automated by cron. `scripts/run_daily_progress.sh` now makes the run reproducible, but cron integration is still manual/operator work.
 
 ---
 
@@ -35,7 +34,7 @@ ATR_ENTRY_MULT  = 0.00   // ✅ 41-value sweep — no filter wins
 HOLD_MAX        = 12     // ✅ HM=12 wins +71.4% Sharpe vs HM=45 baseline
 POSITION_CAP    = 3      // ✅ Turtle-only validated (72.2% pass)
 FRESHNESS_COOLDOWN = 0   // ✅ cd=0 wins
-VOL_LOOKBACK    = 2      // ✅ dense sweep confirmed
+VOL_LOOKBACK    = 8      // ✅ dense production sweep confirmed (harness-only DV ranking)
 ```
 
 ---
@@ -48,9 +47,8 @@ VOL_LOOKBACK    = 2      // ✅ dense sweep confirmed
 **What we need:** Binance testnet API key + secret (not production keys).
 **Escalation:** Surface to Arc explicitly. Nothing advances the project without this.
 
-### T25: Reconcile Metrics + Fix Reporting Pipeline — URGENT
-**Status:** HALL_OF_FAME.md says "$10K→$67M (310 trades)" but progress_equity_curves.csv shows 221.5x at bar 2087. daily_progress.csv still has "BROKEN (harness bug)" dated 2026-04-28. These are unacceptable single-source-of-truth failures.
-**What to do:** Run `cargo run --example progress_equity_curves` and `cargo run --example live_turtle_chandelier`; compare final equity numbers; update HALL_OF_FAME.md with the consistent, honest validated-harness number. Create `scripts/run_daily_progress.sh` or equivalent so progress reporting is reproducible. Do NOT cite 67M again until reconciled.
+### T25: Reconcile Metrics + Fix Reporting Pipeline — COMPLETE ✅
+**Status:** Completed 2026-04-29 15:30 UTC. `progress_equity_curves` confirms Turtle+Chandelier **221.5x / daily Sharpe 1.04**. `live_turtle_chandelier` dry-run compiles/runs after fixing a format-string compile error and shows per-symbol historical paper returns (not the portfolio equity source of truth). `HALL_OF_FAME.md` and `scripts/gen_hof.py` now cite the honest validated-harness number, not `$67M`. `reports/daily_progress.csv` has a fresh 2026-04-29 row and `scripts/run_daily_progress.sh` makes refresh reproducible.
 
 ### T27: Asymmetric Exit Architecture — New Research
 **Hypothesis:** Use tighter hard stop (ATR×0.5) for losers AND looser Chandelier (ATR×3.0) for winners. Turtle ATR remains the secondary exit. The convex payoff of trend-following demands asymmetric exits — cut losers fast, let winners run.
@@ -63,9 +61,9 @@ VOL_LOOKBACK    = 2      // ✅ dense sweep confirmed
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
 | **No live testnet** | CRITICAL | BLOCKED on Noah's API keys — 3+ weeks |
-| **Daily reporting ad-hoc/stale** | HIGH | "BROKEN" in daily_progress.csv since 2026-04-28 |
+| **Daily reporting not cron-integrated** | MEDIUM | `scripts/run_daily_progress.sh` exists; operator/cron integration still pending |
 | **Pre-2021 stress: 67.9%** | MEDIUM | Known constraint |
-| **Equity numbers inconsistent** | HIGH | HOF: $67M vs harness: 221.5x — must reconcile |
+| **Equity source-of-truth drift** | LOW | Reconciled 2026-04-29: HOF now cites 221.5x / Sharpe 1.04 from validated harness |
 | **Maker/slippage model unvalidated** | HIGH | Live testnet only |
 
 ---
