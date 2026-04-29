@@ -549,3 +549,11 @@ All values MT ∈ {1,2,3,4,5,6,7,8,10} produce IDENTICAL results:
 **Key insight:** Equal capital allocation is optimal for Turtle+Chandelier. Dollar-volume ranking already selects symbols; ATR normalization undermines that signal. Chandelier exit already manages adverse positions dynamically. Position sizing overlays consistently fail on this strategy.
 
 **Research loop: TRULY CLOSED (2026-04-29).** Every testable idea exhausted. Only live testnet (blocked on API keys) advances the project.
+
+## 2026-04-29 — VOL_LOOKBACK Production Hyperopt: VL=8 CONFIRMED
+
+Re-validated harness-only `VOL_LOOKBACK` under current production validation params (`EP=21`, `CHAND(7,2.30)`, `TurtleATR(24,2.0)`, `HM=12`, `CAP=3`). Full dense sweep **VL=1..=100 step 1** across **9 universes × 6 WF windows = 54 OOS windows per value**.
+
+**Winner remains `VOL_LOOKBACK=8`** by robustness-first selection: **40/54 pass (74.1%)**, 9/9 positive universes, avg Sharpe **3.1471**, avg return **+105.3%**, 721 trades. `VL=9` ties pass rate but lower Sharpe/return. Higher values such as `VL=78/95` improve Sharpe/return in some windows but reduce pass rate, so rejected as robustness-for-return tradeoff.
+
+No default change. Files: `examples/vol_lookback_prod_sweep.rs`, `snapshots/vol_lookback_prod_sweep.csv`, `snapshots/vol_lookback_prod_summary.csv`, `snapshots/vol_lookback_prod_equity.csv`, `charts/plot_vol_lookback_prod.py`, `charts/comparison_chart.png`, `memory/hyperopt-2026-04-29.md`.
