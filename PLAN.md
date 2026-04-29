@@ -1,24 +1,26 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-29 18:01 UTC. T25/T24 COMPLETE. T28 COMPLETE ✅. T29/T30 NEW. Live/testnet STRUCTURAL GAP RESOLVED. Research loop CLOSED.**
+**State: 2026-04-29 20:50 UTC. T28 COMPLETE ✅. T31/T32 NEW. Sharpe metric integrity CRITICAL. Donchian sleeve and T29 funding observer are genuinely untested.**
 
 ---
 
-## Brutal Self-Assessment (2026-04-29 Critique Cycle — Fifth Session)
+## Brutal Self-Assessment (2026-04-29 Critique Cycle — Sixth Session)
 
-**Research loop: CLOSED.** Every testable idea genuinely exhausted or rejected. T27 (asymmetric exit) was previously REJECTED in GRAVEYARD but still listed as "NEW/PROMISING" in strategy-ideas.md — documentation fixed this session.
+**Research loop: CLOSED (confirmed).** Every testable idea genuinely exhausted or rejected. ATR EMA [1..200] × 10,800 runs = NULL (1a3dfe05). All confirmation hyperopts returning to baseline.
 
 **What we got right:**
-- Anti-overfitting discipline is REAL and consistent (EP=24, ATR_ENTRY_MULT=0.85, EP=43 correctly rejected).
-- Honest Sharpe: equity Sharpe ~1.04 (daily compounded) vs walk-forward Sharpe ~3.15 (per-window averaged). Report equity Sharpe on charts.
+- Anti-overfitting discipline is REAL and consistent.
+- Honest Sharpe: equity Sharpe ~1.04 (daily compounded) is the only honest number.
 - USDT hedge overlay: INTEGRATED (683fe92e). Non-breaking vol-regime overlay.
-- Equity bug: FIXED (e55659e8). 221.5x / Sharpe 1.04 is authoritative.
+- Equity bug: FIXED (e55659e8). T28 structural gap: CLOSED.
+- DDBudget vs Turtle Sharpe comparison is a documented metric integrity problem.
 
 **What we're still fooling ourselves about:**
-- **DDBudget Sharpe 7.24 is MILESTONE-AGGREGATED, not daily equity.** Cannot compare to Turtle's 1.04 daily Sharpe. Cross-strategy Sharpe comparison is meaningless without same methodology.
-- Live testnet: 3+ week blocker. All metrics remain simulation upper bounds.
-- Pre-2021 stress: 67.9% — BELOW 70% threshold. Known limitation.
-- T27 asymmetric exit: still listed as "NEW" in strategy-ideas despite REJECTED status in GRAVEYARD.
+- **DDBudget Sharpe 7.24 vs Turtle 1.04: incomparable methodologies.** The CSV treats them as peers. Readers will conclude DDBudget is 7x better.
+- **2026 YTD: -22.7% vs BTC +12.7% (35pp gap).** We have no actionable explanation beyond "choppy bear." That's a real blind spot.
+- **T29 funding rate observer: 0% built despite being "next" for days.** No backtest needed — public Binance API works right now.
+- **Donchian: rejected as replacement, never tested as sleeve.** We missed the portfolio complement angle entirely.
+- **3+ weeks without live testnet.** Everything is simulation upper bounds.
 
 ---
 
@@ -53,16 +55,30 @@ VOL_LOOKBACK    = 8      // ✅ dense production sweep confirmed (harness-only D
 - Turtle+Chandelier (dual): 40/54 pass (26% fail), Base5 6/6 (100%), Sharpe 3.15
 - **Conclusion:** Turtle-ATR-only is NON-INFERIOR on pass rate. Live strategy validated. No structural gap. Chandelier contributes marginal Sharpe but NOT reliability.
 
-### T29: Funding Rate Live Observer — NEW / GENUINELY UNTESTED
-**Hypothesis:** Aggregate funding rate from Binance API is genuinely different data from OHLCV. Extreme funding (<-50% ann or violent flips) identifies crowded positioning.
-**Why it matters:** Cannot backtest — no funding parquet. But can observe live RIGHT NOW.
-**Build:** Simple dashboard/logger that polls funding rate every hour, logs vs 30d average, displays current vs threshold.
-**Use:** Qualitative risk overlay, not a trading signal. Addresses bear/chop regime weakness qualitatively.
+### T29: Funding Rate Live Observer — GENUINELY UNTESTED / PUBLIC API
+**Status:** UNBUILT. Public Binance API (no keys required). Has been "next" for 2+ days without progress.
+**Hypothesis:** Extreme funding (<-50% ann or violent flips) identifies crowded positioning.
+**Why it matters:** No backtest data needed — public API. Can observe immediately.
+**Build:** Simple polling script. Poll `/fapi/v1/fundingRate` every hour for BTCFDUSD. Log vs 30d rolling average. Alert via Discord on threshold breach.
+**Use:** Qualitative risk overlay only. Addresses bear/chop regime weakness qualitatively.
+**Deadline:** This session — no reason it wasn't built earlier.
 
-### T30: Expanded Universe Walk-Forward — NEW / MEDIUM
-**Universe expansion:** Add BNB, LINK, AVAX, MATIC, UNI to Base5. Run full 9-universe walk-forward to test whether edge generalizes to mid-caps.
+### T30: Expanded Universe Walk-Forward — MEDIUM / Defer until T29 done
+**Universe expansion:** Add BNB, LINK, AVAX, MATIC, UNI to Base5. Run full walk-forward.
 **Risk:** Wider spreads, more slippage on mid-caps. Execution costs may break the edge.
-**Reward:** Tests "5-symbol universe" blind spot. If mid-caps pass ≥ 70%, production universe expands safely.
+**Reward:** Tests "5-symbol universe" blind spot.
+
+### T31: Donchian as Portfolio Complement — NEW / GENUINELY UNTESTED
+**Status:** UNBUILT. We tested Donchian as a Turtle REPLACEMENT → rejected (-14pp pass rate). Never tested as a COMPLIMENT.
+**Hypothesis:** Donchian (strictest breakout, all-time high) fires less frequently but with higher conviction. Turtle(75%) + Donchian(25%) as portfolio sleeve may capture different regime dynamics.
+**Evidence:** Donchian W04 (bear chop) Sharpe +15.7 vs Turtle +1.3. Different regime profile = potential diversification.
+**What to test:** Turtle(75%) + Donchian(25%) on Base5 × 7 windows, same dual exit. Reject if Turtle Sharpe collapses >10%.
+**Why now:** We rejected Donchian prematurely via the wrong lens (replacement vs complement).
+
+### T32: Sharpe Metric Integrity Fix — CRITICAL / Reporting
+**Problem:** `daily_progress.csv` compares DDBudget Sharpe 7.24 (milestone-aggregated) to Turtle Sharpe 1.04 (daily equity). These are incomparable. Any reader concludes DDBudget is 7x better.
+**Fix:** Add `sharpe_methodology` column to CSV. Or recompute DDBudget on daily equity.
+**Scope:** Low — one column or one harness run.
 
 ### T25: Reconcile Metrics + Fix Reporting Pipeline — COMPLETE ✅
 **Status:** Completed 2026-04-29 15:30 UTC. `progress_equity_curves` confirms Turtle+Chandelier **221.5x / daily Sharpe 1.04**. `live_turtle_chandelier` dry-run compiles/runs after fixing a format-string compile error and shows per-symbol historical paper returns (not the portfolio equity source of truth). `HALL_OF_FAME.md` and `scripts/gen_hof.py` now cite the honest validated-harness number, not `$67M`. `reports/daily_progress.csv` has a fresh 2026-04-29 row and `scripts/run_daily_progress.sh` makes refresh reproducible.

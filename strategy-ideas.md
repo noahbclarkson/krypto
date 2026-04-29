@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-29 16:05 UTC. Critique cycle. T27 asymmetric exit FIXED (REJECTED, was stale "NEW"). T28/T29/T30 new tasks. Live/testnet STRUCTURAL GAP identified. Research loop CLOSED.*
+*Last updated: 2026-04-29 20:50 UTC. Critique cycle. T31 Donchian sleeve (untested complement angle). T32 Sharpe integrity fix. Research loop CLOSED. ATR EMA [1..200] confirmed NULL. T29 funding observer still 0% built.*
 
 ---
 
@@ -81,15 +81,23 @@ This pattern matches every failed entry approach:
 **Result:** No improvement. baseline 38/54 pass (Sharpe 3.818); asym_soft (CHAND×3.0) 38/54 (Sharpe 3.680); asym_hard (ATR×0.5) 38/54 (Sharpe 3.610). All configs produce identical results on Base5 windows (Turtle ATR fires first, Chandelier never activates). Chandelier multiplier is irrelevant when Turtle ATR dominates. **REJECTED.**
 **File:** `examples/asymmetric_exit_walkforward.rs`, `snapshots/asymmetric_exit_results.csv`.
 
-### S5: Funding-Rate Regime Overlay — NEW / LIVE-DATA CANDIDATE
-**Hypothesis:** Extreme funding regimes identify crowded positioning. When aggregate perp funding is deeply negative or violently flipping, reduce spot-long exposure or delay new entries.
-**Why it matters:** Funding is market microstructure data absent from current daily OHLCV harnesses. This could catch bear/chop stress that price-only filters miss.
-**Caution:** Do NOT optimize thresholds on stale funding histories without enough samples. First build a live observer/dashboard, then decide if it deserves a rule.
+### T29: Funding-Rate Live Observer — GENUINELY UNTESTED / PUBLIC API
+**Hypothesis:** Extreme funding regimes (<-50% ann or violent flips) identify crowded positioning. Reduce risk when funding signals extreme stress.
+**Why it matters:** Funding is market microstructure data absent from current OHLCV harnesses. Addresses bear/chop regime weakness qualitatively.
+**What to build:** Polling script for `/fapi/v1/fundingRate` (BTCFDUSD). Log vs 30d rolling average. Alert via Discord on threshold breach. Public API — no keys needed.
+**Caution:** No backtest possible. Start as qualitative overlay only. Observe for 30 days before drawing conclusions.
+**Status:** T29 from PLAN — UNBUILT.
 
 ### S6: Rebalancing Frequency / Winner-Loser Maintenance — NEW
 **Hypothesis:** Current logic opens and waits for exit. Periodic maintenance (e.g., rebalance every 5 bars, trim losers, do not trim winners) may reduce capital trapped in decaying breakouts without suppressing trend convexity.
 **Why it is worth testing:** Position lifecycle, not entry. Could improve capital efficiency without adding a new alpha signal.
 **Reject if:** It increases turnover materially or collapses pass rate after fees.
+
+### T31: Donchian as Portfolio Complement — NEW / GENUINELY UNTESTED
+**Hypothesis:** Donchian (strictest breakout, all-time high) fires less frequently but with higher conviction. Turtle(75%) + Donchian(25%) as portfolio sleeve may capture different regime dynamics.
+**Evidence:** Donchian W04 (bear chop) Sharpe +15.7 vs Turtle +1.3. Donchian wins Sharpe +3.8 avg but loses -14pp pass rate as replacement. As a sleeve, different regime profile = potential diversification.
+**What to test:** Turtle(75%) + Donchian(25%) on Base5 × 7 windows, same dual exit. Compare to Turtle-only baseline.
+**Reject if:** Turtle Sharpe collapses >10% or pass rate drops >5pp.
 
 ---
 
