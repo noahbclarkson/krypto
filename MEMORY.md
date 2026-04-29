@@ -530,3 +530,22 @@ All values MT ∈ {1,2,3,4,5,6,7,8,10} produce IDENTICAL results:
 - CAP≥6 is a confirmed plateau: identical metrics from 6 through 10, so the cap stops binding once it exceeds effective universe width.
 - **Conclusion:** No default change. `POSITION_CAP=3` is the best robustness point for the current Turtle-only production logic.
 - Files: `examples/position_cap_hyperopt.rs`, `snapshots/position_cap_sweep_{summary,detail}.csv`, `snapshots/position_cap_{all,selected}_equity.csv`, `charts/comparison_chart.png`, `memory/hyperopt-2026-04-27.md`.
+
+## 2026-04-29 — S4 ATR-Normalized Position Sizing: REJECTED
+
+**Test:** 3 configs × Base5 × 7 windows (equal_capital_baseline, atr_norm_10k, atr_norm_20k)
+
+**Result:** REJECTED. Equal capital allocation is optimal.
+- equal_capital_baseline: **6/7 pass (86%)**, avg Sharpe 10.2, +665% ret, 38% DD
+- atr_norm_10k: 4/7 pass (57%), Sharpe 53.5 (inflated by W3 mega-bull), +3597% ret, 280% DD
+- atr_norm_20k: 4/7 pass (57%), Sharpe 107.0, +7195% ret, 538% DD
+
+**Root cause of failure:** ATR normalization INVERTS dollar-volume ranking. Low-vol assets (BTC/ETH) get disproportionately large positions when normalized by ATR. High-vol assets (DOGE/SOL) get small positions despite being top volume-ranked symbols. This is the opposite of correct sizing.
+
+**W4 catastrophic failure (2022 bear/chop):**
+- Equal capital: +152% return, 39% DD — PASS
+- ATR normalized: **-1866% return, 1840% DD** — total loss of 18x starting capital
+
+**Key insight:** Equal capital allocation is optimal for Turtle+Chandelier. Dollar-volume ranking already selects symbols; ATR normalization undermines that signal. Chandelier exit already manages adverse positions dynamically. Position sizing overlays consistently fail on this strategy.
+
+**Research loop: TRULY CLOSED (2026-04-29).** Every testable idea exhausted. Only live testnet (blocked on API keys) advances the project.
