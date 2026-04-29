@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-29 09:15 UTC. Research CLOSED. S4 REJECTED. USDT hedge INTEGRATED ✅ (2026-04-29). Equity bug STILL UNFIXED. Stale config.rs comment FIXED. Live testnet CRITICAL BLOCKER.**
+**State: 2026-04-29 13:24 UTC. Critique Cycle. Equity bug FIXED (e55659e8). Daily reporting STALE (2026-04-28 "BROKEN"). USDT hedge INTEGRATED. Research loop CLOSED. Live testnet CRITICAL BLOCKER (3+ weeks).**
 
 ---
 
@@ -8,17 +8,18 @@
 
 **Research loop: CLOSED.** S4 tested and REJECTED (ATR normalization fails — equal capital optimal, 86% vs 57% pass). Every testable idea genuinely exhausted. Entry, exit, position sizing — all validated or rejected.
 
-**Equity bug: STILL UNFIXED.** Commit `9fb2a81c` ("equity bug fixed") modified ZERO Rust source files. Parquet caches were refreshed (masking the symptom), but the off-by-one forward-fill bug in `examples/progress_equity_curves.rs` is unfixed. Row 2086 still shows turtle_equity=1.0, row 2087 shows correct final value. Fix requires one targeted edit to the equity recording loop.
-
 **What we got right:**
 - Anti-overfitting discipline is REAL and consistent. EP=24, ATR_ENTRY_MULT=0.85, EP=43 all correctly rejected for same-session in-sample inflation.
-- Honest Sharpe distinction: equity Sharpe ~1.94 (compounded daily returns, honest) vs walk-forward Sharpe 5.46 (per-window averaged, upper bound). Never report 5.46 on equity charts.
+- Honest Sharpe distinction: equity Sharpe ~1.29 (compounded daily returns, honest) vs walk-forward Sharpe 5.46 (per-window averaged, upper bound). Never report 5.46 on equity charts.
 - Research loop genuinely closed. S4 (ATR-norm sizing) REJECTED. Donchian definitively closes entry space.
-- USDT hedge overlay: INTEGRATED 2026-04-29 (18 days → code). Most actionable task now closed.
+- USDT hedge overlay: INTEGRATED (2026-04-29, commit 683fe92e). Non-breaking bear-risk overlay.
+- Equity bug: FIXED (e55659e8). Off-by-one recording loop corrected.
 
 **What we're still fooling ourselves about:**
-- "Equity bug fixed" claim in commit `9fb2a81c` was FALSE — no code changed. Bug still present in `progress_equity_curves.rs`. Final equity correct by coincidence (parquet refresh masked symptom).
+- Daily reporting infrastructure is AD-HOC. `daily_progress.csv` still shows "BROKEN (harness bug)" dated 2026-04-28. No automated pipeline. Someone must manually run harnesses.
+- Equity numbers are INCONSISTENT: HALL_OF_FAME says "$10K→$67M" but harness shows 221.5x. These cannot both be correct. HOF number may be full-sample artifact.
 - Live testnet: 3+ week blocker with no escalation. All metrics are upper bounds.
+- Pre-2021 stress: 67.9% — BELOW our own 70% threshold. Choppy/bear regimes remain the real failure mode.
 
 ---
 
@@ -47,11 +48,13 @@ VOL_LOOKBACK    = 2      // ✅ dense sweep confirmed
 **What we need:** Binance testnet API key + secret (not production keys).
 **Escalation:** Surface to Arc explicitly. Nothing advances the project without this.
 
-### T24: Equity Bug Fix — STILL UNFIXED (off-by-one forward-fill in progress_equity_curves.rs)
-**Root cause:** Off-by-one forward-fill in `progress_equity_curves.rs`. The while loop exits before the last exit is recorded. Then `equity_curve[total]` is set to wrong value by forward-fill.
-**Evidence:** Row 2086 = 1.0, row 2087 = 221.5x. Harness works by coincidence (parquet refresh masked it), but off-by-one is still in the code.
-**Fix:** Record equity at bar=exit_bar+1 before the loop increment. One targeted edit.
-**Status:** Not a production blocker — live bot doesn't use this harness. Pre-deploy hygiene only.
+### T25: Reconcile Metrics + Fix Reporting Pipeline — URGENT
+**Status:** HALL_OF_FAME.md says "$10K→$67M (310 trades)" but progress_equity_curves.csv shows 221.5x at bar 2087. daily_progress.csv still has "BROKEN (harness bug)" dated 2026-04-28. These are unacceptable single-source-of-truth failures.
+**What to do:** Run `cargo run --example progress_equity_curves` and `cargo run --example live_turtle_chandelier`; compare final equity numbers; update HALL_OF_FAME.md with the consistent, honest validated-harness number. Create `scripts/run_daily_progress.sh` or equivalent so progress reporting is reproducible. Do NOT cite 67M again until reconciled.
+
+### T27: Asymmetric Exit Architecture — New Research
+**Hypothesis:** Use tighter hard stop (ATR×0.5) for losers AND looser Chandelier (ATR×3.0) for winners. Turtle ATR remains the secondary exit. The convex payoff of trend-following demands asymmetric exits — cut losers fast, let winners run.
+**Scope:** 3 configs (baseline, asymmetric soft-only, asymmetric hard+soft) × Base5 × 7 windows. If asymmetric hard stop reduces pass rate below 83%, reject. If it improves Sharpe by >3 windows without reducing pass rate, it may be worth the added complexity.
 
 ---
 
@@ -60,8 +63,9 @@ VOL_LOOKBACK    = 2      // ✅ dense sweep confirmed
 | Blind Spot | Severity | Status |
 |-----------|----------|--------|
 | **No live testnet** | CRITICAL | BLOCKED on Noah's API keys — 3+ weeks |
-| **Equity bug falsely claimed fixed** | HIGH | Commit `9fb2a81c` — zero Rust lines changed |
+| **Daily reporting ad-hoc/stale** | HIGH | "BROKEN" in daily_progress.csv since 2026-04-28 |
 | **Pre-2021 stress: 67.9%** | MEDIUM | Known constraint |
+| **Equity numbers inconsistent** | HIGH | HOF: $67M vs harness: 221.5x — must reconcile |
 | **Maker/slippage model unvalidated** | HIGH | Live testnet only |
 
 ---

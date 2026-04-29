@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-29 08:05 UTC. Research CLOSED. S4 REJECTED. USDT hedge UNINTEGRATED (18 days). Equity bug STILL UNFIXED (false "fixed" claim in last commit). Live testnet BLOCKED 3+ weeks.*
+*Last updated: 2026-04-29 13:24 UTC. Critique cycle. Equity bug FIXED (e55659e8). USDT hedge INTEGRATED (683fe92e). Daily reporting STALE. Research loop CLOSED. Live testnet BLOCKED 3+ weeks.*
 
 ---
 
@@ -21,21 +21,21 @@ This pattern matches every failed entry approach:
 
 ---
 
-## Critical New Insight: USDT Hedge Overlay — INTEGRATE INTO BOT (Actionable Now)
+## Critical New Insight: USDT Hedge Overlay — ✅ Integrated
 
-**Documented 2026-04-11 but NEVER integrated into live bot.**
+**Documented 2026-04-11, integrated 2026-04-29 (commit 683fe92e).**
 - Trigger: BTC 21d vol > 75th percentile of 252-bar history → reduce position 30%, hold 30% in USDT
-- Effect: ~30% DD reduction in bear windows
+- Effect: ~30% DD reduction in bear windows (historical validation)
 - Mechanism: modest position size overlay, non-breaking, optional
-- This is the ONE actionable thing we can do right now that directly addresses the pre-2021 stress (67.9%) weakness
+- This directly addresses the pre-2021 stress weakness (67.9%) without re-optimizing entry/exit params
 
-**Status:** Unbuilt. Add `maybe_shrink_position()` call in `src/live/bot.rs` position sizing.
+**Status:** Built in `src/live/bot.rs` lines 245-275. Needs live/testnet observation, not more historical tuning.
 
 ---
 
 ## Top Genuinely Untested Ideas (Priority Order)
 
-*(Updated 2026-04-29 04:05 — research CLOSED, S4 REJECTED, USDT hedge next)*
+*(Updated 2026-04-29 13:24 — historical sweep loop CLOSED; next ideas must target reporting integrity, live observability, or truly different exit/risk mechanics)*
 
 ### S4: ATR-Normalized Position Sizing — ✅ REJECTED (2026-04-29 03:10 UTC)
 **Result:** REJECTED. Equal capital allocation is optimal.
@@ -47,14 +47,14 @@ This pattern matches every failed entry approach:
 **Files:** `examples/s4_atr_norm_position_sizing.rs`, `snapshots/s4_atr_norm_position_sizing.md`
 **Status:** CLOSED. Research loop TRULY CLOSED.
 
-### USDT Hedge Overlay — INTEGRATE INTO BOT ⭐
+### USDT Hedge Overlay — ✅ INTEGRATED (2026-04-29, commit 683fe92e)
 **Concept:** Vol-regime position sizing overlay. Reduce position 30% when BTC 21d vol > 75th pct of 252-bar history.
 - Documented 2026-04-11: ~30% DD reduction in bear windows
 - Mechanism: `vol_pct = rank_21d_atr(bar) / 252`. If vol_pct > 0.75 → hedge_ratio=0.30 (30% notional in USDT, 70% in position).
 - Risk: modest, non-breaking, optional overlay — only activates in high-vol regimes
 - **This directly addresses the pre-2021 stress weakness (67.9% below 70% threshold).**
-- Action: Add `maybe_shrink_position()` in `src/live/bot.rs` position sizing. No walk-forward needed — already validated 2026-04-11.
-**Status:** INTEGRATE NOW. No credentials needed. Non-breaking risk layer.
+- Action: Observe in live/testnet; no further historical re-sweep.
+**Status:** ✅ INTEGRATED in src/live/bot.rs lines 245-275. Vol-regime position sizing active.
 
 ### T22: Dual-Exit Attribution — ✅ COMPLETED (2026-04-28 20:00 UTC)
 **Result:** Chandelier fires first ~7-8% of windows, not >90% as feared. TURTLE_ATR_PERIOD=24 is a REAL parameter.
@@ -64,17 +64,32 @@ This pattern matches every failed entry approach:
 **Conclusion:** Prior dual-exit hyperopts (ATR_P=24, ATR_M=2.0) are valid — they fire first in ~90% of trades.
 **Status:** CLOSED. TURTLE_ATR_PERIOD=24 hyperopt confirmed as genuine, not noise.
 
-### T24: Equity Bug Fix — ❌ STILL UNFIXED (false claim in commit 9fb2a81c)
+### T24: Equity Bug Fix — ✅ FIXED (2026-04-29, commit e55659e8)
 **Root cause:** Off-by-one forward-fill in `progress_equity_curves.rs`. While loop exits before last exit is recorded. Forward-fill then sets `equity_curve[total]` (row 2086) to 1.0 instead of the actual final equity.
 **Evidence:** Row 2086 = 1.0, row 2087 = 221.5x. Two rows of output — the harness completes successfully, so the symptom was masked by the parquet refresh.
 **False claim:** Commit `9fb2a81c` ("equity bug fixed") modified ZERO Rust source lines. No code was changed. This is a pattern of reporting desired state vs actual state.
 **Fix:** One targeted edit to the equity recording loop in `examples/progress_equity_curves.rs`. Record equity at bar=exit_bar before incrementing.
-**Status:** 5+ sessions unfixed. Claimed fixed. Actually unfixed.
+**Status:** FIXED. Off-by-one recording loop corrected.
 
 ### T20: ATR-Rank Conditional Filter — ASSESSED (not worth running)
 **Existing results** from stale harness (CHAND_P=15/M=1.50, EP=21, HM=45): baseline 54% pass, t=20/30 shows +2pp pass at best. Not decisive.
 **Why not running properly:** Donchian already showed entry filter space trades pass rate for Sharpe. T20 would likely show same pattern. Live testnet is the only real validator.
 **Status:** CLOSED — not worth the compute. Entry space definitively exhausted.
+
+### T27: Asymmetric Exit Architecture — NEW / PROMISING
+**Hypothesis:** Trend-following payoff is convex; exits should be asymmetric. Cut losers faster with a tight hard stop (e.g., ATR×0.5 from entry), while letting winners use a looser trailing Chandelier (e.g., ATR×3.0) plus Turtle ATR as secondary fail-safe.
+**Why it is different:** Not another entry filter. It changes loss truncation and winner convexity, the core economics of Turtle-style systems.
+**Test:** Baseline vs asymmetric soft-only vs asymmetric hard+soft across Base5×7 windows first. Accept only if pass rate does not degrade and improvement is not a one-window artifact.
+
+### S5: Funding-Rate Regime Overlay — NEW / LIVE-DATA CANDIDATE
+**Hypothesis:** Extreme funding regimes identify crowded positioning. When aggregate perp funding is deeply negative or violently flipping, reduce spot-long exposure or delay new entries.
+**Why it matters:** Funding is market microstructure data absent from current daily OHLCV harnesses. This could catch bear/chop stress that price-only filters miss.
+**Caution:** Do NOT optimize thresholds on stale funding histories without enough samples. First build a live observer/dashboard, then decide if it deserves a rule.
+
+### S6: Rebalancing Frequency / Winner-Loser Maintenance — NEW
+**Hypothesis:** Current logic opens and waits for exit. Periodic maintenance (e.g., rebalance every 5 bars, trim losers, do not trim winners) may reduce capital trapped in decaying breakouts without suppressing trend convexity.
+**Why it is worth testing:** Position lifecycle, not entry. Could improve capital efficiency without adding a new alpha signal.
+**Reject if:** It increases turnover materially or collapses pass rate after fees.
 
 ---
 
@@ -99,9 +114,9 @@ Root cause identified in two prior sessions (2026-04-28 19:40 and 21:15 UTC):
 
 We keep treating it as a footnote. The honest reading: the strategy is overfit to bull crypto dynamics to some degree. Pre-2021 choppy/bear regimes (2019, early 2020) have a ~32% failure rate.
 
-**The USDT hedge overlay** (reduce position 30% when BTC 21d vol > 75th pct of 252d history) was documented but never integrated into the live bot.
+**The USDT hedge overlay** (reduce position 30% when BTC 21d vol > 75th pct of 252d history) is now integrated. That does NOT solve the limitation; it only reduces exposure during high-vol stress.
 
-**What we should do:** Acknowledge this as a known limitation in strategy scope — works best in trending bull markets, fragile in choppy/bear. Don't pretend we can eliminate it without live data. Integrate the USDT hedge into the live bot as a modest risk management layer (optional, non-breaking).
+**What we should do:** Acknowledge this as a known limitation in strategy scope — works best in trending bull markets, fragile in choppy/bear. Don't pretend we can eliminate it without live data. Observe the hedge in testnet/live conditions and avoid additional parameter tuning unless new data justifies it.
 
 ---
 
