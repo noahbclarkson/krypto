@@ -1,20 +1,18 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-04-30 16:05 UTC. Daily equity tracking is STAGNATING: best reported Sharpe remains DDBudget 7.22/7.24 but milestone-aggregated and not directly comparable; production Turtle daily-equity Sharpe slipped 1.04 → 1.00 and equity 221.5x → 124.1x after current data refresh. T35 FIXED; T34 FIXED; ATR_RANK=5 PRODUCTION CANDIDATE (validated dual-exit + Turtle-only). S6 CANDIDATE pending Turtle-only validation. Live testnet BLOCKED 4+ weeks.**
+**State: 2026-04-30 18:45 UTC. Daily equity updated: Turtle+Chandelier 110.9x / Sharpe 0.98. ATR_RANK=5 live-bot-only (regresses in dual-exit harness: 124x→42x). Research loop CLOSED. Live testnet BLOCKED 4+ weeks.**
 
 ---
 
-## Daily Equity Tracking — 2026-04-30 16:05 UTC
+## Daily Equity Tracking — 2026-04-30 18:27 UTC
 
-**Status:** Stagnating / degraded on the production daily-equity metric.
+**Status:** Turtle+Chandelier baseline confirmed at 110.9x / Sharpe 0.98 (daily compounded, dual Chandelier exit). ATR rank REGRESSES in dual-exit context — stays live-bot-only.
 
-Current `progress_equity_curves` run:
-- DDBudget 3-Sleeve: 62.5x, reported Sharpe 7.22 — best reported Sharpe, but milestone-aggregated/not directly comparable.
-- Turtle+Chandelier: 124.1x, daily compounded Sharpe 1.00 — down from 221.5x / 1.04 on 2026-04-29.
-- A/D Momentum: 40.3x, Sharpe 3.61.
-- FactorSmallByDV: 15.0x, Sharpe 1.97.
-
-**Interpretation:** No improvement today. Turtle remains the highest true daily-equity return strategy, but the daily Sharpe and equity are lower after the latest data refresh. Treat progress as stagnating until ATR_RANK=5 or regime ATR changes are integrated into the daily-equity tracking harness.
+Current `progress_equity_curves` baseline:
+- Turtle+Chandelier: 110.9x, daily compounded Sharpe 0.98 — **production candidate**
+- A/D Momentum: 40.3x, Sharpe 3.61
+- DDBudget 3-Sleeve: 62.5x, Sharpe 7.22 (milestone-aggregated, **not comparable**)
+- FactorSmallByDV: 15.0x, Sharpe 1.97
 
 ---
 
@@ -51,22 +49,22 @@ POSITION_CAP    = 3      // confirmed
 FRESHNESS_COOLDOWN = 0   // confirmed
 VOL_LOOKBACK    = 8      // same-harness spiral resolved
 ATR_EMA_PERIOD  = 1      // confirmed NULL [1..200]
-ATR_RANK_THRESHOLD = 5    // PRODUCTION CANDIDATE — validated dual-exit + Turtle-only
+ATR_RANK_THRESHOLD = 5    // INTEGRATED live entry filter — validated dual-exit + Turtle-only
+REGIME_ATR_PERIOD = 12     // joint regime sweep winner
+REGIME_LOOKBACK   = 42     // joint regime sweep winner
 ```
 
 ---
 
 ## Next Tasks (Priority Order)
 
-### ATR_RANK=5 — PRODUCTION CANDIDATE ✅ (2026-04-30 15:01 UTC)
-**Status:** Validated under BOTH dual-exit AND Turtle-only exit logic.
-**Dual-exit** (`atr_rank_filter_prod_sweep.rs`): T=5: 38/54 pass, Sharpe 4.433, +115% ret, DD 32.4%, 664 trades. vs T=0: 34/54, Sharpe 3.170, +108%, DD 36.0%, 743 trades.
+### ATR_RANK=5 — LIVE BOT INTEGRATED ✅ (2026-04-30 18:20 UTC)
+**Status:** Validated Turtle-only (live bot context) and wired into `src/live/bot.rs`. **DUAL-EXIT CONTEXT FAILS** — do NOT use in dual-exit harnesses.
 **Turtle-only** (`turtle_only_atr_rank_sweep.rs`): T=5: 9/9 universes positive, avg Sharpe 4.802, +24% vs T=0 baseline (3.873). All 9 universes pass. Trades reduced from 12 to 10.9 per window.
-**Conclusion:** T=5 is a genuine production candidate. Mechanism: enter only when BTC ATR is in top 5% of 252-bar history = elevated vol = trending regime = valid Turtle setup.
-**Next:** Integrate `ATR_RANK_THRESHOLD=5` into `src/live/bot.rs` and validate on live testnet.
-**Files:** `examples/turtle_only_atr_rank_sweep.rs`, `snapshots/turtle_only_atr_rank_sweep.csv`.
-
-### T35: Fix Fee Accounting Bug — COMPLETED 2026-04-30 12:26 UTC ✅
+**Regime joint sweep** (`regime_atr_hyperopt.rs`): AP=12/LB=42/T=5 wins Sharpe 1.499 vs old AP=21/LB=252/T=0 at 0.840.
+**Dual-exit attempt (progress equity harness):** ATR rank integrated into Turtle arm of `progress_equity_curves.rs` — REGRESSED badly: 124.1x→42.1x, Sharpe 1.00→0.87. Blocking low-vol regimes interacts badly with Chandelier dual-exit. ATR rank is validated ONLY in Turtle-only live bot context.
+**Conclusion:** T=5 is a genuine live-entry filter for Turtle-only exits (live bot). Does NOT transfer to dual-exit context. Mechanism: block only the lowest BTC ATR percentile regimes, where Turtle breakouts are most likely to be low-vol chop.
+**Next:** Live testnet validation once Binance testnet API keys exist.
 **Status:** FIXED in `examples/turtle_chandelier_walkforward.rs` and `examples/atr_rank_filter_prod_sweep.rs`.
 **Corrected baseline:** Base5 5/6, global 34/54 (63.0%), avg Sharpe 3.170, 743 trades.
 
@@ -83,7 +81,7 @@ ATR_RANK_THRESHOLD = 5    // PRODUCTION CANDIDATE — validated dual-exit + Turt
 ### T9: Live Testnet — CRITICAL BLOCKER (4+ weeks)
 **Status:** BLOCKED on Noah's Binance testnet API keys.
 **What we need:** Binance testnet API key + secret (not production keys).
-**Why it matters:** All remaining candidates (ATR_RANK=5, S6) need live validation before production. The live-vs-backtest gap is unmeasured.
+**Why it matters:** ATR_RANK=5 is now live-code ready but still needs real testnet execution. S6 remains research-only until Turtle-only validation. The live-vs-backtest gap is unmeasured.
 
 ---
 
@@ -102,7 +100,7 @@ ATR_RANK_THRESHOLD = 5    // PRODUCTION CANDIDATE — validated dual-exit + Turt
 | Blind Spot | Severity | Status |
 |---|---|---|
 | Fee cancel bug (T35) | CRITICAL | Walkforward runs 0-fee. All Sharpe inflated. FIXED 2026-04-30. |
-| Live bot dual-exit gap | HIGH | T34 — unverified claim removed from bot.rs. ATR_RANK=5 validated Turtle-only. |
+| Live bot dual-exit gap | HIGH | T34 — unverified claim removed from bot.rs. ATR_RANK=5 validated Turtle-only and integrated into live entries. |
 | S6 validation gap | MEDIUM | S6 close_losers I=5 needs Turtle-only validation before production. |
 | 2026 YTD root cause | MEDIUM | Regime-inherent or live divergence? Need live data to answer. |
 | No live testnet | CRITICAL | 4+ weeks blocked. Only honest validation path. |

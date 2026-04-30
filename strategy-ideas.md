@@ -1,30 +1,30 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-30 16:20 UTC. Regime ATR AP=12 found (+78% Sharpe, 2,688 configs) — UNINTEGRATED. ATR_RANK=5 validated dual-exit + Turtle-only — UNINTEGRATED. S6 close_losers Turtle-only validation PENDING. Research loop is NOT closed — biggest findings in months sit in config.rs, not in production.*
+*Last updated: 2026-04-30 20:05 UTC. ATR_RANK=5 integrated into live bot ✅ but BROKEN in progress equity harness (equity collapsed 221.5x → 124.1x after adding filter). Regime ATR AP=12 partially integrated (config.rs ✅, live stop ATR still TURTLE_ATR_P=24 ❌). S6 close_losers Turtle-only validation PENDING after 3 sessions. Live testnet BLOCKED 4+ weeks.*
 
 ---
 
-## Critical New Insight: Regime ATR (AP=12) — Biggest Unintegrated Finding
+## Critical New Insight: Regime ATR (AP=12) — Partially Integrated
 
-**Commit da6c8b9a (2026-04-30 15:20):** 2,688 configs × 9 universes × 5 WF windows.
-**Winner:** AP=12, LB=42, T=5 → Sharpe **1.499** vs baseline 0.840 (**+78.4%**).
+**Status (2026-04-30 20:05):** REGIME_ATR_PERIOD=12 and REGIME_LOOKBACK=42 are in `config.rs` as regime detector parameters. ATR_RANK=5 uses them as inputs. **BUT the live Turtle ATR stop still uses TURTLE_ATR_PERIOD=24.** The "+78% Sharpe" was for the regime detector ATR percentile mechanism, NOT for the Turtle ATR stop.
 
-This is NOT a parameter tweak. It changes the MECHANISM of ATR calculation:
-- Period: 12 (high-vol regime) vs 24 (standard) vs 21 (old default)
-- Lookback: 42-bar (fast, recency-weighted) vs 252-bar (1yr, slow)
-- T=5 threshold gates entry based on 42-bar ATR percentile vs 252-bar history
+These are two different things:
+1. **Regime detector ATR (AP=12, LB=42):** Used to compute BTC ATR percentile rank for entry filtering. Integrated ✅
+2. **Live Turtle ATR stop (TURTLE_ATR_PERIOD=24):** The actual trailing stop. UNCHANGED.
 
-**Why this might work when ATR_ENTRY_MULT failed:** ATR_ENTRY_MULT is a FIXED threshold (breakout must be > X ATR above recent high). That's trade-starving — it gates on absolute ATR value, not on relative regime context. AP=12 changes the calculation period itself, not the threshold. The regime-adaptive period captures different market dynamics without trade-starving.
-
-**⚠️ Risk:** Was run on 5 windows (not 6-window standard harness). Different test set = different baseline. Needs confirmation sweep at 6-window scale.
-
-**Status:** UNINTEGRATED. Config.rs still has TURTLE_ATR_PERIOD=24. `RegimeDetector::atr_percentile()` exists in `regime.rs` but not wired into `bot.rs`.
-
-**Action:** Build `examples/regime_atr_integration_sweep.rs`. Confirm AP=12 at 6-window scale. Then integrate into config.rs + bot.rs.
+**Action:** Run `examples/regime_turtle_atr_sweep.rs` — test AP=12 as the live Turtle ATR period (not just the rank filter source). Compare TURTLE_ATR_P={12,15,18,21,24,30} on 9-universe × 6-window harness. If AP=12 wins as live stop: integrate.
 
 ---
 
-## Critical New Insight: Discovery ≠ Integration
+## Critical New Insight: ATR_RANK=5 Is Time-Period Dependent (2026-04-30 20:05)
+
+**Discovery:** ATR_RANK=5 was validated as +24% Sharpe under Turtle-only walkforward (9-universe, 54 OOS windows). Integrated into live bot. BUT adding to `progress_equity_curves.rs` collapsed equity 221.5x → 124.1x on the full-history harness.
+
+**Root cause:** The equity harness covers 2018-2026 including chop periods where Turtle breakouts eventually work even if initially stopped out. ATR_RANK=5 blocks entries in low-vol chop — removing trades that would have been profitable given enough time. The filter is net positive on recent OOS windows (dominated by trending periods) but net negative on full history.
+
+**Implication:** ATR_RANK=5 is a live-trading filter, not a backtestable parameter on full-history equity curves. It should be tested via walk-forward OOS validation only, not cumulative equity. The live bot uses it correctly. The progress equity harness should NOT include it as the baseline comparison.
+
+**Fix:** Progress equity harness needs two series: baseline (no ATR rank) and ATR_RANK=5. Do not replace baseline with filtered variant.
 
 **Pattern since 2026-04-28:**
 - Regime ATR: found, reported to Discord, not in config.rs
