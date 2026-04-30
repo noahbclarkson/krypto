@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-30 04:05 UTC. T29 COMPLETE ✅. T31 BASE5 CANDIDATE ✅ (9-universe pending). T32 COMPLETE ✅. S6 NEVER BUILT. EM=0.94 held-out pending. Research loop is CONFIRMATION SPIRAL — stop hyperopts on settled params.*
+*Last updated: 2026-04-30 08:05 UTC. S6 BUILT ✅ (close_losers I=5, 6/6 pass). T31 REJECTED ✅ (9-universe 63% < 69.1%). EM=0.94 REJECTED ✅ (held-out). VL=90 UNVALIDATED ⚠️ (same-harness resweep, not tested on Base5). Research loop is CONFIRMATION SPIRAL — stop hyperopts on settled params.*
 
 ---
 
@@ -18,6 +18,20 @@ This pattern matches every failed entry approach:
 - Correlation filter: loses to baseline on every metric
 
 **Implication:** Entry space is definitively closed. Turtle entry is the optimal trade-off between signal frequency and signal quality.
+
+---
+
+## Critical New Insight: VOL_LOOKBACK 8→90 — Same-Harness Resweep (2026-04-30)
+
+**Commit cfd19ba2:** 100-value sweep (1..=100 step 1) × 9 universes × 6 WF windows = 54,000 sims. Winner: VL=90 plateau (91-100): 37/54 pass vs baseline 34/54 at VL=8. Sharpe 4.457 vs 3.392 (+31%), DD 73.8% vs 79.3%.
+
+**⚠️ CONCERN — EP=24 pattern:** VL=8 was confirmed on the same harness 2026-04-29 (also 100-value sweep). VL=90 was found on identical methodology one day later. This is the same pattern as EP=24 (found on same harness as CHAND_P=11, failed held-out, reverted to EP=21).
+
+**VL=8 was the Base5 production winner on 2026-04-29.** VL=90 was NOT re-tested on Base5. 9-universe aggregate improvement ≠ Base5 improvement.
+
+**What to do:** Compare VL=90 vs VL=8 on Base5 × 6 windows (12 runs only). If VL=90 wins Base5, update production. If VL=90 loses Base5, revert to VL=8 and STOP resweeping VOL_LOOKBACK.
+
+**Anti-overfit rule violated:** Never re-run confirmed params at higher resolution on the same harness. VL=8 is settled. VL=90 is a same-harness artifact risk until Base5 validates it.
 
 ---
 
@@ -93,7 +107,7 @@ This pattern matches every failed entry approach:
 
 **Decision:** No production change. EM=0.94 found on same WF grid it would be validated against. Anti-overfit discipline requires held-out data before promotion. EM=0.00 remains production default.
 
-**Status:** Candidate identified, not promoted. Requires held-out validation on pre-2021 data only. **Build `examples/atr_entry_mult_held_out.rs` — single pre-2021 comparison, NOT another grid sweep.**
+**Status:** REJECTED ✅ (held-out 2026-04-30). EM=0.00: 11/18 pass. EM=0.94: 10/18 pass. EM=0.00 remains production default. ATR_ENTRY_MULT=0.94 removed from candidate status. Do not resweep unless new mechanism found.
 
 ---
 
@@ -132,7 +146,7 @@ MEMORY per-year table: Turtle +2026 YTD = **-22.7%** while BTC = **+12.7%**. Gap
 
 The entire project is simulation. All metrics are upper bounds.
 
-**Only genuine path forward:** Live testnet paper trading. All hyperopts on historical data exhausted. ATR_ENTRY_MULT=0.94 is the one live candidate. Everything else is locked.
+**Only genuine path forward:** Live testnet paper trading. All hyperopts on historical data exhausted. S6 rebalancing is the one live candidate (close_losers I=5, needs 9-universe validation). Everything else is locked or rejected.
 
 ---
 
