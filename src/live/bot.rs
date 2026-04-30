@@ -3,9 +3,10 @@
 //! Signal: Turtle breakout — close > max_close (EP bars lookback)
 //! Exit: Turtle ATR trailing stop ONLY (sole exit)
 //!
-//! S17 (2026-04-27): Chandelier(P=7,M=2.30) fires FIRST in 100% of trades (336/336).
-//! Turtle-only exit wins +1.47 Sharpe over Turtle+Chandelier dual-exit. Chandelier is
-//! redundant with current tight params — Turtle ATR(24,2.0) is the sole validated exit.
+//! T34 KNOWN GAP: Research walkforward (turtle_chandelier_walkforward.rs) uses
+//! dual Chandelier+Turtle ATR exit. Live bot uses Turtle ATR ONLY. The
+//! ATR_RANK=5 conditional entry has been validated under Turtle-only logic
+//! (turtle_only_atr_rank_sweep.rs: T=5 wins +24% Sharpe vs T=0 baseline).
 //!
 //! Production params (frozen 2026-04-27):
 //!   EP=21, TurtleATR(24, 2.0), HM=12, CAP=3, FRESHNESS_COOLDOWN=0
