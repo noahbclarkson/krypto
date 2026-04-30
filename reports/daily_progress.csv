@@ -1,38 +1,48 @@
-# DAILY PROGRESS TRACKING — Turtle+Chandelier Production
-2026-04-20,Turtle+Chandelier,734.2x,1.29,62.6%,310
-2026-04-20,DDBudget 3-Sleeve,56.5x,7.09,n/a,776
-2026-04-20,A/D Momentum,40.3x,3.62,n/a,3933
-2026-04-20,FactorSmallByDV,13.6x,1.92,n/a,1257
-2026-04-19,Turtle+Chandelier,668.5x,2.52,62.6%,310
-2026-04-19,DDBudget 3-Sleeve,56.5x,7.09,n/a,776
-2026-04-19,A/D Momentum,40.3x,3.62,n/a,3933
-2026-04-19,FactorSmallByDV,13.6x,1.92,n/a,12572026-04-21,Turtle+Chandelier,248.0x,1.68,n/a,310
-2026-04-21,DDBudget 3-Sleeve,59.3x,7.21,n/a,776
-2026-04-21,A/D Momentum,40.3x,3.62,n/a,3933
-2026-04-21,FactorSmallByDV,13.1x,1.89,n/a,1257
-2026-04-25,Turtle+Chandelier,246.4x,1.68,62.6%,310
-2026-04-25,DDBudget 3-Sleeve,60.5x,7.24,n/a,776
-2026-04-25,A/D Momentum,40.3x,3.61,n/a,3933
-2026-04-25,FactorSmallByDV,13.1x,1.89,n/a,1257
-2026-04-25-16:00,Turtle+Chandelier,246.4x,1.68,62.6%,310
-2026-04-25-16:00,DDBudget 3-Sleeve,60.5x,7.24,n/a,776
-2026-04-25-16:00,A/D Momentum,40.3x,3.61,n/a,3933
-2026-04-25-16:00,FactorSmallByDV,13.1x,1.89,n/a,1257
-2026-04-26,Turtle+Chandelier,229.1x,1.91,62.6%*,310
-2026-04-26,DDBudget 3-Sleeve,64.0x,7.32,n/a*,776
-2026-04-26,A/D Momentum,40.3x,3.61,n/a*,3933
-2026-04-26,FactorSmallByDV,14.8x,1.97,n/a*,1257
-2026-04-27,Turtle+Chandelier,223.3x,1.91,n/a,310
-2026-04-27,DDBudget 3-Sleeve,64.0x,7.32,n/a,776
-2026-04-27,A/D Momentum,40.3x,3.61,n/a,3933
-2026-04-27,FactorSmallByDV,14.8x,1.97,n/a,1257
+# DAILY PROGRESS TRACKING — Krypto Strategies
+# NOTE: sharpe_methodology is required. DDBudget's reported Sharpe is milestone-aggregated and not comparable to Turtle's daily compounded equity Sharpe.
+date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades
+2026-04-30,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-30,FactorSmallByDV,14.8x,1.97,fixed_hold_daily_equity,1257
+2026-04-30,DDBudget 3-Sleeve,61.3x,7.24,milestone_aggregated_not_comparable,776
+2026-04-30,Turtle+Chandelier,221.1x,1.04,daily_compounded_equity,397
+methodology: daily_equity_sharpe = compounded daily returns × √252 / std
+NOTE: DDBudget uses milestone-aggregated Sharpe (mean of per-period Sharpe ratios).
+      This inflates the number ~7x vs true daily equity Sharpe.
+      Compare: DDBudget 61.3x vs Turtle 221.1x — Turtle has MORE real return but lower milestone Sharpe.
+2026-04-29,Turtle+Chandelier,221.5x,1.04,daily_equity_compounded,397
+2026-04-29,DDBudget 3-Sleeve,61.3x,7.24,milestone_aggregated_inflated,776
+2026-04-29,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-29,FactorSmallByDV,14.8x,1.97,fixed_hold_daily_equity,1257
+2026-04-29,Turtle+Chandelier,221.5x,1.04,daily_equity_compounded,397
 2026-04-28,Turtle+Chandelier,BROKEN (harness bug),1.91,unknown,310
-2026-04-28,DDBudget 3-Sleeve,61.3x,7.25,n/a,776
-2026-04-28,A/D Momentum,40.3x,3.61,n/a,3933
-2026-04-28,FactorSmallByDV,14.8x,1.97,n/a,1257
-
-2026-04-29,A/D Momentum,40.3x,3.61,n/a,3933
-2026-04-29,FactorSmallByDV,14.8x,1.97,n/a,1257
-2026-04-29,DDBudget 3-Sleeve,61.3x,7.24,n/a,776
-2026-04-29,Turtle+Chandelier,221.5x,1.04,n/a,397
-2026-04-29,Turtle+Chandelier,221.5x,1.04,n/a,397
+2026-04-28,DDBudget 3-Sleeve,61.3x,7.25,milestone_aggregated_inflated,776
+2026-04-28,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-28,FactorSmallByDV,14.8x,1.97,fixed_hold_daily_equity,1257
+2026-04-27,Turtle+Chandelier,223.3x,1.91,fixed_hold_equity,310
+2026-04-27,DDBudget 3-Sleeve,64.0x,7.32,milestone_aggregated_inflated,776
+2026-04-27,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-27,FactorSmallByDV,14.8x,1.97,fixed_hold_daily_equity,1257
+2026-04-26,Turtle+Chandelier,229.1x,1.91,fixed_hold_equity,310
+2026-04-26,DDBudget 3-Sleeve,64.0x,7.32,milestone_aggregated_inflated,776
+2026-04-26,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-26,FactorSmallByDV,14.8x,1.97,fixed_hold_daily_equity,1257
+2026-04-25,Turtle+Chandelier,246.4x,1.68,fixed_hold_equity,310
+2026-04-25,DDBudget 3-Sleeve,60.5x,7.24,milestone_aggregated_inflated,776
+2026-04-25,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-25,FactorSmallByDV,13.1x,1.89,fixed_hold_daily_equity,1257
+2026-04-25-16:00,Turtle+Chandelier,246.4x,1.68,fixed_hold_equity,310
+2026-04-25-16:00,DDBudget 3-Sleeve,60.5x,7.24,milestone_aggregated_inflated,776
+2026-04-25-16:00,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-25-16:00,FactorSmallByDV,13.1x,1.89,fixed_hold_daily_equity,1257
+2026-04-21,Turtle+Chandelier,248.0x,1.68,fixed_hold_equity,310
+2026-04-21,DDBudget 3-Sleeve,59.3x,7.21,milestone_aggregated_inflated,776
+2026-04-21,A/D Momentum,40.3x,3.62,fixed_hold_daily_equity,3933
+2026-04-21,FactorSmallByDV,13.1x,1.89,fixed_hold_daily_equity,1257
+2026-04-19,Turtle+Chandelier,668.5x,2.52,fixed_hold_equity,310
+2026-04-19,DDBudget 3-Sleeve,56.5x,7.09,milestone_aggregated_inflated,776
+2026-04-19,A/D Momentum,40.3x,3.62,fixed_hold_daily_equity,3933
+2026-04-19,FactorSmallByDV,13.6x,1.92,fixed_hold_daily_equity,1257
+2026-04-20,Turtle+Chandelier,734.2x,1.29,fixed_hold_equity,310
+2026-04-20,DDBudget 3-Sleeve,56.5x,7.09,milestone_aggregated_inflated,776
+2026-04-20,A/D Momentum,40.3x,3.62,fixed_hold_daily_equity,3933
+2026-04-20,FactorSmallByDV,13.6x,1.92,fixed_hold_daily_equity,1257

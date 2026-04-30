@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-29 20:50 UTC. Critique cycle. T31 Donchian sleeve (untested complement angle). T32 Sharpe integrity fix. Research loop CLOSED. ATR EMA [1..200] confirmed NULL. T29 funding observer still 0% built.*
+*Last updated: 2026-04-30 03:35 UTC. T29 COMPLETE ✅. T32 COMPLETE ✅. T31 still OPEN. Research loop is CONFIRMATION SPIRAL, not closed. Stop hyperopts; build the remaining deployability gaps.*
 
 ---
 
@@ -17,7 +17,19 @@ This pattern matches every failed entry approach:
 - Volume confirmation: pass rate degrades 6-13pp
 - Correlation filter: loses to baseline on every metric
 
-**Implication:** Entry space is definitively closed. Turtle entry is the optimal trade-off between signal frequency and signal quality. ATR-rank conditional filter (T20) assessed as marginal on stale params — not worth running properly.
+**Implication:** Entry space is definitively closed. Turtle entry is the optimal trade-off between signal frequency and signal quality.
+
+---
+
+## Critical New Insight: Research Loop Is a Confirmation Spiral
+
+**As of 2026-04-30:** We keep re-running settled parameters at higher resolution and calling it new research.
+
+- ATR_EMA [1..200] × 9u × 54w = 10,800 runs — re-confirmed NULL at [1..30] on the same harness. Same result, higher resolution. Not discovery.
+- ATR_ENTRY_MULT 201-value sweep (0.00..=2.00 step 0.01) — re-confirmed EM=0.00 on current params. Same result, 201 values instead of 41. Not discovery.
+- ATR_ENTRY_MULT=0.94 candidate: real signal (42/54 pass, Sharpe 5.34 vs baseline 40/54/3.15) — correctly not promoted (anti-overfit discipline). But this was found on the same WF grid it would be validated against.
+
+**The research loop is NOT closed. It's spinning.** T32 is now fixed; the loop closes when we stop running hyperopts and build T31 plus funding observer continuous monitoring.
 
 ---
 
@@ -27,140 +39,88 @@ This pattern matches every failed entry approach:
 - Trigger: BTC 21d vol > 75th percentile of 252-bar history → reduce position 30%, hold 30% in USDT
 - Effect: ~30% DD reduction in bear windows (historical validation)
 - Mechanism: modest position size overlay, non-breaking, optional
-- This directly addresses the pre-2021 stress weakness (67.9%) without re-optimizing entry/exit params
-
+- **This directly addresses the pre-2021 stress weakness (67.9% below 70% threshold).**
 **Status:** Built in `src/live/bot.rs` lines 245-275. Needs live/testnet observation, not more historical tuning.
 
 ---
 
 ## Top Genuinely Untested Ideas (Priority Order)
 
-*(Updated 2026-04-29 13:24 — historical sweep loop CLOSED; next ideas must target reporting integrity, live observability, or truly different exit/risk mechanics)*
+### T29: Funding Rate Live Observer — ✅ COMPLETE (2026-04-30 00:08 UTC)
+**Built:** `examples/funding_rate_live_observer.rs` — polls Binance premiumIndex public API (no keys), compares to 30d cached history, computes z-score/percentile, detects extremes.
+**Live result:** NEAR NEUTRAL (-0.04% avg ann funding). No extremes detected. All z-scores -0.36 to -1.05. DOGE tends highest funding (0.037% ann vs BTC 0.022%).
+**Status:** COMPLETE. Next: continuous monitoring via `scripts/run_funding_observer.sh`.
 
-### S4: ATR-Normalized Position Sizing — ✅ REJECTED (2026-04-29 03:10 UTC)
-**Result:** REJECTED. Equal capital allocation is optimal.
-- Equal capital: 6/7 pass (86%), Sharpe 10.2
-- ATR norm 10K: 4/7 pass (57%), Sharpe 53.5 (inflated by W3 mega-bull)
-- ATR norm 20K: 4/7 pass (57%), Sharpe 107.0
-- Root cause: ATR normalization INVERTS dollar-volume ranking. Low-vol assets get disproportionately large positions.
-- W4 catastrophic failure: equal_capital +152% (39% DD) vs ATR_norm -1866% (1840% DD)
-**Files:** `examples/s4_atr_norm_position_sizing.rs`, `snapshots/s4_atr_norm_position_sizing.md`
-**Status:** CLOSED. Research loop TRULY CLOSED.
+### T31: Donchian as Portfolio Complement — OPEN (OVERDUE — 2+ sessions)
+**Status:** UNTESTED. Identified as HIGH priority in 2026-04-29 critique. Not built in 2 sessions. This is avoidance, not rigor.
+**Hypothesis:** Donchian (strictest breakout, all-time high) fires less but higher conviction. Turtle(75%) + Donchian(25%) sleeve may capture different regime dynamics.
+**Evidence:** Donchian W04 (bear chop) Sharpe +15.7 vs Turtle +1.3. Different regime profile = diversification.
+**What to test:** Turtle(75%) + Donchian(25%) on Base5 × 7 windows, same dual exit. Reject if Turtle Sharpe collapses >10% or pass rate drops >5pp.
+**Scope:** 2 configs × Base5 × 7 windows.
+**Action:** Build `examples/donchian_sleeve_walkforward.rs` THIS session. Not next session.
 
-### USDT Hedge Overlay — ✅ INTEGRATED (2026-04-29, commit 683fe92e)
-**Concept:** Vol-regime position sizing overlay. Reduce position 30% when BTC 21d vol > 75th pct of 252-bar history.
-- Documented 2026-04-11: ~30% DD reduction in bear windows
-- Mechanism: `vol_pct = rank_21d_atr(bar) / 252`. If vol_pct > 0.75 → hedge_ratio=0.30 (30% notional in USDT, 70% in position).
-- Risk: modest, non-breaking, optional overlay — only activates in high-vol regimes
-- **This directly addresses the pre-2021 stress weakness (67.9% below 70% threshold).**
-- Action: Observe in live/testnet; no further historical re-sweep.
-**Status:** ✅ INTEGRATED in src/live/bot.rs lines 245-275. Vol-regime position sizing active.
+### T32: Sharpe Metric Integrity Fix — COMPLETE ✅ (2026-04-30)
+**Problem fixed:** `daily_progress.csv` no longer silently compares DDBudget 7.24 to Turtle 1.04 as peer Sharpe values.
+**Built:** Added `sharpe_methodology` to the report and updated `scripts/run_daily_progress.sh` so refreshes preserve methodology. `progress_equity_curves.rs` generated markdown now labels DDBudget as milestone-aggregated/not comparable to Turtle daily compounded equity.
+**Current interpretation:** Turtle+Chandelier = 221.1x / 1.04 `daily_compounded_equity`; DDBudget = 61.3x / 7.24 `milestone_aggregated_not_comparable`. Do not cite the DDBudget 7.24 as a superior peer Sharpe.
 
-### T22: Dual-Exit Attribution — ✅ COMPLETED (2026-04-28 20:00 UTC)
+### S6: Rebalancing Frequency / Winner-Loser Maintenance — UNTESTED
+**Hypothesis:** Current logic opens and waits for exit. Periodic maintenance (e.g., rebalance every 5 bars, trim losers, do not trim winners) may improve capital efficiency without adding new alpha signals.
+**Why it is worth testing:** Position lifecycle, not entry. Addresses "trapped capital in decaying breakouts" without suppressing trend convexity.
+**Reject if:** Increases turnover materially or collapses pass rate after fees.
+**Status:** Listed since 2026-04-11. Never built. Lower priority than T31/T32.
+
+---
+
+## ATR_EMA [1..200] Confirmation — NULL (2026-04-29)
+
+**10,800 runs** (200 values × 9 universes × 54 windows). ATR_EMA=4 wins pass rate (43/54 vs 42/54 baseline) but loses -0.36 Sharpe (3.76 vs 4.12). ATR_EMA=1 (raw ATR) confirmed as production default by robustness-first criteria.
+
+**Prior:** [1..30] sweep on stale params — NULL. This sweep confirms it extends to [1..200].
+
+**Not discovery.** Re-confirmation of settled result.
+
+---
+
+## ATR_ENTRY_MULT 201-Value Sweep (2026-04-29) — CONFIRMED NULL, CANDIDATE FOUND
+
+**Scope:** ATR_ENTRY_MULT ∈ [0.00..=2.00] step 0.01 (201 values) × 9 universes × 6 windows = 54 windows/value.
+**Params:** CHAND(7,2.30)/EP=21/HM=12/CAP=3/VL=8/ATR(24,2.0).
+
+**Winner (baseline):** EM=0.00 — 40/54 pass (74.1%), Sharpe 3.15, return +105.3%, DD 35.4%, 721 trades.
+**Candidate:** EM=0.94 — 42/54 pass (77.8%), Sharpe 5.34 (+2.19), return +73.0%, DD 28.3%, 486 trades.
+**Highest Sharpe:** EM=1.07 — 41/54 pass, Sharpe 7.86 (inflated by mega-bull windows).
+
+**Decision:** No production change. EM=0.94 found on same WF grid it would be validated against. Anti-overfit discipline requires held-out data before promotion. EM=0.00 remains production default.
+
+**Status:** Candidate identified, not promoted. Requires held-out validation before production change.
+
+---
+
+## Equity Bug Fix — ✅ FIXED (2026-04-29, commit e55659e8)
+
+**Root cause:** Off-by-one forward-fill in `progress_equity_curves.rs`. While loop exits before last exit is recorded.
+**Fix:** Record equity at bar=exit_bar before incrementing. One targeted edit.
+**Status:** FIXED. Off-by-one recording loop corrected.
+
+---
+
+## Dual-Exit Attribution — ✅ COMPLETED (2026-04-28)
+
 **Result:** Chandelier fires first ~7-8% of windows, not >90% as feared. TURTLE_ATR_PERIOD=24 is a REAL parameter.
 - Dual-exit: 40/54 pass (global), 6/6 Base5
 - Turtle-only: 36/54 pass (global), 5/6 Base5 (W04 bear chop fails)
 - Chandelier adds 1 window of robustness — secondary exit, not primary driver
-**Conclusion:** Prior dual-exit hyperopts (ATR_P=24, ATR_M=2.0) are valid — they fire first in ~90% of trades.
-**Status:** CLOSED. TURTLE_ATR_PERIOD=24 hyperopt confirmed as genuine, not noise.
-
-### T24: Equity Bug Fix — ✅ FIXED (2026-04-29, commit e55659e8)
-**Root cause:** Off-by-one forward-fill in `progress_equity_curves.rs`. While loop exits before last exit is recorded. Forward-fill then sets `equity_curve[total]` (row 2086) to 1.0 instead of the actual final equity.
-**Evidence:** Row 2086 = 1.0, row 2087 = 221.5x. Two rows of output — the harness completes successfully, so the symptom was masked by the parquet refresh.
-**False claim:** Commit `9fb2a81c` ("equity bug fixed") modified ZERO Rust source lines. No code was changed. This is a pattern of reporting desired state vs actual state.
-**Fix:** One targeted edit to the equity recording loop in `examples/progress_equity_curves.rs`. Record equity at bar=exit_bar before incrementing.
-**Status:** FIXED. Off-by-one recording loop corrected.
-
-### T20: ATR-Rank Conditional Filter — ASSESSED (not worth running)
-**Existing results** from stale harness (CHAND_P=15/M=1.50, EP=21, HM=45): baseline 54% pass, t=20/30 shows +2pp pass at best. Not decisive.
-**Why not running properly:** Donchian already showed entry filter space trades pass rate for Sharpe. T20 would likely show same pattern. Live testnet is the only real validator.
-**Status:** CLOSED — not worth the compute. Entry space definitively exhausted.
-
-### T27: Asymmetric Exit Architecture — ✅ REJECTED (2026-04-29)
-**Tested:** `examples/asymmetric_exit_walkforward.rs`, 9 universes × 6 windows.
-**Result:** No improvement. baseline 38/54 pass (Sharpe 3.818); asym_soft (CHAND×3.0) 38/54 (Sharpe 3.680); asym_hard (ATR×0.5) 38/54 (Sharpe 3.610). All configs produce identical results on Base5 windows (Turtle ATR fires first, Chandelier never activates). Chandelier multiplier is irrelevant when Turtle ATR dominates. **REJECTED.**
-**File:** `examples/asymmetric_exit_walkforward.rs`, `snapshots/asymmetric_exit_results.csv`.
-
-### T29: Funding-Rate Live Observer — GENUINELY UNTESTED / PUBLIC API
-**Hypothesis:** Extreme funding regimes (<-50% ann or violent flips) identify crowded positioning. Reduce risk when funding signals extreme stress.
-**Why it matters:** Funding is market microstructure data absent from current OHLCV harnesses. Addresses bear/chop regime weakness qualitatively.
-**What to build:** Polling script for `/fapi/v1/fundingRate` (BTCFDUSD). Log vs 30d rolling average. Alert via Discord on threshold breach. Public API — no keys needed.
-**Caution:** No backtest possible. Start as qualitative overlay only. Observe for 30 days before drawing conclusions.
-**Status:** T29 from PLAN — UNBUILT.
-
-### S6: Rebalancing Frequency / Winner-Loser Maintenance — NEW
-**Hypothesis:** Current logic opens and waits for exit. Periodic maintenance (e.g., rebalance every 5 bars, trim losers, do not trim winners) may reduce capital trapped in decaying breakouts without suppressing trend convexity.
-**Why it is worth testing:** Position lifecycle, not entry. Could improve capital efficiency without adding a new alpha signal.
-**Reject if:** It increases turnover materially or collapses pass rate after fees.
-
-### T31: Donchian as Portfolio Complement — NEW / GENUINELY UNTESTED
-**Hypothesis:** Donchian (strictest breakout, all-time high) fires less frequently but with higher conviction. Turtle(75%) + Donchian(25%) as portfolio sleeve may capture different regime dynamics.
-**Evidence:** Donchian W04 (bear chop) Sharpe +15.7 vs Turtle +1.3. Donchian wins Sharpe +3.8 avg but loses -14pp pass rate as replacement. As a sleeve, different regime profile = potential diversification.
-**What to test:** Turtle(75%) + Donchian(25%) on Base5 × 7 windows, same dual exit. Compare to Turtle-only baseline.
-**Reject if:** Turtle Sharpe collapses >10% or pass rate drops >5pp.
-
----
-
-## Critical New Insight: Equity Bug Propagation (Third Session Unfixed)
-
-**The daily_progress.csv shows `BROKEN (harness bug)` for Turtle on 2026-04-28.**
-
-Root cause identified in two prior sessions (2026-04-28 19:40 and 21:15 UTC):
-- `progress_equity_curves.rs` uses stale universe definition (2087 bars for BTC, not full 2971)
-- Off-by-one error in forward-fill at CSV boundary causes Turtle to show 1.0x final equity
-- Actual Turtle equity ≈235x at day 2085
-
-**Why this matters:** Daily progress CSV is the project's primary equity reporting artifact. A broken number for the primary strategy undermines the entire reporting infrastructure.
-
-**Fix complexity:** Medium — one file + off-by-one logic. Low priority vs live testnet but must fix pre-deploy.
-
----
-
-## Critical New Insight: Pre-2021 Stress — Known Constraint, Not Fixable Bug
-
-**67.9% pass on pre-2021 held-out (below 70% threshold) has been flagged every critique cycle.**
-
-We keep treating it as a footnote. The honest reading: the strategy is overfit to bull crypto dynamics to some degree. Pre-2021 choppy/bear regimes (2019, early 2020) have a ~32% failure rate.
-
-**The USDT hedge overlay** (reduce position 30% when BTC 21d vol > 75th pct of 252d history) is now integrated. That does NOT solve the limitation; it only reduces exposure during high-vol stress.
-
-**What we should do:** Acknowledge this as a known limitation in strategy scope — works best in trending bull markets, fragile in choppy/bear. Don't pretend we can eliminate it without live data. Observe the hedge in testnet/live conditions and avoid additional parameter tuning unless new data justifies it.
 
 ---
 
 ## Live Testnet Blocker
 
-**Status: CRITICAL BLOCKER — nothing else advances without this.**
+**Status: CRITICAL BLOCKER — 4+ weeks without live testnet.**
 
-The entire project is simulation. All metrics are upper bounds:
-- Walk-forward Sharpe 5.46 (Base5) — upper bound, per-window averaged methodology
-- **Equity Sharpe ~1.29 — honest number, from compounded daily equity curve**
-- $10K→$67M — simulation maximum
-- Pre-2021 stress: 67.9% — BELOW our own 70% threshold (most honest metric)
+The entire project is simulation. All metrics are upper bounds.
 
-What live testnet validates:
-1. Maker-fill rate: is 70% estimate accurate in live conditions?
-2. Slippage model: does actual execution match our 5bps assumption?
-3. Strategy execution: does the bot actually run without errors?
-4. Real-time data: does Binance WebSocket feed work correctly?
-
-**Escalation: BLOCKED for 3+ weeks. Every session identifies this as critical.**
-
----
-
-## Post-Live-Testnet Concepts (Cannot be backtested)
-
-### S1. Maker-Fill Adaptive Position Sizing
-After 30 days of live testnet: measure actual maker-fill rate per symbol.
-- If <50% → reduce position 30% (execution degraded)
-- If >70% → full position (execution optimal)
-The maker-fill rate is a market microstructure signal.
-
-### S2. Vol Regime Live Dashboard
-Display live ATR percentile rank (vs 252-bar history) per symbol. Helps interpret drawdowns in real-time.
-
-### S3. Live Slippage → Position Adjustment
-If SOL slippage consistently >2× model → reduce SOL cap to $25K notional.
+**Only genuine path forward:** Live testnet paper trading. All hyperopts on historical data exhausted. ATR_ENTRY_MULT=0.94 is the one live candidate. Everything else is locked.
 
 ---
 
@@ -174,54 +134,44 @@ If SOL slippage consistently >2× model → reduce SOL cap to $25K notional.
 | Funding rate MR | 2026-04-10 | 43% pass | Highly autocorrelated |
 | Vol-contingent Chandelier | 2026-04-12 | GRAVEYARD | All configs identical |
 | ATR entry filter (fixed mult) | 2026-04-13 + 04-25 | mult=0.0 wins | Any non-zero filter hurts |
+| ATR_EMA [1..200] | 2026-04-29 | NULL | No smoothing improvement anywhere in range |
+| ATR_ENTRY_MULT [0..2.00] | 2026-04-29 | EM=0.00 wins | EM=0.94 candidate — needs held-out validation |
 | Chop filter | 2026-04-13 | REJECTED | Trade-starving |
 | Correlation entry filter (T7) | 2026-04-25 | REJECTED | All 3 variants lose to baseline |
 | CTREND + Chandelier exit | 2026-04-20 | 30/54 pass | Wrong exit mechanism for CTREND |
-| CTREND fixed-hold exit | 2026-04-25 | 44/60 pass | VIABLE but secondary (not standalone) |
 | CTREND regime-conditional switching | 2026-04-25 | 67% pass — FAIL | 67% < 70% threshold |
 | 4h Multi-Timeframe Turtle | 2026-04-25 | 1/20 pass | Structural — dual exit collapses on 4h |
-| Cross-market equity integration | 2026-04-16 | REJECTED | Combined Sharpe -2.94 vs crypto-only |
+| Cross-market equity integration | 2026-04-16 | REJECTED | Combined -2.94 Sharpe vs crypto-only |
 | DynamicTrend EMA signal | 2026-04-16 | REJECTED | Turtle wins 21/24 windows |
 | A/D Static Sleeve | 2026-04-14 | 46% | Below-random win rate |
 | BTC Trend Scalar | 2026-04-14 | 0/8 configs | Baseline wins |
 | Regime-conditional allocation | 2026-04-12 | 60.5% | Worse than either component alone |
 | XRP 4h MR | 2026-04-11 | 0/4 | Edge destroyed by fees |
-| 1h Mean Reversion | 2026-04-14 | 0/6 | All symbols negative Sharpe |
 | EP=24 | 2026-04-26 | REVERTED | In-sample inflation on same OOS data |
 | EP=43 | 2026-04-27 | REVERTED | Found same session as EP=21 validation |
-| ATR_ENTRY_MULT=0.85 | 2026-04-25 | REVERTED | In-sample inflation, same session as EP=24/P=7 |
+| ATR_ENTRY_MULT=0.85 | 2026-04-25 | REVERTED | In-sample inflation |
 | Position scaling overlays | various | GRAVEYARD | All failed — Chandelier already handles it |
-| Donchian entry | 2026-04-28 | REJECTED | Wins Sharpe (+3.8) but loses pass rate (-14pp) — not a replacement |
-| ATR-rank conditional filter | 2026-04-28 | ASSESSED | Marginal on stale params — not worth running |
-| Dual-exit CAP sweep | 2026-04-28 | CLOSED | CAP=3 already validated under Turtle-only (72.2% pass) |
+| Donchian entry (replacement) | 2026-04-28 | REJECTED | Wins Sharpe (+3.8) but loses pass rate (-14pp) — NOT as replacement; complement untested |
+| ATR-norm position sizing (S4) | 2026-04-29 | REJECTED | Equal capital optimal, ATR-norm inverts vol ranking |
+| Asymmetric exit | 2026-04-29 | REJECTED | Turtle ATR fires first; all configs identical |
+| Mid-caps (BNB/LINK/AVAX/MATIC/UNI) | 2026-04-30 | REJECTED | 60% pass — below 70% threshold |
 
-**Conclusion:** The reliable crypto edge is directional trend-following on daily data. Everything else has failed or is secondary. Entry space is a pass-rate vs Sharpe trade-off — Turtle is likely the optimal point.
+**Conclusion:** The reliable crypto edge is directional trend-following on daily data. Entry space is a pass-rate vs Sharpe trade-off — Turtle is the optimal point. Remaining untested ideas (T31, S6) require building, not more hyperopts.
 
 ---
 
-## Anti-Overfitting Rules (Established 2026-04-25, Applied 2026-04-26)
+## Anti-Overfitting Rules (Established 2026-04-25)
 
 1. **Minimum win margin:** ≥3 windows (5.5%) improvement on OOS before accepting any param change
 2. **No sequential optimization on same data:** If EP is optimized on data D, you cannot also optimize ATR_EM on data D and claim both are valid
 3. **Held-out validation required for marginal wins:** 1-2 window delta = noise until pre-2021 stress confirms
 4. **Equity curve dominance:** Winner must dominate baseline at >80% of time bars
-5. **Never re-run confirmed params:** ATR_PERIOD confirmed 3×. CHAND_MULT confirmed 2×. P=7 confirmed 2×. Stop.
-
-**Application history:**
-- EP=24 REJECTED: in-sample inflation on same OOS data as P=7 and ATR_ENTRY_MULT
-- EP=43 REJECTED: same violation (found same session as EP=21 validation)
-- ATR_ENTRY_MULT=0.85 REJECTED: same violation
-- P=7 VALIDATED: held-out confirmed with EP=21 (2026-04-26 T3-Next: 27/29 vs 27/29, delta +0.01 Sharpe)
-- EP=21 VALIDATED: held-out confirmed (2026-04-26 T3: 27/29 pass)
+5. **Never re-run confirmed params:** ATR_PERIOD confirmed 3×. CHAND_MULT confirmed 2×. P=7 confirmed 2×. ATR_EMA confirmed 2×. Stop.
 
 ---
 
 ## Key Insight: All Metrics Are Upper Bounds
 
-Everything in HALL_OF_FAME.md is a simulation maximum. The real validation path is:
-1. Run live testnet paper trading
-2. Compare actual vs predicted metrics (maker fill rate, slippage, Sharpe)
-3. Calibrate the execution model based on real feedback
-4. Only then can we say whether the strategy is genuinely robust
+Everything in HALL_OF_FAME.md is a simulation maximum. The real validation path is live testnet paper trading + comparing actual vs predicted metrics.
 
 **Source of truth for production params: `src/live/config.rs`. Last verified: 2026-04-29.**

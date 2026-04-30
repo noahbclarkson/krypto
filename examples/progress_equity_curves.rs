@@ -319,11 +319,11 @@ async fn main() -> Result<()> {
     let md = format!(
         "# Progress Equity Curves\n\nGenerated: {}\n\n\
          Universe: {} ({})\n\n\
-         Final equity | Sharpe (daily):\n\
-         - A/D Momentum: {:.1}x ({:.1}%), Sharpe {:.2}\n\
-         - FactorSmallByDV: {:.1}x ({:.1}%), Sharpe {:.2}\n\
-         - DDBudget 3-Sleeve: {:.1}x ({:.1}%), Sharpe {:.2} [milestone-aggregated, not daily-compounded]\n\
-         - Turtle+Chandelier: {:.1}x ({:.1}%), Sharpe {:.2} [PRODUCTION CANDIDATE]\n\
+         Final equity | Reported Sharpe:\n\
+         - A/D Momentum: {:.1}x ({:.1}%), Sharpe {:.2} [fixed-hold daily equity]\n\
+         - FactorSmallByDV: {:.1}x ({:.1}%), Sharpe {:.2} [fixed-hold daily equity]\n\
+         - DDBudget 3-Sleeve: {:.1}x ({:.1}%), Sharpe {:.2} [milestone-aggregated; not comparable to Turtle daily equity]\n\
+         - Turtle+Chandelier: {:.1}x ({:.1}%), Sharpe {:.2} [daily compounded equity; PRODUCTION CANDIDATE]\n\
          [MACD+Regime & Blend excluded: 2/7 OOS pass — GRAVEYARD]\n",
         chrono::Utc::now(),
         label,

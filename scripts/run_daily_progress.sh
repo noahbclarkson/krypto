@@ -24,29 +24,39 @@ root = Path.cwd()
 summary = (root / "snapshots" / "progress_equity_curves.md").read_text()
 report = root / "reports" / "daily_progress.csv"
 
+header = [
+    "# DAILY PROGRESS TRACKING — Krypto Strategies",
+    "# NOTE: sharpe_methodology is required. DDBudget's reported Sharpe is milestone-aggregated and not comparable to Turtle's daily compounded equity Sharpe.",
+    "date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades",
+]
 rows = []
-pattern = re.compile(r"^- (?P<name>.*?): (?P<eq>[0-9.]+x) .*?, Sharpe (?P<sharpe>[0-9.]+)", re.M)
+pattern = re.compile(r"^- (?P<name>.*?): (?P<eq>[0-9.]+x) .*?, Sharpe (?P<sharpe>[0-9.]+)(?: \[(?P<method>[^\]]+)\])?", re.M)
+methodology = {
+    "Turtle+Chandelier": "daily_compounded_equity",
+    "DDBudget 3-Sleeve": "milestone_aggregated_not_comparable",
+    "A/D Momentum": "fixed_hold_daily_equity",
+    "FactorSmallByDV": "fixed_hold_daily_equity",
+}
 for m in pattern.finditer(summary):
     name = m.group("name").strip()
     eq = m.group("eq")
     sharpe = m.group("sharpe")
     trades = {
-        "Turtle+Chandelier": "397",   # live_turtle_chandelier dry-run, 2026-04-29
+        "Turtle+Chandelier": "397",   # validated progress harness, 2026-04-29+
         "DDBudget 3-Sleeve": "776",
         "A/D Momentum": "3933",
         "FactorSmallByDV": "1257",
     }.get(name, "n/a")
-    rows.append(f"{day},{name},{eq},{sharpe},n/a,{trades}")
+    method = methodology.get(name, (m.group("method") or "unknown").replace(",", ";"))
+    rows.append(f"{day},{name},{eq},{sharpe},{method},{trades}")
 
 if not rows:
     raise SystemExit("No strategy rows parsed from snapshots/progress_equity_curves.md")
 
-old_lines = report.read_text().splitlines() if report.exists() else ["# DAILY PROGRESS TRACKING — Turtle+Chandelier Production"]
-kept = [line for line in old_lines if not line.startswith(day + ",")]
-if kept and kept[-1].strip():
-    kept.append("")
-kept.extend(rows)
-report.write_text("\n".join(kept).rstrip() + "\n")
+old_lines = report.read_text().splitlines() if report.exists() else []
+body = [line for line in old_lines if line and not line.startswith("#") and not line.startswith("date,")]
+body = [line for line in body if not line.startswith(day + ",")]
+report.write_text("\n".join(header + rows + body).rstrip() + "\n")
 print("Wrote:")
 for row in rows:
     print("  " + row)
