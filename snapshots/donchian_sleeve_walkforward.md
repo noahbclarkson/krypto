@@ -12,7 +12,7 @@
 
 ## Decision
 
-**CANDIDATE.** Sleeve passes the T31 guardrail: Sharpe delta +22.0% and pass-rate delta +0.0 pp. Needs broader 9-universe validation before promotion.
+**CANDIDATE.** Sleeve passes the T31 guardrail: Sharpe drop -22.0% and pass-rate delta -0.0 pp. Needs broader 9-universe validation before promotion.
 
 ## Per-Window Results
 

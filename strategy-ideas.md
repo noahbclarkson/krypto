@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-30 03:35 UTC. T29 COMPLETE ✅. T32 COMPLETE ✅. T31 still OPEN. Research loop is CONFIRMATION SPIRAL, not closed. Stop hyperopts; build the remaining deployability gaps.*
+*Last updated: 2026-04-30 04:05 UTC. T29 COMPLETE ✅. T31 BASE5 CANDIDATE ✅ (9-universe pending). T32 COMPLETE ✅. S6 NEVER BUILT. EM=0.94 held-out pending. Research loop is CONFIRMATION SPIRAL — stop hyperopts on settled params.*
 
 ---
 
@@ -51,24 +51,24 @@ This pattern matches every failed entry approach:
 **Live result:** NEAR NEUTRAL (-0.04% avg ann funding). No extremes detected. All z-scores -0.36 to -1.05. DOGE tends highest funding (0.037% ann vs BTC 0.022%).
 **Status:** COMPLETE. Next: continuous monitoring via `scripts/run_funding_observer.sh`.
 
-### T31: Donchian as Portfolio Complement — OPEN (OVERDUE — 2+ sessions)
-**Status:** UNTESTED. Identified as HIGH priority in 2026-04-29 critique. Not built in 2 sessions. This is avoidance, not rigor.
-**Hypothesis:** Donchian (strictest breakout, all-time high) fires less but higher conviction. Turtle(75%) + Donchian(25%) sleeve may capture different regime dynamics.
-**Evidence:** Donchian W04 (bear chop) Sharpe +15.7 vs Turtle +1.3. Different regime profile = diversification.
-**What to test:** Turtle(75%) + Donchian(25%) on Base5 × 7 windows, same dual exit. Reject if Turtle Sharpe collapses >10% or pass rate drops >5pp.
-**Scope:** 2 configs × Base5 × 7 windows.
-**Action:** Build `examples/donchian_sleeve_walkforward.rs` THIS session. Not next session.
+### T31: Donchian as Portfolio Complement — BASE5 CANDIDATE ✅ (9-universe pending)
+**Status:** BUILT on Base5 (2026-04-30 commit 4a4e15ba). 9-universe validation still pending.
+**Result (Base5 × 6 windows):**
+- Turtle(75%) + Donchian(25%): **6/6 pass, Sharpe +4.767 (+22.0% vs Turtle)**, +2284% avg return
+- Guardrail: reject if global pass rate drops >5pp (below 69.1%) or Sharpe fails outside Base5
+**What to build:** `examples/donchian_sleeve_9universe.rs` — 9-universe × 6-window validation
 
 ### T32: Sharpe Metric Integrity Fix — COMPLETE ✅ (2026-04-30)
 **Problem fixed:** `daily_progress.csv` no longer silently compares DDBudget 7.24 to Turtle 1.04 as peer Sharpe values.
 **Built:** Added `sharpe_methodology` to the report and updated `scripts/run_daily_progress.sh` so refreshes preserve methodology. `progress_equity_curves.rs` generated markdown now labels DDBudget as milestone-aggregated/not comparable to Turtle daily compounded equity.
 **Current interpretation:** Turtle+Chandelier = 221.1x / 1.04 `daily_compounded_equity`; DDBudget = 61.3x / 7.24 `milestone_aggregated_not_comparable`. Do not cite the DDBudget 7.24 as a superior peer Sharpe.
 
-### S6: Rebalancing Frequency / Winner-Loser Maintenance — UNTESTED
-**Hypothesis:** Current logic opens and waits for exit. Periodic maintenance (e.g., rebalance every 5 bars, trim losers, do not trim winners) may improve capital efficiency without adding new alpha signals.
-**Why it is worth testing:** Position lifecycle, not entry. Addresses "trapped capital in decaying breakouts" without suppressing trend convexity.
-**Reject if:** Increases turnover materially or collapses pass rate after fees.
-**Status:** Listed since 2026-04-11. Never built. Lower priority than T31/T32.
+### S6: Rebalancing Frequency / Winner-Loser Maintenance — UNTESTED (TOP PRIORITY)
+**Status:** Listed since 2026-04-11. **NEVER BUILT.** Genuinely novel — no hyperopt loop has touched it. No API keys needed.
+**Hypothesis:** Current Turtle+Chandelier opens and waits for exit. Hypothesis: periodic rebalancing (every N bars: re-rank open positions by unrealized PnL, trim/close worst if in loss >N bars, let leaders run) may improve capital efficiency without suppressing trend convexity.
+**Why it is worth testing:** Addresses "trapped capital in decaying breakouts" as a position lifecycle problem, not an entry problem. Mechanistically different from all failed scaling overlays.
+**What to build:** `examples/rebalancing_sweep.rs` — sweep rebalance_interval ∈ {5, 10, 15, 21, 30, 42} bars, rebalance_type ∈ {trim_losers, close_losers, redistribute}. Base5 × 6 windows. Compare to no-rebalancing baseline.
+**Reject if:** Increases turnover materially or collapses pass rate >5pp after fees.
 
 ---
 
@@ -93,7 +93,7 @@ This pattern matches every failed entry approach:
 
 **Decision:** No production change. EM=0.94 found on same WF grid it would be validated against. Anti-overfit discipline requires held-out data before promotion. EM=0.00 remains production default.
 
-**Status:** Candidate identified, not promoted. Requires held-out validation before production change.
+**Status:** Candidate identified, not promoted. Requires held-out validation on pre-2021 data only. **Build `examples/atr_entry_mult_held_out.rs` — single pre-2021 comparison, NOT another grid sweep.**
 
 ---
 
@@ -111,6 +111,18 @@ This pattern matches every failed entry approach:
 - Dual-exit: 40/54 pass (global), 6/6 Base5
 - Turtle-only: 36/54 pass (global), 5/6 Base5 (W04 bear chop fails)
 - Chandelier adds 1 window of robustness — secondary exit, not primary driver
+
+**⚠️ Live Bot Dual-Exit Gap — UNVERIFIED:** MEMORY states live bot uses Turtle-only exit (sole exit). Walk-forward validated dual Chandelier+Turtle ATR at 93% pass. If live is Turtle-only, the gap is ~26pp pass rate. **Action: Verify `src/live/bot.rs` exit logic. If Turtle-only, assess dual-exit implementation feasibility or accept the gap.**
+
+## New Concept: 2026 YTD Root Cause Analysis
+
+MEMORY per-year table: Turtle +2026 YTD = **-22.7%** while BTC = **+12.7%**. Gap = 35.4pp underperformance.
+
+"Bear whipsaw" is a description, not a root cause. Mechanism: sustained downtrend + low vol = Turtle breaks out → Chandelier stops out → repeated whipsaw losses. This is a genuine structural weakness in choppy/bear regimes.
+
+**Key question:** Is this **regime-inherent** (strategy working as designed in a hostile market) or is there a **live-vs-backtest divergence** (bug in live path)?
+
+**What to do:** Compare live bot equity curve vs backtest equity curve on the same 2026 YTD period. If they diverge → real bug. If they match → regime-inherent, accept it.
 
 ---
 
