@@ -623,3 +623,18 @@ ATR_ENTRY_MULT=0.94 candidate is real (42/54 pass, Sharpe 5.34 vs baseline 40/54
 - T31/T32 overdue (2+ sessions not built)
 - Funding observer: built but not continuously monitoring
 - **Only live testnet advances the project (BLOCKED on Noah's API keys — 4+ weeks)**
+
+## 2026-04-30 — Reporting Integrity: Sharpe Methodology Labels (T32 COMPLETE)
+
+`reports/daily_progress.csv` now includes `reported_sharpe` and `sharpe_methodology`. `scripts/run_daily_progress.sh` preserves this on refresh, and `examples/progress_equity_curves.rs` generated markdown labels DDBudget as `milestone-aggregated; not comparable to Turtle daily equity` while Turtle is `daily compounded equity`.
+
+Current interpretation: Turtle+Chandelier 221.1x / 1.04 `daily_compounded_equity`; DDBudget 61.3x / 7.24 `milestone_aggregated_not_comparable`. Do not cite DDBudget 7.24 as a peer/superior Sharpe against Turtle 1.04.
+
+## Promoted From Short-Term Memory (2026-04-30)
+
+<!-- openclaw-memory-promotion:memory:memory/2026-04-25.md:30:30 -->
+- Last session identified hyperparameter cycling as the core problem. This commit changes no code, runs no test. The project is still auditing itself in circles. [score=0.843 recalls=0 avg=0.620 source=memory/2026-04-25.md:30-30]
+
+## 2026-04-30 — HOLD_MAX Current-Params Full Sweep
+
+Full `HOLD_MAX` sweep under current production params (`EP=21`, `CHAND(7,2.30)`, `ATR(24,2.0)`, `ATR_ENTRY_MULT=0.00`, `VOL_LOOKBACK=8`, `CAP=3`) tested **1..=100 step 1** across 9 universes × 6 windows (5,400 WF simulations). Numeric Sharpe winner `HM=42` had Sharpe 4.475 but degraded pass rate to 35/54 vs baseline `HM=12` at 40/54 and gave up return (+91.1% vs +105.3%). Short-hold alternatives improved pass in places but materially reduced return. Anti-overfit decision: **do not promote same-grid winner; keep HOLD_MAX=12**. Evidence: `examples/hold_max_current_full_sweep.rs`, `snapshots/hold_max_current_full_summary.csv`, `charts/comparison_chart.png`.

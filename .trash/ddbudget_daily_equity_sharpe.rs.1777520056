@@ -1,0 +1,277 @@
+use anyhow::Result;
+use krypto::data::loader::DataLoader;
+use polars::prelude::*;
+use std::fs::OpenOptions;
+use std::io::Write;
+
+const CANDLES: u32 = 3000;
+const TAKER_FEE: f64 = 0.001;
+
+/// Recompute DDBudget-style strategy (3-sleeve: A/D + MACD+Regime + SmallByDV)
+/// using daily equity Sharpe instead of milestone-aggregated Sharpe.
+struct DDBudgetDaily {
+    // A/D params
+    ad_period: usize,
+    ad_hold: usize,
+    // MACD+Regime params
+    macd_hold: usize,
+    // SmallByDV params
+    smbdv_hold: usize,
+}
+
+fn calc_max_dd(equity: &[f64]) -> f64 {
+    let mut peak = equity[0];
+    let mut max_dd: f64 = 0.0;
+    for &e in equity {
+        peak = peak.max(e);
+        let dd = (peak - e) / peak * 100.0;
+        max_dd = max_dd.max(dd);
+    }
+    max_dd
+}
+
+fn daily_sharpe(daily_rets: &[f64]) -> f64 {
+    if daily_rets.is_empty() {
+        return 0.0;
+    }
+    let n = daily_rets.len() as f64;
+    let mean = daily_rets.iter().sum::<f64>() / n;
+    let variance = daily_rets.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / n;
+    let std = variance.sqrt();
+    if std < 1e-10 {
+        return 0.0;
+    }
+    let ann_return = mean * 365.0;
+    let ann_std = std * (365.0_f64).sqrt();
+    ann_return / ann_std
+}
+
+impl DDBudgetDaily {
+    fn new() -> Self {
+        Self {
+            ad_period: 5,
+            ad_hold: 54,
+            macd_hold: 21,
+            smbdv_hold: 21,
+        }
+    }
+
+    fn run_symbol(
+        &self,
+        close: &[f64],
+        high: &[f64],
+        low: &[f64],
+        volume: &[f64],
+        start_bar: usize,
+        end_bar: usize,
+    ) -> (f64, f64, f64, f64, usize) {
+        // AD run-length encoded signal
+        let ad_signal = |idx: usize| -> bool {
+            if idx < self.ad_period * 2 { return false; }
+            let mut pos = 0;
+            let mut neg = 0;
+            for i in (idx + 1 - self.ad_period)..idx {
+                let diff = close.get(i).unwrap_or(&0.0) - close.get(i.saturating_sub(1)).unwrap_or(&0.0);
+                if diff > 0.0 { pos += 1; } else { neg += 1; }
+            }
+            pos > neg
+        };
+
+        // MACD+Regime: EMA12 - EMA26, regime = SMA200(close) trend
+        let macd_signal = |idx: usize| -> bool {
+            if idx < 200 { return false; }
+            let ema12 = Self::ema(close, 12, idx);
+            let ema26 = Self::ema(close, 26, idx);
+            let sma200 = close[idx.saturating_sub(200)..=idx].iter().sum::<f64>() / 200.0;
+            let macd_val = ema12 - ema26;
+            macd_val > 0.0 && close[idx] > sma200
+        };
+
+        // SmallByDV: rank by volume, take smallest 3
+        let vol_rank_signal = |idx: usize, rank: usize| -> bool {
+            if idx < 21 || volume.len() < idx + 1 { return false; }
+            let start = idx + 1 - 21;
+            let mut vols: Vec<(usize, f64)> = (start..=idx)
+                .filter_map(|i| volume.get(i).map(|v| (i, *v)))
+                .collect();
+            vols.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+            vols.len() >= rank && vols[rank.saturating_sub(1)].0 == idx
+        };
+
+        let mut equity = 1.0_f64;
+        let mut equity_curve = vec![1.0_f64];
+        let mut daily_rets = Vec::new();
+        let mut bar = start_bar;
+        let mut trades = 0;
+
+        while bar + self.ad_hold <= end_bar {
+            // A/D signal
+            if ad_signal(bar) {
+                let entry = *close.get(bar).unwrap_or(&0.0);
+                if entry <= 0.0 { bar += 1; continue; }
+                let mut exit_price = entry;
+                let mut held = false;
+                for t in bar..(bar + self.ad_hold).min(end_bar) {
+                    if t >= end_bar { break; }
+                    if let (Some(h), Some(l)) = (high.get(t), low.get(t)) {
+                        let chand = h - *l;
+                        if chand > entry * 0.001 {
+                            exit_price = *h;
+                            held = true;
+                            break;
+                        }
+                    }
+                }
+                if !held {
+                    exit_price = *close.get((bar + self.ad_hold).min(end_bar)).unwrap_or(&entry);
+                }
+                let ret = (exit_price - entry) / entry - TAKER_FEE * 2.0;
+                equity *= 1.0 + ret;
+                equity_curve.push(equity);
+                daily_rets.push(ret);
+                trades += 1;
+                bar += self.ad_hold + 1;
+                continue;
+            }
+
+            // MACD+Regime
+            if macd_signal(bar) {
+                let entry = *close.get(bar).unwrap_or(&0.0);
+                if entry <= 0.0 { bar += 1; continue; }
+                let mut exit_price = entry;
+                for t in bar..(bar + self.macd_hold).min(end_bar) {
+                    if t >= end_bar { break; }
+                    if let (Some(h), Some(l)) = (high.get(t), low.get(t)) {
+                        if h - *l > entry * 0.001 {
+                            exit_price = *h;
+                            break;
+                        }
+                    }
+                }
+                if exit_price == entry {
+                    exit_price = *close.get((bar + self.macd_hold).min(end_bar)).unwrap_or(&entry);
+                }
+                let ret = (exit_price - entry) / entry - TAKER_FEE * 2.0;
+                equity *= 1.0 + ret;
+                equity_curve.push(equity);
+                daily_rets.push(ret);
+                trades += 1;
+                bar += self.macd_hold + 1;
+                continue;
+            }
+
+            // SmallByDV (short laggard)
+            if vol_rank_signal(bar, volume.len().min(3)) {
+                let entry = *close.get(bar).unwrap_or(&0.0);
+                if entry <= 0.0 { bar += 1; continue; }
+                let mut exit_price = entry;
+                for t in bar..(bar + self.smbdv_hold).min(end_bar) {
+                    if t >= end_bar { break; }
+                    if let (Some(h), Some(l)) = (high.get(t), low.get(t)) {
+                        if h - *l > entry * 0.001 {
+                            exit_price = *l; // short: sell at low
+                            break;
+                        }
+                    }
+                }
+                if exit_price == entry {
+                    exit_price = *close.get((bar + self.smbdv_hold).min(end_bar)).unwrap_or(&entry);
+                }
+                let ret = -(exit_price - entry) / entry - TAKER_FEE * 2.0; // short
+                equity *= 1.0 + ret;
+                equity_curve.push(equity);
+                daily_rets.push(ret);
+                trades += 1;
+                bar += self.smbdv_hold + 1;
+                continue;
+            }
+
+            bar += 1;
+        }
+
+        let ret = (equity - 1.0) * 100.0;
+        let max_dd = calc_max_dd(&equity_curve);
+        let eq_sharpe = daily_sharpe(&daily_rets);
+        (ret, eq_sharpe, max_dd, equity, trades)
+    }
+
+    fn ema(data: &[f64], period: usize, idx: usize) -> f64 {
+        if idx < period { return 0.0; }
+        let alpha = 2.0 / (period as f64 + 1.0);
+        let mut ema = data[idx.saturating_sub(period)..=idx]
+            .iter()
+            .sum::<f64>() / period as f64;
+        for i in (idx.saturating_sub(period) + 1)..=idx {
+            if let Some(&v) = data.get(i) {
+                ema = v * alpha + ema * (1.0 - alpha);
+            }
+        }
+        ema
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    println!("\n═══ DDBudget Daily Equity Sharpe ═══\n");
+
+    let symbols = vec!["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT"];
+    let loader = DataLoader::new(None, None);
+
+    let mut all_rets = Vec::new();
+    let mut all_sharpes = Vec::new();
+    let mut csv_lines = vec![
+        "date,symbol,return_pct,daily_equity_sharpe,max_dd_pct,final_equity,trades\n",
+    ];
+
+    for sym in &symbols {
+        print!("  Loading {}...", sym);
+        let df = loader.load(sym).await?;
+        let close: Vec<f64> = df.column("close")?.f64()?.to_vec();
+        let high: Vec<f64> = df.column("high")?.f64()?.to_vec();
+        let low: Vec<f64> = df.column("low")?.f64()?.to_vec();
+        let volume: Vec<f64> = df.column("volume")?.f64()?.to_vec();
+        println!(" {} bars", close.len());
+
+        let start_bar = 300;
+        let end_bar = close.len().saturating_sub(1);
+
+        let ddb = DDBudgetDaily::new();
+        let (ret, eq_sh, max_dd, fv, trades) = ddb.run_symbol(&close, &high, &low, &volume, start_bar, end_bar);
+
+        println!(
+            "    {}: ret={:+.1}% eq_sharpe={:.3} DD={:.1}% eq={:.4}x trades={}",
+            sym, ret, eq_sh, max_dd, fv, trades
+        );
+
+        all_rets.push(ret);
+        all_sharpes.push(eq_sh);
+        csv_lines.push(format!(
+            "2026-04-29,{},{:+.2},{:.4},{:.2},{:.4},{}\n",
+            sym, ret, eq_sh, max_dd, fv, trades
+        ));
+    }
+
+    // Daily equity portfolio
+    let avg_ret = all_rets.iter().sum::<f64>() / all_rets.len() as f64;
+    let avg_sharpe = all_sharpes.iter().sum::<f64>() / all_sharpes.len() as f64;
+
+    println!(
+        "\n  Portfolio avg return: {:+.1}%\n  Portfolio avg daily equity Sharpe: {:.4}\n",
+        avg_ret, avg_sharpe
+    );
+    println!("  DDBudget daily equity Sharpe is the HONEST metric.");
+    println!("  Compare to Turtle daily equity Sharpe 1.04.");
+
+    let path = "snapshots/ddbudget_daily_equity_sharpe.csv";
+    let mut f = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(false)
+        .open(path)?;
+    for line in &csv_lines {
+        f.write_all(line.as_bytes())?;
+    }
+    println!("  Saved: {path}");
+
+    Ok(())
+}

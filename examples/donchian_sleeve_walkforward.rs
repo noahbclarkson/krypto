@@ -302,9 +302,9 @@ async fn main() -> Result<()> {
     let sleeve_pass_rate = slv_pass as f64 / n_f * 100.0;
     let turtle_avg_sharpe = tur_sh / n_f;
     let sleeve_avg_sharpe = slv_sh / n_f;
-    let sharpe_delta_pct = if turtle_avg_sharpe.abs() > 1e-9 { (sleeve_avg_sharpe - turtle_avg_sharpe) / turtle_avg_sharpe * 100.0 } else { 0.0 };
-    let pass_delta_pp = sleeve_pass_rate - turtle_pass_rate;
-    let reject = sharpe_delta_pct < -10.0 || pass_delta_pp < -5.0 || sleeve_avg_sharpe < turtle_avg_sharpe;
+    let sharpe_drop_pct = if turtle_avg_sharpe.abs() > 1e-9 { (turtle_avg_sharpe - sleeve_avg_sharpe) / turtle_avg_sharpe * 100.0 } else { 0.0 };
+    let pass_drop_pp = turtle_pass_rate - sleeve_pass_rate;
+    let reject = sharpe_drop_pct > 10.0 || pass_drop_pp > 5.0 || sleeve_avg_sharpe < turtle_avg_sharpe;
 
     let mut f = File::create(CSV_OUT)?;
     for line in &csv { writeln!(f, "{}", line)?; }
@@ -324,9 +324,9 @@ async fn main() -> Result<()> {
     md.push_str(&format!("| Avg Return | {:+.1}% | {:+.1}% | {:+.1}% | {:+.1}% |\n", tur_ret/n_f, don_ret/n_f, slv_ret/n_f, slv_ret/n_f - tur_ret/n_f));
     md.push_str("\n## Decision\n\n");
     if reject {
-        md.push_str(&format!("**REJECTED.** Sleeve fails the T31 promotion rule: Sharpe delta {:+.1}% and pass-rate delta {:+.1} pp. Turtle-only remains production default.\n\n", sharpe_delta_pct, pass_delta_pp));
+        md.push_str(&format!("**REJECTED.** Sleeve fails the T31 promotion rule: Sharpe drop {:+.1}% and pass-rate delta {:+.1} pp. Turtle-only remains production default.\n\n", sharpe_drop_pct, -pass_drop_pp));
     } else {
-        md.push_str(&format!("**CANDIDATE.** Sleeve passes the T31 guardrail: Sharpe delta {:+.1}% and pass-rate delta {:+.1} pp. Needs broader 9-universe validation before promotion.\n\n", sharpe_delta_pct, pass_delta_pp));
+        md.push_str(&format!("**CANDIDATE.** Sleeve passes the T31 guardrail: Sharpe drop {:+.1}% and pass-rate delta {:+.1} pp. Needs broader 9-universe validation before promotion.\n\n", sharpe_drop_pct, -pass_drop_pp));
     }
     md.push_str("## Per-Window Results\n\n");
     md.push_str("| Window | Turtle | Turtle Sh | Turtle Ret | Donchian | Don Sh | Don Ret | Sleeve | Sleeve Sh | Sleeve Ret | ΔSh |\n");
