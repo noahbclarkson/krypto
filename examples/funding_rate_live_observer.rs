@@ -78,7 +78,7 @@ async fn main() -> Result<()> {
                 Ok(pi) => {
                     let r = pi.funding_rate();
                     let a = pi.annualized();
-                    println!("  [OK] {}  rate={:.4}%  ann={:.1}%", sym, r * 100.0, a);
+                    println!("  [OK] {}  rate={:.4}%  ann={:.1}%", sym, r * 100.0, a * 100.0);
                     cur_map.insert(sym.to_string(), pi);
                 }
                 Err(e) => eprintln!("  [ERR] {} parse: {}", sym, e),
@@ -174,8 +174,8 @@ async fn main() -> Result<()> {
         println!("{:<10} {:>8.4} {:>8.1} {:>8.4} {:>7.2} {:>6.0}  {:>15}  {}",
             s.symbol,
             s.current * 100.0,
-            s.ann,
-            s.avg30d_ann,
+            s.ann * 100.0,
+            s.avg30d_ann * 100.0,
             s.z,
             s.pctile,
             rng,
@@ -193,22 +193,22 @@ async fn main() -> Result<()> {
     let avg_ann: f64 = all_stats.iter().map(|s| s.ann).sum::<f64>() / all_stats.len() as f64;
     let extremes: Vec<_> = all_stats.iter().filter(|s| !matches!(s.extreme, Extreme::None)).collect();
 
-    println!("\n  Base5 avg ann funding: {:.2}%", avg_ann);
+    println!("\n  Base5 avg ann funding: {:.2}%", avg_ann * 100.0);
     if extremes.is_empty() {
         println!("  Extreme signals: NONE");
     } else {
         println!("  Extreme signals ({} of {}):", extremes.len(), all_stats.len());
         for s in &extremes {
-            println!("    {}  {:.1}% ann  {}", s.symbol, s.ann, s.extreme.label());
+            println!("    {}  {:.1}% ann  {}", s.symbol, s.ann * 100.0, s.extreme.label());
         }
     }
 
     // Interpretation
     println!();
     println!("  REGIME:");
-    if avg_ann > 10.0 {
+    if avg_ann > 0.10 {
         println!("  Bull market — longs paying. Turtle should be LONG.");
-    } else if avg_ann < -10.0 {
+    } else if avg_ann < -0.10 {
         println!("  Bear market — shorts paying. Consider USDT hedge overlay.");
     } else {
         println!("  Neutral. Turtle ATR is primary risk tool.");
@@ -229,8 +229,8 @@ async fn main() -> Result<()> {
         wtr.write_record(&[
             &ts, &s.symbol,
             &format!("{:.6}", s.current),
-            &format!("{:.4}", s.ann),
-            &format!("{:.4}", s.avg30d_ann),
+            &format!("{:.4}", s.ann * 100.0),
+            &format!("{:.4}", s.avg30d_ann * 100.0),
             &format!("{:.2}", s.pctile),
             &format!("{:.3}", s.z),
             &format!("{:.6}", s.mn),
