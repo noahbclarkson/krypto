@@ -218,7 +218,10 @@ fn run_sim(
                 if bar >= TURTLE_ENTRY + 1 && bar < sd.close.len() {
                     if turtle_signal(&sd.close, &sd.high, &sd.low, TURTLE_ENTRY, TURTLE_ATR_PERIOD, ATR_ENTRY_MULT, bar) {
                         let entry_px = sd.close[bar];
-                        let entry = entry_px * (1.0 - TAKER_FEE);
+                        // BUY side fee: pay more than the quoted close. Prior harnesses used
+                        // (1.0 - fee), which incorrectly credited the entry and cancelled the
+                        // sell-side fee in exit / entry. Keep corrected before trusting hyperopts.
+                        let entry = entry_px * (1.0 + TAKER_FEE);
                         let entry_bar_next = bar + 1;
                         let n = sd.close.len();
 

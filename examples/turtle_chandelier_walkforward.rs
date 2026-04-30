@@ -181,7 +181,9 @@ fn run_sim(
                 if bar >= TURTLE_ENTRY + 1 && bar < sd.close.len() {
                     if turtle_signal(&sd.close, &sd.high, &sd.low, TURTLE_ENTRY, TURTLE_ATR_PERIOD, ATR_ENTRY_MULT, bar) {
                         let entry_px = sd.close[bar];
-                        let entry = entry_px * (1.0 - TAKER_FEE);
+                        // BUY side fee: pay more than the quoted close. Using (1.0 - fee)
+                        // incorrectly credits entry and cancels the sell-side fee in exit / entry.
+                        let entry = entry_px * (1.0 + TAKER_FEE);
                         let entry_bar_next = bar + 1;
                         let n = sd.close.len();
 
@@ -358,9 +360,8 @@ async fn main() -> Result<()> {
 
     let mut f = File::create(CSV_OUT)?;
     for line in &csv_lines { writeln!(f, "{}", line)?; }
-    // Also write _latest alias so Python scripts can always read the freshest data
+    // Also write _latest CSV alias so Python scripts can always read the freshest data.
     std::fs::copy(CSV_OUT, CSV_LATEST).ok();
-    std::fs::copy(MD_OUT, MD_LATEST).ok();
 
     let fail_pct = (global_total - global_pass) as f64 / global_total.max(1) as f64 * 100.0;
     let avg_sharpe: f64 = all_records.iter().map(|(_,_,r)| r.sharpe).sum::<f64>() / all_records.len().max(1) as f64;
@@ -379,7 +380,7 @@ async fn main() -> Result<()> {
     writeln!(md, "|---|---|---|---|---|---|")?;
     for &(uni_name, _) in UNIVERSES {
         let recs: Vec<_> = all_records.iter().filter(|(l,_,_)| *l == uni_name).collect();
-        let pass = recs.len();
+        let pass = recs.iter().filter(|(_,_,r)| r.pass).count();
         let n_win = recs.len();
         let avg_ret: f64 = recs.iter().map(|(_,_,r)| r.ret).sum::<f64>() / n_win.max(1) as f64;
         let avg_sh: f64 = recs.iter().map(|(_,_,r)| r.sharpe).sum::<f64>() / n_win.max(1) as f64;
@@ -389,6 +390,8 @@ async fn main() -> Result<()> {
     }
     writeln!(md, "")?;
     writeln!(md, "**GLOBAL: {}/{} pass ({:.0}% fail), avg Sharpe {}, {} trades**", global_pass, global_total, fail_pct, avg_sharpe, global_trades)?;
+    drop(md);
+    std::fs::copy(MD_OUT, MD_LATEST).ok();
     eprintln!("  MD: {}", MD_OUT);
 
     Ok(())

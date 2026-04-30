@@ -1,6 +1,6 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-_Auto-generated from production config + validated snapshots on 2026-04-29._
+_Auto-generated from production config + validated snapshots on 2026-04-30._
 _Run `python3 scripts/gen_hof.py` to regenerate. Do not hand-edit headline metrics._
 
 ---
@@ -10,13 +10,13 @@ _Run `python3 scripts/gen_hof.py` to regenerate. Do not hand-edit headline metri
 ### Turtle+Chandelier / Turtle ATR live variant
 - **Equity harness universe:** Base5 — BTC, ETH, SOL, XRP, DOGE, ADA
 - **Live bot universe:** BTC, ETH, SOL, XRP, DOGE
-- **Base5 walk-forward pass rate:** 6/6 (100.0%)
-- **Global walk-forward pass rate:** 40/54 (74.1%) (9-universe, current validated harness)
-- **Walk-forward avg Sharpe:** 3.147 (721 trades, per-window metric)
+- **Base5 walk-forward pass rate:** 5/6 (83.3%)
+- **Global walk-forward pass rate:** 34/54 (63.0%) (9-universe, current validated harness)
+- **Walk-forward avg Sharpe:** 3.170 (743 trades, per-window metric)
 - **Daily equity Sharpe:** 1.04 (honest compounded-equity metric)
-- **Validated daily equity:** $10K → $2,215,000 (221.5x)
+- **Validated daily equity:** $10K → $2,211,000 (221.1x)
 
-**Important reconciliation:** The old `$10K → $67M` headline was a stale/full-sample artifact and is no longer cited. The authoritative current daily-equity number is `snapshots/progress_equity_curves.md`: 221.5x / Sharpe 1.04.
+**Important reconciliation:** The old `$10K → $67M` headline was a stale/full-sample artifact and is no longer cited. The authoritative current daily-equity number is `snapshots/progress_equity_curves.md`: 221.1x / Sharpe 1.04.
 
 **Frozen production params (from `src/live/config.rs`):**
 ```text
@@ -31,9 +31,9 @@ POSITION_CAP    = 3      // Max concurrent positions
 ```
 
 **Validation evidence:**
-- Progress equity harness: 221.5x, daily Sharpe 1.04
-- Walk-forward (Base5): 6/6 (100.0%)
-- Walk-forward (global 9-universe): 40/54 (74.1%)
+- Progress equity harness: 221.1x, daily Sharpe 1.04
+- Walk-forward (Base5): 5/6 (83.3%)
+- Walk-forward (global 9-universe): 34/54 (63.0%)
 - Pre-2021 held-out stress: 19/28 (67.9%)
 - T22 exit attribution: Chandelier adds secondary robustness; live bot currently uses Turtle ATR as sole live exit
 - Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76–0.87)
