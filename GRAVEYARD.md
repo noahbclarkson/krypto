@@ -29,6 +29,7 @@
 | Regime-conditional Turtle (Track C) | 2026-04-15 | 0/6 | 1h MR kill confirmed, ALL symbols negative |
 | ATR_ENTRY_MULT=0.85 (Turtle entry filter) | 2026-04-26 | REJECTED | Swept 41 values with EP=21; EM=0.85 won OOS (82.5% pass, Sharpe 5.21) but FAILED held-out (10/18 vs baseline 11/18). Same in-sample inflation pattern as EP=24. ATR_ENTRY_MULT=0.00 confirmed as definitive default.
 | CTREND Fixed 25% Portfolio Sleeve | 2026-04-27 | REJECTED | Turtle 75/25 CTREND(EMA8/32,hold=30): DD improvement +3.6pp ✓ but Sharpe destroyed 1.38→0.33 (-76%). CTREND standalone Sharpe -2.82 makes 25% allocation too costly. DD improvement doesn't compensate. Dynamic/conditional switching untested (could be viable).
+| Donchian 25% Portfolio Sleeve | 2026-04-30 | REJECTED | Base5 candidate failed 9-universe production guardrail: 34/54 pass (63%) below required 69.1%. Sharpe improved +11% vs internal Turtle baseline, but avg return dropped -164.9pp and absolute pass rate failed. Do not re-sweep nearby weights without a new mechanism.
 
 ## Why These Died
 
