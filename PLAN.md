@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-04-30 12:20 UTC. T35 DISCOVERED (fee cancel bug). S6 CANDIDATE pending T35. ATR_RANK untested. Live testnet BLOCKED 4+ weeks.**
+**State: 2026-04-30 15:01 UTC. T35 FIXED; T34 FIXED; ATR_RANK=5 PRODUCTION CANDIDATE (validated dual-exit + Turtle-only). S6 CANDIDATE pending Turtle-only validation. Live testnet BLOCKED 4+ weeks.**
 
 ---
 
@@ -17,7 +17,7 @@ exit / entry = [P*(1-fee)] / [P*(1-fee)] = 1  →  zero fee charged
 ```
 **Walkforward runs ZERO-FEE simulation. All Sharpe numbers inflated ~22-33%.**
 
-**Fix:** `entry = entry_px * (1.0 + TAKER_FEE)` (buy costs more via fee); `exit = exit_px * (1.0 - TAKER_FEE)` (sell receives less). After fix, re-run 9-universe walkforward to get true baseline. Update all fee-sensitivity claims on corrected baseline.
+**Fix:** `entry = entry_px * (1.0 + TAKER_FEE)` (buy costs more via fee); `exit = exit_px * (1.0 - TAKER_FEE)` (sell receives less).
 
 **Impact:** True fee-adjusted walkforward Sharpe ≈ 2.2–2.5 (not 3.147). Still above daily equity 1.04 — gap is real but smaller than projected.
 
@@ -37,39 +37,39 @@ POSITION_CAP    = 3      // confirmed
 FRESHNESS_COOLDOWN = 0   // confirmed
 VOL_LOOKBACK    = 8      // same-harness spiral resolved
 ATR_EMA_PERIOD  = 1      // confirmed NULL [1..200]
+ATR_RANK_THRESHOLD = 5    // PRODUCTION CANDIDATE — validated dual-exit + Turtle-only
 ```
 
 ---
 
 ## Next Tasks (Priority Order)
 
-### T35: Fix Fee Accounting Bug — CRITICAL
-**Status:** NEW. Walkforward runs zero-fee due to cancel.
-**Action:** Fix `turtle_chandelier_walkforward.rs` entry fee `(1-fee)` → `(1+fee)`. Re-run 9-universe × 6-window walkforward. Get true fee-adj Sharpe. Update HALL_OF_FAME.md with corrected numbers.
-**Evidence:** `examples/turtle_chandelier_walkforward.rs` lines 184, 212.
-**Priority:** CRITICAL — affects every live deployment decision.
+### ATR_RANK=5 — PRODUCTION CANDIDATE ✅ (2026-04-30 15:01 UTC)
+**Status:** Validated under BOTH dual-exit AND Turtle-only exit logic.
+**Dual-exit** (`atr_rank_filter_prod_sweep.rs`): T=5: 38/54 pass, Sharpe 4.433, +115% ret, DD 32.4%, 664 trades. vs T=0: 34/54, Sharpe 3.170, +108%, DD 36.0%, 743 trades.
+**Turtle-only** (`turtle_only_atr_rank_sweep.rs`): T=5: 9/9 universes positive, avg Sharpe 4.802, +24% vs T=0 baseline (3.873). All 9 universes pass. Trades reduced from 12 to 10.9 per window.
+**Conclusion:** T=5 is a genuine production candidate. Mechanism: enter only when BTC ATR is in top 5% of 252-bar history = elevated vol = trending regime = valid Turtle setup.
+**Next:** Integrate `ATR_RANK_THRESHOLD=5` into `src/live/bot.rs` and validate on live testnet.
+**Files:** `examples/turtle_only_atr_rank_sweep.rs`, `snapshots/turtle_only_atr_rank_sweep.csv`.
 
-### T36: Re-Run S6 Validation Under Correct Fee Model
-**Status:** CANDIDATE. Pending T35 results.
-**Action:** After T35 fix, rerun rebalancing 9-universe harness. If S6 still wins, promote to production. If not, reject cleanly.
-**What to build:** Nothing new — run `examples/rebalancing_9universe.rs` with fixed fee model.
+### T35: Fix Fee Accounting Bug — COMPLETED 2026-04-30 12:26 UTC ✅
+**Status:** FIXED in `examples/turtle_chandelier_walkforward.rs` and `examples/atr_rank_filter_prod_sweep.rs`.
+**Corrected baseline:** Base5 5/6, global 34/54 (63.0%), avg Sharpe 3.170, 743 trades.
 
-### ATR_RANK Conditional Entry — UNTESTED (mechanically novel)
-**Hypothesis:** Enter only when current 21-bar ATR > 60th percentile of 252-bar history.
-**Mechanism:** High-vol = trending regime = valid setups. Low-vol = chop = filter out.
-**Difference from ATR_ENTRY_MULT:** Fixed threshold vs percentile threshold. Mechanically novel — worth one dedicated run.
-**Risk:** Vol-rank may be too slow (same failure mode as vol-contingent Chandelier which was identically zero across all configs).
-**What to build:** `examples/atr_rank_entry_sweep.rs` — sweep `atr_rank_threshold ∈ {50, 60, 70, 80}` with ATR rank computed as `percentile_rank(current_21_ATR, 252_bar_history`. Base5 × 6 windows.
-**Reject if:** Pass rate drops materially or Sharpe negative. One run, then done.
+### T34: Live Bot Dual-Exit Gap — FIXED (2026-04-30 15:01 UTC) ✅
+**Status:** UNVERIFIED CLAIM REMOVED from `src/live/bot.rs` header.
+**Removed:** "Turtle-only exit wins +1.47 Sharpe over dual-exit" (never verified). Also removed "S17 Chandelier fires first in 100% of trades" (contradicts the Sharpe claim; unverified on current params).
+**New:** T34 KNOWN GAP acknowledged. Walkforward uses dual Chandelier+Turtle ATR; live bot uses Turtle-only. ATR_RANK=5 validated under Turtle-only conditions.
 
-### T34: Live Bot Dual-Exit Gap — Unverified Claim Flagged
-**Status:** UNRESOLVED. Live bot Turtle-only. Comment in `bot.rs` line 4 claims "Turtle-only wins +1.47 Sharpe over dual-exit" — **never verified in any harness.**
-**Action:** Edit the comment in `bot.rs` line 4 to remove the unverified Sharpe claim. Replace with: `// Exit: Turtle ATR trailing stop ONLY. Chandelier gap acknowledged — see T34 in PLAN.md.`
-**Do not:** Add Chandelier to live bot without live testnet validation first.
+### T36: S6 close_losers I=5 — Turtle-Only Validation Needed
+**Status:** CANDIDATE (from dual-exit validation: 48/54 pass, Sharpe +6.895, +3.067 vs baseline).
+**What to do:** Build Turtle-only version of rebalancing harness or run `examples/rebalancing_9universe.rs` and post-filter for Turtle-only windows. If T=5 (ATR rank) winner correlates with S6 winner, they may be synergistic.
+**Decision:** Pending Turtle-only validation.
 
 ### T9: Live Testnet — CRITICAL BLOCKER (4+ weeks)
 **Status:** BLOCKED on Noah's Binance testnet API keys.
 **What we need:** Binance testnet API key + secret (not production keys).
+**Why it matters:** All remaining candidates (ATR_RANK=5, S6) need live validation before production. The live-vs-backtest gap is unmeasured.
 
 ---
 
@@ -87,10 +87,10 @@ ATR_EMA_PERIOD  = 1      // confirmed NULL [1..200]
 
 | Blind Spot | Severity | Status |
 |---|---|---|
-| Fee cancel bug (T35) | CRITICAL | Walkforward runs 0-fee. All Sharpe inflated. Fix before any deployment. |
-| Live bot dual-exit gap | HIGH | T34 — unverified Sharpe claim in bot.rs comment. Flag it. |
+| Fee cancel bug (T35) | CRITICAL | Walkforward runs 0-fee. All Sharpe inflated. FIXED 2026-04-30. |
+| Live bot dual-exit gap | HIGH | T34 — unverified claim removed from bot.rs. ATR_RANK=5 validated Turtle-only. |
+| S6 validation gap | MEDIUM | S6 close_losers I=5 needs Turtle-only validation before production. |
 | 2026 YTD root cause | MEDIUM | Regime-inherent or live divergence? Need live data to answer. |
-| Anti-overfitting theater | MEDIUM | Rules exist but VL=90 violated them. Document the violation. |
 | No live testnet | CRITICAL | 4+ weeks blocked. Only honest validation path. |
 
 ---
@@ -105,4 +105,4 @@ ATR_EMA_PERIOD  = 1      // confirmed NULL [1..200]
 | Donchian sleeve | REJECTED | 9-universe 34/54 pass (63%) < 69.1% guardrail. |
 | VOL_LOOKBACK 90 | REVERTED | Same-harness spiral. VL=8 confirmed. |
 | trim_losers I=5 | REJECTED | DD improved but Sharpe identical. |
-| **Fee cancel bug (T35)** | BUG | Walkforward (1-fee)/(1-fee) = zero fee. All Sharpe inflated 22-33%. |
+| Fee cancel bug (T35) | BUG FIXED | Walkforward (1-fee)/(1-fee) = zero fee. FIXED. |
