@@ -201,3 +201,26 @@ The entire project is simulation. All metrics are upper bounds.
 Everything in HALL_OF_FAME.md is a simulation maximum. The real validation path is live testnet paper trading + comparing actual vs predicted metrics.
 
 **Source of truth for production params: `src/live/config.rs`. Last verified: 2026-04-29.**
+---
+
+## Critical New Finding — T35: Fee Accounting Bug — All Sharpe Numbers Inflated 22-33%**
+
+**2026-04-30 12:20 UTC**
+
+**Bug:** `examples/turtle_chandelier_walkforward.rs` lines 184, 212:
+```rust
+let entry = entry_px * (1.0 - TAKER_FEE);  // WRONG — fee CREDIT on BUY
+let exit  = exit_px * (1.0 - TAKER_FEE);  // correct direction, wrong formula
+```
+
+Both use `(1 - fee)`. Entry fees and exit fees cancel in the return ratio: `exit/entry = P(1-fee)/P(1-fee) = 1`. **Zero net fees charged.**
+
+**What this means:**
+- Walkforward Sharpe 3.147 is inflated. True fee-adj ≈ 2.2–2.5 (22-33% degradation)
+- Fee sensitivity audit (2026-04-28) tested sensitivity on a fee-free baseline — the "degradation" was measuring the wrong thing
+- HALL_OF_FAME.md numbers need refreshing under corrected fee model
+- Daily equity Sharpe 1.04 is HONEST — it comes from different code path
+
+**Fix:** `entry = entry_px * (1.0 + TAKER_FEE)`, `exit = exit_px * (1.0 - TAKER_FEE)`
+
+**Note on ATR_RANK conditional entry:** Mechanically novel (percentile-based vol regime filter). Worth one dedicated harness run. Previous vol-contingent Chandelier failed identically zero — but that was a stop multiplier, not an entry filter. Different mechanism may produce different result. Worth trying once.
