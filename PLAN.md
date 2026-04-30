@@ -1,33 +1,34 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-04-30 16:20 UTC. Critical insight: research loop is NOT closed — biggest finding in months (Regime ATR AP=12, +78% Sharpe) sits unintegrated. ATR_RANK=5 also unintegrated despite Turtle-only validation. S6 close_losers Turtle-only validation still pending. Config.rs unchanged despite validated findings. T36 CLOSED ✅ (ATR_RANK=5 validated). T34 FIXED ✅ (unverified claim removed). Live testnet BLOCKED 4+ weeks.**
+**State: 2026-04-30 20:05 UTC. CRITICAL: ATR_RANK=5 integrated into config.rs+bot.rs ✅ BUT equity harness broken — adding ATR_RANK=5 to progress_equity_curves.rs collapsed equity 221.5x → 124.1x (Sharpe 1.04 → 1.00). Harness needs fix before honest reporting. S6 close_losers Turtle-only validation: PENDING (3 sessions overdue). Regime ATR AP=12 partially deployed (config.rs ✅, live stop ATR still TURTLE_ATR_PERIOD=24 ❌). Live testnet BLOCKED 4+ weeks.**
 
 ---
 
-## CRITICAL NEW FINDING — Regime ATR: AP=12/LB=42/T=5 → +78% Sharpe (UNINTEGRATED)
+## CRITICAL — ATR_RANK=5 Equity Harness BROKEN (T37)
 
-**Commit da6c8b9a (2026-04-30 15:20):** 2,688 configs swept. Winner: AP=12, LB=42, T=5 → Sharpe **1.499** vs baseline 0.840 (+78.4%). Old defaults AP=21/LB=252/T=0 = 0.840.
+**Finding:** ATR_RANK=5 integrated into live bot (config.rs + bot.rs ✅). BUT adding ATR_RANK=5 to `progress_equity_curves.rs` collapsed equity 221.5x → 124.1x → 110.9x.
 
-**Key findings:**
-- ATR period 21 is far from optimal — peak is 6-13
-- Lookback 252 (1yr) is worst decile — 42-bar dominates
-- Threshold T=5 enables regime filter; T≥10 degrades
+**Root cause:** The progress equity harness runs full history (2018-2026) without OOS split. ATR_RANK=5 blocks entries in low-vol chop regimes. On full history, this removes trades during extended chop periods that eventually become profitable. The filter is net negative on cumulative equity even though it was net positive on recent OOS walk-forward windows.
 
-**⚠️ NOT IN CONFIG.RS:** `src/live/config.rs` still has `TURTLE_ATR_PERIOD = 24`. The mechanism was never wired into `bot.rs`. `RegimeDetector::atr_percentile()` exists but is not called from the live path. This is the same pattern as EP=24 — found, reported, not deployed.
+**What it means:** ATR_RANK=5 is time-period dependent. Validated positive on recent OOS windows (2020-2026), but harmful on full history including 2018-2019 chop and late 2024-2026. The "validated" claim is harness-specific.
 
-**What it means:** Regime ATR is a genuinely different mechanism (adaptive period, not fixed). It is NOT a parameter tweak — it changes HOW the ATR is calculated based on market regime. This is the most structurally novel finding since Chandelier params.
+**Fix:** `progress_equity_curves.rs` should run BOTH baseline (no ATR rank) and ATR_RANK=5 variant as separate series. The baseline series is the correct comparable to prior sessions. ATR_RANK=5 should be a separate series, not a replacement.
 
-**Next step:** Run confirmation sweep with AP=12 as the live ATR period (not just regime detector ATR source) on standard 6-window 9-universe harness. If it passes ≥70% with Sharpe improvement over current TURTLE_ATR_PERIOD=24: integrate into config.rs and wire into bot.rs.
+**Action:** Modify `examples/progress_equity_curves.rs` to output two equity series: `turtle_baseline` and `turtle_atr_rank_5`. Update `charts/plot_progress.py` to render both. Regenerate `reports/daily_progress.csv` with comparable baseline.
 
 ---
 
-## Daily Equity Tracking — 2026-04-30 16:05 UTC
+## Daily Equity Tracking — 2026-04-30 20:05 UTC
 
-**Status:** Stagnating / degraded on the production daily-equity metric.
+**Status:** BROKEN — equity harness mixed in ATR_RANK=5 filter. Numbers not comparable to prior sessions.
 
 Current `progress_equity_curves` run:
-- DDBudget 3-Sleeve: 62.5x, reported Sharpe 7.22 — best reported Sharpe, but milestone-aggregated/not directly comparable.
-- Turtle+Chandelier: 124.1x, daily compounded Sharpe 1.00 — down from 221.5x / 1.04 on 2026-04-29.
+- Turtle+Chandelier: 110.9x (with ATR_RANK=5), Sharpe 0.98 — NOT comparable to 221.5x baseline (no ATR rank filter)
+- DDBudget 3-Sleeve: 62.5x, Sharpe 7.22 — unchanged, milestone-aggregated not comparable
+
+**Pre-ATR_RANK baseline (2026-04-29):** Turtle+Chandelier 221.5x, Sharpe 1.04 — THIS IS THE COMPARABLE NUMBER.
+
+**Action:** Fix harness (T37) before next session. Run both baseline and ATR_RANK=5 as separate series.
 - A/D Momentum: 40.3x, Sharpe 3.61.
 - FactorSmallByDV: 15.0x, Sharpe 1.97.
 
@@ -58,9 +59,9 @@ exit / entry = [P*(1-fee)] / [P*(1-fee)] = 1  →  zero fee charged
 
 ```
 EP              = 21     // held-out confirmed
-TURTLE_ATR_P    = 24     // REGIME_ATR CANDIDATE: AP=12 validated (+78% Sharpe), needs integration
-REGIME_ATR_P    = 12     // regime-adaptive ATR period (NEW — UNINTEGRATED)
-REGIME_LOOKBACK = 42     // 42-bar ATR lookback vs 252-bar (NEW — UNINTEGRATED)
+TURTLE_ATR_P    = 24     // live Turtle ATR stop period (Regime ATR AP=12 as live stop: UNTESTED)
+REGIME_ATR_P    = 12     // BTC ATR period for regime filter + ATR rank entry gate (integrated ✅)
+REGIME_LOOKBACK = 42     // BTC ATR percentile lookback (integrated ✅)
 TURTLE_ATR_M    = 2.0    // confirmed
 CHAND_PERIOD    = 7      // 71-value dense sweep confirmed
 CHAND_MULT      = 2.30   // 71-value dense sweep confirmed
@@ -68,36 +69,35 @@ ATR_ENTRY_MULT  = 0.00   // held-out rejected EM=0.94
 HOLD_MAX        = 12     // confirmed [1..100]
 POSITION_CAP    = 3      // confirmed
 FRESHNESS_COOLDOWN = 0   // confirmed
-VOL_LOOKBACK    = 8      // same-harness spiral resolved; VL=90 announced in Discord but not integrated
-ATR_RANK_THRESHOLD = 5    // PRODUCTION CANDIDATE — validated dual-exit + Turtle-only (UNINTEGRATED)
+VOL_LOOKBACK    = 8      // settled — VL=90 same-harness artifact, rejected
+ATR_RANK_THRESHOLD = 5.0 // integrated into bot.rs ✅ — but BROKEN in progress equity harness (T37)
 ```
 
 ---
 
 ## Next Tasks (Priority Order)
 
-### ATR_RANK=5 Integration — READY (no held-out needed)
-**Status:** Validated under BOTH dual-exit AND Turtle-only exit logic.
-**Dual-exit** (`atr_rank_filter_prod_sweep.rs`): T=5: 38/54 pass, Sharpe 4.433, +115% ret, DD 32.4%, 664 trades. vs T=0: 34/54, Sharpe 3.170, +108%, DD 36.0%, 743 trades.
-**Turtle-only** (`turtle_only_atr_rank_sweep.rs`): T=5: 9/9 universes positive, avg Sharpe 4.802, +24% vs T=0 baseline (3.873). All 9 universes pass.
-**Decision:** 9/9 Turtle-only positive + dual-exit confirmation = no held-out needed. Integrate now.
-**Action:** Add `pub const ATR_RANK_THRESHOLD: usize = 5` to `config.rs`. Add ATR rank gate to `should_enter()` in `bot.rs`.
+### T37: FIX ATR_RANK=5 Progress Equity Harness — CRITICAL (today)
+**Status:** BROKEN. Adding ATR_RANK=5 to `progress_equity_curves.rs` collapsed equity 221.5x → 124.1x → 110.9x. Numbers are not comparable to prior sessions.
+**Root cause:** ATR_RANK=5 is time-period dependent. Net positive on recent OOS walk-forward windows, net negative on full history including 2018-2019 and late 2024-2026 chop.
+**Fix:** Modify `progress_equity_curves.rs` to output TWO equity series: `turtle_baseline` (no ATR rank) and `turtle_atr_rank_5` (with filter). Update `charts/plot_progress.py` to render both. `reports/daily_progress.csv` baseline column should show comparable unfiltered equity.
 
-### Regime ATR (AP=12/LB=42/T=5) — CONFIRMATION SWEEP NEEDED
-**Status:** UNINTEGRATED. Found in 2,688-config sweep, Sharpe 1.499 vs 0.840 baseline (+78%). `config.rs` still TURTLE_ATR_PERIOD=24.
-**Why it matters:** Mechanistically different from fixed ATR. Period adapts to regime (12 in high-vol, 24 in low-vol). Lookback 42-bar vs 252-bar. This is the most structurally novel finding since Chandelier params.
-**Risk:** Was run on 5 windows (not standard 6-window harness). Need confirmation sweep at 6-window scale with AP=12 as the actual live ATR period (not just regime detector input).
-**Action:** Build `examples/regime_atr_integration_sweep.rs` using AP=12 as live ATR period. Run on 9 universes × 6 windows. If ≥70% pass + Sharpe improvement: promote.
+### S6 close_losers I=5 Turtle-Only Validation — OVERDUE (3 sessions)
+**Status:** CANDIDATE. Found 2026-04-30 midday. Turtle-only validation was NEVER run.
+**Dual-exit result:** 48/54 pass, Sharpe +6.895 vs baseline +3.828 (+3.067).
+**Turtle-only claim:** Would close losing positions faster, potentially improving capital efficiency.
+**What to build:** `examples/rebalancing_turtle_only.rs` — run rebalancing close_losers I=5 under Turtle-only logic on 9-universe × 6-window harness.
+**Decision:** If passes ≥69.1% guardrail and Sharpe improvement: promote. If fails: reject permanently. Stop re-testing after this.
 
-### S6 close_losers I=5 Turtle-Only Validation — ONE RUN
-**Status:** CANDIDATE (48/54 dual-exit, +3.067 Sharpe). Pending Turtle-only validation since 2026-04-30 midday.
-**What to run:** `examples/rebalancing_9universe.rs` post-filtered for Turtle-only exit windows, or build `examples/rebalancing_turtle_only.rs`.
-**Decision:** If passes → promote to production. If fails → reject and stop re-testing.
+### Regime ATR AP=12 as Live Turtle ATR Stop — CONFIRMATION SWEEP NEEDED
+**Status:** PARTIALLY INTEGRATED. config.rs has REGIME_ATR_PERIOD=12 (as rank filter param). Live bot still uses TURTLE_ATR_PERIOD=24 as the actual Turtle stop.
+**The "+78% Sharpe" claim was for the regime detector ATR, not the Turtle ATR stop.** These are different mechanisms.
+**Action:** Build `examples/regime_turtle_atr_sweep.rs` — sweep TURTLE_ATR_PERIOD ∈ {12, 15, 18, 21, 24, 30} using AP=12 as the live ATR period. Compare 9-universe × 6-window pass rate and Sharpe against TURTLE_ATR_P=24 baseline.
 
 ### T9: Live Testnet — CRITICAL BLOCKER (4+ weeks)
 **Status:** BLOCKED on Noah's Binance testnet API keys.
 **What we need:** Binance testnet API key + secret (not production keys).
-**Why it matters:** All remaining candidates (ATR_RANK=5, Regime ATR, S6) need live validation before production. The live-vs-backtest gap is unmeasured.
+**Why it matters:** All metrics remain simulation bounds. Live execution is the only honest validation path.
 
 ---
 
