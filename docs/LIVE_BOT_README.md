@@ -138,18 +138,27 @@ Re-run with --prod flag to arm.
 
 ---
 
-## Production Parameters (Frozen)
+## Production Parameters (Frozen — per HALL_OF_FAME.md 2026-04-30)
 
 ```
-EP = 21             (entry lookback)
-ATR_PERIOD = 24     (Turtle ATR exit)
-ATR_MULT = 2.00    (Turtle ATR multiplier)
-CHAND_PERIOD = 20  (Chandelier ATR period)
-CHAND_MULT = 2.15  (Chandelier multiplier)
-HOLD_MAX = 45      (max bars held)
-POSITION_CAP = 3   (max concurrent positions)
-FRESHNESS_COOLDOWN = 0  (no filter — aligned with walk-forward)
-MAX_SOL_POSITION = $50K notional
+EP                       = 21     (Turtle entry lookback)
+TURTLE_ATR_PERIOD       = 24     (Turtle ATR period)
+TURTLE_ATR_MULT         = 2.00   (Turtle ATR multiplier)
+CHAND_PERIOD            = 7      (Chandelier ATR period)
+CHAND_MULT              = 2.30   (Chandelier multiplier)
+HOLD_MAX                = 12     (max bars held)
+POSITION_CAP            = 3      (max concurrent positions)
+FRESHNESS_COOLDOWN      = 0      (no freshness filter)
+ATR_ENTRY_MULT          = 0.00   (no ATR entry filter)
+VOL_LOOKBACK            = 8      (dollar-volume lookback)
+
+# Regime / entry filter (live bot only)
+ATR_RANK_THRESHOLD      = 5      (block if BTC ATR in bottom 5% of 252-bar history)
+REGIME_ATR_PERIOD       = 12     (BTC ATR period for rank calculation)
+REGIME_LOOKBACK         = 42     (lookback for ATR percentile rank)
+
+# Position caps
+MAX_SOL_POSITION        = $50K notional
 ```
 
 ---
@@ -179,4 +188,4 @@ unset BINANCE_API_KEY BINANCE_API_SECRET
 
 ---
 
-*Last updated: 2026-04-19. Parameters frozen per MEMORY.md.*
+*Last updated: 2026-04-30. Parameters frozen per MEMORY.md.*
