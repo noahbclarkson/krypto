@@ -569,3 +569,11 @@ Re-validated harness-only `VOL_LOOKBACK` under current production validation par
 **Winner remains `VOL_LOOKBACK=8`** by robustness-first selection: **40/54 pass (74.1%)**, 9/9 positive universes, avg Sharpe **3.1471**, avg return **+105.3%**, 721 trades. `VL=9` ties pass rate but lower Sharpe/return. Higher values such as `VL=78/95` improve Sharpe/return in some windows but reduce pass rate, so rejected as robustness-for-return tradeoff.
 
 No default change. Files: `examples/vol_lookback_prod_sweep.rs`, `snapshots/vol_lookback_prod_sweep.csv`, `snapshots/vol_lookback_prod_summary.csv`, `snapshots/vol_lookback_prod_equity.csv`, `charts/plot_vol_lookback_prod.py`, `charts/comparison_chart.png`, `memory/hyperopt-2026-04-29.md`.
+
+## 2026-04-29 — ATR_ENTRY_MULT Current-Params Hyperopt: CANDIDATE, NOT PROMOTED
+
+Ran definitive current-params sweep for `ATR_ENTRY_MULT` because prior EM justification mixed stale `CHAND_P=11` / `EP=24` configs. New harness: `examples/atr_entry_mult_current_sweep.rs`, range **0.00..=2.00 step 0.01 (201 values)** × **9 universes × 6 WF windows = 54 windows/value** with current `CHAND(7,2.30)/EP=21/HM=12/CAP=3/VL=8/ATR(24,2.0)`.
+
+Result: `EM=0.94` is robustness candidate: **42/54 pass (77.8%)**, avg Sharpe **5.34**, avg return **+73.0%**, avg DD **28.3%**, 486 trades. Baseline `EM=0.00`: **40/54 pass (74.1%)**, Sharpe **3.147**, +105.3%, DD 35.4%, 721 trades. `EM=1.07` has highest credible Sharpe (7.86) but lower pass rate (41/54), so robustness-first winner is 0.94.
+
+Interpretation: ATR entry filter interacts with tight `CHAND_PERIOD=7`; non-zero EM blocks weak breakouts that tight Chandelier stops quickly whipsaw. **No default change yet** because EM=0.94 was selected on the same WF grid; requires held-out validation before production promotion. Current `ATR_ENTRY_MULT=0.00` remains stable default. Files: `snapshots/atr_entry_mult_current_{sweep,summary,equity}.csv`, `charts/comparison_chart.png`, `memory/hyperopt-2026-04-29.md` addendum.
