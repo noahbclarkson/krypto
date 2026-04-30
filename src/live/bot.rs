@@ -5,11 +5,12 @@
 //!
 //! T34 KNOWN GAP: Research walkforward (turtle_chandelier_walkforward.rs) uses
 //! dual Chandelier+Turtle ATR exit. Live bot uses Turtle ATR ONLY. The
-//! ATR_RANK=5 conditional entry has been validated under Turtle-only logic
-//! (turtle_only_atr_rank_sweep.rs: T=5 wins +24% Sharpe vs T=0 baseline).
+//! ATR_RANK=5 conditional entry is now wired into live entries and has been
+//! validated under Turtle-only logic (turtle_only_atr_rank_sweep.rs: T=5 wins
+//! +24% Sharpe vs T=0 baseline; regime_atr_hyperopt.rs: AP=12/LB=42/T=5 wins).
 //!
-//! Production params (frozen 2026-04-27):
-//!   EP=21, TurtleATR(24, 2.0), HM=12, CAP=3, FRESHNESS_COOLDOWN=0
+//! Production params (updated 2026-04-30):
+//!   EP=21, TurtleATR(24, 2.0), HM=12, CAP=3, ATR_RANK(AP=12, LB=42, T=5)
 
 const FRESHNESS_COOLDOWN: usize = 0; // bars to wait after exit before re-entry (0=disabled)
 
@@ -153,11 +154,13 @@ impl LiveBot {
             self.config.symbols.len()
         );
         tracing::info!(
-            "Params: EP={}, Chand({},{}), ATR({},{}), HM={}, CAP={}",
+            "Params: EP={}, Chand({},{}), ATR({},{}), HM={}, CAP={}, ATR_RANK(AP={},LB={},T={})",
             self.config.ep,
             self.config.chand_period, self.config.chand_mult,
             self.config.atr_period, self.config.atr_mult,
-            self.config.hold_max, self.config.position_cap
+            self.config.hold_max, self.config.position_cap,
+            self.config.regime_atr_period, self.config.regime_lookback,
+            self.config.atr_rank_threshold
         );
 
         {
@@ -166,8 +169,14 @@ impl LiveBot {
             state.is_running = true;
         }
 
-        // Fetch warmup data — need at least EP+1 bars for entry signal
-        let warmup_bars = (self.config.ep + self.config.chand_period + 10).max(60);
+        // Fetch warmup data — need enough BTC history for ATR-rank entries and
+        // the existing high-vol USDT hedge overlay (21d ATR vs 252-bar history).
+        let regime_warmup = self.config.regime_atr_period + self.config.regime_lookback + 2;
+        let hedge_warmup = 252 + 21 + 2;
+        let warmup_bars = (self.config.ep + self.config.chand_period + 10)
+            .max(regime_warmup)
+            .max(hedge_warmup)
+            .max(60);
         for symbol in &self.config.symbols.clone() {
             tracing::info!("Fetching {} warmup bars for {}", warmup_bars, symbol);
             let warmup = fetch_warmup_data(
@@ -221,7 +230,10 @@ impl LiveBot {
         // Append bar to history
         if let Some(bars) = self.bars.get_mut(symbol) {
             bars.push(bar.clone());
-            if bars.len() > 200 {
+            let retention = (self.config.regime_atr_period + self.config.regime_lookback + 2)
+                .max(252 + 21 + 2)
+                .max(200);
+            if bars.len() > retention {
                 bars.remove(0);
             }
         } else {
@@ -331,6 +343,17 @@ impl LiveBot {
         let ws = bars.len() - ep;
         let max_close = bars[ws..].iter().map(|b| b.close).fold(f64::NEG_INFINITY, f64::max);
 
+        if bar.close < max_close {
+            return false;
+        }
+
+        // ATR rank regime filter: only enter Turtle breakouts when BTC volatility
+        // is outside the lowest-volatility chop regime. Validated T=5 under both
+        // dual-exit and live Turtle-only logic; AP=12/LB=42 wins joint sweep.
+        if !self.check_atr_rank_entry_filter(symbol) {
+            return false;
+        }
+
         // ATR entry filter: require momentum confirmation beyond ATR noise band
         // Only enter if: close >= max_close + ATR(atr_period) * ATR_ENTRY_MULT
         if ATR_ENTRY_MULT > 0.0 {
@@ -358,39 +381,120 @@ impl LiveBot {
             }
         }
 
-        if bar.close >= max_close {
-            tracing::info!(
-                "[{}] TURTLE ENTRY: close {} >= max_close({}) = {} (ATR_EM={})",
-                symbol, bar.close, ep, max_close, ATR_ENTRY_MULT
-            );
+        tracing::info!(
+            "[{}] TURTLE ENTRY: close {} >= max_close({}) = {} (ATR_EM={}, ATR_RANK_T={})",
+            symbol, bar.close, ep, max_close, ATR_ENTRY_MULT, self.config.atr_rank_threshold
+        );
 
-            // Initialize trailing state
-            let mut atr_buf = VecDeque::new();
-            let avail = bars.len().min(self.config.chand_period);
-            let start = bars.len().saturating_sub(avail);
-            for i in 0..avail {
-                let idx = start + i;
-                if idx >= bars.len() { break; }
-                let b = &bars[idx];
-                let pc = if i == 0 {
-                    b.close
-                } else {
-                    let prev_idx = start + i - 1;
-                    if prev_idx < bars.len() { bars[prev_idx].close } else { b.close }
-                };
-                let tr = (b.high - b.low).max((b.high - pc).abs()).max((b.low - pc).abs());
-                atr_buf.push_back(tr);
-            }
+        // Initialize trailing state
+        let mut atr_buf = VecDeque::new();
+        let avail = bars.len().min(self.config.chand_period);
+        let start = bars.len().saturating_sub(avail);
+        for i in 0..avail {
+            let idx = start + i;
+            if idx >= bars.len() { break; }
+            let b = &bars[idx];
+            let pc = if i == 0 {
+                b.close
+            } else {
+                let prev_idx = start + i - 1;
+                if prev_idx < bars.len() { bars[prev_idx].close } else { b.close }
+            };
+            let tr = (b.high - b.low).max((b.high - pc).abs()).max((b.low - pc).abs());
+            atr_buf.push_back(tr);
+        }
 
-            self.turtle_state.insert(symbol.to_string(), TurtleState {
-                highest_high: bar.high,
-                lowest_low: bar.low,
-                bars_held: 0,
-                atr_buf,
-            });
+        self.turtle_state.insert(symbol.to_string(), TurtleState {
+            highest_high: bar.high,
+            lowest_low: bar.low,
+            bars_held: 0,
+            atr_buf,
+        });
+        true
+    }
+
+    fn check_atr_rank_entry_filter(&self, symbol: &str) -> bool {
+        let threshold = self.config.atr_rank_threshold;
+        if threshold <= 0.0 {
             return true;
         }
-        false
+
+        let btc_bars = match self.bars.get("BTCUSDT") {
+            Some(bars) => bars,
+            None => {
+                tracing::warn!(
+                    "[{}] ATR_RANK SKIP: BTCUSDT bars unavailable; cannot compute regime filter",
+                    symbol
+                );
+                return false;
+            }
+        };
+
+        let pct = Self::btc_atr_percentile(
+            btc_bars,
+            self.config.regime_atr_period,
+            self.config.regime_lookback,
+        );
+        if pct < threshold {
+            tracing::debug!(
+                "[{}] ATR_RANK SKIP: BTC ATR percentile {:.1} < threshold {:.1} (AP={}, LB={})",
+                symbol, pct, threshold, self.config.regime_atr_period, self.config.regime_lookback
+            );
+            return false;
+        }
+        true
+    }
+
+    fn btc_atr_percentile(bars: &[Bar], atr_period: usize, lookback: usize) -> f64 {
+        let len = bars.len();
+        if len <= atr_period.max(lookback) + 1 {
+            return 50.0;
+        }
+
+        let idx = len - 1;
+        let curr_atr = Self::atr_at(bars, atr_period, idx);
+        let curr_close = bars[idx].close;
+        if curr_atr <= 0.0 || curr_close <= 0.0 {
+            return 50.0;
+        }
+        let curr_pct = curr_atr / curr_close;
+
+        let start = idx.saturating_sub(lookback);
+        let mut below = 0usize;
+        let mut total = 0usize;
+        for i in start..idx {
+            let close = bars[i].close;
+            if close <= 0.0 { continue; }
+            let hist_atr = Self::atr_at(bars, atr_period, i);
+            if hist_atr <= 0.0 { continue; }
+            if hist_atr / close < curr_pct {
+                below += 1;
+            }
+            total += 1;
+        }
+
+        if total == 0 {
+            50.0
+        } else {
+            (below as f64 / total as f64) * 100.0
+        }
+    }
+
+    fn atr_at(bars: &[Bar], period: usize, idx: usize) -> f64 {
+        if period == 0 || idx < period || idx >= bars.len() {
+            return 0.0;
+        }
+        let start = idx + 1 - period;
+        let mut sum = 0.0_f64;
+        for i in start..=idx {
+            let b = &bars[i];
+            let pc = if i == 0 { b.close } else { bars[i - 1].close };
+            let tr = (b.high - b.low)
+                .max((b.high - pc).abs())
+                .max((b.low - pc).abs());
+            sum += tr;
+        }
+        sum / period as f64
     }
 
     // =========================================================================
@@ -631,7 +735,7 @@ mod tests {
         bot.bars.insert("SOLUSDT".to_string(), bars);
 
         // Breakout bar
-        let bar = Bar::new(Utc::now(), 101.0, 102.0, 100.0, 101.0, 2000.0);
+        let _bar = Bar::new(Utc::now(), 101.0, 102.0, 100.0, 101.0, 2000.0);
 
         // Should detect entry signal but cap blocks it
         let current_positions = bot.positions.values()
