@@ -1,6 +1,20 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-04-30 15:01 UTC. T35 FIXED; T34 FIXED; ATR_RANK=5 PRODUCTION CANDIDATE (validated dual-exit + Turtle-only). S6 CANDIDATE pending Turtle-only validation. Live testnet BLOCKED 4+ weeks.**
+**State: 2026-04-30 16:05 UTC. Daily equity tracking is STAGNATING: best reported Sharpe remains DDBudget 7.22/7.24 but milestone-aggregated and not directly comparable; production Turtle daily-equity Sharpe slipped 1.04 → 1.00 and equity 221.5x → 124.1x after current data refresh. T35 FIXED; T34 FIXED; ATR_RANK=5 PRODUCTION CANDIDATE (validated dual-exit + Turtle-only). S6 CANDIDATE pending Turtle-only validation. Live testnet BLOCKED 4+ weeks.**
+
+---
+
+## Daily Equity Tracking — 2026-04-30 16:05 UTC
+
+**Status:** Stagnating / degraded on the production daily-equity metric.
+
+Current `progress_equity_curves` run:
+- DDBudget 3-Sleeve: 62.5x, reported Sharpe 7.22 — best reported Sharpe, but milestone-aggregated/not directly comparable.
+- Turtle+Chandelier: 124.1x, daily compounded Sharpe 1.00 — down from 221.5x / 1.04 on 2026-04-29.
+- A/D Momentum: 40.3x, Sharpe 3.61.
+- FactorSmallByDV: 15.0x, Sharpe 1.97.
+
+**Interpretation:** No improvement today. Turtle remains the highest true daily-equity return strategy, but the daily Sharpe and equity are lower after the latest data refresh. Treat progress as stagnating until ATR_RANK=5 or regime ATR changes are integrated into the daily-equity tracking harness.
 
 ---
 

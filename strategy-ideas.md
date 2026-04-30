@@ -1,6 +1,39 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-30 08:05 UTC. S6 BUILT ✅ (close_losers I=5, 6/6 pass). T31 REJECTED ✅ (9-universe 63% < 69.1%). EM=0.94 REJECTED ✅ (held-out). VL=90 UNVALIDATED ⚠️ (same-harness resweep, not tested on Base5). Research loop is CONFIRMATION SPIRAL — stop hyperopts on settled params.*
+*Last updated: 2026-04-30 16:20 UTC. Regime ATR AP=12 found (+78% Sharpe, 2,688 configs) — UNINTEGRATED. ATR_RANK=5 validated dual-exit + Turtle-only — UNINTEGRATED. S6 close_losers Turtle-only validation PENDING. Research loop is NOT closed — biggest findings in months sit in config.rs, not in production.*
+
+---
+
+## Critical New Insight: Regime ATR (AP=12) — Biggest Unintegrated Finding
+
+**Commit da6c8b9a (2026-04-30 15:20):** 2,688 configs × 9 universes × 5 WF windows.
+**Winner:** AP=12, LB=42, T=5 → Sharpe **1.499** vs baseline 0.840 (**+78.4%**).
+
+This is NOT a parameter tweak. It changes the MECHANISM of ATR calculation:
+- Period: 12 (high-vol regime) vs 24 (standard) vs 21 (old default)
+- Lookback: 42-bar (fast, recency-weighted) vs 252-bar (1yr, slow)
+- T=5 threshold gates entry based on 42-bar ATR percentile vs 252-bar history
+
+**Why this might work when ATR_ENTRY_MULT failed:** ATR_ENTRY_MULT is a FIXED threshold (breakout must be > X ATR above recent high). That's trade-starving — it gates on absolute ATR value, not on relative regime context. AP=12 changes the calculation period itself, not the threshold. The regime-adaptive period captures different market dynamics without trade-starving.
+
+**⚠️ Risk:** Was run on 5 windows (not 6-window standard harness). Different test set = different baseline. Needs confirmation sweep at 6-window scale.
+
+**Status:** UNINTEGRATED. Config.rs still has TURTLE_ATR_PERIOD=24. `RegimeDetector::atr_percentile()` exists in `regime.rs` but not wired into `bot.rs`.
+
+**Action:** Build `examples/regime_atr_integration_sweep.rs`. Confirm AP=12 at 6-window scale. Then integrate into config.rs + bot.rs.
+
+---
+
+## Critical New Insight: Discovery ≠ Integration
+
+**Pattern since 2026-04-28:**
+- Regime ATR: found, reported to Discord, not in config.rs
+- ATR_RANK=5: validated dual-exit + Turtle-only, not in config.rs
+- S6: found as candidate, Turtle-only validation not run
+
+**The Discord announcement is not the completion.** The completion is editing config.rs and wiring into bot.rs.
+
+**Anti-spin rule:** If it was announced in Discord but config.rs didn't change, the finding is UNINTEGRATED — treat it as unvalidated until integration completes.
 
 ---
 
