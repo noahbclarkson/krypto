@@ -1,30 +1,32 @@
 # PLAN.md — Krypto Research & Execution Plan
 
-**State: 2026-04-30 04:05 UTC. T29 COMPLETE ✅. T31 BASE5 CANDIDATE ✅ (9-universe pending). T32 COMPLETE ✅. S6 PENDING (never built). EM=0.94 held-out validation PENDING. Live testnet CRITICAL BLOCKER (4+ weeks).**
+**State: 2026-04-30 08:05 UTC. S6 BUILT ✅. T31 REJECTED ✅. EM=0.94 REJECTED ✅. VL=90 UNVALIDATED ON BASE5 ⚠️. Live testnet CRITICAL BLOCKER (4+ weeks).**
 
 ---
 
-## Brutal Self-Assessment (2026-04-30 Critique Cycle — Sixth Session)
+## Brutal Self-Assessment (2026-04-30 Critique Cycle — Seventh Session)
 
-**Research loop: CONFIRMATION SPIRAL — now in its 3rd consecutive session.**
+**Research loop: CONFIRMATION SPIRAL continues — VL=90 edition.**
 
-Last 5 commits: 2/5 genuine new work (T31 Donchian sleeve), 3/5 hyperopt repeats + docs. HOLD_MAX [1..100] confirmed HM=12 again. ATR_EMA [1..200] confirmed NULL again. ATR_ENTRY_MULT 201-value sweep confirmed EM=0.00 again. These are settled results. Stop confirming them.
+This session: 2.5/5 genuine new work. S6 rebalancing genuinely built, T31 genuinely rejected. BUT:
+- VOL_LOOKBACK changed 8→90 via 54,000 sims on the same harness that confirmed VL=8 one day prior. Same methodology, same windows, higher resolution. This is the EP=24 pattern (same-harness resweep → failed held-out).
+- VL=90 was NOT re-tested on Base5 production universe. 9-universe aggregate improvement ≠ Base5 improvement.
+- HOLD_MAX [1..100] re-confirmed HM=12 again — already confirmed 2026-04-21.
 
 **What we got right:**
-- T31 Donchian sleeve: BUILT on Base5 (6/6 pass, +22% Sharpe). Candidate, needs 9-universe validation.
-- T32 Sharpe methodology: FIXED ✅
-- Anti-overfit discipline held: EM=0.94 correctly not promoted
-- Reports are now honest and trustworthy
+- S6 rebalancing: BUILT (close_losers I=5, 6/6 pass, +3.14 Sharpe). First genuinely untested idea built in 5+ weeks.
+- T31 Donchian sleeve: REJECTED (9-universe, 63% < 69.1% guardrail). Correctly done.
+- EM=0.94: REJECTED (held-out 10/18 vs baseline 11/18). Anti-overfit discipline held.
+- Reports honest: methodology labels prevent misreading Sharpe numbers ✅
 
 **What we're still fooling ourselves about:**
-- **"Research loop CLOSED" — premature.** ATR_EMA, ATR_ENTRY_MULT, HOLD_MAX all re-confirmed in this session alone. Same results, higher resolution. Not discovery.
-- **2026 YTD -22.7% vs BTC +12.7% — "bear whipsaw" is not a root cause analysis.** It's a description, not an explanation. Is there a live-vs-backtest divergence? Quantify it.
-- **Live bot dual-exit gap not verified.** Walk-forward validated dual Chandelier+Turtle ATR (93% pass). Live bot may use Turtle-only (67% pass). Gap of ~26pp not acknowledged.
-- **EM=0.94 held-out validation: never built.** Candidate since 2026-04-29. Next step is held-out, not more grid sweeps.
+- **VOL_LOOKBACK 8→90 = same-harness confirmation spiral.** VL=8 confirmed on 2026-04-29 via 100-value sweep. VL=90 found via 100-value sweep one day later on same harness. Was NOT tested on Base5. Needs Base5 re-validation before trust.
+- **Live bot dual-exit gap: still unverified.** Live bot uses Turtle-only (sole exit). Walk-forward uses dual Chandelier+Turtle ATR. 26pp gap acknowledged in PLAN but never verified in code.
+- **2026 YTD root cause: still not quantified.** Live-vs-backtest divergence test doesn't exist.
 
 ---
 
-## Production Params (FROZEN — all validated, do NOT re-sweep)
+## Production Params (FROZEN — requires VL=90 Base5 re-validation)
 
 ```
 EP              = 21     // ✅ held-out confirmed
@@ -32,11 +34,11 @@ TURTLE_ATR_P    = 24     // ✅ fine sweep confirmed
 TURTLE_ATR_M    = 2.0    // ✅ confirmed
 CHAND_PERIOD    = 7      // ✅ 71-value dense sweep confirmed
 CHAND_MULT      = 2.30   // ✅ 71-value dense sweep confirmed
-ATR_ENTRY_MULT  = 0.00   // ✅ EM=0.94 CANDIDATE — needs held-out validation
-HOLD_MAX        = 12     // ✅ confirmed [1..100] repeat sweep
+ATR_ENTRY_MULT  = 0.00   // ✅ held-out rejected EM=0.94
+HOLD_MAX        = 12     // ✅ confirmed [1..100]
 POSITION_CAP    = 3      // ✅ confirmed
 FRESHNESS_COOLDOWN = 0   // ✅ confirmed
-VOL_LOOKBACK    = 8      // ✅ confirmed
+VOL_LOOKBACK    = 90     // ⚠️ UNVALIDATED — changed 2026-04-30, not tested on Base5
 ATR_EMA_PERIOD  = 1      // ✅ confirmed NULL [1..200]
 ```
 
@@ -44,22 +46,22 @@ ATR_EMA_PERIOD  = 1      // ✅ confirmed NULL [1..200]
 
 ## Next Tasks
 
-### S6: Rebalancing Frequency / Winner-Loser Maintenance — NEVER BUILT
-**Status:** UNTESTED. Listed since 2026-04-11. Never built. Genuinely novel.
-**Hypothesis:** Current logic opens a position and waits for Chandelier/Turtle ATR exit. Hypothesis: periodic rebalancing (every N bars: re-rank open positions by unrealized PnL, trim or close worst performer if >2 bars in loss, let leaders run) may improve capital efficiency without suppressing trend convexity.
-**Why it is worth testing:** Does not require API keys, does not require live data. Can be tested immediately on historical data.
-**Reject if:** Increases turnover materially, collapses pass rate after fees.
-**What to build:** `examples/rebalancing_sweep.rs` — sweep rebalance_interval ∈ {5, 10, 15, 21, 30, 42} bars, rebalance_type ∈ {trim_losers, close_losers, redistribute}. Run on Base5 × 6 windows. Compare against no-rebalancing baseline.
+### T33: VOL_LOOKBACK 90 vs 8 — Base5 Re-Validation (HIGHEST PRIORITY)
+**Status:** ⚠️ UNVALIDATED. Latest commit changed VL from 8→90 via 54,000 sims. Not tested on Base5.
+**Risk:** VL=8 was the winner on Base5×6 windows (2026-04-29). VL=90 is a 9-universe aggregate winner but may underperform on Base5 specifically. This is the EP=24 failure pattern: global winner ≠ production-universe winner.
+**What to build:** Run VL=90 vs VL=8 on Base5 × 6 windows. If VL=90 wins Base5, update production default. If VL=90 loses Base5, revert to VL=8 and do NOT resweep.
+**Do NOT run a 100-value sweep.** Just compare VL=90 vs VL=8. 12 runs.
 
-### T31: Donchian Sleeve 9-Universe Validation — PENDING
-**Status:** Base5 candidate built (6/6 pass, +22% Sharpe vs Turtle). Needs 9-universe validation before production decision.
-**Guardrail:** Reject if global pass rate drops >5pp (below 69.1%) or Sharpe improvement fails outside Base5.
-**What to build:** `examples/donchian_sleeve_9universe.rs` — run 75/25 Turtle/Donchian sleeve on all 9 universes × 6 windows.
+### T34: Live Bot Dual-Exit Gap Verification
+**Status:** Acknowledged since 2026-04-29. Live bot uses Turtle-only. Walk-forward uses dual Chandelier+Turtle ATR.
+**Gap:** ~26pp pass rate (Turtle-only 67% vs dual 93% in T22 attribution).
+**What to build:** Verify `src/live/bot.rs` exit logic. If Turtle-only: assess dual Chandelier implementation cost, or formally document the gap as a known live/in-sample divergence.
+**This is the #1 production readiness blocker** (after API keys).
 
-### EM=0.94 Held-Out Validation — PENDING
-**Status:** CANDIDATE identified 2026-04-29 (42/54 pass, Sharpe 5.34 vs baseline 40/54/3.15). NOT promoted. Found on same WF grid.
-**What to build:** `examples/atr_entry_mult_held_out.rs` — test EM=0.00 vs EM=0.94 on pre-2021 held-out data only. Pre-2021 data has NEVER been used to select EM=0.94. If EM=0.94 wins held-out → promote. If not → leave EM=0.00.
-**Anti-overfit note:** This is NOT a grid sweep. It's a single held-out comparison. Must not re-run the 9×6 grid.
+### S6: Rebalancing 9-Universe Validation — CANDIDATE, NOT PROMOTED
+**Status:** close_losers I=5 built on Base5 (6/6 pass, +3.14 Sharpe). Needs 9-universe × 6 windows validation before production consideration.
+**What to build:** `examples/rebalancing_9universe.rs` — only close_losers I=5 vs no-rebalancing. No interval re-sweep. 9 universes × 6 windows.
+**Reject if:** 9-universe pass rate drops >5pp below baseline, or materially increases turnover.
 
 ### T9: Live Testnet — CRITICAL BLOCKER
 **Status:** BLOCKED on Noah's Binance testnet API keys for 4+ weeks.
@@ -72,13 +74,11 @@ ATR_EMA_PERIOD  = 1      // ✅ confirmed NULL [1..200]
 
 | Blind Spot | Severity | Status |
 |-----------|----------|----------|
-| **Live bot dual-exit gap** | HIGH | Walk-forward: dual Chandelier+Turtle ATR = 93% pass. Live bot: Turtle-only = 67% pass. ~26pp gap not verified or acknowledged. Verify live code path. |
-| **2026 YTD no root cause** | HIGH | -22.7% Turtle vs +12.7% BTC = 35.4pp gap. "Bear whipsaw" is not an analysis. Is there a live-vs-backtest divergence? Quantify. |
-| **S6 rebalancing: never built** | MEDIUM | Listed 2026-04-11. Never built. Genuinely novel, no keys needed. |
-| **EM=0.94 held-out: never built** | MEDIUM | Candidate since 2026-04-29. Next step is held-out, not more grid sweeps. |
-| **T31 9-universe validation: pending** | MEDIUM | Base5 candidate built. 9-universe needed for production decision. |
-| **Research loop: confirmation spiral** | MEDIUM | ATR_EMA, ATR_ENTRY_MULT, HOLD_MAX all re-confirmed this session alone. Stop confirming settled params. |
-| **Funding observer: not continuous** | LOW | T29 built but not running continuously. Need hourly cron. |
+| **VOL_LOOKBACK 90 not validated on Base5** | HIGH | Latest commit (cfd19ba2). VL=8 was Base5 winner 2026-04-29. VL=90 not tested on Base5. EP=24 pattern risk. |
+| **Live bot dual-exit gap** | HIGH | Live: Turtle-only. WF: dual Chandelier+Turtle. ~26pp gap unverified. |
+| **2026 YTD no root cause** | MEDIUM | -22.7% Turtle vs +12.7% BTC. No live-vs-backtest divergence test exists. |
+| **Research loop: VL confirmation spiral** | MEDIUM | VL=8 confirmed 2026-04-29. VL=90 found 2026-04-30 via same methodology. Stop resweeping settled params. |
+| **Funding observer: not continuous** | LOW | T29 built but not running hourly. Need cron job. |
 | **No live testnet** | CRITICAL | BLOCKED on Noah's API keys — 4+ weeks |
 
 ---
@@ -87,20 +87,20 @@ ATR_EMA_PERIOD  = 1      // ✅ confirmed NULL [1..200]
 
 | Strategy | Result | Key Reason |
 |----------|--------|------------|
-| ATR_EMA [1..200] | NULL | Re-confirmed NULL at [1..30]. 10,800 runs = spinning. |
-| ATR_ENTRY_MULT 201-value sweep | NULL | Re-confirmed EM=0.00. 201 values = spinning. |
-| HOLD_MAX [1..100] full sweep | Confirmed | HM=12 confirmed again. Repeat of 2026-04-21 sweep. |
-| ATR_ENTRY_MULT=0.94 | CANDIDATE | Real signal but found on same WF grid — needs held-out validation |
-| Donchian sleeve | BASE5 CANDIDATE | +22% Sharpe on Base5. Needs 9-universe validation before promotion. |
+| ATR_EMA [1..200] | NULL | Confirmed NULL at [1..30]. 10,800 runs = spinning. |
+| ATR_ENTRY_MULT 201-value sweep | EM=0.00 | Confirmed on current params. EM=0.94: held-out REJECTED (10/18 vs 11/18). |
+| HOLD_MAX [1..100] | Confirmed | HM=12 confirmed again. Repeat confirmation. |
+| Donchian sleeve | REJECTED | 9-universe: 34/54 pass (63%) < 69.1% guardrail. |
+| VOL_LOOKBACK 8→90 | ⚠️ UNVALIDATED | Same-harness resweep. Not tested on Base5. May be EP=24 pattern. |
 
 ---
 
 ## Research Loop: CONFIRMATION SPIRAL — NOT CLOSED
 
-The loop closes when we STOP hyperopts on settled params and START building:
-1. S6 rebalancing harness (no keys needed, genuinely novel)
-2. T31 9-universe Donchian sleeve validation
-3. EM=0.94 held-out validation
-4. Live bot dual-exit gap verification
+The loop closes when we:
+1. T33: Re-validate VL=90 vs VL=8 on Base5 (12 runs, NOT a 100-value sweep)
+2. T34: Verify live bot dual-exit gap in code
+3. S6: 9-universe rebalancing validation for close_losers I=5
+4. Live testnet (BLOCKED on API keys)
 
-**Only live testnet (BLOCKED on API keys), T31, S6, and EM=0.94 held-out advance the project.**
+**Stop running hyperopts on settled params. VL=90, ATR_EMA, HOLD_MAX are all settled.**
