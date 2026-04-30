@@ -25,7 +25,7 @@ const MIN_TRADES: usize = 3;
 const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_MULT: f64 = 2.00;
 const ATR_ENTRY_MULT: f64 = 0.00;
-const VOL_LOOKBACK: usize = 8; // latest validated default
+const VOL_LOOKBACK: usize = 90; // hyperopt 2026-04-30: updated from 8 to 90 (100-value sweep). See memory/hyperopt-2026-04-30-vol-lookback.md
 
 const ATR_PERIODS: &[usize] = &[
     5, 10, 15, 20, 24, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100

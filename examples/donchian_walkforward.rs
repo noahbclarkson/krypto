@@ -26,7 +26,7 @@ const CHAND_MULT: f64 = 2.30;
 const TURTLE_ENTRY: usize = 21;
 const ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
-const VOL_LOOKBACK: usize = 8;
+const VOL_LOOKBACK: usize = 90; // hyperopt 2026-04-30: 100-value sweep; VL=90-100 → 37/54 pass (+3 vs VL=8 baseline 34/54), Sharpe 4.136 (+31% vs 3.392), DD 73.8% (-5.5pp vs 79.3%). See memory/hyperopt-2026-04-30-vol-lookback.md
 const ATR_ENTRY_MULT: f64 = 0.00;
 
 const SYMBOLS: [&str; 6] = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"];
