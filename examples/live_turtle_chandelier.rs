@@ -33,6 +33,9 @@ const ATR_M: f64 = 2.0;     // Turtle ATR multiplier
 const ATR_ENTRY_MULT: f64 = 0.00; // NO entry-side ATR filter — confirmed 2026-04-25 (revert from 0.85)
 const HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 baseline (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Full sweep 19 values [5-180] with EP=21/CHAND(11,2.25). Chandelier fires first ~bar 12-15; HM is irrelevant above ~35. HM=12 wins on Sharpe + pass rate (96.3% vs 92.6%). See memory/hyperopt-2026-04-21-hold-max.md.
 const POS_CAP: usize = 3;   // CONFIRMED 2026-04-27: extensive CAP sweep [1..10] on current Turtle-only walk-forward. CAP=3 is the robustness winner (72.2% pass, Sharpe 4.58, 9/9 positive universes). CAP=4-10 increases raw return but degrades pass rate too much.
+const REGIME_ATR_P: usize = 12; // 2026-04-30 joint regime ATR sweep winner.
+const REGIME_LOOKBACK: usize = 42; // 2026-04-30 joint regime ATR sweep winner.
+const ATR_RANK_T: f64 = 5.0; // Live entry filter: require BTC ATR percentile >= 5.
 
 // =============================================================================
 // Turtle+Chandelier Strategy (matches walk-forward harness exactly)
@@ -255,8 +258,8 @@ fn main() -> Result<()> {
     }
     println!("{} {}", "═".repeat(66), "═".cyan());
     println!("  Live Turtle+Chandelier Bot");
-    println!("  Params: EP={}, Chand({},{}), ATR({},{}), ATR_ENTRY={:.2}, HM={}, CAP={} (freshness filter DISABLED — cd=0)",
-             EP, CHAND_P, CHAND_M, ATR_P, ATR_M, ATR_ENTRY_MULT, HOLD_MAX, POS_CAP);
+    println!("  Params: EP={}, Chand({},{}), ATR({},{}), ATR_ENTRY={:.2}, HM={}, CAP={}, ATR_RANK(AP={},LB={},T={}) (freshness filter DISABLED — cd=0)",
+             EP, CHAND_P, CHAND_M, ATR_P, ATR_M, ATR_ENTRY_MULT, HOLD_MAX, POS_CAP, REGIME_ATR_P, REGIME_LOOKBACK, ATR_RANK_T);
     println!("{} {}", "═".repeat(66), "═".cyan());
     println!();
 
@@ -334,8 +337,8 @@ fn main() -> Result<()> {
         println!("  ⚠  With --live flag it will place real testnet orders.");
         println!();
         println!(
-            "  Signal: Turtle breakout (EP={}) → Turtle ATR({},{}) sole exit.\n  (Chandelier params in config are stored but unused by live bot — see bot.rs)",
-            EP, ATR_P, ATR_M
+            "  Signal: Turtle breakout (EP={}) + BTC ATR-rank filter(AP={},LB={},T={}) → Turtle ATR({},{}) sole exit.\n  (Chandelier params in config are stored but unused by live bot — see bot.rs)",
+            EP, REGIME_ATR_P, REGIME_LOOKBACK, ATR_RANK_T, ATR_P, ATR_M
         );
     } else {
         println!();
@@ -359,6 +362,9 @@ fn main() -> Result<()> {
             atr_mult: ATR_M,
             hold_max: HOLD_MAX,
             position_cap: POS_CAP,
+            regime_atr_period: REGIME_ATR_P,
+            regime_lookback: REGIME_LOOKBACK,
+            atr_rank_threshold: ATR_RANK_T,
             ..Default::default()
         };
         let mut bot = LiveBot::new(config)?;

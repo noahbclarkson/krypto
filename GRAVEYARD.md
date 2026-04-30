@@ -31,6 +31,7 @@
 | CTREND Fixed 25% Portfolio Sleeve | 2026-04-27 | REJECTED | Turtle 75/25 CTREND(EMA8/32,hold=30): DD improvement +3.6pp ✓ but Sharpe destroyed 1.38→0.33 (-76%). CTREND standalone Sharpe -2.82 makes 25% allocation too costly. DD improvement doesn't compensate. Dynamic/conditional switching untested (could be viable).
 | Donchian 25% Portfolio Sleeve | 2026-04-30 | REJECTED | Base5 candidate failed 9-universe production guardrail: 34/54 pass (63%) below required 69.1%. Sharpe improved +11% vs internal Turtle baseline, but avg return dropped -164.9pp and absolute pass rate failed. Do not re-sweep nearby weights without a new mechanism. |
 | Rebalancing trim_losers I=5 | 2026-04-30 | REJECTED | 9-universe S6 validation: pass improved 51/54 vs baseline 46/54 and DD improved 69.9% vs 71.6%, but Sharpe was identical (+3.828) and avg return fell +81.1% vs +87.8%. Mechanism did not create risk-adjusted edge. |
+| S6 close_losers I=5 — Turtle-only | 2026-04-30 | INCOMPATIBLE | Turtle-only exit (live bot) fires in ~3-5 bars. close_losers checks at 5-bar rebalancing interval requiring >5% loss — structurally incompatible. Chandelier's longer holds (7+ bars) are what enable close_losers. Dual Chandelier+Turtle: 48/54 pass, Sharpe +3.067 improvement. Live bot Turtle-only: 0/162 (0%) — 0 trades across all universes/windows/configs. S6 is a dual-exit harness strategy only. |
 
 ## Why These Died
 

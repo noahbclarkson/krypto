@@ -50,6 +50,9 @@ def parse_params(config_text: str) -> dict:
         "ATR_EM": "ATR_ENTRY_MULT",
         "HM": "HOLD_MAX",
         "POS_CAP": "POSITION_CAP",
+        "REGIME_ATR_P": "REGIME_ATR_PERIOD",
+        "REGIME_LOOKBACK": "REGIME_LOOKBACK",
+        "ATR_RANK_T": "ATR_RANK_THRESHOLD",
     }
     return {display: extract_const_value(config_text, const) for display, const in const_map.items()}
 
@@ -136,6 +139,9 @@ TURTLE_ATR_M    = {params['ATR_M']}    // Turtle ATR stop multiplier
 ATR_ENTRY_MULT  = {params['ATR_EM']}   // Entry filter — any non-zero degrades pass rate
 HOLD_MAX        = {params['HM']}     // Max hold bars
 POSITION_CAP    = {params['POS_CAP']}      // Max concurrent positions
+REGIME_ATR_P    = {params['REGIME_ATR_P']}     // BTC ATR period for regime filter
+REGIME_LOOKBACK = {params['REGIME_LOOKBACK']}     // BTC ATR percentile lookback
+ATR_RANK_THRESH = {params['ATR_RANK_T']}    // Minimum BTC ATR percentile rank for entries
 ```
 
 **Validation evidence:**
@@ -144,6 +150,7 @@ POSITION_CAP    = {params['POS_CAP']}      // Max concurrent positions
 - Walk-forward (global 9-universe): {global_pass}
 - Pre-2021 held-out stress: {pre2021}
 - T22 exit attribution: Chandelier adds secondary robustness; live bot currently uses Turtle ATR as sole live exit
+- ATR_RANK=5: validated under both dual-exit and Turtle-only live logic; AP=12/LB=42/T=5 joint regime sweep wins vs old AP=21/LB=252 baseline
 - Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76–0.87)
 
 **Fee model:** 0.04% taker fee in live dry-run; prior execution realism suggested ~22–33% Sharpe degradation under realistic costs.

@@ -13,10 +13,10 @@ _Run `python3 scripts/gen_hof.py` to regenerate. Do not hand-edit headline metri
 - **Base5 walk-forward pass rate:** 5/6 (83.3%)
 - **Global walk-forward pass rate:** 34/54 (63.0%) (9-universe, current validated harness)
 - **Walk-forward avg Sharpe:** 3.170 (743 trades, per-window metric)
-- **Daily equity Sharpe:** 1.04 (honest compounded-equity metric)
-- **Validated daily equity:** $10K → $2,211,000 (221.1x)
+- **Daily equity Sharpe:** 1.00 (honest compounded-equity metric)
+- **Validated daily equity:** $10K → $1,241,000 (124.1x)
 
-**Important reconciliation:** The old `$10K → $67M` headline was a stale/full-sample artifact and is no longer cited. The authoritative current daily-equity number is `snapshots/progress_equity_curves.md`: 221.1x / Sharpe 1.04.
+**Important reconciliation:** The old `$10K → $67M` headline was a stale/full-sample artifact and is no longer cited. The authoritative current daily-equity number is `snapshots/progress_equity_curves.md`: 124.1x / Sharpe 1.00.
 
 **Frozen production params (from `src/live/config.rs`):**
 ```text
@@ -28,14 +28,18 @@ TURTLE_ATR_M    = 2.0    // Turtle ATR stop multiplier
 ATR_ENTRY_MULT  = 0.00   // Entry filter — any non-zero degrades pass rate
 HOLD_MAX        = 12     // Max hold bars
 POSITION_CAP    = 3      // Max concurrent positions
+REGIME_ATR_P    = 12     // BTC ATR period for regime filter
+REGIME_LOOKBACK = 42     // BTC ATR percentile lookback
+ATR_RANK_THRESH = 5.0    // Minimum BTC ATR percentile rank for entries
 ```
 
 **Validation evidence:**
-- Progress equity harness: 221.1x, daily Sharpe 1.04
+- Progress equity harness: 124.1x, daily Sharpe 1.00
 - Walk-forward (Base5): 5/6 (83.3%)
 - Walk-forward (global 9-universe): 34/54 (63.0%)
 - Pre-2021 held-out stress: 19/28 (67.9%)
 - T22 exit attribution: Chandelier adds secondary robustness; live bot currently uses Turtle ATR as sole live exit
+- ATR_RANK=5: validated under both dual-exit and Turtle-only live logic; AP=12/LB=42/T=5 joint regime sweep wins vs old AP=21/LB=252 baseline
 - Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76–0.87)
 
 **Fee model:** 0.04% taker fee in live dry-run; prior execution realism suggested ~22–33% Sharpe degradation under realistic costs.

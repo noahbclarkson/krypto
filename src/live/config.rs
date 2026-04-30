@@ -30,6 +30,9 @@ pub const TURTLE_ATR_MULT: f64 = 2.0;
 pub const ATR_ENTRY_MULT: f64 = 0.00; // REVERTED 2026-04-25: Full 41-value sweep {0.00-2.00 step 0.05} × 9 universes × 54 windows with CHAND(7,2.30)/EP=24/HM=12. EM=0.00 wins definitively: 83.3% pass, Sharpe 1.87, +151.9% return, 707 trades. Any non-zero filter degrades pass rate monotonically. Prior EM=0.85 winner (2026-04-21) was optimized ON the same OOS data used for EP=24 and P=7 — classic in-sample inflation. EM=0.00 is the correct production default.
 pub const HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 baseline (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Full sweep 19 values [5-180] with EP=21/CHAND(11,2.25). Chandelier fires first ~bar 12-15; HM is irrelevant above ~35. HM=12 wins on Sharpe + pass rate (96.3% vs 92.6%). See memory/hyperopt-2026-04-21-hold-max.md.
 pub const POSITION_CAP: usize = 3; // CONFIRMED 2026-04-27 under current Turtle-only live logic. Extensive 10-value sweep CAP∈[1..10] across 9 universes × 6 walk-forward windows: CAP=3 is robustness winner (72.2% pass, Sharpe 4.58, 9/9 positive universes). CAP=4-10 chase more return but materially degrade pass rate to 61.1%-57.4%. See memory/hyperopt-2026-04-27.md.
+pub const REGIME_ATR_PERIOD: usize = 12; // hyperopt 2026-04-30: joint regime ATR sweep AP=5..60 × LB∈{21,42,63,126,252,504} × T∈{0,5,10,15,20,25,30,40}. AP=12/LB=42/T=5 wins Sharpe 1.499 vs baseline AP=21/LB=252/T=0 at 0.840. See memory/hyperopt-2026-04-30.md.
+pub const REGIME_LOOKBACK: usize = 42; // hyperopt 2026-04-30: 42-bar BTC ATR percentile lookback dominates; old 252-bar one-year lookback was worst decile.
+pub const ATR_RANK_THRESHOLD: f64 = 5.0; // validated 2026-04-30 under dual-exit and Turtle-only logic. Enter Turtle breakouts only when BTC ATR percentile rank >= 5 (filters lowest-vol chop).
 
 /// Configuration for live trading bot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,6 +80,15 @@ pub struct LiveConfig {
     pub hold_max: usize,
     /// Max concurrent positions (default: 3)
     pub position_cap: usize,
+    /// BTC ATR period for regime percentile filter (default: 12)
+    #[serde(default = "default_regime_atr_period")]
+    pub regime_atr_period: usize,
+    /// BTC ATR percentile lookback for regime filter (default: 42)
+    #[serde(default = "default_regime_lookback")]
+    pub regime_lookback: usize,
+    /// Minimum BTC ATR percentile rank required for new entries (default: 5.0)
+    #[serde(default = "default_atr_rank_threshold")]
+    pub atr_rank_threshold: f64,
     // --- Legacy fields (kept for backward compat, unused by signal logic) ---
     #[serde(default = "default_bb_period")]
     pub bb_period: usize,
@@ -89,6 +101,9 @@ pub struct LiveConfig {
 fn default_bb_period() -> usize { TURTLE_EP }
 fn default_bb_std() -> f64 { CHAND_MULT }
 fn default_atr_stop_mult() -> f64 { TURTLE_ATR_MULT }
+fn default_regime_atr_period() -> usize { REGIME_ATR_PERIOD }
+fn default_regime_lookback() -> usize { REGIME_LOOKBACK }
+fn default_atr_rank_threshold() -> f64 { ATR_RANK_THRESHOLD }
 
 impl Default for LiveConfig {
     fn default() -> Self {
@@ -112,6 +127,9 @@ impl Default for LiveConfig {
             atr_entry_mult: ATR_ENTRY_MULT,
             hold_max: HOLD_MAX,
             position_cap: POSITION_CAP,
+            regime_atr_period: REGIME_ATR_PERIOD,
+            regime_lookback: REGIME_LOOKBACK,
+            atr_rank_threshold: ATR_RANK_THRESHOLD,
             // Legacy
             bb_period: TURTLE_EP,
             bb_std: CHAND_MULT,
@@ -178,6 +196,15 @@ impl LiveConfig {
         }
         if self.max_position_size <= 0.0 || self.max_position_size > 1.0 {
             anyhow::bail!("Max position size must be between 0 and 1");
+        }
+        if self.regime_atr_period == 0 {
+            anyhow::bail!("Regime ATR period must be positive");
+        }
+        if self.regime_lookback == 0 {
+            anyhow::bail!("Regime lookback must be positive");
+        }
+        if !(0.0..=100.0).contains(&self.atr_rank_threshold) {
+            anyhow::bail!("ATR rank threshold must be between 0 and 100");
         }
         if !self.dry_run && (self.api_key.is_none() || self.api_secret.is_none()) {
             anyhow::bail!("API credentials required for live trading");

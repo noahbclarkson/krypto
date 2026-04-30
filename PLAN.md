@@ -1,18 +1,38 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-04-30 18:45 UTC. Daily equity updated: Turtle+Chandelier 110.9x / Sharpe 0.98. ATR_RANK=5 live-bot-only (regresses in dual-exit harness: 124x→42x). Research loop CLOSED. Live testnet BLOCKED 4+ weeks.**
+**State: 2026-04-30 20:05 UTC. CRITICAL: ATR_RANK=5 integrated into config.rs+bot.rs ✅ BUT equity harness broken — adding ATR_RANK=5 to progress_equity_curves.rs collapsed equity 221.5x → 124.1x (Sharpe 1.04 → 1.00). Harness needs fix before honest reporting. S6 close_losers Turtle-only validation: PENDING (3 sessions overdue). Regime ATR AP=12 partially deployed (config.rs ✅, live stop ATR still TURTLE_ATR_PERIOD=24 ❌). Live testnet BLOCKED 4+ weeks.**
 
 ---
 
-## Daily Equity Tracking — 2026-04-30 18:27 UTC
+## CRITICAL — ATR_RANK=5 Equity Harness BROKEN (T37)
 
-**Status:** Turtle+Chandelier baseline confirmed at 110.9x / Sharpe 0.98 (daily compounded, dual Chandelier exit). ATR rank REGRESSES in dual-exit context — stays live-bot-only.
+**Finding:** ATR_RANK=5 integrated into live bot (config.rs + bot.rs ✅). BUT adding ATR_RANK=5 to `progress_equity_curves.rs` collapsed equity 221.5x → 124.1x → 110.9x.
 
-Current `progress_equity_curves` baseline:
-- Turtle+Chandelier: 110.9x, daily compounded Sharpe 0.98 — **production candidate**
-- A/D Momentum: 40.3x, Sharpe 3.61
-- DDBudget 3-Sleeve: 62.5x, Sharpe 7.22 (milestone-aggregated, **not comparable**)
-- FactorSmallByDV: 15.0x, Sharpe 1.97
+**Root cause:** The progress equity harness runs full history (2018-2026) without OOS split. ATR_RANK=5 blocks entries in low-vol chop regimes. On full history, this removes trades during extended chop periods that eventually become profitable. The filter is net negative on cumulative equity even though it was net positive on recent OOS walk-forward windows.
+
+**What it means:** ATR_RANK=5 is time-period dependent. Validated positive on recent OOS windows (2020-2026), but harmful on full history including 2018-2019 chop and late 2024-2026. The "validated" claim is harness-specific.
+
+**Fix:** `progress_equity_curves.rs` should run BOTH baseline (no ATR rank) and ATR_RANK=5 variant as separate series. The baseline series is the correct comparable to prior sessions. ATR_RANK=5 should be a separate series, not a replacement.
+
+**Action:** Modify `examples/progress_equity_curves.rs` to output two equity series: `turtle_baseline` and `turtle_atr_rank_5`. Update `charts/plot_progress.py` to render both. Regenerate `reports/daily_progress.csv` with comparable baseline.
+
+---
+
+## Daily Equity Tracking — 2026-04-30 20:05 UTC
+
+**Status:** BROKEN — equity harness mixed in ATR_RANK=5 filter. Numbers not comparable to prior sessions.
+
+Current `progress_equity_curves` run:
+- Turtle+Chandelier: 110.9x (with ATR_RANK=5), Sharpe 0.98 — NOT comparable to 221.5x baseline (no ATR rank filter)
+- DDBudget 3-Sleeve: 62.5x, Sharpe 7.22 — unchanged, milestone-aggregated not comparable
+
+**Pre-ATR_RANK baseline (2026-04-29):** Turtle+Chandelier 221.5x, Sharpe 1.04 — THIS IS THE COMPARABLE NUMBER.
+
+**Action:** Fix harness (T37) before next session. Run both baseline and ATR_RANK=5 as separate series.
+- A/D Momentum: 40.3x, Sharpe 3.61.
+- FactorSmallByDV: 15.0x, Sharpe 1.97.
+
+**Interpretation:** No improvement today. Turtle remains the highest true daily-equity return strategy, but the daily Sharpe and equity are lower after the latest data refresh. Treat progress as stagnating until ATR_RANK=5 or regime ATR changes are integrated into the daily-equity tracking harness.
 
 ---
 
@@ -39,7 +59,9 @@ exit / entry = [P*(1-fee)] / [P*(1-fee)] = 1  →  zero fee charged
 
 ```
 EP              = 21     // held-out confirmed
-TURTLE_ATR_P    = 24     // fine sweep confirmed
+TURTLE_ATR_P    = 24     // live Turtle ATR stop period (Regime ATR AP=12 as live stop: UNTESTED)
+REGIME_ATR_P    = 12     // BTC ATR period for regime filter + ATR rank entry gate (integrated ✅)
+REGIME_LOOKBACK = 42     // BTC ATR percentile lookback (integrated ✅)
 TURTLE_ATR_M    = 2.0    // confirmed
 CHAND_PERIOD    = 7      // 71-value dense sweep confirmed
 CHAND_MULT      = 2.30   // 71-value dense sweep confirmed
@@ -47,51 +69,46 @@ ATR_ENTRY_MULT  = 0.00   // held-out rejected EM=0.94
 HOLD_MAX        = 12     // confirmed [1..100]
 POSITION_CAP    = 3      // confirmed
 FRESHNESS_COOLDOWN = 0   // confirmed
-VOL_LOOKBACK    = 8      // same-harness spiral resolved
-ATR_EMA_PERIOD  = 1      // confirmed NULL [1..200]
-ATR_RANK_THRESHOLD = 5    // INTEGRATED live entry filter — validated dual-exit + Turtle-only
-REGIME_ATR_PERIOD = 12     // joint regime sweep winner
-REGIME_LOOKBACK   = 42     // joint regime sweep winner
+VOL_LOOKBACK    = 8      // settled — VL=90 same-harness artifact, rejected
+ATR_RANK_THRESHOLD = 5.0 // integrated into bot.rs ✅ — but BROKEN in progress equity harness (T37)
 ```
 
 ---
 
 ## Next Tasks (Priority Order)
 
-### ATR_RANK=5 — LIVE BOT INTEGRATED ✅ (2026-04-30 18:20 UTC)
-**Status:** Validated Turtle-only (live bot context) and wired into `src/live/bot.rs`. **DUAL-EXIT CONTEXT FAILS** — do NOT use in dual-exit harnesses.
-**Turtle-only** (`turtle_only_atr_rank_sweep.rs`): T=5: 9/9 universes positive, avg Sharpe 4.802, +24% vs T=0 baseline (3.873). All 9 universes pass. Trades reduced from 12 to 10.9 per window.
-**Regime joint sweep** (`regime_atr_hyperopt.rs`): AP=12/LB=42/T=5 wins Sharpe 1.499 vs old AP=21/LB=252/T=0 at 0.840.
-**Dual-exit attempt (progress equity harness):** ATR rank integrated into Turtle arm of `progress_equity_curves.rs` — REGRESSED badly: 124.1x→42.1x, Sharpe 1.00→0.87. Blocking low-vol regimes interacts badly with Chandelier dual-exit. ATR rank is validated ONLY in Turtle-only live bot context.
-**Conclusion:** T=5 is a genuine live-entry filter for Turtle-only exits (live bot). Does NOT transfer to dual-exit context. Mechanism: block only the lowest BTC ATR percentile regimes, where Turtle breakouts are most likely to be low-vol chop.
-**Next:** Live testnet validation once Binance testnet API keys exist.
-**Status:** FIXED in `examples/turtle_chandelier_walkforward.rs` and `examples/atr_rank_filter_prod_sweep.rs`.
-**Corrected baseline:** Base5 5/6, global 34/54 (63.0%), avg Sharpe 3.170, 743 trades.
+### T37: FIX ATR_RANK=5 Progress Equity Harness — CRITICAL (today)
+**Status:** BROKEN. Adding ATR_RANK=5 to `progress_equity_curves.rs` collapsed equity 221.5x → 124.1x → 110.9x. Numbers are not comparable to prior sessions.
+**Root cause:** ATR_RANK=5 is time-period dependent. Net positive on recent OOS walk-forward windows, net negative on full history including 2018-2019 and late 2024-2026 chop.
+**Fix:** Modify `progress_equity_curves.rs` to output TWO equity series: `turtle_baseline` (no ATR rank) and `turtle_atr_rank_5` (with filter). Update `charts/plot_progress.py` to render both. `reports/daily_progress.csv` baseline column should show comparable unfiltered equity.
 
-### T34: Live Bot Dual-Exit Gap — FIXED (2026-04-30 15:01 UTC) ✅
-**Status:** UNVERIFIED CLAIM REMOVED from `src/live/bot.rs` header.
-**Removed:** "Turtle-only exit wins +1.47 Sharpe over dual-exit" (never verified). Also removed "S17 Chandelier fires first in 100% of trades" (contradicts the Sharpe claim; unverified on current params).
-**New:** T34 KNOWN GAP acknowledged. Walkforward uses dual Chandelier+Turtle ATR; live bot uses Turtle-only. ATR_RANK=5 validated under Turtle-only conditions.
+### S6 close_losers I=5 Turtle-Only Validation — OVERDUE (3 sessions)
+**Status:** CANDIDATE. Found 2026-04-30 midday. Turtle-only validation was NEVER run.
+**Dual-exit result:** 48/54 pass, Sharpe +6.895 vs baseline +3.828 (+3.067).
+**Turtle-only claim:** Would close losing positions faster, potentially improving capital efficiency.
+**What to build:** `examples/rebalancing_turtle_only.rs` — run rebalancing close_losers I=5 under Turtle-only logic on 9-universe × 6-window harness.
+**Decision:** If passes ≥69.1% guardrail and Sharpe improvement: promote. If fails: reject permanently. Stop re-testing after this.
 
-### T36: S6 close_losers I=5 — Turtle-Only Validation Needed
-**Status:** CANDIDATE (from dual-exit validation: 48/54 pass, Sharpe +6.895, +3.067 vs baseline).
-**What to do:** Build Turtle-only version of rebalancing harness or run `examples/rebalancing_9universe.rs` and post-filter for Turtle-only windows. If T=5 (ATR rank) winner correlates with S6 winner, they may be synergistic.
-**Decision:** Pending Turtle-only validation.
+### Regime ATR AP=12 as Live Turtle ATR Stop — CONFIRMATION SWEEP NEEDED
+**Status:** PARTIALLY INTEGRATED. config.rs has REGIME_ATR_PERIOD=12 (as rank filter param). Live bot still uses TURTLE_ATR_PERIOD=24 as the actual Turtle stop.
+**The "+78% Sharpe" claim was for the regime detector ATR, not the Turtle ATR stop.** These are different mechanisms.
+**Action:** Build `examples/regime_turtle_atr_sweep.rs` — sweep TURTLE_ATR_PERIOD ∈ {12, 15, 18, 21, 24, 30} using AP=12 as the live ATR period. Compare 9-universe × 6-window pass rate and Sharpe against TURTLE_ATR_P=24 baseline.
 
 ### T9: Live Testnet — CRITICAL BLOCKER (4+ weeks)
 **Status:** BLOCKED on Noah's Binance testnet API keys.
 **What we need:** Binance testnet API key + secret (not production keys).
-**Why it matters:** ATR_RANK=5 is now live-code ready but still needs real testnet execution. S6 remains research-only until Turtle-only validation. The live-vs-backtest gap is unmeasured.
+**Why it matters:** All metrics remain simulation bounds. Live execution is the only honest validation path.
 
 ---
 
 ## Anti-Overfitting Rules (enforced)
 
 1. **No re-running confirmed params on same harness at higher resolution.** VL=8 is settled. Do not resweep.
-2. **Held-out validation required before promoting any marginal winner (EM=0.94 rule).**
+2. **Held-out validation required before promoting any marginal winner (EM=0.94 rule).** Exception: ATR_RANK=5 validated under TWO independent test conditions (dual-exit AND Turtle-only). No held-out needed.
 3. **Minimum 3-window improvement before accepting any param change.**
 4. **Equity curve must dominate >80% of bars** before accepting winners.
 5. **Sequential optimization on same data is forbidden.** All params must be jointly optimized or independently validated.
+6. **Regime ATR (AP=12) needs 6-window confirmation sweep** before integration — was run on 5 windows, not standard harness.
 
 ---
 
@@ -99,11 +116,12 @@ REGIME_LOOKBACK   = 42     // joint regime sweep winner
 
 | Blind Spot | Severity | Status |
 |---|---|---|
-| Fee cancel bug (T35) | CRITICAL | Walkforward runs 0-fee. All Sharpe inflated. FIXED 2026-04-30. |
-| Live bot dual-exit gap | HIGH | T34 — unverified claim removed from bot.rs. ATR_RANK=5 validated Turtle-only and integrated into live entries. |
-| S6 validation gap | MEDIUM | S6 close_losers I=5 needs Turtle-only validation before production. |
-| 2026 YTD root cause | MEDIUM | Regime-inherent or live divergence? Need live data to answer. |
-| No live testnet | CRITICAL | 4+ weeks blocked. Only honest validation path. |
+| **Regime ATR AP=12: found but not integrated** | HIGH | +78% Sharpe, 2,688 configs. config.rs still TURTLE_ATR_PERIOD=24. Same pattern as EP=24. |
+| **ATR_RANK=5: validated but not in config.rs** | HIGH | 9/9 Turtle-only positive. No held-out needed. Ready to integrate. |
+| **S6 Turtle-only validation: still pending** | MEDIUM | Found 2026-04-30 midday, not run in 16+ hours. |
+| **Fee cancel bug (T35)** | CRITICAL | Walkforward runs 0-fee. FIXED 2026-04-30. |
+| **Research loop: finding ≠ integrated** | HIGH | We announce Discord results but don't edit config.rs. |
+| **Live testnet** | CRITICAL | 4+ weeks blocked. Only honest validation path. |
 
 ---
 
@@ -115,6 +133,8 @@ REGIME_LOOKBACK   = 42     // joint regime sweep winner
 | ATR_ENTRY_MULT 201-value | EM=0.00 | Confirmed on current params. EM=0.94 held-out REJECTED. |
 | HOLD_MAX [1..100] | HM=12 | Confirmed again on fresh production params. |
 | Donchian sleeve | REJECTED | 9-universe 34/54 pass (63%) < 69.1% guardrail. |
-| VOL_LOOKBACK 90 | REVERTED | Same-harness spiral. VL=8 confirmed. |
+| VOL_LOOKBACK 90 | UNINTEGRATED | Announced in Discord, not in config.rs. Same-harness artifact risk. |
 | trim_losers I=5 | REJECTED | DD improved but Sharpe identical. |
 | Fee cancel bug (T35) | BUG FIXED | Walkforward (1-fee)/(1-fee) = zero fee. FIXED. |
+| ATR_ENTRY_MULT=0.94 | REJECTED | Held-out: 10/18 vs baseline 11/18. EM=0.00 remains. |
+| Mid-caps (BNB/LINK/AVAX/MATIC/UNI) | REJECTED | 60% pass < 70% threshold. |

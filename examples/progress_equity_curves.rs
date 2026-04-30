@@ -77,7 +77,59 @@ const TURTLE_EP: usize = 21;       // REVERTED 2026-04-26: EP=24 was in-sample i
 const TURTLE_HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 on production engine
 
 // === DOLLAR-VOLUME RANKING: VL=2 (hyperopt 2026-04-17: VL=55 REVERTED — overfits W04/W05 held-out data) ===
-const VOL_LOOKBACK: usize = 2; // hyperopt 2026-04-17: VL=55 overfits held-out W04/W05. VL=2 is production default.
+const REGIME_ATR_PERIOD: usize = 12;  // hyperopt 2026-04-30: AP=12 wins vs old AP=21
+const REGIME_LOOKBACK: usize = 42; // hyperopt 2026-04-30: LB=42 wins vs old LB=252
+const ATR_RANK_THRESH: f64 = 5.0;  // hyperopt 2026-04-30: T=5 wins — top 5% BTC ATR percentile rank
+const VOL_LOOKBACK: usize = 2;     // hyperopt 2026-04-17: VL=55 overfits held-out W04/W05. VL=2 is production default.
+
+// --- BTC ATR percentile rank computation (sliding window, no look-ahead) ---
+fn btc_atr_percentile_rank(
+    btc_high: &[f64],
+    btc_low: &[f64],
+    btc_close: &[f64],
+    atr_period: usize,
+    lookback: usize,
+    idx: usize,
+) -> f64 {
+    if idx < atr_period.max(lookback) {
+        return 50.0; // neutral mid-point before warmup
+    }
+    // Current ATR
+    let mut trs_curr = Vec::with_capacity(atr_period);
+    for i in (idx + 1 - atr_period)..=idx {
+        let h = btc_high.get(i).copied().unwrap_or(0.0);
+        let l = btc_low.get(i).copied().unwrap_or(0.0);
+        let c0 = btc_close.get(i.saturating_sub(1)).copied().unwrap_or(0.0);
+        trs_curr.push((h - l).max((h - c0).abs()).max((l - c0).abs()));
+    }
+    let curr_atr = if trs_curr.is_empty() {
+        return 50.0;
+    } else {
+        trs_curr.iter().sum::<f64>() / atr_period as f64
+    };
+    // Historical ATRs over lookback window
+    let mut hist_atrs = Vec::with_capacity(lookback);
+    for j in (idx + 1 - lookback)..=idx {
+        if j < atr_period {
+            continue;
+        }
+        let mut trs = Vec::with_capacity(atr_period);
+        for i in (j + 1 - atr_period)..=j {
+            let h = btc_high.get(i).copied().unwrap_or(0.0);
+            let l = btc_low.get(i).copied().unwrap_or(0.0);
+            let c0 = btc_close.get(i.saturating_sub(1)).copied().unwrap_or(0.0);
+            trs.push((h - l).max((h - c0).abs()).max((l - c0).abs()));
+        }
+        if !trs.is_empty() {
+            hist_atrs.push(trs.iter().sum::<f64>() / atr_period as f64);
+        }
+    }
+    if hist_atrs.is_empty() {
+        return 50.0;
+    }
+    let below = hist_atrs.iter().filter(|&&v| v < curr_atr).count() as f64;
+    (below / hist_atrs.len() as f64) * 100.0
+}
 
 fn rolling_dv(close: &[f64], vol: &[f64], lookback: usize, bar: usize) -> f64 {
     let mut sum = 0.0_f64;
@@ -251,7 +303,14 @@ async fn main() -> Result<()> {
 
     // Turtle+Chandelier: uses CHAND(15,1.50)+ATR(24,2.0) DUAL EXIT — updated 2026-04-20
     // Params: CHAND_P=11, CHAND_M=2.25, TURTLE_ATR_P=24, TURTLE_ATR_M=2.0, VOL_LOOKBACK=2
-    let turtle_daily = simulate_turtle_chandelier_equity(&universe)?;
+    let btc_df = universe.data.iter()
+        .find(|(s, _)| *s == BENCHMARK)
+        .map(|(_, df)| df)
+        .unwrap_or_else(|| &universe.data.first().unwrap().1);
+    let btc_close: Vec<f64> = btc_df.column("close")?.f64()?.into_iter().filter_map(|x|x).collect();
+    let btc_high: Vec<f64> = btc_df.column("high")?.f64()?.into_iter().filter_map(|x|x).collect();
+    let btc_low:  Vec<f64> = btc_df.column("low")?.f64()?.into_iter().filter_map(|x|x).collect();
+    let turtle_daily = simulate_turtle_chandelier_equity(&universe, &btc_close, &btc_high, &btc_low)?;
 
     // Export CSV
     let mut csv = String::from(
@@ -669,11 +728,16 @@ fn turtle_signal(close: &[f64], _high: &[f64], entry_period: usize, idx: usize) 
 }
 
 /// Turtle+Chandelier equity using product-of-returns (mirrors walk-forward harness).
-fn simulate_turtle_chandelier_equity(universe: &UniverseData) -> Result<Vec<f64>> {
+fn simulate_turtle_chandelier_equity(
+    universe: &UniverseData,
+    btc_close: &[f64],
+    btc_high: &[f64],
+    btc_low: &[f64],
+) -> Result<Vec<f64>> {
     struct Sym { close: Vec<f64>, high: Vec<f64>, low: Vec<f64>, vol: Vec<f64> }
 
     let min_len = universe.data.iter().map(|(_, df)| df.height()).min().unwrap_or(0);
-    let warmup = CHAND_P.max(TURTLE_ATR_P).max(TURTLE_EP) + TURTLE_ATR_P;
+    let warmup = CHAND_P.max(TURTLE_ATR_P).max(TURTLE_EP).max(REGIME_ATR_PERIOD + REGIME_LOOKBACK) + TURTLE_ATR_P;
     let total = min_len;
 
     // Build symbol data

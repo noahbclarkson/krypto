@@ -2,13 +2,9 @@
 # NOTE: sharpe_methodology is required. DDBudget's reported Sharpe is milestone-aggregated and not comparable to Turtle's daily compounded equity Sharpe.
 date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades
 2026-04-30,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
-2026-04-30,FactorSmallByDV,14.8x,1.97,fixed_hold_daily_equity,1257
-2026-04-30,DDBudget 3-Sleeve,61.3x,7.24,milestone_aggregated_not_comparable,776
-2026-04-30,Turtle+Chandelier,221.1x,1.04,daily_compounded_equity,397
-methodology: daily_equity_sharpe = compounded daily returns × √252 / std
-NOTE: DDBudget uses milestone-aggregated Sharpe (mean of per-period Sharpe ratios).
-      This inflates the number ~7x vs true daily equity Sharpe.
-      Compare: DDBudget 61.3x vs Turtle 221.1x — Turtle has MORE real return but lower milestone Sharpe.
+2026-04-30,FactorSmallByDV,15.0x,1.97,fixed_hold_daily_equity,1257
+2026-04-30,DDBudget 3-Sleeve,62.5x,7.22,milestone_aggregated_not_comparable,776
+2026-04-30,Turtle+Chandelier,124.1x,1.00,daily_compounded_equity,397
 2026-04-29,Turtle+Chandelier,221.5x,1.04,daily_equity_compounded,397
 2026-04-29,DDBudget 3-Sleeve,61.3x,7.24,milestone_aggregated_inflated,776
 2026-04-29,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
