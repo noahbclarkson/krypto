@@ -577,3 +577,49 @@ Ran definitive current-params sweep for `ATR_ENTRY_MULT` because prior EM justif
 Result: `EM=0.94` is robustness candidate: **42/54 pass (77.8%)**, avg Sharpe **5.34**, avg return **+73.0%**, avg DD **28.3%**, 486 trades. Baseline `EM=0.00`: **40/54 pass (74.1%)**, Sharpe **3.147**, +105.3%, DD 35.4%, 721 trades. `EM=1.07` has highest credible Sharpe (7.86) but lower pass rate (41/54), so robustness-first winner is 0.94.
 
 Interpretation: ATR entry filter interacts with tight `CHAND_PERIOD=7`; non-zero EM blocks weak breakouts that tight Chandelier stops quickly whipsaw. **No default change yet** because EM=0.94 was selected on the same WF grid; requires held-out validation before production promotion. Current `ATR_ENTRY_MULT=0.00` remains stable default. Files: `snapshots/atr_entry_mult_current_{sweep,summary,equity}.csv`, `charts/comparison_chart.png`, `memory/hyperopt-2026-04-29.md` addendum.
+
+## 2026-04-30 — Critique Cycle: Confirmation Spiral, Not Discovery Loop
+
+**Session: Fifth Critique Cycle | Kira | 2026-04-30 00:41 UTC**
+
+### Key Critique: Research Loop Is a Confirmation Spiral
+
+We declared "research loop CLOSED" after ATR_EMA [1..200] × 10,800 runs = NULL. But ATR_EMA was already confirmed NULL at [1..30] on 2026-04-17. We ran the same test at higher resolution and called it new research. That's not discovery — that's spinning.
+
+Same pattern: ATR_ENTRY_MULT 201-value sweep (0.00..=2.00 step 0.01) confirmed EM=0.00 on current params. ATR_ENTRY_MULT was already confirmed null on stale params. We ran 201 values instead of 41 and called it comprehensive. It's not — it's confirmation.
+
+ATR_ENTRY_MULT=0.94 candidate is real (42/54 pass, Sharpe 5.34 vs baseline 40/54/3.15). But it was found on the same WF grid it would need to be validated against. Anti-overfit discipline correctly kept production at EM=0.00. But the process was confirmation, not discovery.
+
+**The loop closes when we stop running hyperopts and start building T31/T32 and continuous funding observer monitoring.**
+
+### What We Got Right
+
+1. T29 funding observer: built and ran correctly via live Binance public API (no keys needed)
+2. T30 mid-cap rejection: correctly rejected at 60% pass rate (below 70% threshold)
+3. Anti-overfit discipline held: EM=0.94 correctly not promoted
+4. Equity bug: FIXED (e55659e8 off-by-one correction)
+
+### Genuinely Overdue Items
+
+1. **T31 Donchian sleeve:** Identified as HIGH priority in 2026-04-29 critique. Not built in 2 sessions. This is avoidance, not rigor. Build `examples/donchian_sleeve_walkforward.rs`.
+2. **T32 Sharpe methodology fix:** DDBudget 7.24 vs Turtle 1.04 — incomparable methodologies in `daily_progress.csv`. Identified 2026-04-29, not fixed. Add methodology column or recompute DDBudget on daily equity.
+3. **Funding observer continuous monitoring:** T29 built but not running continuously. Need hourly monitoring script.
+
+### Reports Directory Health Check
+
+- `daily_progress.csv`: DDBudget (milestone-aggregated Sharpe ~7x inflated) compared directly to Turtle (daily equity Sharpe). Apples-to-oranges. Any reader concludes DDBudget is 7x better — wrong.
+- Equity curves from `progress_equity_curves.rs`: CORRECT for Turtle (221.5x, Sharpe 1.04). Bug fixed.
+- Sharpe methodology mismatch is the single most important reporting integrity problem.
+
+### Biggest Blind Spot
+
+**Research loop is NOT closed — it's spinning.** ATR_EMA [1..200] re-confirmed NULL. ATR_ENTRY_MULT 201-value sweep re-confirmed EM=0.00. Both were already settled. We're confirming, not discovering.
+
+### Project Status (2026-04-30)
+
+**Research loop: NOT CLOSED. CONFIRMATION SPIRAL.**
+- All hyperopts on historical data exhausted
+- ATR_ENTRY_MULT=0.94 is the one live candidate (needs held-out validation)
+- T31/T32 overdue (2+ sessions not built)
+- Funding observer: built but not continuously monitoring
+- **Only live testnet advances the project (BLOCKED on Noah's API keys — 4+ weeks)**
