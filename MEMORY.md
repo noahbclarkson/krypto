@@ -651,3 +651,18 @@ T31 75/25 Turtle+Donchian sleeve is **REJECTED** after full 9-universe validatio
 - Decision: **REJECTED** because global pass 63.0% is below the T31 guardrail 69.1% (production baseline 74.1% minus 5pp). Do not promote Donchian sleeve or re-sweep nearby weights without a new mechanism.
 
 Meta-lesson: relative improvement against an internal comparison harness is not enough. Promotion requires the absolute global pass-rate guardrail to clear.
+
+## 2026-04-30 — Fee Accounting Audit
+
+`examples/turtle_chandelier_walkforward.rs` claimed `TAKER_FEE=0.001` (10 bps/side), but applied the same `(1 - fee)` multiplier to entry and exit, so fee impact cancelled in `exit / entry - 1`. The headline 34/54 current-harness pass and avg Sharpe 3.392 are effectively no-fee metrics. Correct-cost sweep (`examples/fee_sweep_walkforward.rs`) tested 0..20 bps/side step 1 across 9 universes × 6 WF windows: pass stayed 34/54, Sharpe degraded smoothly 3.392 (0 bps) → 3.303 (live 4 bps) → 3.170 (10 bps) → 2.950 (20 bps). Edge is robust to realistic fees, but future harnesses must use entry × `(1 + fee)`, exit × `(1 - fee)` before citing fee-adjusted results. Chart: `krypto/charts/comparison_chart.png`.
+
+## 2026-04-30 — S6 Rebalancing 9-Universe Validation
+
+S6 `close_losers I=5` survived the standard 9-universe × 6-window validation and remains a **candidate**, not a production promotion. Harness: `examples/rebalancing_9universe.rs`; outputs: `snapshots/rebalancing_9universe.csv` and `.md`.
+
+Global results:
+- No-rebalancing baseline: 46/54 pass (85.2%), Sharpe +3.828, avg return +87.8%, DD 71.6%, 1455 trades.
+- `close_losers I=5`: 48/54 pass (88.9%, +3.7pp), Sharpe +6.895 (+3.067), avg return +89.9%, DD 71.5%, 1135 trades (turnover down, not up). **Candidate.**
+- `trim_losers I=5`: 51/54 pass (94.4%) and DD 69.9%, but Sharpe identical to baseline (+3.828) and return lower (+81.1%). **Rejected** as no robust risk-adjusted edge.
+
+Interpretation: closing positions down >5% after at least 5 bars appears to remove decaying breakouts without increasing churn. Do not promote blindly while T34 live bot dual-exit divergence remains unresolved and live testnet credentials are missing.
