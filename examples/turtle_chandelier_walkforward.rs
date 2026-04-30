@@ -34,12 +34,12 @@ const CHAND_MULT: f64 = 2.30; // hyperopt 2026-04-25: DENSE sweep M∈[1.50..5.0
 const TURTLE_ENTRY: usize = 21; // REVERTED 2026-04-26: EP=24 was in-sample inflation. Paired held-out: EP=21 27/29 pass / Sharpe 0.18 vs EP=24 25/29 pass / 0.16. See snapshots/t3_ep_paired_held_out.csv. Prior EP sweep (2026-04-20) used stale CHAND(11,2.25) and found EP=24 winner. Revert to EP=21 as documented.
 const TURTLE_ATR_PERIOD: usize = 24; // hyperopt 2026-04-16: ATR=24 wins (+3.6% Sharpe, -10.8pp DD vs ATR=25). Fine sweep 18-35 step=1, 18 values × 9 universes × 54 windows. 7/9 universes agree. Dual exit: Chandelier OR Turtle ATR fires first. See hyperopt-2026-04-16-atr-period.md.
 const ATR_ENTRY_MULT: f64 = 0.00; // REVERTED 2026-04-25: 41-value sweep {0.00-2.00 step 0.05} × 9 universes × 54 windows with CHAND(7,2.30)/EP=24/HM=12. EM=0.00 wins: 83.3% pass, Sharpe 1.87, +151.9% return, 707 trades. Prior EM=0.85 (2026-04-21) was in-sample inflation — both EP=24 and EM=0.85 were optimized on the same OOS validation data. EM=0.00 is the production default.
-// hyperopt 2026-04-28: DENSE re-sweep VL∈[1..100 step 1] × 9 universes × 6 windows on CURRENT production
-// params (CHAND_P=7, CHAND_M=2.30, EP=21, HM=12, ATR=24). VL=8 is the robustness winner:
-// 40/54 pass, 9/9 positive universes, avg Sharpe 3.147, Base5 6/6. Prior VL=9 remains very close
-// (40/54, Sharpe 3.112, Base5 6/6), so the real finding is a stable plateau around 7-9 with 8 as the
-// best default. See snapshots/vl_extensive_current_params_summary.csv and charts/comparison_chart.png.
-const VOL_LOOKBACK: usize = 90; // hyperopt 2026-04-30: 100-value sweep 1..=100; VL=90-100 plateau → 37/54 pass (+3 vs baseline VL=8 at 34/54), Sharpe 4.136 (+31% vs 3.392), DD 73.8% (-5.5pp vs 79.3%); VL=90 is conservative plateau edge. See memory/hyperopt-2026-04-30-vol-lookback.md
+// hyperopt 2026-04-28 + 2026-04-30: VL∈[1..100 step 1] × 9 universes × 6 windows.
+// Re-validated on Base5 (2026-04-30): VL=8 and VL=90 are effectively tied (5/6, same W05 fail).
+// VL=8 has marginally higher Sharpe (1.003 vs 0.995) and is simpler. Reverted to VL=8.
+// VL=90 was a same-harness confirmation spiral (EP=24 pattern). Do NOT resweep.
+// See snapshots/vl_base5_revalidation.csv.
+const VOL_LOOKBACK: usize = 8;
 // ATR_EMA_PERIOD: EMA smoothing of Chandelier ATR values. ATR_EMA=1 = raw SMA ATR (baseline).
 // Extensively swept 2026-04-29: ATR_EMA ∈ [1..200] step 1 × 9 universes × 54 windows.
 // Result: NULL. ATR_EMA=4 wins pass rate (+1 window) but ATR_EMA=1 wins Sharpe (4.12 vs 3.76).

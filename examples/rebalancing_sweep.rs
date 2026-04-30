@@ -27,6 +27,9 @@ const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 const ATR_ENTRY_MULT: f64 = 0.00;
+// T33 base5 revalidation (2026-04-30): VL=90 and VL=8 are effectively tied on Base5.
+// Both 5/6 pass (same W05 failure). Sharpe: 1.003 (VL=8) vs 0.995 (VL=90). Reverted to VL=8.
+// See snapshots/vl_base5_revalidation.csv.
 const VOL_LOOKBACK: usize = 8;
 
 const SYMBOLS: [&str; 6] = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"];
