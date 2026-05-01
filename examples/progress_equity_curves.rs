@@ -310,7 +310,8 @@ async fn main() -> Result<()> {
     let btc_close: Vec<f64> = btc_df.column("close")?.f64()?.into_iter().filter_map(|x|x).collect();
     let btc_high: Vec<f64> = btc_df.column("high")?.f64()?.into_iter().filter_map(|x|x).collect();
     let btc_low:  Vec<f64> = btc_df.column("low")?.f64()?.into_iter().filter_map(|x|x).collect();
-    let turtle_daily = simulate_turtle_chandelier_equity(&universe, &btc_close, &btc_high, &btc_low)?;
+    let turtle_daily = simulate_turtle_chandelier_equity(&universe, &btc_close, &btc_high, &btc_low, false)?;
+    let turtle_daily_rank5 = simulate_turtle_chandelier_equity(&universe, &btc_close, &btc_high, &btc_low, true)?;;
 
     // Export CSV
     let mut csv = String::from(
@@ -330,11 +331,29 @@ async fn main() -> Result<()> {
     fs::write(OUTPUT_CSV, &csv)?;
     eprintln!("CSV written to {}", OUTPUT_CSV);
 
+    // Export ATR_RANK=5 variant CSV
+    let mut csv2 = String::from(
+        "day,ad_equity,small_equity,ddbudget_equity,turtle_equity\n",
+    );
+    for day in 0..=universe.steps {
+        csv2.push_str(&format!(
+            "{},{:.6},{:.6},{:.6},{:.6}\n",
+            day,
+            ad_daily[day],
+            small_daily[day],
+            ddbudget_daily[day],
+            turtle_daily_rank5[day],
+        ));
+    }
+    fs::write("snapshots/progress_equity_curves_atrrank5.csv", &csv2)?;
+    eprintln!("CSV (ATR_RANK=5 variant) written to snapshots/progress_equity_curves_atrrank5.csv");
+
     // Quick summary stats
     let final_ad = ad_daily.last().copied().unwrap_or(1.0);
     let final_small = small_daily.last().copied().unwrap_or(1.0);
     let final_ddbudget = ddbudget_daily.last().copied().unwrap_or(1.0);
     let final_turtle = turtle_daily.last().copied().unwrap_or(1.0);
+    let final_turtle_rank5 = turtle_daily_rank5.last().copied().unwrap_or(1.0);
 
     println!("\nFinal equity multipliers ({} days):", universe.steps);
     println!(
@@ -348,8 +367,6 @@ async fn main() -> Result<()> {
         (final_small - 1.0) * 100.0
     );
     println!(
-    );
-    println!(
         "  DDBudget 3-sleeve:  {:.1}x ({}%)",
         final_ddbudget,
         (final_ddbudget - 1.0) * 100.0
@@ -359,6 +376,11 @@ async fn main() -> Result<()> {
         final_turtle,
         (final_turtle - 1.0) * 100.0
     );
+    println!(
+        "  Turtle ATR_RANK=5:  {:.1}x ({}%)",
+        final_turtle_rank5,
+        (final_turtle_rank5 - 1.0) * 100.0
+    );
     println!("  [MACD+Regime & Blend excluded: 2/7 OOS — GRAVEYARD]");
 
     // Sharpe calculations
@@ -366,12 +388,14 @@ async fn main() -> Result<()> {
     let small_sharpe = calc_sharpe_from_daily(&small_daily);
     let ddbudget_sharpe = calc_sharpe_from_daily(&ddbudget_daily);
     let turtle_sharpe = calc_sharpe_from_daily(&turtle_daily);
+    let turtle_sharpe_rank5 = calc_sharpe_from_daily(&turtle_daily_rank5);
 
     println!("\nAnnualised Sharpe (daily returns):");
     println!("  A/D Momentum:       {:.2}", ad_sharpe);
     println!("  FactorSmallByDV:    {:.2}", small_sharpe);
     println!("  DDBudget 3-sleeve:  {:.2}", ddbudget_sharpe);
     println!("  Turtle+Chandelier:  {:.2}", turtle_sharpe);
+    println!("  Turtle ATR_RANK=5:  {:.2}", turtle_sharpe_rank5);
     println!("  [MACD+Regime & Blend excluded: 2/7 OOS — GRAVEYARD]");
 
     // Write markdown summary
@@ -383,6 +407,7 @@ async fn main() -> Result<()> {
          - FactorSmallByDV: {:.1}x ({:.1}%), Sharpe {:.2} [fixed-hold daily equity]\n\
          - DDBudget 3-Sleeve: {:.1}x ({:.1}%), Sharpe {:.2} [milestone-aggregated; not comparable to Turtle daily equity]\n\
          - Turtle+Chandelier: {:.1}x ({:.1}%), Sharpe {:.2} [daily compounded equity; PRODUCTION CANDIDATE]\n\
+         - Turtle+ATR_RANK=5: {:.1}x ({:.1}%), Sharpe {:.2} [regime filter variant; see snapshots/progress_equity_curves_atrrank5.md]\n\
          [MACD+Regime & Blend excluded: 2/7 OOS pass — GRAVEYARD]\n",
         chrono::Utc::now(),
         label,
@@ -399,9 +424,34 @@ async fn main() -> Result<()> {
         final_turtle,
         (final_turtle - 1.0) * 100.0,
         turtle_sharpe,
+        final_turtle_rank5,
+        (final_turtle_rank5 - 1.0) * 100.0,
+        turtle_sharpe_rank5,
     );
     fs::write(OUTPUT_MD, &md)?;
     println!("\nMarkdown summary written to {}", OUTPUT_MD);
+
+    // Write markdown for ATR_RANK=5 variant
+    let md2 = format!(
+        "# Progress Equity Curves — ATR_RANK=5 Variant\n\nGenerated: {}\n\n\
+         Universe: {} ({})\n\n\
+         This file is the SAME turtle run WITH ATR_RANK=5 entry filter applied.\
+         Compare with snapshots/progress_equity_curves.md for the unfiltered baseline.\n\n\
+         Final equity | Reported Sharpe:\n\
+         - Turtle+ATR_RANK=5: {:.1}x ({:.1}%), Sharpe {:.2} [daily compounded equity]\n\
+         - Comparable baseline (no ATR rank): {:.1}x ({:.1}%), Sharpe {:.2} [daily compounded equity]\n",
+        chrono::Utc::now(),
+        label,
+        universe_symbols.join(", "),
+        final_turtle_rank5,
+        (final_turtle_rank5 - 1.0) * 100.0,
+        turtle_sharpe_rank5,
+        final_turtle,
+        (final_turtle - 1.0) * 100.0,
+        turtle_sharpe,
+    );
+    fs::write("snapshots/progress_equity_curves_atrrank5.md", &md2)?;
+    println!("Markdown variant written to snapshots/progress_equity_curves_atrrank5.md");
 
     Ok(())
 }
@@ -728,11 +778,14 @@ fn turtle_signal(close: &[f64], _high: &[f64], entry_period: usize, idx: usize) 
 }
 
 /// Turtle+Chandelier equity using product-of-returns (mirrors walk-forward harness).
+/// If `use_atr_rank_filter` is true, only enter Turtle positions when
+/// BTC ATR percentile rank >= ATR_RANK_THRESH (regime filter).
 fn simulate_turtle_chandelier_equity(
     universe: &UniverseData,
     btc_close: &[f64],
     btc_high: &[f64],
     btc_low: &[f64],
+    use_atr_rank_filter: bool,
 ) -> Result<Vec<f64>> {
     struct Sym { close: Vec<f64>, high: Vec<f64>, low: Vec<f64>, vol: Vec<f64> }
 
@@ -780,6 +833,20 @@ fn simulate_turtle_chandelier_equity(
         scores.sort_by(|a,b| b.1.partial_cmp(&a.1).unwrap());
         let top: Vec<String> = scores.into_iter().take(POSITION_CAP).map(|(s,_)| s.to_string()).collect();
         if top.is_empty() { in_position = false; bar += 1; continue; }
+
+        // Entry gate: require BTC ATR percentile rank >= threshold (regime filter)
+        if use_atr_rank_filter {
+            let rank = btc_atr_percentile_rank(
+                btc_high, btc_low, btc_close,
+                REGIME_ATR_PERIOD, REGIME_LOOKBACK,
+                bar,
+            );
+            if rank < ATR_RANK_THRESH {
+                equity_curve[bar] = equity;
+                bar += 1;
+                continue;
+            }
+        }
 
         // Try to enter a position
         let mut entered_sym = None;
