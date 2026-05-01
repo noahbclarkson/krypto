@@ -1,6 +1,14 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-01 12:22 UTC. CRITIQUE CYCLE. T38 partial done (45/63 pass / 3.315 Sharpe, live-compatible harness). BUT no equity curve exported, VOL_LOOKBACK undefined in config.rs, progress harness uses VL=2 vs live harness VL=8. Four critical infrastructure gaps remain.**
+**State: 2026-05-01 16:11 UTC. STAGNATING. Turtle daily equity 108.1x (was 110.9x yesterday, -2.5%). Live Turtle-only WF: 71.4% pass / Sharpe 3.315. Research closed. Only live testnet (blocked on Noah's API keys) advances the project.**
+
+---
+
+## Progress: STAGNATING
+- Turtle equity: 110.9x → 108.1x (-2.5%, normal variance)
+- DDBudget: 62.5x → 63.1x (+0.6x, marginal)
+- Walk-forward: Turtle-only live-compatible 45/63 pass / 3.315 Sharpe (stable)
+- Live testnet: BLOCKED on Noah's API keys (4+ weeks)
 
 ---
 
