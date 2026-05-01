@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-04-30 20:05 UTC. ATR_RANK=5 integrated into live bot ✅ but BROKEN in progress equity harness (equity collapsed 221.5x → 124.1x after adding filter). Regime ATR AP=12 partially integrated (config.rs ✅, live stop ATR still TURTLE_ATR_P=24 ❌). S6 close_losers Turtle-only validation PENDING after 3 sessions. Live testnet BLOCKED 4+ weeks.*
+*Last updated: 2026-05-01 00:44 UTC. T38: Live bot exit path UNVERIFIED — may be Turtle-only while walk-forward validates dual Chandelier+Turtle (26pp gap). T39: AP=12 as live Turtle stop identified 2026-04-30, never built. T40: Regime-Adaptive Exit (RAE) — genuinely new mechanism, untested. Live testnet BLOCKED 4+ weeks.*
 
 ---
 
@@ -37,7 +37,27 @@ These are two different things:
 
 ---
 
-## Critical New Insight: Entry Space Is a Trade-Off, Not a New Edge
+---
+
+## NEW CONCEPT: Regime-Adaptive Exit (RAE) — Vol-Conditional Chandelier Multiplier
+
+**Status (2026-05-01):** NEW. Genuinely untested mechanism.
+
+**Why new:** Prior vol-contingent Chandelier (GRAVEYARD) tested uniformly changing the stop MULTIPLIER by vol regime. Result: all configs produced identical results. Mechanism was wrong — uniform multiplier change without period change doesn't alter the trailing stop meaningfully.
+
+**RAE mechanism:** Conditionally adjust CHAND_MULTIPLIER by CURRENT volatility regime, dynamically:
+- High-vol regime (BTC ATR rank > 60th pct): M × 1.1 → looser stop, avoid premature stop-out in volatile trends
+- Low-vol regime (BTC ATR rank < 40th pct): M × 0.9 → tighter stop, capture choppy range breaks faster
+- Neutral regime: M = 2.30 (fixed baseline)
+
+**Why this is different from the GRAVEYARD'd attempt:**
+1. RAE uses ATR percentile rank (same mechanism as ATR_RANK=5 entry filter), not 21-bar realized vol
+2. RAE adjusts multiplier based on CURRENT regime state, not a static schedule
+3. Prior attempt: multiplier=2.0 always won; RAE hypothesizes conditional adjustment wins where uniform fails
+
+**What to build:** `examples/regime_adaptive_exit_walkforward.rs` — sweep high_vol_mult ∈ {1.0, 1.05, 1.1, 1.15} × low_vol_mult ∈ {2.0, 2.1, 2.2, 2.3} × 9 universes × 6 windows.
+
+**Reject if:** Pass rate or Sharpe degrades vs fixed M=2.30 baseline. If no improvement: vol-conditional exit space is truly exhausted.
 
 **Donchian result (T19, 2026-04-28) changes the picture:**
 
