@@ -7,6 +7,8 @@
 //! - Turtle-only long exit: highest_high - ATR_MULT * ATR
 //! - ATR buffer seeded with TURTLE_ATR_PERIOD
 //! - HOLD_MAX enforced independent of ATR warmup
+//!
+//! Exports per-universe equity curves to CSV and a summary markdown report.
 
 use anyhow::Result;
 use krypto::data::loader::DataLoader;
@@ -176,8 +178,6 @@ fn run_sim(
                         let entry_px = sd.close[bar];
                         let mut size_mult = 1.0;
                         if let Some(b) = btc {
-                            // USDT high-vol sizing overlay:
-                            // If current 21d ATR > 75th pct of 252d history, size = 0.70
                             if bar >= 252 + 21 {
                                 let atr_21 = atr_at(&b.high, &b.low, &b.close, 21, bar);
                                 let mut hist = Vec::with_capacity(252);
@@ -199,7 +199,6 @@ fn run_sim(
                         let entry_bar_next = bar + 1;
                         let n = sd.close.len();
 
-                        // Live Bot semantics
                         let mut highest_high = sd.high[entry_bar_next];
                         let max_bar = (entry_bar_next + HOLD_MAX).min(n.saturating_sub(1));
                         let mut exit_bar = max_bar;
@@ -225,7 +224,6 @@ fn run_sim(
 
                         if let Some(&exit_px) = sd.close.get(exit_bar) {
                             let exit = exit_px * (1.0 - TAKER_FEE);
-                            // apply sizing
                             let pct_ret = exit / entry - 1.0;
                             let gross_ret = pct_ret * size_mult;
                             
@@ -289,7 +287,7 @@ async fn main() -> Result<()> {
     let mut sharpes = vec![];
     let mut rets = vec![];
 
-    for (u_name, u_syms) in UNIVERSES {
+    for (_, u_syms) in UNIVERSES {
         let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
         for w in 0..windows {
             let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
@@ -310,9 +308,91 @@ async fn main() -> Result<()> {
     println!("Live Compatible WF: {}/{} pass ({:.1}%), Avg Sharpe: {:.3}, Avg Ret: {:.1}%", 
         passes, total, (passes as f64 / total as f64) * 100.0, avg_sharpe, avg_ret);
 
-    let mut summary = File::create("snapshots/live_compatible_summary.txt")?;
-    writeln!(summary, "Live Compatible WF: {}/{} pass ({:.1}%), Avg Sharpe: {:.3}, Avg Ret: {:.1}%", 
-        passes, total, (passes as f64 / total as f64) * 100.0, avg_sharpe, avg_ret)?;
+    // Export equity per universe
+    for (u_name, u_syms) in UNIVERSES {
+        let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
+        let csv_path = format!("snapshots/live_compatible_{}_equity.csv", u_name);
+        let mut f = File::create(&csv_path)?;
+        writeln!(f, "window,equity")?;
+        
+        for w in 0..windows {
+            let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
+            let end = start + TEST_BARS + TRAIN_BARS;
+            let res = run_sim(&sym_data, &syms, start + TRAIN_BARS, end);
+            writeln!(f, "{},{:.6}", w, res.equity)?;
+        }
+        println!("Exported {} equity to {}", u_name, csv_path);
+    }
+
+    // Base5 aggregate equity (compounded across windows)
+    {
+        let base5_syms: Vec<String> = UNIVERSES[0].1.iter().map(|&s| s.to_string()).collect();
+        let mut agg_equity = 1.0_f64;
+        let mut f = File::create("snapshots/live_compatible_base5_daily.csv")?;
+        writeln!(f, "window,equity")?;
+        
+        for w in 0..windows {
+            let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
+            let end = start + TEST_BARS + TRAIN_BARS;
+            let res = run_sim(&sym_data, &base5_syms, start + TRAIN_BARS, end);
+            agg_equity *= res.equity;
+            writeln!(f, "{},{:.6}", w, agg_equity)?;
+        }
+        println!("Base5 aggregate equity: {:.6}x ({} windows)", agg_equity, windows);
+    }
+
+    // Write summary markdown
+    let md_path = "snapshots/live_compatible_wf.md";
+    let mut f = File::create(md_path)?;
+    writeln!(f, "# Live-Compatible Walk-Forward Results")?;
+    writeln!(f, "")?;
+    writeln!(f, "**Strategy:** Turtle-only exit (matching `src/live/bot.rs` after 2026-05-01 bug fix)")?;
+    writeln!(f, "- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=12, LB=42, T=5) gate")?;
+    writeln!(f, "- Exit: Turtle ATR trailing stop (AP=24, M=2.0) + HOLD_MAX=12")?;
+    writeln!(f, "- Risk overlay: USDT 30% size when BTC 21d ATR > 75th pct of 252d history")?;
+    writeln!(f, "- Fee: 0.10% taker (both sides)")?;
+    writeln!(f, "- VOL_LOOKBACK: {}", VOL_LOOKBACK)?;
+    writeln!(f, "")?;
+    writeln!(f, "## Global Results ({}/{} pass, {}-bar windows)", passes, total, TEST_BARS)?;
+    writeln!(f, "| Metric | Value |")?;
+    writeln!(f, "|--------|-------|")?;
+    writeln!(f, "| Pass Rate | {}/{} ({:.1}%) |", passes, total, (passes as f64/total as f64)*100.0)?;
+    writeln!(f, "| Avg Sharpe | {:.3} |", avg_sharpe)?;
+    writeln!(f, "| Avg Return | {:.1}% |", avg_ret)?;
+    writeln!(f, "")?;
+    writeln!(f, "## Per-Universe Summary")?;
+    writeln!(f, "| Universe | Pass | Sharpe | Return% | DD% | Trades |")?;
+    writeln!(f, "|----------|-------|--------|---------|-----|--------|")?;
+    
+    for (u_name, u_syms) in UNIVERSES {
+        let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
+        let mut u_passes = 0usize;
+        let mut u_sharpes = vec![];
+        let mut u_rets = vec![];
+        let mut u_dds = vec![];
+        let mut u_trades = vec![];
+        
+        for w in 0..windows {
+            let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
+            let end = start + TEST_BARS + TRAIN_BARS;
+            let res = run_sim(&sym_data, &syms, start + TRAIN_BARS, end);
+            if res.trades >= MIN_TRADES && res.sharpe > 0.0 { u_passes += 1; }
+            u_sharpes.push(res.sharpe);
+            u_rets.push((res.equity - 1.0) * 100.0);
+            u_dds.push(res.dd);
+            u_trades.push(res.trades);
+        }
+        let n = windows as f64;
+        let avg_s = u_sharpes.iter().sum::<f64>() / n;
+        let avg_r = u_rets.iter().sum::<f64>() / n;
+        let avg_d = u_dds.iter().sum::<f64>() / n;
+        let tot_t: usize = u_trades.iter().sum();
+        writeln!(f, "| {} | {}/{} | {:.2} | {:.1}% | {:.1}% | {} |",
+            u_name, u_passes, windows, avg_s, avg_r, avg_d, tot_t)?;
+    }
+    writeln!(f, "")?;
+    writeln!(f, "*Pass = windows with ≥{} trades AND Sharpe>0 / total windows.*", MIN_TRADES)?;
+    println!("Markdown summary written to {}", md_path);
 
     Ok(())
 }
