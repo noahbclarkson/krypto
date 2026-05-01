@@ -30,7 +30,7 @@ HOLD_MAX        = 12     // Max hold bars
 POSITION_CAP    = 3      // Max concurrent positions
 REGIME_ATR_P    = 12     // BTC ATR period for regime filter
 REGIME_LOOKBACK = 42     // BTC ATR percentile lookback
-ATR_RANK_THRESH = 5.0    // Minimum BTC ATR percentile rank for entries
+ATR_RANK_THRESH = 24.0   // hyperopt 2026-05-01: T=24 wins T=5 52/63 pass (82.5%) vs 45/63 (71.4%). ALL 9 universes 9-0 on OOS Sharpe. T=24 plateau T=24-27 identical.
 ```
 
 **Validation evidence:**
@@ -40,7 +40,7 @@ ATR_RANK_THRESH = 5.0    // Minimum BTC ATR percentile rank for entries
 - Pre-2021 held-out stress: 19/28 (67.9%)
 - T22 exit attribution: Chandelier adds secondary robustness; live bot currently uses Turtle ATR as sole live exit
 - 2026-05-01 caveat: live Turtle-only exit implementation was bug-fixed (`highest_high - ATR`, ATR buffer seeded with `TURTLE_ATR_PERIOD`, HOLD_MAX enforced independently). Prior Turtle-only live-path metrics need revalidation under corrected semantics.
-- ATR_RANK=5: validated under dual-exit and prior Turtle-only logic; keep integrated, but do not cite Turtle-only validation as authoritative until rerun after the 2026-05-01 live stop fix.
+- ATR_RANK=24: PRODUCTION DEFAULT — live bot validated 52/63 pass (82.5%), Sharpe 5.590, +132.3% avg return. T=24 beats T=5 in ALL 9 universes 9-0 on OOS Sharpe. Promoted from candidate after live_compatible_wf re-run (2026-05-01).
 - Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76–0.87)
 
 **Fee model:** 0.04% taker fee in live dry-run; prior execution realism suggested ~22–33% Sharpe degradation under realistic costs.
