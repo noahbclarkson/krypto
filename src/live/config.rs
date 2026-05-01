@@ -32,7 +32,7 @@ pub const HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe
 pub const POSITION_CAP: usize = 3; // CONFIRMED 2026-04-27 under current Turtle-only live logic. Extensive 10-value sweep CAP∈[1..10] across 9 universes × 6 walk-forward windows: CAP=3 is robustness winner (72.2% pass, Sharpe 4.58, 9/9 positive universes). CAP=4-10 chase more return but materially degrade pass rate to 61.1%-57.4%. See memory/hyperopt-2026-04-27.md.
 pub const REGIME_ATR_PERIOD: usize = 12; // hyperopt 2026-04-30: joint regime ATR sweep AP=5..60 × LB∈{21,42,63,126,252,504} × T∈{0,5,10,15,20,25,30,40}. AP=12/LB=42/T=5 wins Sharpe 1.499 vs baseline AP=21/LB=252/T=0 at 0.840. See memory/hyperopt-2026-04-30.md.
 pub const REGIME_LOOKBACK: usize = 42; // hyperopt 2026-04-30: 42-bar BTC ATR percentile lookback dominates; old 252-bar one-year lookback was worst decile.
-pub const ATR_RANK_THRESHOLD: f64 = 5.0; // validated 2026-04-30 under dual-exit and Turtle-only logic. Enter Turtle breakouts only when BTC ATR percentile rank >= 5 (filters lowest-vol chop).
+pub const ATR_RANK_THRESHOLD: f64 = 5.0; // SWEEP UPGRADED 2026-05-01: Extensive sweep T∈[0..=100 step 1] × 9 universes × 7 windows. T=5 was coarse guess from 21-value grid (2026-04-30). New sweep: T=24 wins on robustness (52/63 pass, Sharpe 5.59, +132% return). T=39 is runner-up (50/63 pass, Sharpe 7.06). T=5 (current) is mediocre: 45/63 pass, Sharpe 3.31. See memory/hyperopt-2026-05-01-atr-rank-threshold.md. RECOMMEND: T=24 for production (higher return, same pass rate as T=5, much better Sharpe).
 
 /// Configuration for live trading bot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
