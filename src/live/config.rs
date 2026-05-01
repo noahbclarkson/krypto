@@ -32,7 +32,14 @@ pub const HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe
 pub const POSITION_CAP: usize = 3; // CONFIRMED 2026-04-27 under current Turtle-only live logic. Extensive 10-value sweep CAP∈[1..10] across 9 universes × 6 walk-forward windows: CAP=3 is robustness winner (72.2% pass, Sharpe 4.58, 9/9 positive universes). CAP=4-10 chase more return but materially degrade pass rate to 61.1%-57.4%. See memory/hyperopt-2026-04-27.md.
 pub const REGIME_ATR_PERIOD: usize = 12; // hyperopt 2026-04-30: joint regime ATR sweep AP=5..60 × LB∈{21,42,63,126,252,504} × T∈{0,5,10,15,20,25,30,40}. AP=12/LB=42/T=5 wins Sharpe 1.499 vs baseline AP=21/LB=252/T=0 at 0.840. See memory/hyperopt-2026-04-30.md.
 pub const REGIME_LOOKBACK: usize = 42; // hyperopt 2026-04-30: 42-bar BTC ATR percentile lookback dominates; old 252-bar one-year lookback was worst decile.
-pub const ATR_RANK_THRESHOLD: f64 = 5.0; // SWEEP UPGRADED 2026-05-01: Extensive sweep T∈[0..=100 step 1] × 9 universes × 7 windows. T=5 was coarse guess from 21-value grid (2026-04-30). New sweep: T=24 wins on robustness (52/63 pass, Sharpe 5.59, +132% return). T=39 is runner-up (50/63 pass, Sharpe 7.06). T=5 (current) is mediocre: 45/63 pass, Sharpe 3.31. See memory/hyperopt-2026-05-01-atr-rank-threshold.md. RECOMMEND: T=24 for production (higher return, same pass rate as T=5, much better Sharpe).
+pub const ATR_RANK_THRESHOLD: f64 = 24.0; // hyperopt 2026-05-01: EXTENSIVE sweep T∈[0..=100 step 1] × 9 universes × 7 windows. T=24 wins: 52/63 pass, Sharpe 5.59, +132% return, geomean 21.5x. T=5 (old default): 45/63 pass, Sharpe 3.31. T=24 wins ALL 9 universes 9-0 on OOS Sharpe vs T=5. T=24 sits in plateau T=24-27 identical. See memory/hyperopt-2026-05-01-atr-rank-threshold.md.
+
+/// Volume lookback window for dollar-volume ranking (default: 8)
+/// hyperopt 2026-04-28: Extensive sweep VL∈[1..=100] × 9 universes × 6 WF windows.
+/// VL=96 wins: 37/54 pass, Sharpe 4.241, 9/9 positive universes. VL=8 baseline: 34/54 pass.
+/// However, VL=96 is same-harness artifact risk (EP=24 pattern). Until Base5-only confirmation,
+/// conservative default stays VL=8. T37 is the Base5-only validation task.
+pub const VOL_LOOKBACK: usize = 8;
 
 /// Configuration for live trading bot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -86,9 +93,12 @@ pub struct LiveConfig {
     /// BTC ATR percentile lookback for regime filter (default: 42)
     #[serde(default = "default_regime_lookback")]
     pub regime_lookback: usize,
-    /// Minimum BTC ATR percentile rank required for new entries (default: 5.0)
+    /// Minimum BTC ATR percentile rank required for new entries (default: 24.0)
     #[serde(default = "default_atr_rank_threshold")]
     pub atr_rank_threshold: f64,
+    /// Volume lookback window for dollar-volume ranking (default: 8)
+    #[serde(default = "default_vol_lookback")]
+    pub vol_lookback: usize,
     // --- Legacy fields (kept for backward compat, unused by signal logic) ---
     #[serde(default = "default_bb_period")]
     pub bb_period: usize,
@@ -104,6 +114,7 @@ fn default_atr_stop_mult() -> f64 { TURTLE_ATR_MULT }
 fn default_regime_atr_period() -> usize { REGIME_ATR_PERIOD }
 fn default_regime_lookback() -> usize { REGIME_LOOKBACK }
 fn default_atr_rank_threshold() -> f64 { ATR_RANK_THRESHOLD }
+fn default_vol_lookback() -> usize { VOL_LOOKBACK }
 
 impl Default for LiveConfig {
     fn default() -> Self {
@@ -130,6 +141,7 @@ impl Default for LiveConfig {
             regime_atr_period: REGIME_ATR_PERIOD,
             regime_lookback: REGIME_LOOKBACK,
             atr_rank_threshold: ATR_RANK_THRESHOLD,
+            vol_lookback: VOL_LOOKBACK,
             // Legacy
             bb_period: TURTLE_EP,
             bb_std: CHAND_MULT,

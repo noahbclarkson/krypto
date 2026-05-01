@@ -33,7 +33,7 @@ const VOL_LOOKBACK: usize = 8; // production baseline
 
 const REGIME_ATR_PERIOD: usize = 12;
 const REGIME_LOOKBACK: usize = 42;
-const ATR_RANK_T: f64 = 5.0;
+const ATR_RANK_T: f64 = 24.0; // Updated 2026-05-01: T=24 wins T=24-27 plateau; T=5 was mediocre (45/63 pass, Sharpe 3.31). See memory/hyperopt-2026-05-01-atr-rank-threshold.md.
 
 const UNIVERSES: &[(&str, &[&str])] = &[
     ("Base5",        &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]),

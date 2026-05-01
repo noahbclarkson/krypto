@@ -311,7 +311,7 @@ async fn main() -> Result<()> {
     let btc_high: Vec<f64> = btc_df.column("high")?.f64()?.into_iter().filter_map(|x|x).collect();
     let btc_low:  Vec<f64> = btc_df.column("low")?.f64()?.into_iter().filter_map(|x|x).collect();
     let turtle_daily = simulate_turtle_chandelier_equity(&universe, &btc_close, &btc_high, &btc_low, false)?;
-    let turtle_daily_rank24 = simulate_turtle_chandelier_equity(&universe, &btc_close, &btc_high, &btc_low, true)?;;
+    let turtle_daily_rank5 = simulate_turtle_chandelier_equity(&universe, &btc_close, &btc_high, &btc_low, true)?;;
 
     // Export CSV
     let mut csv = String::from(
@@ -331,7 +331,7 @@ async fn main() -> Result<()> {
     fs::write(OUTPUT_CSV, &csv)?;
     eprintln!("CSV written to {}", OUTPUT_CSV);
 
-    // Export ATR_RANK=24 variant CSV
+    // Export ATR_RANK=5 variant CSV
     let mut csv2 = String::from(
         "day,ad_equity,small_equity,ddbudget_equity,turtle_equity\n",
     );
@@ -342,18 +342,18 @@ async fn main() -> Result<()> {
             ad_daily[day],
             small_daily[day],
             ddbudget_daily[day],
-            turtle_daily_rank24[day],
+            turtle_daily_rank5[day],
         ));
     }
-    fs::write("snapshots/progress_equity_curves_atrrank24.csv", &csv2)?;
-    eprintln!("CSV (ATR_RANK=24 variant) written to snapshots/progress_equity_curves_atrrank24.csv");
+    fs::write("snapshots/progress_equity_curves_atrrank5.csv", &csv2)?;
+    eprintln!("CSV (ATR_RANK=5 variant) written to snapshots/progress_equity_curves_atrrank5.csv");
 
     // Quick summary stats
     let final_ad = ad_daily.last().copied().unwrap_or(1.0);
     let final_small = small_daily.last().copied().unwrap_or(1.0);
     let final_ddbudget = ddbudget_daily.last().copied().unwrap_or(1.0);
     let final_turtle = turtle_daily.last().copied().unwrap_or(1.0);
-    let final_turtle_rank24 = turtle_daily_rank24.last().copied().unwrap_or(1.0);
+    let final_turtle_rank5 = turtle_daily_rank5.last().copied().unwrap_or(1.0);
 
     println!("\nFinal equity multipliers ({} days):", universe.steps);
     println!(
@@ -377,9 +377,9 @@ async fn main() -> Result<()> {
         (final_turtle - 1.0) * 100.0
     );
     println!(
-        "  Turtle ATR_RANK=24:  {:.1}x ({:.1}%)",
-        final_turtle_rank24,
-        (final_turtle_rank24 - 1.0) * 100.0
+        "  Turtle ATR_RANK=5:  {:.1}x ({}%)",
+        final_turtle_rank5,
+        (final_turtle_rank5 - 1.0) * 100.0
     );
     println!("  [MACD+Regime & Blend excluded: 2/7 OOS — GRAVEYARD]");
 
@@ -388,14 +388,14 @@ async fn main() -> Result<()> {
     let small_sharpe = calc_sharpe_from_daily(&small_daily);
     let ddbudget_sharpe = calc_sharpe_from_daily(&ddbudget_daily);
     let turtle_sharpe = calc_sharpe_from_daily(&turtle_daily);
-    let turtle_sharpe_rank24 = calc_sharpe_from_daily(&turtle_daily_rank24);
+    let turtle_sharpe_rank5 = calc_sharpe_from_daily(&turtle_daily_rank5);
 
     println!("\nAnnualised Sharpe (daily returns):");
     println!("  A/D Momentum:       {:.2}", ad_sharpe);
     println!("  FactorSmallByDV:    {:.2}", small_sharpe);
     println!("  DDBudget 3-sleeve:  {:.2}", ddbudget_sharpe);
     println!("  Turtle+Chandelier:  {:.2}", turtle_sharpe);
-    println!("  Turtle ATR_RANK=24:  {:.2}", turtle_sharpe_rank24);
+    println!("  Turtle ATR_RANK=5:  {:.2}", turtle_sharpe_rank5);
     println!("  [MACD+Regime & Blend excluded: 2/7 OOS — GRAVEYARD]");
 
     // Write markdown summary
@@ -407,7 +407,7 @@ async fn main() -> Result<()> {
          - FactorSmallByDV: {:.1}x ({:.1}%), Sharpe {:.2} [fixed-hold daily equity]\n\
          - DDBudget 3-Sleeve: {:.1}x ({:.1}%), Sharpe {:.2} [milestone-aggregated; not comparable to Turtle daily equity]\n\
          - Turtle+Chandelier: {:.1}x ({:.1}%), Sharpe {:.2} [daily compounded equity; PRODUCTION CANDIDATE]\n\
-         - Turtle+ATR_RANK=24: {:.1}x ({:.1}%), Sharpe {:.2} [regime filter T=24; walk-forward: 52/63 pass, Sharpe 5.59, +132% ret. See snapshots/progress_equity_curves_atrrank24.md]\n\
+         - Turtle+ATR_RANK=5: {:.1}x ({:.1}%), Sharpe {:.2} [regime filter variant; see snapshots/progress_equity_curves_atrrank5.md]\n\
          [MACD+Regime & Blend excluded: 2/7 OOS pass — GRAVEYARD]\n",
         chrono::Utc::now(),
         label,
@@ -424,34 +424,34 @@ async fn main() -> Result<()> {
         final_turtle,
         (final_turtle - 1.0) * 100.0,
         turtle_sharpe,
-        final_turtle_rank24,
-        (final_turtle_rank24 - 1.0) * 100.0,
-        turtle_sharpe_rank24,
+        final_turtle_rank5,
+        (final_turtle_rank5 - 1.0) * 100.0,
+        turtle_sharpe_rank5,
     );
     fs::write(OUTPUT_MD, &md)?;
     println!("\nMarkdown summary written to {}", OUTPUT_MD);
 
-    // Write markdown for ATR_RANK=24 variant
+    // Write markdown for ATR_RANK=5 variant
     let md2 = format!(
-        "# Progress Equity Curves — ATR_RANK=24 Variant\n\nGenerated: {}\n\n\
+        "# Progress Equity Curves — ATR_RANK=5 Variant\n\nGenerated: {}\n\n\
          Universe: {} ({})\n\n\
          This file is the SAME turtle run WITH ATR_RANK=5 entry filter applied.\
          Compare with snapshots/progress_equity_curves.md for the unfiltered baseline.\n\n\
          Final equity | Reported Sharpe:\n\
-         - Turtle+ATR_RANK=24: {:.1}x ({:.1}%), Sharpe {:.2} [daily compounded equity]\n\
+         - Turtle+ATR_RANK=5: {:.1}x ({:.1}%), Sharpe {:.2} [daily compounded equity]\n\
          - Comparable baseline (no ATR rank): {:.1}x ({:.1}%), Sharpe {:.2} [daily compounded equity]\n",
         chrono::Utc::now(),
         label,
         universe_symbols.join(", "),
-        final_turtle_rank24,
-        (final_turtle_rank24 - 1.0) * 100.0,
-        turtle_sharpe_rank24,
+        final_turtle_rank5,
+        (final_turtle_rank5 - 1.0) * 100.0,
+        turtle_sharpe_rank5,
         final_turtle,
         (final_turtle - 1.0) * 100.0,
         turtle_sharpe,
     );
-    fs::write("snapshots/progress_equity_curves_atrrank24.md", &md2)?;
-    println!("Markdown variant written to snapshots/progress_equity_curves_atrrank24.md");
+    fs::write("snapshots/progress_equity_curves_atrrank5.md", &md2)?;
+    println!("Markdown variant written to snapshots/progress_equity_curves_atrrank5.md");
 
     Ok(())
 }
