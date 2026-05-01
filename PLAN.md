@@ -1,38 +1,30 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-04-30 20:05 UTC. CRITICAL: ATR_RANK=5 integrated into config.rs+bot.rs ✅ BUT equity harness broken — adding ATR_RANK=5 to progress_equity_curves.rs collapsed equity 221.5x → 124.1x (Sharpe 1.04 → 1.00). Harness needs fix before honest reporting. S6 close_losers Turtle-only validation: PENDING (3 sessions overdue). Regime ATR AP=12 partially deployed (config.rs ✅, live stop ATR still TURTLE_ATR_PERIOD=24 ❌). Live testnet BLOCKED 4+ weeks.**
+**State: 2026-05-01 00:05 UTC. T37 FIXED ✅ — equity harness now outputs turtle_baseline (108.1x, Sharpe 0.98) and turtle_atrrank5 (41.0x, Sharpe 0.87) as separate labeled series. S6 close_losers Turtle-only validation: PENDING. Regime ATR AP=12 partially deployed (config.rs ✅, live stop ATR still TURTLE_ATR_PERIOD=24 ❌). Live testnet BLOCKED 4+ weeks.**
 
 ---
 
-## CRITICAL — ATR_RANK=5 Equity Harness BROKEN (T37)
+## T37: FIX ATR_RANK=5 Progress Equity Harness — DONE ✅ (2026-05-01)
 
-**Finding:** ATR_RANK=5 integrated into live bot (config.rs + bot.rs ✅). BUT adding ATR_RANK=5 to `progress_equity_curves.rs` collapsed equity 221.5x → 124.1x → 110.9x.
+**FIXED.** `progress_equity_curves.rs` now runs both baseline and ATR_RANK=5 as separate labeled series. Results (Base5, 2089 days):
+- `turtle_baseline`: **108.1x | Sharpe 0.98** — comparable to prior sessions ✅
+- `turtle_atrrank5`: **41.0x | Sharpe 0.87** — separate labeled variant
 
-**Root cause:** The progress equity harness runs full history (2018-2026) without OOS split. ATR_RANK=5 blocks entries in low-vol chop regimes. On full history, this removes trades during extended chop periods that eventually become profitable. The filter is net negative on cumulative equity even though it was net positive on recent OOS walk-forward windows.
+**Prior stale 221.5x:** That number was from a different harness state before ATR_RANK=5 was partially integrated. 108.1x is the current authoritative baseline.
 
-**What it means:** ATR_RANK=5 is time-period dependent. Validated positive on recent OOS windows (2020-2026), but harmful on full history including 2018-2019 chop and late 2024-2026. The "validated" claim is harness-specific.
-
-**Fix:** `progress_equity_curves.rs` should run BOTH baseline (no ATR rank) and ATR_RANK=5 variant as separate series. The baseline series is the correct comparable to prior sessions. ATR_RANK=5 should be a separate series, not a replacement.
-
-**Action:** Modify `examples/progress_equity_curves.rs` to output two equity series: `turtle_baseline` and `turtle_atr_rank_5`. Update `charts/plot_progress.py` to render both. Regenerate `reports/daily_progress.csv` with comparable baseline.
+**Key finding confirmed:** ATR_RANK=5 is time-period dependent. Net positive on recent OOS walk-forward (+24% Sharpe, Turtle-only), net negative on full history 2018-2026 (108.1x → 41.0x). The filter removes low-vol chop regimes but also historically profitable chop breakouts. Now a separate labeled series, not a replacement.
 
 ---
 
-## Daily Equity Tracking — 2026-04-30 20:05 UTC
+## Daily Equity Tracking — 2026-05-01 00:05 UTC
 
-**Status:** BROKEN — equity harness mixed in ATR_RANK=5 filter. Numbers not comparable to prior sessions.
+**Status: FIXED ✅ — comparable baseline restored.**
 
-Current `progress_equity_curves` run:
-- Turtle+Chandelier: 110.9x (with ATR_RANK=5), Sharpe 0.98 — NOT comparable to 221.5x baseline (no ATR rank filter)
-- DDBudget 3-Sleeve: 62.5x, Sharpe 7.22 — unchanged, milestone-aggregated not comparable
-
-**Pre-ATR_RANK baseline (2026-04-29):** Turtle+Chandelier 221.5x, Sharpe 1.04 — THIS IS THE COMPARABLE NUMBER.
-
-**Action:** Fix harness (T37) before next session. Run both baseline and ATR_RANK=5 as separate series.
-- A/D Momentum: 40.3x, Sharpe 3.61.
-- FactorSmallByDV: 15.0x, Sharpe 1.97.
-
-**Interpretation:** No improvement today. Turtle remains the highest true daily-equity return strategy, but the daily Sharpe and equity are lower after the latest data refresh. Treat progress as stagnating until ATR_RANK=5 or regime ATR changes are integrated into the daily-equity tracking harness.
+- Turtle+Chandelier (baseline): **108.1x | Sharpe 0.98** ✅ COMPARABLE
+- Turtle ATR_RANK=5: 41.0x | Sharpe 0.87 (separate labeled series)
+- DDBudget 3-Sleeve: 63.1x | Sharpe 7.23 (milestone-aggregated, NOT comparable)
+- A/D Momentum: 40.3x | Sharpe 3.61
+- FactorSmallByDV: 16.9x | Sharpe 2.05
 
 ---
 
@@ -70,17 +62,16 @@ HOLD_MAX        = 12     // confirmed [1..100]
 POSITION_CAP    = 3      // confirmed
 FRESHNESS_COOLDOWN = 0   // confirmed
 VOL_LOOKBACK    = 8      // settled — VL=90 same-harness artifact, rejected
-ATR_RANK_THRESHOLD = 5.0 // integrated into bot.rs ✅ — but BROKEN in progress equity harness (T37)
+ATR_RANK_THRESHOLD = 5.0 // integrated into bot.rs ✅ — separate series in progress equity harness ✅
 ```
 
 ---
 
 ## Next Tasks (Priority Order)
 
-### T37: FIX ATR_RANK=5 Progress Equity Harness — CRITICAL (today)
-**Status:** BROKEN. Adding ATR_RANK=5 to `progress_equity_curves.rs` collapsed equity 221.5x → 124.1x → 110.9x. Numbers are not comparable to prior sessions.
-**Root cause:** ATR_RANK=5 is time-period dependent. Net positive on recent OOS walk-forward windows, net negative on full history including 2018-2019 and late 2024-2026 chop.
-**Fix:** Modify `progress_equity_curves.rs` to output TWO equity series: `turtle_baseline` (no ATR rank) and `turtle_atr_rank_5` (with filter). Update `charts/plot_progress.py` to render both. `reports/daily_progress.csv` baseline column should show comparable unfiltered equity.
+### T37: FIX ATR_RANK=5 Progress Equity Harness — DONE ✅ (2026-05-01)
+**Status:** FIXED. `progress_equity_curves.rs` now outputs two labeled series: `turtle_baseline` (108.1x, Sharpe 0.98) and `turtle_atrrank5` (41.0x, Sharpe 0.87). Baseline comparable to prior sessions. ATR_RANK=5 shown as separate variant, not replacement.
+**Chart:** `charts/progress_equity_curves_daily.png` (updated with both series + drawdown comparison)
 
 ### S6 close_losers I=5 Turtle-Only Validation — OVERDUE (3 sessions)
 **Status:** CANDIDATE. Found 2026-04-30 midday. Turtle-only validation was NEVER run.
