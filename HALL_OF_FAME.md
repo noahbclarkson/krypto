@@ -39,12 +39,13 @@ ATR_RANK_THRESH = 5.0    // Minimum BTC ATR percentile rank for entries
 - Walk-forward (global 9-universe): 34/54 (63.0%)
 - Pre-2021 held-out stress: 19/28 (67.9%)
 - T22 exit attribution: Chandelier adds secondary robustness; live bot currently uses Turtle ATR as sole live exit
-- ATR_RANK=5: validated under both dual-exit and Turtle-only live logic; AP=12/LB=42/T=5 joint regime sweep wins vs old AP=21/LB=252 baseline
+- 2026-05-01 caveat: live Turtle-only exit implementation was bug-fixed (`highest_high - ATR`, ATR buffer seeded with `TURTLE_ATR_PERIOD`, HOLD_MAX enforced independently). Prior Turtle-only live-path metrics need revalidation under corrected semantics.
+- ATR_RANK=5: validated under dual-exit and prior Turtle-only logic; keep integrated, but do not cite Turtle-only validation as authoritative until rerun after the 2026-05-01 live stop fix.
 - Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76–0.87)
 
 **Fee model:** 0.04% taker fee in live dry-run; prior execution realism suggested ~22–33% Sharpe degradation under realistic costs.
 
-**Critical blocker:** Binance testnet API key + secret. All metrics remain simulation upper bounds until 30-day testnet paper trading runs.
+**Critical blocker:** Binance testnet API key + secret. All metrics remain simulation upper bounds until corrected live-path revalidation and 30-day testnet paper trading run.
 
 ---
 

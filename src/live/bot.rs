@@ -388,7 +388,11 @@ impl LiveBot {
 
         // Initialize trailing state
         let mut atr_buf = VecDeque::new();
-        let avail = bars.len().min(self.config.chand_period);
+        // Seed the ATR buffer with the same period used by the live Turtle stop.
+        // Chandelier params are stored for historical compatibility, but the
+        // live exit path is Turtle-only. Using chand_period here made the stop
+        // unavailable until after HOLD_MAX under the default config.
+        let avail = bars.len().min(self.config.atr_period);
         let start = bars.len().saturating_sub(avail);
         for i in 0..avail {
             let idx = start + i;
@@ -520,29 +524,31 @@ impl LiveBot {
             s.atr_buf.pop_front();
         }
 
-        // Compute ATR
-        if s.atr_buf.len() < self.config.atr_period {
-            return None; // Not enough data
-        }
-        let atr = s.atr_buf.iter().sum::<f64>() / self.config.atr_period as f64;
-        if atr <= 0.0 { return None; }
-
-        // Turtle ATR trailing stop: lowest_low - atr_mult * ATR
-        let turtle_stop = s.lowest_low - self.config.atr_mult * atr;
-
-        if bar.low <= turtle_stop {
-            tracing::info!(
-                "[{}] EXIT: low {} <= turtle_stop {} (trail={}, low={}), held={} bars",
-                symbol, bar.low, turtle_stop, turtle_stop, s.lowest_low, s.bars_held
-            );
-            return Some(());
-        }
-
-        // HOLD_MAX timeout
+        // HOLD_MAX timeout must be enforced even if the ATR buffer is not yet warm.
         if s.bars_held >= self.config.hold_max {
             tracing::info!(
                 "[{}] EXIT: HOLD_MAX {} reached",
                 symbol, self.config.hold_max
+            );
+            return Some(());
+        }
+
+        // Compute ATR
+        if s.atr_buf.len() < self.config.atr_period {
+            return None; // Not enough data for ATR stop; HOLD_MAX already checked.
+        }
+        let atr = s.atr_buf.iter().sum::<f64>() / self.config.atr_period as f64;
+        if atr <= 0.0 { return None; }
+
+        // Turtle ATR trailing stop for a long position: highest high since entry
+        // minus ATR multiple. lowest_low - ATR is effectively unreachable for
+        // longs and collapses the live bot into a timeout exit.
+        let turtle_stop = s.highest_high - self.config.atr_mult * atr;
+
+        if bar.low <= turtle_stop {
+            tracing::info!(
+                "[{}] EXIT: low {} <= turtle_stop {} (trail={}, high={}), held={} bars",
+                symbol, bar.low, turtle_stop, turtle_stop, s.highest_high, s.bars_held
             );
             return Some(());
         }
@@ -712,6 +718,53 @@ mod tests {
         let bar_break = Bar::new(Utc::now(), 115.0, 116.0, 114.0, 115.0, 2000.0);
         assert!(bot.check_turtle_entry("BTCUSDT", &bar_break));
         assert!(bot.turtle_state.contains_key("BTCUSDT"));
+        assert_eq!(
+            bot.turtle_state.get("BTCUSDT").unwrap().atr_buf.len(),
+            bot.config.atr_period,
+            "Live Turtle stop must seed atr_period bars, not chand_period bars"
+        );
+    }
+
+    #[test]
+    fn test_turtle_exit_uses_highest_high_trailing_stop_for_longs() {
+        let config = LiveConfig::default();
+        let mut bot = LiveBot::new(config).unwrap();
+
+        let bars: Vec<Bar> = (0..30)
+            .map(|_| Bar::new(Utc::now(), 118.0, 120.0, 116.0, 119.0, 1000.0))
+            .collect();
+        bot.bars.insert("BTCUSDT".to_string(), bars);
+        bot.turtle_state.insert("BTCUSDT".to_string(), TurtleState {
+            highest_high: 120.0,
+            lowest_low: 100.0,
+            bars_held: 1,
+            atr_buf: VecDeque::from(vec![2.0; 24]),
+        });
+
+        // With a correct long trailing stop, stop ≈ 120 - 2*ATR = 115.83 after
+        // this bar's TR update, so low=115 exits. The old lowest_low - ATR
+        // formula would put the stop near 96 and never exit.
+        let bar = Bar::new(Utc::now(), 118.0, 119.0, 115.0, 116.0, 1000.0);
+        assert!(bot.check_turtle_exit("BTCUSDT", &bar).is_some());
+    }
+
+    #[test]
+    fn test_hold_max_enforced_without_atr_warmup() {
+        let config = LiveConfig::default();
+        let mut bot = LiveBot::new(config).unwrap();
+
+        bot.bars.insert("BTCUSDT".to_string(), vec![
+            Bar::new(Utc::now(), 100.0, 101.0, 99.0, 100.0, 1000.0),
+        ]);
+        bot.turtle_state.insert("BTCUSDT".to_string(), TurtleState {
+            highest_high: 101.0,
+            lowest_low: 99.0,
+            bars_held: bot.config.hold_max - 1,
+            atr_buf: VecDeque::new(),
+        });
+
+        let bar = Bar::new(Utc::now(), 100.0, 101.0, 99.0, 100.0, 1000.0);
+        assert!(bot.check_turtle_exit("BTCUSDT", &bar).is_some());
     }
 
     #[test]
