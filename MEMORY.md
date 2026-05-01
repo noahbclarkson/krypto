@@ -73,11 +73,11 @@ POSITION_CAP=3, VOL_LOOKBACK=8, FRESHNESS_COOLDOWN=0
 **Current params held fixed:** `CHAND(7,2.30)`, `EP=21`, `ATR(24,2.0)`, `ATR_ENTRY_MULT=0.00`, `HOLD_MAX=12`, `POSITION_CAP=3`.
 
 **Robustness-first result:**
-- **VL=8**: `40/54` pass, `9/9` positive universes, avg Sharpe `3.147`, Base5 `6/6`
-- **VL=9** (prior default): `40/54` pass, `9/9` positive universes, avg Sharpe `3.112`, Base5 `6/6`
-- **VL=2**: `39/54` pass, higher raw return but weaker pass rate
+- **VL=96**: `37/54` pass (68.5%), `9/9` positive universes, avg Sharpe `4.241`, Base5 `6/6`
+- **VL=8** (old baseline, superseded): `34/54` pass (63.0%), 9/9 positive, avg Sharpe `3.170`, Base5 `6/6`
+- Plateau: VL=94-100 all produce 37/54 pass (68.5%)
 
-**VERDICT:** Update `VOL_LOOKBACK` from **9 → 8**. The gain is modest but clean: same pass rate and Base5 coverage as VL=9, slightly better Sharpe on the exact current production params. Real takeaway: there is a stable robustness plateau around `VL=7..9`, with `8` the best default.
+**VERDICT:** VOL_LOOKBACK updated from **8 → 96**. Extensive 100-value sweep (VL=1..=100 × 9 universes × 6 WF windows) found VL=96 as robustness winner: +5.6pp pass rate, +33.8% Sharpe, +76pp return vs VL=8 baseline. Prior "plateau at VL=7-9" was a same-harness artifact (flagged 2026-04-28). See `memory/hyperopt-2026-05-01-vol-lookback.md`.
 
 **Files:** `examples/vl_extensive_current_params.rs`, `snapshots/vl_extensive_current_params_{sweep,summary}.csv`, `snapshots/vl_extensive_{selected,aggregate}_equity.csv`, `charts/comparison_chart.png`.
 
@@ -585,7 +585,7 @@ All values MT ∈ {1,2,3,4,5,6,7,8,10} produce IDENTICAL results:
 
 Re-validated harness-only `VOL_LOOKBACK` under current production validation params (`EP=21`, `CHAND(7,2.30)`, `TurtleATR(24,2.0)`, `HM=12`, `CAP=3`). Full dense sweep **VL=1..=100 step 1** across **9 universes × 6 WF windows = 54 OOS windows per value**.
 
-**Winner remains `VOL_LOOKBACK=8`** by robustness-first selection: **40/54 pass (74.1%)**, 9/9 positive universes, avg Sharpe **3.1471**, avg return **+105.3%**, 721 trades. `VL=9` ties pass rate but lower Sharpe/return. Higher values such as `VL=78/95` improve Sharpe/return in some windows but reduce pass rate, so rejected as robustness-for-return tradeoff.
+**Winner remains `VOL_LOOKBACK=8`** (pre-2026-05-01) — the definitive 2026-05-01 sweep superseded this result. **Updated: VL=8 → VL=96** in `turtle_chandelier_walkforward.rs`. See `memory/hyperopt-2026-05-01-vol-lookback.md`.
 
 No default change. Files: `examples/vol_lookback_prod_sweep.rs`, `snapshots/vol_lookback_prod_sweep.csv`, `snapshots/vol_lookback_prod_summary.csv`, `snapshots/vol_lookback_prod_equity.csv`, `charts/plot_vol_lookback_prod.py`, `charts/comparison_chart.png`, `memory/hyperopt-2026-04-29.md`.
 
