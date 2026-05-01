@@ -1,0 +1,1 @@
+Live Compatible WF: 45/63 pass (71.4%), Avg Sharpe: 3.315, Avg Ret: 121.0%

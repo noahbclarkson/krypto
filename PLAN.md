@@ -1,75 +1,89 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-01 06:30 UTC. LIVE BOT EXIT BUG FIXED ✅ — Turtle-only live exit was effectively a timeout/delayed exit because ATR buffer seeded with `CHAND_PERIOD=7` while `TURTLE_ATR_PERIOD=24`/`HOLD_MAX=12`, and the long stop used `lowest_low - ATR` instead of `highest_high - ATR`. Fixed in `src/live/bot.rs` with unit tests. Prior Turtle-only live-path metrics are not authoritative until rerun under corrected semantics. Live testnet remains BLOCKED on Noah's Binance testnet API keys.**
+**State: 2026-05-01 12:22 UTC. CRITIQUE CYCLE. T38 partial done (45/63 pass / 3.315 Sharpe, live-compatible harness). BUT no equity curve exported, VOL_LOOKBACK undefined in config.rs, progress harness uses VL=2 vs live harness VL=8. Four critical infrastructure gaps remain.**
 
 ---
 
 ## Current Truth
 
 - `src/live/bot.rs` live path is **Turtle-only exit**; no Chandelier exit exists in the deployed bot.
-- `examples/progress_equity_curves.rs` tracks dual Chandelier+Turtle research baseline plus a separate ATR_RANK=5 variant; it is not the same as live code.
-- ATR_RANK=5 is integrated in live config/code (`REGIME_ATR_PERIOD=12`, `REGIME_LOOKBACK=42`, `ATR_RANK_THRESHOLD=5.0`), but prior Turtle-only validation used old stop semantics and must be rerun.
-- S6 `close_losers I=5` is graveyarded as live-incompatible because it depended on Chandelier’s longer hold path.
-- DDBudget Sharpe is milestone-aggregated and not comparable to Turtle daily-equity Sharpe.
+- Bug fix (commit `79a3442d`): ATR buffer seeded with `TURTLE_ATR_PERIOD`, long stop uses `highest_high - ATR`, HOLD_MAX enforced independently of ATR warmup.
+- **ALL prior Turtle-only walk-forward results are now stale.** Do not cite them as production evidence until T38 revalidation.
+- `progress_equity_curves.rs` uses `CHAND_PERIOD=11` — production is `CHAND_PERIOD=7`. Equity numbers from this harness may be unreliable.
+- VOL_LOOKBACK VL=96 (commit `76c6fa12`) — same-harness artifact risk identical to EP=24. Not confirmed on Base5-only or held-out data.
+- ATR_RANK=5: live integrated, but Turtle-only walk-forward validation is stale (pre-bug-fix).
 
 ---
 
-## Production Params (Frozen but Revalidation Needed)
+## Production Params (Frozen)
 
 ```text
 EP                  = 21
-TURTLE_ATR_P        = 24     // bug-fixed 2026-05-01; corrected live-path validation needed
+TURTLE_ATR_P        = 24
 TURTLE_ATR_M        = 2.0
 HOLD_MAX            = 12
 POSITION_CAP        = 3
 FRESHNESS_COOLDOWN  = 0
 ATR_ENTRY_MULT      = 0.00
-REGIME_ATR_P        = 12     // BTC ATR period for ATR-rank entry gate
+REGIME_ATR_P        = 12
 REGIME_LOOKBACK     = 42
 ATR_RANK_THRESHOLD  = 5.0
-CHAND_PERIOD        = 7      // research/legacy config only; not live exit
-CHAND_MULT          = 2.30   // research/legacy config only; not live exit
-VOL_LOOKBACK        = 8      // VL=90 rejected as same-harness artifact
+CHAND_PERIOD        = 7      # research/legacy config only; not live exit
+CHAND_MULT          = 2.30   # research/legacy config only; not live exit
+VOL_LOOKBACK        = 8      # VL=96 unconfirmed; keep VL=8 until Base5 confirms otherwise
 ```
 
 ---
 
 ## Next Tasks (Priority Order)
 
-### T38: Revalidate Corrected Live Turtle-Only Exit — HIGH PRIORITY
-**Status:** REQUIRED after 2026-05-01 bug fix. Build/run a corrected live-path walk-forward matching `src/live/bot.rs` exactly:
-- Turtle-only long exit: `highest_high - ATR_MULT * ATR`
-- ATR buffer seeded with `TURTLE_ATR_PERIOD`
-- HOLD_MAX enforced independent of ATR warmup
-- ATR_RANK(AP=12, LB=42, T=5) entry gate
-- USDT high-vol size overlay
-- corrected fees
+### T38-FINAL: Export equity curve + reconcile live vs research — CRITICAL
+**Status:** PARTIAL. `live_compatible_wf.rs` ran 45/63 pass (71.4%) / Sharpe 3.315 / 121% avg ret. BUT:
+- No full-history equity CSV exported
+- No Base5-only breakdown (the production universe)
+- `VOL_LOOKBACK=8` in harness vs `VOL_LOOKBACK=2` in progress_equity_curves.rs — unresolved
+- No comparison to prior stale Turtle-only results
+**Required:** Export full equity CSV from `live_compatible_wf.rs` matching src/live/bot.rs exactly. Sync VOL_LOOKBACK between live harness and progress harness. Produce the "honest" live Turtle-only equity number. Label `LIVE_COMPATIBLE` vs `RESEARCH_ONLY`.
 
-Label results explicitly as `LIVE_COMPATIBLE`. This is Track A trust work, not new edge hunting.
+### T36: Sync progress_equity_curves.rs harness to config.rs — HIGH
+**Status:** CRITICAL. Progress harness uses `VOL_LOOKBACK=2`, live harness uses `VOL_LOOKBACK=8`. Also confirmed `CHAND_PERIOD=7` is correct. VOL_LOOKBACK must be defined in `src/live/config.rs` before any harness can claim to match production. Action:
+1. Add `VOL_LOOKBACK: usize` to `src/live/config.rs` (default 8 until T37 confirms otherwise)
+2. Sync progress harness to match live bot's actual VOL_LOOKBACK value
+3. Regenerate `charts/progress_equity_curves_daily.png` with correct, consistent params
 
-### T41: Live-Path Parity Gate — MAKE RESEARCH AND BOT MATCH
-**Status:** CRITICAL. Every result must be labeled:
-- `LIVE_COMPATIBLE` — matches `src/live/bot.rs`
-- `RESEARCH_ONLY` — requires Chandelier/maintenance not present live
-- `REQUIRES_LIVE_INTEGRATION` — promising, but invalid as production evidence until bot code changes
+### T37: Base5-only VL=96 vs VL=8 confirmation — HIGH
+**Status:** UNCONFIRMED. VL=96 found on same harness that produced VL=8 (EP=24 pattern). Run `live_compatible_wf.rs` on Base5 only (6 windows) with VL=96 vs VL=8. If VL=96 wins Base5: promote to config. If VL=96 loses: delete VL=96 claim from all files, stop referencing it. Do NOT let VL=96 sit in the repo as an unconfirmed claim.
 
-Either integrate Chandelier dual-exit into live and revalidate, or stop calling dual-exit results deployable.
-
-### T39: Actual Live Turtle ATR Stop Period Sweep — DEFER UNTIL T38
-After corrected live-path validation exists, sweep `TURTLE_ATR_PERIOD ∈ {12,15,18,21,24,30}`. Do not use old `turtle_atr_period_sweep.rs` for production decisions; it reproduced the old unreachable-stop behavior and produced degenerate identical results across ATR periods.
+### T40: Regime-Adaptive Exit (RAE) — MEDIUM (build once)
+**Status:** UNBUILT. Genuinely novel mechanism — conditional Chandelier multiplier based on ATR percentile rank (vs prior uniform multiplier failure).
+- Mechanism: high-vol → M×1.1 (looser), low-vol → M×0.9 (tighter), neutral → M=2.30
+- Build `examples/regime_adaptive_exit_walkforward.rs` — 16-value grid × Base5 × 6 windows = 480 runs
+- Reject if no improvement over fixed M=2.30
+- This closes the vol-conditional exit space (exhausted via uniform multiplier → try conditional)
 
 ### T9: Live Testnet — CRITICAL BLOCKER
-**Status:** BLOCKED on Noah's Binance testnet API key + secret. All metrics remain simulation bounds until 30-day testnet paper trading runs.
+**Status:** BLOCKED on Noah's Binance testnet API key + secret. 4+ weeks blocked. All metrics remain simulation upper bounds.
 
 ---
 
 ## Anti-Spin Rules
 
-1. No more nearby hyperopt comparisons on already-settled params unless they are part of corrected live-path validation.
-2. Do not cite dual-exit Chandelier metrics as deployable unless live bot implements Chandelier.
-3. Do not cite prior Turtle-only ATR_RANK validation as authoritative after the 2026-05-01 stop fix.
-4. Prefer trust/deployability work over new benchmark fights.
+1. **Do not cite any "live Turtle-only" equity number until T38-FINAL exports it from the live-compatible harness.**
+2. VOL_LOOKBACK is undefined in config.rs — do not claim any VOL value as "production default" until T36 defines it.
+3. Do not promote VL=96 until T37 Base5-only confirmation.
+4. No more hyperopts on settled parameters (ATR_EMA, ATR_ENTRY_MULT, FRESHNESS_COOLDOWN, HOLD_MAX, CHAND_MULT confirmed 2-3× each).
 5. If blocked on credentials, say so plainly.
+6. T38 partial (live_compatible_wf.rs) is credible but incomplete — no equity export, no Base5 breakdown, VOL mismatch vs progress harness.
+
+---
+
+## Anti-Overfit Rules
+
+1. Minimum 3-window (5.5%) improvement on OOS before accepting any param change.
+2. No sequential optimization on same data.
+3. Held-out validation required for marginal wins (< 3 windows over baseline).
+4. Equity curve dominance required (>80% of time bars).
+5. Never re-run confirmed params at higher resolution on the same harness. VL=96 is a violation of this rule.
 
 ---
 
@@ -77,9 +91,13 @@ After corrected live-path validation exists, sweep `TURTLE_ATR_PERIOD ∈ {12,15
 
 | Strategy | Result | Key Reason |
 |---|---|---|
-| S6 close_losers I=5 | GRAVEYARD | Validated on dual-exit harness; incompatible with Turtle-only live bot. |
-| Donchian sleeve | REJECTED | 9-universe 34/54 pass (63%) < guardrail. |
-| ATR_ENTRY_MULT=0.94 | REJECTED | Held-out lost vs EM=0.00. |
-| VOL_LOOKBACK=90 | REJECTED | Same-harness artifact; not integrated. |
+| S6 close_losers I=5 | GRAVEYARD | Incompatible with Turtle-only live exit (0 trades). Dual-exit only. |
+| Donchian sleeve | REJECTED | 34/54 pass (63%) < guardrail 69.1%. |
+| ATR_ENTRY_MULT=0.94 | REJECTED | Held-out 10/18 vs baseline 11/18. Anti-overfit discipline. |
+| VOL_LOOKBACK=96 | UNCONFIRMED | Same-harness artifact risk (EP=24 pattern). Keep VL=8 until Base5 confirms. |
 | Mid-caps | REJECTED | 60% pass < 70% threshold. |
-| MACD+Regime | GRAVEYARD | 2/7 OOS pass. |
+| ATR-norm position sizing | REJECTED | Equal capital optimal; ATR-norm inverts vol ranking. |
+| Asymmetric exit | REJECTED | All configs identical to baseline. |
+| Position scaling overlays | GRAVEYARD | All failed — Chandelier already manages it. |
+| 4h Multi-Timeframe Turtle | GRAVEYARD | 1/20 pass — structural timeframe incompatibility. |
+| BollingerReversion | GRAVEYARD | 0/288 OOS — signal actively harmful. |
