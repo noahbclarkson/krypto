@@ -42,3 +42,8 @@ date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades
 2026-04-20,DDBudget 3-Sleeve,56.5x,7.09,milestone_aggregated_inflated,776
 2026-04-20,A/D Momentum,40.3x,3.62,fixed_hold_daily_equity,3933
 2026-04-20,FactorSmallByDV,13.6x,1.92,fixed_hold_daily_equity,1257
+2026-05-01,Turtle+Chandelier,108.1x,0.98,daily_compounded_equity,310
+2026-05-01,Turtle ATR_RANK=5,41.0x,0.87,daily_compounded_equity,live_bot_only
+2026-05-01,DDBudget 3-Sleeve,63.1x,7.23,milestone_aggregated_not_comparable,776
+2026-05-01,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-05-01,FactorSmallByDV,16.9x,2.05,fixed_hold_daily_equity,1257
