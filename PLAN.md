@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-01 00:44 UTC. CRITIQUE CYCLE: Research loop is a confirmation spiral (3+ consecutive sessions flagging it). Live bot exit path uses Turtle-only, not dual Chandelier+Turtle (26pp gap to walk-forward). 2026 YTD -22.7% in BTC +12.7% year is structural. ATR_RANK=5 integrated ✅, equity harness fixed ✅. Live testnet BLOCKED 4+ weeks.**
+**State: 2026-05-01 04:05 UTC. CRITIQUE CYCLE: live-path truth is the dominant blocker. `src/live/bot.rs` is verified Turtle ATR sole-exit; dual Chandelier+Turtle harness metrics are not deployable unless Chandelier is integrated. Honest daily Turtle Sharpe is 0.98; Sharpe 5+ claims are ranking/harness artifacts or non-comparable methodology. Next tasks: live-path parity gate, actual Turtle ATR stop sweep, then RAE only if live-compatible.**
 
 ---
 
@@ -62,31 +62,39 @@ ATR_RANK_THRESHOLD = 5.0 // integrated into bot.rs ✅ — separate series in pr
 
 ## Next Tasks (Priority Order)
 
-### T38: Live Bot Exit Path Audit — VERIFY Chandelier Dual-Exit Integration — CRITICAL
-**Status:** UNVERIFIED. Walk-forward validates dual Chandelier+Turtle ATR. Live bot exit path: UNKNOWN (may be Turtle-only per GRAVEYARD S6 note).
-**Gap:** Walk-forward 34/54 = 63% (fee-corrected). If live uses Turtle-only, there is an unvalidated exit-path gap.
-**Fix:** Read `src/live/bot.rs` exit logic. Confirm Chandelier dual-exit integration or document divergence as accepted live-path limitation.
+### T41: Live-Path Parity Gate — MAKE RESEARCH AND BOT MATCH — CRITICAL
+**Status:** NEW TOP PRIORITY from 2026-05-01 04:05 critique. Verified in `src/live/bot.rs`: live bot uses **Turtle ATR sole exit** via `check_turtle_exit`; no Chandelier exit and no rebalancing/close_losers exists in the live path.
 
-### T39: Regime ATR AP=12 as Live Turtle ATR Stop — SWEEP AND INTEGRATE
-**Status:** PARTIALLY IDENTIFIED. config.rs has REGIME_ATR_PERIOD=12 (regime detector input). Live Turtle ATR stop still uses TURTLE_ATR_PERIOD=24.
-**The "+78% Sharpe" was for the regime detector, not the live stop.** These are different mechanisms.
-**What to build:** `examples/regime_turtle_atr_sweep.rs` — sweep TURTLE_ATR_PERIOD ∈ {12, 15, 18, 21, 24, 30} on 9-universe × 6-window harness. Compare to TURTLE_ATR_P=24 baseline.
-**If P=12 wins:** integrate. If P=24 wins: document AP=12 as regime-only, stop-search, close this idea.
-**Identified 2026-04-30, never built. Confirmed unbuilt this session.**
+**Why it matters:** We cannot keep citing dual Chandelier+Turtle metrics as production evidence when the deployed bot cannot trade that logic. This is the biggest current blind spot.
 
-### T40: Regime-Adaptive Exit (RAE) — Vol-Conditional Chandelier Multiplier — GENUINELY UNTESTED
-**Status:** NEW CONCEPT. Previous vol-contingent Chandelier (GRAVEYARD) tested changing stop MULTIPLIER uniformly by vol regime — produced identical results because multiplier variation without period change doesn't alter the trailing stop meaningfully.
-**New mechanism:** Conditionally adjust CHAND_MULTIPLIER by CURRENT volatility regime. High-vol → M×1.1 (looser stop). Low-vol → M×0.9 (tighter stop). Period stays P=7.
-**Why different from GRAVEYARD'd attempt:** That was static uniform adjustment. RAE varies multiplier dynamically based on ATR percentile rank (different threshold mechanism, different adjustment timing).
-**What to build:** `examples/regime_adaptive_exit_walkforward.rs` — sweep vol-regime conditional multiplier × 9 universes × 6 windows. Compare to fixed M=2.30 baseline.
-**If no improvement:** vol-conditional exit space is truly exhausted. Stop.
+**What to do:** Build or formalize a parity harness that runs the exact live bot semantics (Turtle-only exit, ATR_RANK gate, HOLD_MAX, CAP, fees) and reports side-by-side vs the research dual-exit harness. Any strategy/param result must be labeled one of:
+- `LIVE_COMPATIBLE` — matches `src/live/bot.rs`
+- `RESEARCH_ONLY` — requires Chandelier/maintenance not present live
+- `REQUIRES_LIVE_INTEGRATION` — promising, but invalid as production evidence until bot code changes
+
+**Decision gate:** Either integrate Chandelier dual-exit into live and revalidate, or stop calling dual-exit results deployable.
+
+### T39: Actual Live Turtle ATR Stop Period Sweep — AP=12 IS NOT THE STOP
+**Status:** STILL UNBUILT. `REGIME_ATR_PERIOD=12` is only for BTC ATR percentile entry gating. Live Turtle stop still uses `TURTLE_ATR_PERIOD=24`.
+
+**What to build:** `examples/regime_turtle_atr_sweep.rs` under Turtle-only live semantics. Sweep `TURTLE_ATR_PERIOD ∈ {12, 15, 18, 21, 24, 30}` across 9 universes × 6 windows with corrected fees and ATR_RANK live gate.
+
+**Accept only if:** P=12 (or any replacement) improves ≥3 windows, improves or preserves Sharpe/equity, and does not trade-starve. Otherwise document AP=12 as regime-detector-only and freeze P=24.
+
+### T40: Regime-Adaptive Exit (RAE) — ONLY AFTER LIVE-PATH PARITY
+**Status:** Genuinely unbuilt idea, but lower priority than parity. Previous vol-contingent Chandelier tests were static/slow-regime failures; RAE is still mechanistically distinct.
+
+**What to build:** `examples/regime_adaptive_exit_walkforward.rs` only after T41 labels whether it is live-compatible. Sweep conditional Chandelier multiplier by current BTC ATR rank:
+- high-vol: looser stop
+- low-vol: tighter stop
+- neutral: baseline `M=2.30`
+
+**Hard rule:** If RAE requires Chandelier and Chandelier is not integrated into live, mark it `RESEARCH_ONLY` and do not promote it as production.
 
 ### T9: Live Testnet — CRITICAL BLOCKER (4+ weeks)
 **Status:** BLOCKED on Noah's Binance testnet API keys.
 **What we need:** Binance testnet API key + secret (not production keys).
 **Why it matters:** All metrics are simulation bounds. Live execution is the only honest validation path.
-
----
 
 ## Anti-Overfitting Rules (enforced)
 
@@ -104,7 +112,7 @@ ATR_RANK_THRESHOLD = 5.0 // integrated into bot.rs ✅ — separate series in pr
 
 | Blind Spot | Severity | Status |
 |---|---|---|
-| **Live bot exit path (T38)** | CRITICAL | Turtle-only vs dual Chandelier unknown. 26pp+ gap to validated harness. |
+| **Live bot exit path / parity (T41)** | CRITICAL | VERIFIED Turtle-only. Dual-exit harness is not deployable unless Chandelier is integrated. |
 | **Regime ATR AP=12 as live stop (T39)** | HIGH | Identified 2026-04-30, never built. Same pattern as EP=24. |
 | **2026 YTD -22.7% structural weakness** | HIGH | Losing money in BTC +12.7% year. Regime-inherent or live-path bug? |
 | **Confirmation spiral** | HIGH | 3+ sessions running same settled hyperopts at higher resolution. |
@@ -155,5 +163,5 @@ Everything else is either settled, rejected, or spinning.
 | Walk-forward pass (global 9-universe) | 63% | Below 70% production threshold |
 | Equity curve | 108.1x | Real, dominated by 2018-2021 mega-bull |
 | 2026 YTD | -22.7% | Losing in BTC +12.7% year — structural |
-| Live bot exit path | UNVERIFIED | May be Turtle-only, not dual Chandelier |
+| Live bot exit path | VERIFIED TURTLE-ONLY | Dual-exit metrics are research-only unless Chandelier is integrated into live |
 | Live testnet | BLOCKED 4+ weeks | API keys needed |

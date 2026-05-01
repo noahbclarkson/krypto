@@ -1,8 +1,31 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-01 00:44 UTC. T38: Live bot exit path UNVERIFIED — may be Turtle-only while walk-forward validates dual Chandelier+Turtle (26pp gap). T39: AP=12 as live Turtle stop identified 2026-04-30, never built. T40: Regime-Adaptive Exit (RAE) — genuinely new mechanism, untested. Live testnet BLOCKED 4+ weeks.*
+*Last updated: 2026-05-01 04:05 UTC. Live bot exit path VERIFIED Turtle ATR sole-exit. Dual Chandelier+Turtle metrics are research-only unless Chandelier is integrated. T39 actual Turtle ATR stop sweep remains unbuilt. T40 Regime-Adaptive Exit remains unbuilt but must pass live-path parity. Live testnet BLOCKED 4+ weeks.*
 
 ---
+
+## Critical New Insight: Live-Path Parity Is Now the Main Research Gate (2026-05-01 04:05)
+
+**Verified:** `src/live/bot.rs` implements Turtle ATR sole-exit through `check_turtle_exit`. There is no Chandelier exit and no close_losers/rebalancing logic in the live bot.
+
+**Implication:** Any result requiring dual Chandelier+Turtle exit is not production evidence unless we either:
+1. integrate Chandelier into live, or
+2. explicitly label that result `RESEARCH_ONLY`.
+
+**New concept / required infrastructure:** `live_path_parity_harness` — a harness/report that compares exact live semantics against research semantics and stamps every strategy result:
+- `LIVE_COMPATIBLE`
+- `RESEARCH_ONLY`
+- `REQUIRES_LIVE_INTEGRATION`
+
+This is not glamorous, but it is the highest-value next idea because it prevents another month of validating things the bot cannot trade.
+
+## Updated Top 3 Unbuilt Ideas (2026-05-01 04:05)
+
+1. **Live-path parity harness / audit gate** — exact `src/live/bot.rs` semantics vs research harness. Mandatory before promoting anything.
+2. **T39: Actual live Turtle ATR stop sweep** — test `TURTLE_ATR_PERIOD={12,15,18,21,24,30}`. AP=12 currently affects only ATR-rank regime detection, not the live stop.
+3. **T40: Regime-Adaptive Exit (RAE)** — promising only if live-compatible or paired with a conscious Chandelier live integration decision.
+
+
 
 ## Critical New Insight: Regime ATR (AP=12) — Partially Integrated
 
