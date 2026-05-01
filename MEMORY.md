@@ -57,10 +57,29 @@
 ```
 EP=21, CHAND_PERIOD=7, CHAND_MULT=2.30, HOLD_MAX=12,
 ATR_PERIOD=24, TURTLE_ATR_MULT=2.00, ATR_ENTRY_MULT=0.00,
-POSITION_CAP=3, VOL_LOOKBACK=9, FRESHNESS_COOLDOWN=0
+POSITION_CAP=3, VOL_LOOKBACK=8, FRESHNESS_COOLDOWN=0
 ```
 
 **Note:** TURTLE_ENTRY uses `close > max(close)` (Turtle). Donchian (`close > max(high)`) tested but rejected as production replacement — lower pass rate (-14pp) outweighs Sharpe gain (+3.81 avg).
+
+## 2026-04-28 — VOL_LOOKBACK Extensive Re-Sweep — UPDATED
+
+**Parameter:** `VOL_LOOKBACK` — dollar-volume smoothing window used by the validated Turtle walk-forward harness for top-N ranking.
+
+**Why re-run:** prior current-params sweep only tested a sparse subset (`1,2,3,4,5,6,7,8,9,10,12,15,20`). This session removed that assumption and ran the full logical integer range.
+
+**Extensive range tested:** `VL = 1..100` (step 1) across **9 universes × 6 walk-forward windows = 54 OOS windows/value**.
+
+**Current params held fixed:** `CHAND(7,2.30)`, `EP=21`, `ATR(24,2.0)`, `ATR_ENTRY_MULT=0.00`, `HOLD_MAX=12`, `POSITION_CAP=3`.
+
+**Robustness-first result:**
+- **VL=8**: `40/54` pass, `9/9` positive universes, avg Sharpe `3.147`, Base5 `6/6`
+- **VL=9** (prior default): `40/54` pass, `9/9` positive universes, avg Sharpe `3.112`, Base5 `6/6`
+- **VL=2**: `39/54` pass, higher raw return but weaker pass rate
+
+**VERDICT:** Update `VOL_LOOKBACK` from **9 → 8**. The gain is modest but clean: same pass rate and Base5 coverage as VL=9, slightly better Sharpe on the exact current production params. Real takeaway: there is a stable robustness plateau around `VL=7..9`, with `8` the best default.
+
+**Files:** `examples/vl_extensive_current_params.rs`, `snapshots/vl_extensive_current_params_{sweep,summary}.csv`, `snapshots/vl_extensive_{selected,aggregate}_equity.csv`, `charts/comparison_chart.png`.
 
 ---
 
@@ -675,3 +694,15 @@ Interpretation: closing positions down >5% after at least 5 bars appears to remo
 ATR_RANK=5 moved from validated candidate to live-code integrated. `src/live/config.rs` now exposes `REGIME_ATR_PERIOD=12`, `REGIME_LOOKBACK=42`, and `ATR_RANK_THRESHOLD=5.0` from the joint regime ATR sweep (`regime_atr_hyperopt.rs`: AP=12/LB=42/T=5, Sharpe 1.499 vs old AP=21/LB=252/T=0 at 0.840). `src/live/bot.rs` now blocks new Turtle entries when BTC ATR percentile rank is below threshold, matching the validated mechanism: avoid the lowest-volatility chop regimes.
 
 Live warmup/retention was increased so the ATR-rank filter and the existing 21d/252-bar high-vol hedge overlay have enough BTC history. Verification: `cargo build`, `cargo run --example live_turtle_chandelier --profile sweep`, and `cargo test live::bot --profile sweep` all pass. This closes the code-integration gap only; live testnet validation is still blocked on Binance testnet API keys, and the daily-equity progress harness still needs an ATR-rank-enabled run before reporting dashboard improvement.
+
+## 2026-05-01 — Live Turtle-Only Exit Bug Fixed
+
+Critical live-path bug found while investigating why Turtle ATR period sweeps were degenerate across every ATR period. `src/live/bot.rs` was not actually applying an effective Turtle ATR trailing stop:
+
+- Entry seeded `turtle_state.atr_buf` with `CHAND_PERIOD=7`, but live exit required `TURTLE_ATR_PERIOD=24`; with `HOLD_MAX=12`, ATR stop could not be ready before timeout logic.
+- `check_turtle_exit()` returned early when ATR buffer was short, so HOLD_MAX was not enforced until ATR warmup completed.
+- Long trailing stop used `lowest_low - ATR_MULT*ATR`; for a long this is effectively unreachable. Correct long ATR trail is `highest_high - ATR_MULT*ATR`.
+
+Fixed in `src/live/bot.rs`: ATR buffer now seeds with `config.atr_period`, HOLD_MAX is checked before ATR-warmup return, and long stop uses `highest_high - ATR_MULT*ATR`. Added unit tests for ATR buffer seeding, highest-high stop trigger, and HOLD_MAX enforcement without ATR warmup. Verification: `cargo test live::bot --profile sweep` = 7/7 pass; `cargo build --profile sweep` passes.
+
+Important consequence: prior Turtle-only live-path metrics and ATR_RANK=5 Turtle-only validation are no longer authoritative until rerun under the corrected live stop. This is trust-lab work, not a new edge hunt. Live testnet remains blocked on Noah's Binance testnet API keys.
