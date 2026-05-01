@@ -1,12 +1,12 @@
-//! CHAND_PERIOD Fine Sweep — Step 1 around P=7 region
+//! CHAND_PERIOD Fine-Grained Hyperopt: CP in [1..60] step=1 (60 values)
 //!
-//! PRIOR: coarse sweep CP∈[5..60 step 2] × 9u×54w with EP=24/CHAND_M=2.25/HM=12 → P=7 winner
-//! CURRENT params: EP=21, CHAND_M=2.30, ATR_P=24, ATR_M=2.0, HM=12, CAP=3, ATR_EM=0.00, VL=9
-//! GAP: P=8 never tested. P=7 was optimal with stale params — may shift with CM=2.30 vs 2.25
-//! 
-//! Range: P ∈ [5..15] step 1 (11 values) — focused fine grid around the known winner
-//! Harness: walk-forward 252/252, dual exit (Chandelier OR Turtle ATR fires first)
-//! Metrics: pass rate, avg Sharpe, avg return, avg DD, trade count per P value
+//! PRIOR WORK:
+//!   - CP step=2 coarse sweep: CP=7 won (Sharpe 5.908, 43/54 pass) — but 6 and 8 were never tested
+//!   - All sweeps used either stale params or inconsistent fee models
+//!
+//! THIS SWEEP: 60 values × 9 universes × 6 windows = 3,240 window-runs
+//!   Correct fee model: entry_px*(1+fee), exit_px*(1-fee)
+//!   Current production params: EP=21, CM=2.30, ATR_P=24, ATR_M=2.0, HM=12, CAP=3, VL=8, EM=0.00
 
 use anyhow::Result;
 use krypto::data::loader::DataLoader;
@@ -23,17 +23,17 @@ const HOLD_MAX: usize = 12;
 const TAKER_FEE: f64 = 0.001;
 const POSITION_CAP: usize = 3;
 const MIN_TRADES: usize = 3;
-// Current production params
-const TURTLE_ENTRY: usize = 21;
+
 const CHAND_MULT: f64 = 2.30;
+const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 const ATR_ENTRY_MULT: f64 = 0.00;
 const VOL_LOOKBACK: usize = 8;
-const BASELINE_P: usize = 7;
 
-// Fine sweep: P ∈ [5..15] step 1 (11 values)
-const CHAND_PERIODS: &[usize] = &[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+const CP_START: usize = 1;
+const CP_END: usize = 60;
+const N_CP: usize = CP_END - CP_START + 1; // 18
 
 const UNIVERSES: &[(&str, &[&str])] = &[
     ("Base5",        &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]),
@@ -47,16 +47,15 @@ const UNIVERSES: &[(&str, &[&str])] = &[
     ("OldGuard4",    &["BTCUSDT","XRPUSDT","LTCUSDT","EOSUSDT","BCHUSDT"]),
 ];
 
-const SUMMARY_CSV: &str = "snapshots/chand_period_fine_summary.csv";
-const DETAIL_CSV: &str = "snapshots/chand_period_fine_detail.csv";
-const EQUITY_CSV: &str = "snapshots/chand_period_fine_equity.csv";
-const JSON_OUT: &str = "snapshots/chand_period_fine_summary.json";
+const CSV_METRICS: &str = "snapshots/chand_period_fine_metrics.csv";
+const CSV_EQUITY:  &str = "snapshots/chand_period_fine_equity.csv";
+const CSV_SUMMARY: &str = "snapshots/chand_period_fine_summary.csv";
 
 struct SymData {
     close: Vec<f64>,
-    high: Vec<f64>,
-    low: Vec<f64>,
-    vol: Vec<f64>,
+    high:  Vec<f64>,
+    low:   Vec<f64>,
+    vol:   Vec<f64>,
 }
 
 fn atr_at(high: &[f64], low: &[f64], close: &[f64], period: usize, idx: usize) -> f64 {
@@ -72,13 +71,17 @@ fn atr_at(high: &[f64], low: &[f64], close: &[f64], period: usize, idx: usize) -
     trs.iter().sum::<f64>() / period as f64
 }
 
-fn rolling_avg(vals: &[f64], window: usize, idx: usize) -> f64 {
-    if idx < window { return *vals.get(idx).unwrap_or(&0.0); }
-    let start = idx + 1 - window;
-    vals[start..=idx].iter().sum::<f64>() / window as f64
+fn dollar_vol(vol: &[f64], close: &[f64], idx: usize) -> f64 {
+    vol.get(idx).copied().unwrap_or(0.0) * close.get(idx).copied().unwrap_or(0.0)
 }
 
-fn turtle_signal(close: &[f64], high: &[f64], low: &[f64], entry_period: usize, atr_period: usize, atr_mult: f64, idx: usize) -> bool {
+fn rolling_avg(vals: &[f64], window: usize, idx: usize) -> f64 {
+    if idx < window { return *vals.get(idx).unwrap_or(&0.0); }
+    vals[idx + 1 - window..=idx].iter().sum::<f64>() / window as f64
+}
+
+fn turtle_signal(close: &[f64], high: &[f64], low: &[f64],
+                 entry_period: usize, atr_period: usize, atr_mult: f64, idx: usize) -> bool {
     if idx < entry_period + 1 { return false; }
     let start = idx + 1 - entry_period;
     let mut max_close = f64::NEG_INFINITY;
@@ -123,17 +126,14 @@ struct WfResult {
     trades: usize,
     win_rate: f64,
     pass: bool,
+    equity_final: f64,
+    equity_curve: Vec<f64>,
 }
 
-fn run_sim(
-    sym_data: &HashMap<String, SymData>,
-    symbols: &[String],
-    test_start: usize,
-    test_end: usize,
-    chand_period: usize,
-) -> (WfResult, Vec<f64>) {
+fn run_sim(cp: usize, sym_data: &HashMap<String, SymData>, symbols: &[String],
+           test_start: usize, test_end: usize) -> WfResult {
     let mut equity = 1.0_f64;
-    let mut equity_curve = vec![1.0_f64];
+    let mut equity_curve = vec![1.0f64];
     let mut peak = equity;
     let mut wins = 0usize;
     let mut total_trades = 0usize;
@@ -164,19 +164,20 @@ fn run_sim(
         for sym in &top_syms {
             if let Some(sd) = sym_data.get(sym) {
                 if bar >= TURTLE_ENTRY + 1 && bar < sd.close.len() {
-                    if turtle_signal(&sd.close, &sd.high, &sd.low, TURTLE_ENTRY, TURTLE_ATR_PERIOD, ATR_ENTRY_MULT, bar) {
+                    if turtle_signal(&sd.close, &sd.high, &sd.low,
+                                    TURTLE_ENTRY, TURTLE_ATR_PERIOD, ATR_ENTRY_MULT, bar) {
                         let entry_px = sd.close[bar];
-                        let entry = entry_px * (1.0 - TAKER_FEE);
+                        let entry = entry_px * (1.0 + TAKER_FEE);
                         let entry_bar_next = bar + 1;
                         let n = sd.close.len();
 
                         let mut highest_high_chand = sd.high[entry_bar_next];
-                        let mut lowest_low_turtle = sd.low[entry_bar_next];
+                        let mut lowest_low_turtle  = sd.low[entry_bar_next];
                         let max_bar = (entry_bar_next + HOLD_MAX).min(n.saturating_sub(1));
                         let mut exit_bar = max_bar;
                         for b in entry_bar_next..=max_bar.min(n.saturating_sub(1)) {
                             highest_high_chand = highest_high_chand.max(sd.high[b]);
-                            let atr_chand = atr_at(&sd.high, &sd.low, &sd.close, chand_period, b);
+                            let atr_chand = atr_at(&sd.high, &sd.low, &sd.close, cp, b);
                             let trail_chand = highest_high_chand - CHAND_MULT * atr_chand;
                             lowest_low_turtle = lowest_low_turtle.min(sd.low[b]);
                             let atr_turtle = atr_at(&sd.high, &sd.low, &sd.close, TURTLE_ATR_PERIOD, b);
@@ -191,6 +192,7 @@ fn run_sim(
                             let exit = exit_px * (1.0 - TAKER_FEE);
                             let gross_ret = exit / entry - 1.0;
                             let bars_held = (exit_bar as i64 - entry_bar_next as i64).max(1) as usize;
+
                             wins += if gross_ret > 0.0 { 1 } else { 0 };
                             total_trades += 1;
                             equity *= 1.0 + gross_ret;
@@ -218,205 +220,200 @@ fn run_sim(
     let ret = (equity - 1.0) * 100.0;
     let sharpe = annualised_sharpe(&daily_rets);
     let max_dd = max_dd_from(&equity_curve);
+    let win_rate = if total_trades > 0 { wins as f64 / total_trades as f64 * 100.0 } else { 0.0 };
     let pass = total_trades >= MIN_TRADES && ret > 0.0;
-    let win_rate = if total_trades > 0 { wins as f64 / total_trades as f64 } else { 0.0 };
 
-    (WfResult { ret, sharpe, max_dd, trades: total_trades, win_rate, pass }, equity_curve)
+    WfResult { ret, sharpe, max_dd, trades: total_trades,
+               win_rate, pass, equity_final: equity, equity_curve }
+}
+
+fn write_lines(path: &str, lines: &[String]) -> std::io::Result<()> {
+    let mut f = File::create(path)?;
+    for l in lines { writeln!(f, "{}", l)?; }
+    Ok(())
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let start = Instant::now();
+    let t0 = Instant::now();
+    eprintln!("==== CHAND_PERIOD Fine-Grained Hyperopt: CP=[{}..{}] step=1 ({} values) ====", CP_START, CP_END, N_CP);
+
     let loader = DataLoader::new(None, None);
-    let mut data: HashMap<String, SymData> = HashMap::new();
-
-    let mut all_syms = std::collections::HashSet::new();
+    let mut all_syms: HashMap<String, ()> = HashMap::new();
     for (_, syms) in UNIVERSES {
-        for s in *syms { all_syms.insert(s.to_string()); }
+        for &s in *syms { all_syms.insert(s.to_string(), ()); }
     }
 
-    for sym in all_syms {
-        match loader.fetch_with_cache(&sym, "1d", CANDLES).await {
+    let mut raw_cache: HashMap<String, DataFrame> = HashMap::new();
+    let mut min_len = usize::MAX;
+    for sym in all_syms.keys() {
+        match loader.fetch_with_cache(sym.as_str(), "1d", CANDLES).await {
             Ok(df) => {
-                let close: Vec<f64> = df.column("close")?.f64()?.into_no_null_iter().collect();
-                let high: Vec<f64> = df.column("high")?.f64()?.into_no_null_iter().collect();
-                let low: Vec<f64> = df.column("low")?.f64()?.into_no_null_iter().collect();
-                let vol: Vec<f64> = df.column("volume")?.f64()?.into_no_null_iter().collect();
-                data.insert(sym, SymData { close, high, low, vol });
+                min_len = min_len.min(df.height());
+                raw_cache.insert(sym.clone(), df);
             }
-            Err(e) => { eprintln!("WARNING: {} load failed: {}", sym, e); }
+            Err(e) => { eprintln!("  WARNING: {} load failed: {}", sym, e); }
         }
     }
 
-    let min_len = UNIVERSES.iter().filter_map(|(_, s)| {
-        data.get(s[0]).map(|d| d.close.len())
-    }).min().unwrap_or(0);
-
-    let n_windows = (min_len.saturating_sub(TRAIN_BARS)) / TEST_BARS;
-    println!("CHAND_PERIOD Fine Sweep: P ∈ [5..15] step 1, {} values", CHAND_PERIODS.len());
-    println!("Bars: {}, Windows: {}, Universes: {}", min_len, n_windows, UNIVERSES.len());
-    println!("Total runs: {} × {} × {} = {}",
-        CHAND_PERIODS.len(), UNIVERSES.len(), n_windows,
-        CHAND_PERIODS.len() * UNIVERSES.len() * n_windows);
-
-    let mut summary_csv = File::create(SUMMARY_CSV)?;
-    writeln!(summary_csv, "chand_period,universe,pass_windows,total_windows,pass_rate,avg_sharpe,avg_ret,avg_dd,total_trades")?;
-
-    let mut detail_csv = File::create(DETAIL_CSV)?;
-    writeln!(detail_csv, "chand_period,universe,window,ret,sharpe,trades,max_dd,win_rate,pass")?;
-
-    let mut equity_csv = File::create(EQUITY_CSV)?;
-    writeln!(equity_csv, "day,chand_period,universe,equity")?;
-
-    // Per-universe, per-P equity accumulation for charting
-    let mut equity_by_p: HashMap<usize, HashMap<String, Vec<f64>>> = HashMap::new();
-
-    let mut global: HashMap<usize, (usize, usize, f64, f64, f64, usize)> = HashMap::new();
-
-    for cp in CHAND_PERIODS {
-        equity_by_p.insert(*cp, HashMap::new());
-    }
-
-    for (uname, symbols) in UNIVERSES {
-        for cp in CHAND_PERIODS {
-            let mut total_pass = 0usize;
-            let mut total_ret = 0.0f64;
-            let mut total_sharpe = 0.0f64;
-            let mut total_dd = 0.0f64;
-            let mut total_trades = 0usize;
-            let mut n = 0usize;
-            let mut agg_equity: Vec<f64> = vec![1.0_f64];
-
-            for w in 0..n_windows {
-                let train_end = TRAIN_BARS + w * TEST_BARS;
-                let test_end = (train_end + TEST_BARS).min(min_len);
-                if test_end <= train_end + 30 { continue; }
-
-                let syms: Vec<String> = symbols.iter().map(|s| s.to_string()).collect();
-                let (result, eq_curve) = run_sim(&data, &syms, train_end, test_end, *cp);
-
-                total_pass += result.pass as usize;
-                total_ret += result.ret;
-                total_sharpe += result.sharpe;
-                total_dd += result.max_dd;
-                total_trades += result.trades;
-                n += 1;
-
-                writeln!(detail_csv, "{},{},{},{:.2},{:.3},{},{:.2},{:.3},{}",
-                    cp, uname, w, result.ret, result.sharpe, result.trades, result.max_dd, result.win_rate, result.pass)?;
-
-                // Compound equity across windows
-                let start_eq = *agg_equity.last().unwrap();
-                for &e in &eq_curve {
-                    agg_equity.push(start_eq * e);
-                }
+    let n = min_len.min(2800);
+    let mut sym_data_map: HashMap<String, SymData> = HashMap::new();
+    for sym in all_syms.keys() {
+        if let Some(df) = raw_cache.get(sym) {
+            let n_min = df.height().min(n);
+            macro_rules! col_vec {
+                ($name:expr) => {{
+                    let chunked = df.column($name)?.f64()?;
+                    chunked.into_iter().filter_map(|x| x).take(n_min).collect::<Vec<_>>()
+                }};
             }
+            sym_data_map.insert(sym.clone(), SymData {
+                close: col_vec!("close"),
+                high:  col_vec!("high"),
+                low:   col_vec!("low"),
+                vol:   col_vec!("volume"),
+            });
+        }
+    }
+    eprintln!("Loaded {} symbols, {} bars\n", sym_data_map.len(), n);
 
-            if n > 0 {
-                let avg_sharpe = total_sharpe / n as f64;
-                let avg_ret = total_ret / n as f64;
-                let avg_dd = total_dd / n as f64;
-                let pass_rate = total_pass as f64 / n as f64 * 100.0;
-                writeln!(summary_csv, "{},{},{},{},{:.1},{:.3},{:.1},{:.1},{}",
-                    cp, uname, total_pass, n, pass_rate, avg_sharpe, avg_ret, avg_dd, total_trades)?;
+    let cps: Vec<usize> = (CP_START..=CP_END).collect();
 
-                global.entry(*cp).or_insert_with(|| (0, 0, 0.0, 0.0, 0.0, 0));
-                if let Some(g) = global.get_mut(cp) {
-                    g.0 += total_pass;
-                    g.1 += n;
-                    g.2 += avg_ret;
-                    g.3 += avg_sharpe;
-                    g.4 += avg_dd;
-                    g.5 += total_trades;
+    let mut cp_global_pass:   HashMap<usize, usize> = HashMap::new();
+    let mut cp_global_total:  HashMap<usize, usize> = HashMap::new();
+    let mut cp_global_trades: HashMap<usize, usize> = HashMap::new();
+    let mut cp_sharpe_sum:    HashMap<usize, f64>   = HashMap::new();
+    let mut cp_ret_sum:      HashMap<usize, f64>   = HashMap::new();
+    let mut cp_dd_sum:       HashMap<usize, f64>   = HashMap::new();
+    let mut cp_winrate_sum:  HashMap<usize, f64>   = HashMap::new();
+    let mut cp_window_count: HashMap<usize, usize> = HashMap::new();
+
+    let mut metric_lines = vec!["cp,universe,window,return_pct,sharpe,max_dd_pct,trades,win_rate_pct,pass,equity_final".to_string()];
+    let mut equity_lines = vec!["cp,universe,window,step,equity".to_string()];
+
+    for &(label, symbols) in UNIVERSES {
+        let symbols: Vec<String> = symbols.iter().map(|s| s.to_string()).collect();
+        if !symbols.iter().all(|s| sym_data_map.contains_key(s)) {
+            eprintln!("{:>20} SKIPPED (missing data)", label);
+            continue;
+        }
+
+        let total_windows = n.saturating_sub(TRAIN_BARS + TEST_BARS) / TEST_BARS;
+        if total_windows == 0 {
+            eprintln!("{:>20} SKIPPED (not enough data)", label);
+            continue;
+        }
+
+        eprintln!("==== {:<18} ====", label);
+
+        for wi in 0..total_windows {
+            let train_end = TRAIN_BARS + wi * TEST_BARS;
+            let test_start = train_end;
+            let test_end = (test_start + TEST_BARS).min(n);
+            if test_end.saturating_sub(test_start) < 5 { continue; }
+
+            for cp in &cps {
+                let r = run_sim(*cp, &sym_data_map, &symbols, test_start, test_end);
+
+                metric_lines.push(format!(
+                    "{},{},{},{:.2},{:.4},{:.2},{},{:.2},{},{:.6}",
+                    cp, label, wi, r.ret, r.sharpe, r.max_dd,
+                    r.trades, r.win_rate, r.pass, r.equity_final
+                ));
+
+                for (step_idx, &eq) in r.equity_curve.iter().enumerate() {
+                    equity_lines.push(format!("{},{},{},{},{:.6}", cp, label, wi, step_idx, eq));
                 }
 
-                // Write equity curve
-                if let Some(uni_map) = equity_by_p.get_mut(cp) {
-                    for (day_idx, &eq) in agg_equity.iter().enumerate() {
-                        writeln!(equity_csv, "{},{},{},{:.6}", day_idx, cp, uname, eq)?;
-                    }
-                    uni_map.insert(uname.to_string(), agg_equity);
-                }
+                *cp_global_pass.entry(*cp).or_insert(0) += if r.pass { 1 } else { 0 };
+                *cp_global_total.entry(*cp).or_insert(0) += 1;
+                *cp_global_trades.entry(*cp).or_insert(0) += r.trades;
+                *cp_sharpe_sum.entry(*cp).or_insert(0.0) += r.sharpe;
+                *cp_ret_sum.entry(*cp).or_insert(0.0) += r.ret;
+                *cp_dd_sum.entry(*cp).or_insert(0.0) += r.max_dd;
+                *cp_winrate_sum.entry(*cp).or_insert(0.0) += r.win_rate;
+                *cp_window_count.entry(*cp).or_insert(0) += 1;
             }
         }
     }
 
-    // Print global summary sorted by P
-    let mut sorted: Vec<_> = global.iter().collect();
-    sorted.sort_by_key(|(p, _)| *p);
-
-    println!("\n=== Global Results (P ∈ [5..15] step 1) ===");
-    println!("{:>4} {:>8} {:>10} {:>10} {:>8} {:>8}",
-        "P", "PassRate", "AvgSharpe", "AvgRet%", "AvgDD%", "Trades");
-    println!("{}", "-".repeat(54));
-
-    let baseline_sharpe = {
-        let mut bs = 0.0_f64;
-        for (p, (_, _, _, sh, _, _)) in &sorted {
-            if **p == BASELINE_P { bs = *sh; }
-        }
-        bs
-    };
-
-    let mut winner_p = BASELINE_P;
-    let mut winner_sharpe = baseline_sharpe;
-    let mut winner_pass_rate = 0.0f64;
-
-    for (p, (pass, total, _, sh, _, trades)) in &sorted {
-        let pr = *pass as f64 / *total as f64 * 100.0;
-        let delta = if baseline_sharpe > 0.0 { (*sh - baseline_sharpe) / baseline_sharpe * 100.0 } else { 0.0 };
-        let marker = if **p == BASELINE_P { " [BASE]" } else { "" };
-        println!("{:4}{} {:7.1}% {:10.3} {:8}",
-            p, marker, pr, sh, trades);
-        
-        // Winner selection: pass rate first, then Sharpe
-        let pr_winner = *pass as f64 / *total as f64 * 100.0;
-        if pr_winner > winner_pass_rate || (pr_winner == winner_pass_rate && *sh > winner_sharpe) {
-            winner_p = **p;
-            winner_sharpe = *sh;
-            winner_pass_rate = pr_winner;
-        }
+    let mut summary_lines = vec!["cp,global_pass,global_total,pass_rate,avg_sharpe,avg_ret,avg_dd,total_trades,avg_win_rate".to_string()];
+    for &cp in &cps {
+        let gp = cp_global_pass.get(&cp).copied().unwrap_or(0);
+        let gt = cp_global_total.get(&cp).copied().unwrap_or(0);
+        let wc = cp_window_count.get(&cp).copied().unwrap_or(0);
+        let pass_rate = if gt > 0 { gp as f64 / gt as f64 * 100.0 } else { 0.0 };
+        let avg_sharpe = if wc > 0 { cp_sharpe_sum.get(&cp).copied().unwrap_or(0.0) / wc as f64 } else { 0.0 };
+        let avg_ret    = if wc > 0 { cp_ret_sum.get(&cp).copied().unwrap_or(0.0) / wc as f64 } else { 0.0 };
+        let avg_dd     = if wc > 0 { cp_dd_sum.get(&cp).copied().unwrap_or(0.0) / wc as f64 } else { 0.0 };
+        let avg_wr     = if gt > 0 { cp_winrate_sum.get(&cp).copied().unwrap_or(0.0) / gt as f64 } else { 0.0 };
+        let trades     = cp_global_trades.get(&cp).copied().unwrap_or(0);
+        summary_lines.push(format!("{},{},{},{:.2},{:.4},{:.2},{:.2},{},{:.2}", cp, gp, gt, pass_rate, avg_sharpe, avg_ret, avg_dd, trades, avg_wr));
     }
 
-    println!("\n=== Winner: P={} (Sharpe {:.3}, pass {:.1}%) ===", winner_p, winner_sharpe, winner_pass_rate);
-    if winner_p != BASELINE_P as usize {
-        let delta = (winner_sharpe - baseline_sharpe) / baseline_sharpe * 100.0;
-        println!("Change from baseline P={}: {:+.2}% Sharpe", BASELINE_P, delta);
-    }
+    write_lines(CSV_METRICS, &metric_lines)?;
+    write_lines(CSV_EQUITY,  &equity_lines)?;
+    write_lines(CSV_SUMMARY, &summary_lines)?;
 
-    // Write JSON summary
-    let mut json_entries = Vec::new();
-    for (p, (pass, total, ret, sh, dd, trades)) in &sorted {
-        let pr = *pass as f64 / *total as f64 * 100.0;
-        json_entries.push(serde_json::json!({
-            "chand_period": p,
-            "pass_rate": pr,
-            "avg_sharpe": sh,
-            "avg_ret": ret,
-            "avg_dd": dd,
-            "total_trades": trades,
-            "winner": **p == winner_p
-        }));
-    }
+    let mut rows: Vec<(usize, f64, f64, f64, usize, usize)> = cps.iter().map(|&cp| {
+        let gp = cp_global_pass.get(&cp).copied().unwrap_or(0);
+        let gt = cp_global_total.get(&cp).copied().unwrap_or(0);
+        let wc = cp_window_count.get(&cp).copied().unwrap_or(0);
+        let pct   = if gt > 0 { gp as f64 / gt as f64 } else { 0.0 };
+        let ash   = if wc > 0 { cp_sharpe_sum.get(&cp).copied().unwrap_or(0.0) / wc as f64 } else { 0.0 };
+        let art   = if wc > 0 { cp_ret_sum.get(&cp).copied().unwrap_or(0.0) / wc as f64 } else { 0.0 };
+        let trades = cp_global_trades.get(&cp).copied().unwrap_or(0);
+        (cp, pct, ash, art, trades, gt)
+    }).collect();
 
-    let json_obj = serde_json::json!({
-        "parameter": "CHAND_PERIOD",
-        "sweep_range": "[5..15] step 1",
-        "baseline": BASELINE_P,
-        "winner": winner_p,
-        "baseline_sharpe": baseline_sharpe,
-        "winner_sharpe": winner_sharpe,
-        "results": json_entries
+    rows.sort_by(|a, b| {
+        b.1.partial_cmp(&a.1).unwrap()
+            .then_with(|| b.2.partial_cmp(&a.2).unwrap())
+            .then_with(|| b.3.partial_cmp(&a.3).unwrap())
     });
-    let mut jf = File::create(JSON_OUT)?;
-    jf.write_all(serde_json::to_string_pretty(&json_obj)?.as_bytes())?;
 
-    println!("\nFiles written:");
-    println!("  {}", SUMMARY_CSV);
-    println!("  {}", DETAIL_CSV);
-    println!("  {}", EQUITY_CSV);
-    println!("  {}", JSON_OUT);
-    println!("\nRuntime: {:.1}s", start.elapsed().as_secs_f64());
+    eprintln!("\n==== GLOBAL SUMMARY ====");
+    for (i, &(cp, pct, ash, art, trades, gt)) in rows.iter().enumerate() {
+        let gp = cp_global_pass.get(&cp).unwrap_or(&0);
+        eprintln!("  {}. CP={:2}: {}/{} pass ({:.1}%), Sharpe={:.4}, Ret={:.1}%, Trades={}",
+            i+1, cp, gp, gt, pct*100.0, ash, art, trades);
+    }
 
+    let winner = rows[0];
+    eprintln!("\nRobustness winner: CP={} ({}/{} pass, Sharpe={:.4})",
+        winner.0, cp_global_pass.get(&winner.0).unwrap_or(&0), winner.5, winner.2);
+
+    let elapsed = t0.elapsed();
+    eprintln!("\nDone in {:.1}s => {}", elapsed.as_secs_f64(), CSV_SUMMARY);
+
+    // Markdown report
+    let md_path = "snapshots/chand_period_fine_summary.md";
+    let mut md = File::create(md_path)?;
+    writeln!(md, "# CHAND_PERIOD Fine-Grained Hyperopt — 2026-05-01 00:50 UTC")?;
+    writeln!(md, "")?;
+    writeln!(md, "**Range:** CP in [{}..{}] step=1 ({} values)", CP_START, CP_END, N_CP)?;
+    writeln!(md, "**Params:** EP=21, CM=2.30, ATR_P=24, HM=12, CAP=3, VL=8, EM=0.00")?;
+    writeln!(md, "**Fee model:** entry*(1+fee), exit*(1-fee) (corrected)")?;
+    writeln!(md, "")?;
+    writeln!(md, "## Results")?;
+    writeln!(md, "")?;
+    writeln!(md, "| CP | Pass | Pass% | Avg Sharpe | Avg Ret% | Trades |")?;
+    writeln!(md, "|---|-----|-------|------------|----------|--------|")?;
+    for &(cp, pct, ash, art, trades, _) in &rows {
+        let gp = cp_global_pass.get(&cp).unwrap_or(&0);
+        let gt = cp_global_total.get(&cp).unwrap_or(&0);
+        writeln!(md, "| {} | {}/{} | {:.1}% | {:.4} | {:.1}% | {} |",
+            cp, gp, gt, pct*100.0, ash, art, trades)?;
+    }
+    writeln!(md, "")?;
+    writeln!(md, "## Robustness Winner: CP={}", winner.0)?;
+    writeln!(md, "")?;
+    writeln!(md, "- Pass: {}/{} ({:.1}%)", cp_global_pass.get(&winner.0).unwrap_or(&0), winner.5, winner.1*100.0)?;
+    writeln!(md, "- Avg Sharpe: {:.4}", winner.2)?;
+    writeln!(md, "- Avg Ret: {:.1}%", winner.3)?;
+    writeln!(md, "")?;
+    writeln!(md, "_Generated in {:.1}s_", elapsed.as_secs_f64())?;
+
+    eprintln!("Report: {}", md_path);
     Ok(())
 }
