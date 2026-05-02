@@ -31,7 +31,7 @@ const TURTLE_ATR_MULT: f64 = 2.00;
 const ATR_ENTRY_MULT: f64 = 0.00;
 const VOL_LOOKBACK: usize = 8; // production baseline
 
-const REGIME_ATR_PERIOD: usize = 12;
+const REGIME_ATR_PERIOD: usize = 64; // hyperopt 2026-05-02: AP=64 wins 55/63 pass, Sharpe 6.19 vs AP=12 (53/63, 5.43). See memory/hyperopt-2026-05-02-regime-atr-period.md.
 const REGIME_LOOKBACK: usize = 42;
 const ATR_RANK_T: f64 = 24.0; // Updated 2026-05-01: T=24 wins T=24-27 plateau; T=5 was mediocre (45/63 pass, Sharpe 3.31). See memory/hyperopt-2026-05-01-atr-rank-threshold.md.
 
