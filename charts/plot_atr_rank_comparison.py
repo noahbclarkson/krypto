@@ -1,92 +1,92 @@
 #!/usr/bin/env python3
-"""Plot ATR-rank threshold hyperopt equity curves.
+"""ATR_RANK threshold equity comparison chart.
 
-Reads the Rust harness time-series equity export and plots the mean walk-forward
-portfolio equity for baseline, winner, and runner-up thresholds. The Y-axis is
-not anchored at zero; it uses log scaling and dynamic bounds so differences are
-visible even when curves are close.
+Generates: charts/comparison_chart.png
+Data: snapshots/atr_rank_equity_comparison.csv (T=0, T=5, T=24, Base5, 7 windows)
 """
-from pathlib import Path
-import re
-
-import matplotlib.pyplot as plt
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EQUITY_CSV = ROOT / "snapshots" / "atr_rank_filter_prod_equity.csv"
-RESULTS_CSV = ROOT / "snapshots" / "atr_rank_filter_prod_results.csv"
-OUT_MAIN = ROOT / "comparison_chart.png"
-OUT_COPY = ROOT / "charts" / "atr_rank_filter_comparison_chart.png"
+EQ_PATH = ROOT / "snapshots" / "atr_rank_equity_comparison.csv"
+OUT_PATH = ROOT / "charts" / "comparison_chart.png"
 
-THRESHOLDS = [0, 5, 10, 25]
-LABELS = {
-    0: "Baseline T=0 (no ATR-rank filter)",
-    5: "Winner T=5 (robustness-first)",
-    10: "Runner-up T=10",
-    25: "Runner-up T=25",
+# Load equity data
+df = pd.read_csv(EQ_PATH)
+print("Columns:", list(df.columns))
+print(df.head(3))
+
+plt.style.use("seaborn-v0_8-whitegrid")
+fig, ax = plt.subplots(figsize=(14, 8), dpi=160)
+
+# Color palette: dark baseline, mid runner-up, highlight winner
+colors = {
+    "T_0":  "#9ca3af",   # grey — baseline (no filter)
+    "T_5":  "#2563eb",   # blue — runner-up (old default)
+    "T_24": "#d97706",   # amber — WINNER (current production)
 }
-COLORS = {0: "#4C78A8", 5: "#F58518", 10: "#54A24B", 25: "#B279A2"}
 
+configs = ["T_0", "T_5", "T_24"]
+labels = {
+    "T_0":  r"T=0 (no filter) — Baseline",
+    "T_5":  r"T=5 (old default) — Runner-up",
+    "T_24": r"T=24 (production) — Winner",
+}
+linewidths = {"T_0": 1.8, "T_5": 1.8, "T_24": 2.8}
 
-def threshold_from_col(col: str):
-    m = re.search(r"_T(\d+)$", col)
-    return int(m.group(1)) if m else None
+for cfg in configs:
+    col = cfg
+    if col not in df.columns:
+        print(f"Warning: {col} not in columns {list(df.columns)}")
+        continue
+    equity = df[col].values
+    windows = df["window"].values
 
+    lw = linewidths[cfg]
+    color = colors[cfg]
 
-def main():
-    equity = pd.read_csv(EQUITY_CSV)
-    results = pd.read_csv(RESULTS_CSV)
+    ax.plot(windows, equity, label=labels[cfg], linewidth=lw, color=color, marker='o', markersize=5)
 
-    series = {}
-    for t in THRESHOLDS:
-        cols = [c for c in equity.columns if threshold_from_col(c) == t]
-        if not cols:
-            raise RuntimeError(f"No equity columns found for threshold {t}")
-        # Arithmetic mean across 9 universes × 6 windows, preserving per-step time series.
-        series[t] = equity[cols].mean(axis=1, skipna=True)
-
-    summary = (
-        results.groupby("threshold")
-        .agg(
-            pass_count=("pass", "sum"),
-            total=("pass", "count"),
-            avg_ret=("return_pct", "mean"),
-            avg_sharpe=("sharpe", "mean"),
-            avg_dd=("max_dd_pct", "mean"),
-            trades=("trades", "sum"),
-        )
-        .reset_index()
+    # Annotate final value
+    final = equity[-1]
+    ax.annotate(
+        f"  {final:.1f}x",
+        xy=(windows[-1], final),
+        fontsize=9,
+        color=color,
+        va="center",
     )
-    summary["pass_pct"] = 100 * summary.pass_count / summary.total
 
-    fig, ax = plt.subplots(figsize=(13.5, 7.5), dpi=160)
-    y_values = []
-    for t in THRESHOLDS:
-        s = series[t]
-        row = summary.loc[summary.threshold == t].iloc[0]
-        label = (
-            f"{LABELS[t]} — {int(row.pass_count)}/{int(row.total)} pass, "
-            f"Sharpe {row.avg_sharpe:.2f}, DD {row.avg_dd:.1f}%"
-        )
-        ax.plot(equity["step"], s, label=label, color=COLORS[t], linewidth=2.4)
-        y_values.extend(s.dropna().tolist())
+ax.set_xlabel("Walk-Forward Window", fontsize=11)
+ax.set_ylabel("Portfolio Equity (compounded, log scale)", fontsize=11)
+ax.set_title(
+    "ATR_RANK Threshold: Baseline (T=0) vs Old Default (T=5) vs Winner (T=24)\n"
+    "Base5 walk-forward, 7 windows — Turtle-only live path",
+    fontsize=13,
+)
+ax.legend(fontsize=10, framealpha=0.9, loc="upper left")
+ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{x:.0f}x"))
+ax.set_yscale("log")
+ax.grid(True, alpha=0.4)
 
-    ymin = max(min(y_values) * 0.92, 0.05)
-    ymax = max(y_values) * 1.08
-    ax.set_yscale("log")
-    ax.set_ylim(ymin, ymax)
-    ax.set_xlabel("Walk-forward test step (daily bars)")
-    ax.set_ylabel("Mean portfolio equity (log scale, start=1.0)")
-    ax.set_title("ATR-Rank Entry Filter Hyperopt — Corrected Fee Model\n"
-                 "Baseline vs robustness winner and runner-ups across 9 universes × 6 windows")
-    ax.grid(True, which="both", linestyle="--", linewidth=0.55, alpha=0.45)
-    ax.legend(loc="best", fontsize=9, frameon=True)
-    fig.tight_layout()
-    fig.savefig(OUT_MAIN)
-    fig.savefig(OUT_COPY)
-    print(f"saved {OUT_MAIN}")
-    print(f"saved {OUT_COPY}")
+# Caption box
+caption = (
+    "T=24 Winner: 7/7 pass, Sharpe 7.22 avg | "
+    "T=5: 4/7 pass, Sharpe 3.69 avg | "
+    "T=0: 6/7 pass, Sharpe 3.64 avg\n"
+    "Live Turtle-only path: Turtle breakout + ATR_RANK gate + Turtle ATR exit"
+)
+ax.text(
+    0.5, -0.12, caption,
+    transform=ax.transAxes,
+    ha="center", fontsize=8.5,
+    color="#4b5563",
+    style="italic",
+)
 
-
-if __name__ == "__main__":
-    main()
+plt.tight_layout()
+plt.savefig(OUT_PATH, bbox_inches="tight", dpi=160)
+print(f"Saved {OUT_PATH}")
+plt.close()
