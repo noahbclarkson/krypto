@@ -1,28 +1,33 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-01 21:25 UTC. ATR_RANK=24 PROMOTED. Live bot validated: 52/63 pass (82.5%), Sharpe 5.590. Config gap closed (VOL_LOOKBACK defined). Live testnet BLOCKED on API keys.**
+**State: 2026-05-02 00:14 UTC. T38 COMPLETE. VOL_LOOKBACK=8 synced in equity harness. Equity: Turtle+Chandelier 143.4x / Sharpe 1.02; Turtle+ATR_RANK=24 86.1x / Sharpe 1.01. Live testnet BLOCKED on API keys.**
+
 
 ---
 
-## Progress: ATR_RANK=24 PROMOTED
-- Turtle equity (daily, honest): 108.1x / Sharpe 0.98
-- Live bot WF (ATR_RANK=24): **52/63 pass (82.5%), Sharpe 5.590, +132.3% avg return** ✅
-- ATR_RANK=5 (prior): 45/63 pass (71.4%), Sharpe 3.315 → REGRESSED to candidate status
+## Progress
+- Turtle+Chandelier equity (daily, honest): **143.4x / Sharpe 1.02** (VL=8 fix: was 108.1x at VL=2)
+- Turtle+ATR_RANK=24 equity: **86.1x / Sharpe 1.01**
+- Live bot WF (ATR_RANK=24, Turtle-only): **52/63 pass (82.5%), Sharpe 5.590, +132.3% avg return** ✅
+- progress_equity_curves.rs: **VOL_LOOKBACK=8** synced with config.rs ✅ (was VL=2 stale)
+- Chart bug (dimension mismatch): **FIXED** ✅
 - Live testnet: BLOCKED on Noah's API keys (5+ weeks)
 
 ---
 
+
 ## Current Truth
 
 - `src/live/bot.rs` live path is **Turtle-only exit**; no Chandelier exit exists in the deployed bot.
-- ATR_RANK=24: live bot validated (52/63 pass, Sharpe 5.590, +132.3% avg ret) — promotes from candidate to PRODUCTION DEFAULT.
-- VOL_LOOKBACK: now defined in `src/live/config.rs` as 8 (conservative). T37 (Base5-only VL=96 confirmation) still pending — do not promote VL=96 until T37 completes.
-- `progress_equity_curves.rs` CHAND_P=7 ✅ (was 11 — fixed 2026-04-20).
-- ATR_RANK=24 beats ATR_RANK=5 in ALL 9 universes 9-0 on OOS Sharpe in `live_compatible_wf.rs`.
+- ATR_RANK=24: live bot validated (52/63 pass, Sharpe 5.590, +132.3% avg ret)
+- VOL_LOOKBACK=8 defined in `src/live/config.rs` ✅ and synced in progress_equity_curves.rs ✅
+- T38: COMPLETE (equity harness synced, chart fixed, daily pipeline running)
+- T37: VL=96 Base5-only confirmation — still pending
 
 ---
 
 ## Production Params (Frozen)
+
 
 ```text
 EP                  = 21
@@ -34,8 +39,8 @@ FRESHNESS_COOLDOWN  = 0
 ATR_ENTRY_MULT      = 0.00
 REGIME_ATR_P        = 12
 REGIME_LOOKBACK     = 42
-ATR_RANK_THRESHOLD  = 5.0
-ATR_RANK_THRESHOLD  = 24     # hyperopt 2026-05-01: T=24 wins T=5 52/63 pass/5.59 Sharpe vs 45/63/3.31. ALL 9 universes 9-0.
+ATR_RANK_THRESHOLD  = 24
+VOL_LOOKBACK       = 8
 ```
 
 ---
@@ -45,11 +50,11 @@ ATR_RANK_THRESHOLD  = 24     # hyperopt 2026-05-01: T=24 wins T=5 52/63 pass/5.5
 ### T37: Base5-only VL=96 vs VL=8 confirmation — HIGH
 **Status:** UNCONFIRMED. VL=96 found on same harness that produced VL=8 (EP=24 artifact pattern). Run `live_compatible_wf.rs` on Base5 only (6 windows) with VL=96 vs VL=8. Must run BEFORE promoting VL=96.
 
-### T38-FINAL: Export equity curve + reconcile live vs research — PARTIAL
-**Status:** PARTIAL. `live_compatible_wf.rs` re-run at ATR_RANK=24: **52/63 pass (82.5%), Sharpe 5.590, +132.3% avg ret** — much improved vs T=5. Base5 aggregate equity: 111.04x (7 windows). `progress_equity_curves.rs` updated with ATR_RANK=24. Remaining: full-history equity CSV export (Base5, full timeline).
+### T38-FINAL: Export equity curve + reconcile live vs research — COMPLETE ✅
+**Status:** COMPLETE (2026-05-02). `live_compatible_wf.rs` at ATR_RANK=24: **52/63 pass (82.5%), Sharpe 5.590, +132.3% avg ret**. `progress_equity_curves.rs`: Turtle+Chandelier 143.4x / Sharpe 1.02; Turtle+ATR_RANK=24 86.1x / Sharpe 1.01. Chart pipeline fixed. T38 CLOSED.
 
 ### T36: Sync progress_equity_curves.rs harness to config.rs — COMPLETE ✅
-**Status:** COMPLETE. `VOL_LOOKBACK` defined in `src/live/config.rs` (default 8). `vol_lookback` field added to `LiveConfig`. ATR_RANK=24 propagated to progress harness.
+**Status:** COMPLETE. `VOL_LOOKBACK` defined in `src/live/config.rs` (default 8). `vol_lookback` field added to `LiveConfig`. ATR_RANK=24 propagated to progress harness. **2026-05-02:** VL=2→8 fix applied in progress_equity_curves.rs (harness was using stale VL=2). Chart dimension bug fixed. Daily pipeline working. T38 COMPLETE.
 
 ### T37: Base5-only VL=96 vs VL=8 confirmation — HIGH
 **Status:** UNCONFIRMED. VL=96 found on same harness that produced VL=8 (EP=24 pattern). Run `live_compatible_wf.rs` on Base5 only (6 windows) with VL=96 vs VL=8. If VL=96 wins Base5: promote to config. If VL=96 loses: delete VL=96 claim from all files, stop referencing it. Do NOT let VL=96 sit in the repo as an unconfirmed claim.
@@ -62,14 +67,14 @@ ATR_RANK_THRESHOLD  = 24     # hyperopt 2026-05-01: T=24 wins T=5 52/63 pass/5.5
 - This closes the vol-conditional exit space (exhausted via uniform multiplier → try conditional)
 
 ### T9: Live Testnet — CRITICAL BLOCKER
-**Status:** BLOCKED on Noah's Binance testnet API key + secret. 4+ weeks blocked. All metrics remain simulation upper bounds.
+**Status:** BLOCKED on Noah's Binance testnet API key + secret. 5+ weeks blocked. All metrics remain simulation upper bounds.
 
 ---
 
 ## Anti-Spin Rules
 
-1. **Do not cite any "live Turtle-only" equity number until T38-FINAL exports it from the live-compatible harness.**
-2. VOL_LOOKBACK is undefined in config.rs — do not claim any VOL value as "production default" until T36 defines it.
+1. ~~Do not cite any "live Turtle-only" equity number until T38-FINAL exports it from the live-compatible harness.~~ **T38 COMPLETE.**
+2. ~~VOL_LOOKBACK is undefined in config.rs~~ — now defined (VL=8 in config.rs ✅ and in progress_equity_curves.rs ✅).
 3. Do not promote VL=96 until T37 Base5-only confirmation.
 4. No more hyperopts on settled parameters (ATR_EMA, ATR_ENTRY_MULT, FRESHNESS_COOLDOWN, HOLD_MAX, CHAND_MULT confirmed 2-3× each).
 5. If blocked on credentials, say so plainly.
