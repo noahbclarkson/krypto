@@ -22,9 +22,37 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/02337639-76a0-4b00-b36c-6a036ec978e7.jsonl": {
+      "mtimeMs": 1777660087015,
+      "size": 252057,
+      "contentHash": "59b843973884d6238bbd517049286fae7156e443d80b61a45dc98af88caee2b5",
+      "lineCount": 12,
+      "lastContentLine": 12
+    },
+    "krypto:sessions/02337639-76a0-4b00-b36c-6a036ec978e7.trajectory.jsonl": {
+      "mtimeMs": 1777660087042,
+      "size": 216089,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/04a8a77c-9615-4de1-971f-62e501262489.trajectory.jsonl": {
       "mtimeMs": 1777154715230,
       "size": 199439,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/05781cc5-f7bd-4cbb-8248-87793b075dc5.jsonl": {
+      "mtimeMs": 1777629837983,
+      "size": 119374,
+      "contentHash": "67dd25485adf67aa079f37acac1ea0440bfbf7ff552d73764625a00b0770da83",
+      "lineCount": 7,
+      "lastContentLine": 7
+    },
+    "krypto:sessions/05781cc5-f7bd-4cbb-8248-87793b075dc5.trajectory.jsonl": {
+      "mtimeMs": 1777629838006,
+      "size": 388427,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -71,13 +99,6 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/0d25080b-6d71-480a-a6a1-bd6bd532d0ee.jsonl.deleted.2026-04-28T20-21-27.512Z": {
-      "mtimeMs": 1777318162835,
-      "size": 710355,
-      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
-      "lineCount": 0,
-      "lastContentLine": 0
-    },
     "krypto:sessions/0d25080b-6d71-480a-a6a1-bd6bd532d0ee.trajectory.jsonl": {
       "mtimeMs": 1777318162879,
       "size": 648773,
@@ -88,6 +109,20 @@
     "krypto:sessions/0d3886a2-f085-41c7-b8a9-0b1b503e29ed.trajectory.jsonl": {
       "mtimeMs": 1777177998104,
       "size": 383536,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/0e78c080-0df1-4e73-bd09-cb76da4e93f2.jsonl": {
+      "mtimeMs": 1777681112391,
+      "size": 188096,
+      "contentHash": "80472a4d37c99a80244cca462cc3c4d05b50f7fd553472a534bfe9bb72746e01",
+      "lineCount": 9,
+      "lastContentLine": 9
+    },
+    "krypto:sessions/0e78c080-0df1-4e73-bd09-cb76da4e93f2.trajectory.jsonl": {
+      "mtimeMs": 1777681112417,
+      "size": 468310,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -106,6 +141,34 @@
       "lineCount": 7,
       "lastContentLine": 7
     },
+    "krypto:sessions/109f0214-606d-44c0-8df7-524b639fbf4a.jsonl": {
+      "mtimeMs": 1777686945065,
+      "size": 607813,
+      "contentHash": "ace9c5772df760f17ebc9fedff108feace730b6feb43a98b3081a9d01757cf11",
+      "lineCount": 21,
+      "lastContentLine": 21
+    },
+    "krypto:sessions/109f0214-606d-44c0-8df7-524b639fbf4a.trajectory.jsonl": {
+      "mtimeMs": 1777686945366,
+      "size": 861814,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/16b08459-a18e-4d4b-83ee-eefc813d9a7f.jsonl": {
+      "mtimeMs": 1777617134639,
+      "size": 1688,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/16b08459-a18e-4d4b-83ee-eefc813d9a7f.trajectory.jsonl": {
+      "mtimeMs": 1777617150188,
+      "size": 193266,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/1800c14a-8a5c-42f0-b02c-a1f629fa28f3.jsonl": {
       "mtimeMs": 1777432943215,
       "size": 310730,
@@ -120,6 +183,34 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/1adcba41-7f7c-4c06-a471-83005d885f0a.jsonl": {
+      "mtimeMs": 1777534174233,
+      "size": 325405,
+      "contentHash": "dd1a5f6690fcc507c9dedf99aaf6f1aaf89ad07ef376e90366f7cd5cfe632b2f",
+      "lineCount": 13,
+      "lastContentLine": 13
+    },
+    "krypto:sessions/1adcba41-7f7c-4c06-a471-83005d885f0a.trajectory.jsonl": {
+      "mtimeMs": 1777534174279,
+      "size": 227761,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/1b6c7ab9-75d4-4496-9679-3e0a90276ba2.jsonl": {
+      "mtimeMs": 1777530730950,
+      "size": 605129,
+      "contentHash": "4184f19dfbf185b870910f85586b1491b3d439f45bb508588d6456b1ca5f30fc",
+      "lineCount": 16,
+      "lastContentLine": 16
+    },
+    "krypto:sessions/1b6c7ab9-75d4-4496-9679-3e0a90276ba2.trajectory.jsonl": {
+      "mtimeMs": 1777530731010,
+      "size": 1561112,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/1b7f0d48-a6e5-4fd9-b5c6-010f9f27a0cf.trajectory.jsonl": {
       "mtimeMs": 1777133560051,
       "size": 412986,
@@ -127,12 +218,26 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/1c7b058a-4d6d-47c0-b475-82a277325905.jsonl": {
+      "mtimeMs": 1777626048226,
+      "size": 363081,
+      "contentHash": "0fd982ff350aedaeaff560a59fa2143d2cec896fb53a0b50f61eefb10319a692",
+      "lineCount": 14,
+      "lastContentLine": 14
+    },
+    "krypto:sessions/1c7b058a-4d6d-47c0-b475-82a277325905.trajectory.jsonl": {
+      "mtimeMs": 1777626048260,
+      "size": 228269,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/1deb3414-f278-4f4c-9c64-343b848c27f1.jsonl": {
-      "mtimeMs": 1777478082855,
-      "size": 3772062,
-      "contentHash": "4b97deed208117a795265210cc17c6767d63a6fadcad9010f1714550c8fc7581",
-      "lineCount": 935,
-      "lastContentLine": 935
+      "mtimeMs": 1777686880283,
+      "size": 3782734,
+      "contentHash": "ff2417f7bcc36c9530a6dd7f396ba38d51c63cf5e57178e83a1d88da5115824e",
+      "lineCount": 947,
+      "lastContentLine": 947
     },
     "krypto:sessions/22b6d134-dab9-480c-a3c9-815c92c14309.jsonl": {
       "mtimeMs": 1777442818711,
@@ -165,6 +270,20 @@
     "krypto:sessions/3025e884-a037-49a3-b2ac-a5313da23eb7.trajectory.jsonl": {
       "mtimeMs": 1777190731927,
       "size": 638036,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/306251f9-3d32-4837-8f6c-55ef385f41a7.jsonl": {
+      "mtimeMs": 1777661849503,
+      "size": 623172,
+      "contentHash": "13ae41c4ba2906d9f265950e2263bc10ea969e6e7bf9f23b87961d45d74a563c",
+      "lineCount": 21,
+      "lastContentLine": 21
+    },
+    "krypto:sessions/306251f9-3d32-4837-8f6c-55ef385f41a7.trajectory.jsonl": {
+      "mtimeMs": 1777661849570,
+      "size": 895661,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -218,23 +337,9 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/37acaecd-d517-43d0-ad3d-73a93d96fd3a.jsonl.deleted.2026-04-28T22-27-30.759Z": {
-      "mtimeMs": 1777329804513,
-      "size": 408122,
-      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
-      "lineCount": 0,
-      "lastContentLine": 0
-    },
     "krypto:sessions/37acaecd-d517-43d0-ad3d-73a93d96fd3a.trajectory.jsonl": {
       "mtimeMs": 1777329804569,
       "size": 2562999,
-      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
-      "lineCount": 0,
-      "lastContentLine": 0
-    },
-    "krypto:sessions/38db4448-731b-4208-8cb3-e5c7747c5928.jsonl.deleted.2026-04-28T11-06-56.828Z": {
-      "mtimeMs": 1777260117784,
-      "size": 249205,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -256,6 +361,20 @@
     "krypto:sessions/39bba5f1-6aaa-43e0-b268-0a1976ba3f4b.trajectory.jsonl": {
       "mtimeMs": 1777373215049,
       "size": 204602,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/3a6fff0c-cbc6-4cab-a191-fc4c194d6fb5.jsonl": {
+      "mtimeMs": 1777652306445,
+      "size": 128926,
+      "contentHash": "b3a338bd5580d3f4f7667a337a863ec63febbd4b4ba72ad62628cc61053dec53",
+      "lineCount": 4,
+      "lastContentLine": 4
+    },
+    "krypto:sessions/3a6fff0c-cbc6-4cab-a191-fc4c194d6fb5.trajectory.jsonl": {
+      "mtimeMs": 1777652306471,
+      "size": 389828,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -288,6 +407,20 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/3ec4f689-9325-4911-bff6-bb3ce49152b6.jsonl": {
+      "mtimeMs": 1777522236753,
+      "size": 157494,
+      "contentHash": "71af5082c2f4ac234cdb7fb4324167f66702b598cab1c9f105a379310e66105f",
+      "lineCount": 4,
+      "lastContentLine": 4
+    },
+    "krypto:sessions/3ec4f689-9325-4911-bff6-bb3ce49152b6.trajectory.jsonl": {
+      "mtimeMs": 1777522236772,
+      "size": 412666,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/41f5aa69-ff26-4ea2-b8be-21042080db09.trajectory.jsonl": {
       "mtimeMs": 1777220383843,
       "size": 340623,
@@ -301,13 +434,6 @@
       "contentHash": "2226e33fcef3c571d43fb830708c848ba5ef36fe8b5739ee63538912a39d4c90",
       "lineCount": 14,
       "lastContentLine": 14
-    },
-    "krypto:sessions/45ac8303-d1b2-42f4-b708-9c5a9513d4e8.jsonl.deleted.2026-04-28T20-21-27.513Z": {
-      "mtimeMs": 1777319287592,
-      "size": 597877,
-      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
-      "lineCount": 0,
-      "lastContentLine": 0
     },
     "krypto:sessions/45ac8303-d1b2-42f4-b708-9c5a9513d4e8.trajectory.jsonl": {
       "mtimeMs": 1777319287690,
@@ -330,9 +456,51 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/4939b09a-f7f4-4cff-9a69-6a0ed74eecb1.jsonl": {
+      "mtimeMs": 1777551463102,
+      "size": 397639,
+      "contentHash": "01f540acfbcd0b8ddde45002e5dc6fbf52fda657b0461d5bab8f059d13d35533",
+      "lineCount": 15,
+      "lastContentLine": 15
+    },
+    "krypto:sessions/4939b09a-f7f4-4cff-9a69-6a0ed74eecb1.trajectory.jsonl": {
+      "mtimeMs": 1777551463169,
+      "size": 1648582,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/4ed5f9ab-a17f-45ce-9ed7-1b8427dae5e8.trajectory.jsonl": {
       "mtimeMs": 1777219474534,
       "size": 207901,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/4f8fb7ee-3e8b-48b4-99b9-d23ad92c10e2.jsonl.deleted.2026-05-01T18-57-29.891Z": {
+      "mtimeMs": 1777573754514,
+      "size": 336235,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/4f8fb7ee-3e8b-48b4-99b9-d23ad92c10e2.trajectory.jsonl": {
+      "mtimeMs": 1777573754558,
+      "size": 207385,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/4f927876-22de-485d-82b5-2c84d4a93b50.jsonl": {
+      "mtimeMs": 1777566139009,
+      "size": 205658,
+      "contentHash": "d3be23034dfb12c33a9b1a657d579f2bb96ee7d4aef6a3a964ef009dac3d1ab8",
+      "lineCount": 3,
+      "lastContentLine": 3
+    },
+    "krypto:sessions/4f927876-22de-485d-82b5-2c84d4a93b50.trajectory.jsonl": {
+      "mtimeMs": 1777566139036,
+      "size": 464295,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -386,16 +554,23 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/56e2db97-0450-4dc0-8a88-a584072104ff.jsonl.deleted.2026-04-28T20-21-27.514Z": {
-      "mtimeMs": 1777319784426,
-      "size": 182665,
+    "krypto:sessions/56e2db97-0450-4dc0-8a88-a584072104ff.trajectory.jsonl": {
+      "mtimeMs": 1777319784490,
+      "size": 421594,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/56e2db97-0450-4dc0-8a88-a584072104ff.trajectory.jsonl": {
-      "mtimeMs": 1777319784490,
-      "size": 421594,
+    "krypto:sessions/58070e24-a4c0-4a38-9e2f-804354b4f2b2.jsonl": {
+      "mtimeMs": 1777596611545,
+      "size": 154846,
+      "contentHash": "738ff2844de6a7ddde6054cd3c0edca4fa3db83e9cfe987b53e71de33b974a16",
+      "lineCount": 7,
+      "lastContentLine": 7
+    },
+    "krypto:sessions/58070e24-a4c0-4a38-9e2f-804354b4f2b2.trajectory.jsonl": {
+      "mtimeMs": 1777596611567,
+      "size": 417928,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -407,12 +582,54 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/5a20a6f7-9cf2-4ec7-b22c-7972b25b1ef9.jsonl": {
+      "mtimeMs": 1777653946780,
+      "size": 141797,
+      "contentHash": "c43c7fca10719a8970c2e8c8eca456d6a23534a402e0f615f36fbc3dfd323945",
+      "lineCount": 5,
+      "lastContentLine": 5
+    },
+    "krypto:sessions/5a20a6f7-9cf2-4ec7-b22c-7972b25b1ef9.trajectory.jsonl": {
+      "mtimeMs": 1777653946804,
+      "size": 405591,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/5a5d2acc-de0b-4183-a69f-265fe2800624.jsonl": {
       "mtimeMs": 1776258955797,
       "size": 211351,
       "contentHash": "04bd584f79b4b62f8a7b372858a5b8485457cbb4111cfa4e16556f4a04fa75d1",
       "lineCount": 8,
       "lastContentLine": 8
+    },
+    "krypto:sessions/5c0284bd-31f8-48b1-abed-67dbc3ee58b0.jsonl": {
+      "mtimeMs": 1777650771357,
+      "size": 309004,
+      "contentHash": "6549c1b06a88d8e54616be813014d14e7fe47cdef36a5b0ca6bb20d1a5676240",
+      "lineCount": 14,
+      "lastContentLine": 14
+    },
+    "krypto:sessions/5c0284bd-31f8-48b1-abed-67dbc3ee58b0.trajectory.jsonl": {
+      "mtimeMs": 1777650771382,
+      "size": 215712,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/5d2091fa-d7b7-4dab-bd3c-9e5ccf2cd3a1.jsonl": {
+      "mtimeMs": 1777594788213,
+      "size": 393420,
+      "contentHash": "6a3b396c118450e57256fb20eaddf62062bd16ac17489af00af424f1bf325e87",
+      "lineCount": 14,
+      "lastContentLine": 14
+    },
+    "krypto:sessions/5d2091fa-d7b7-4dab-bd3c-9e5ccf2cd3a1.trajectory.jsonl": {
+      "mtimeMs": 1777594788247,
+      "size": 216525,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
     },
     "krypto:sessions/60243bdc-fde6-4e82-b94f-2f8fe3213943.trajectory.jsonl": {
       "mtimeMs": 1777132204608,
@@ -421,16 +638,44 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/62135e0d-7fcf-4d3c-a8c4-4c9539feaeb8.jsonl": {
-      "mtimeMs": 1777520565768,
-      "size": 53745,
+    "krypto:sessions/62135e0d-7fcf-4d3c-a8c4-4c9539feaeb8.jsonl.deleted.2026-05-01T03-59-50.953Z": {
+      "mtimeMs": 1777521379899,
+      "size": 336929,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
     },
     "krypto:sessions/62135e0d-7fcf-4d3c-a8c4-4c9539feaeb8.trajectory.jsonl": {
-      "mtimeMs": 1777520431358,
-      "size": 189605,
+      "mtimeMs": 1777521379923,
+      "size": 1039364,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/63881f48-11ff-483b-bc4b-2ac9537a048c.jsonl": {
+      "mtimeMs": 1777574153202,
+      "size": 506607,
+      "contentHash": "c8ef35a7cf60090404d0ddbe8f7f971c197acdd99f1c7d0d755816bc24135bde",
+      "lineCount": 21,
+      "lastContentLine": 21
+    },
+    "krypto:sessions/63881f48-11ff-483b-bc4b-2ac9537a048c.trajectory.jsonl": {
+      "mtimeMs": 1777574153277,
+      "size": 449527,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/6433c19b-ed7b-4a4b-97a5-cc176f8d972c.jsonl": {
+      "mtimeMs": 1777579824085,
+      "size": 200751,
+      "contentHash": "b53eceb7abc3399d4d8c56d30d9063092be6a00ec962a59ae6fdd8514877fb4b",
+      "lineCount": 9,
+      "lastContentLine": 9
+    },
+    "krypto:sessions/6433c19b-ed7b-4a4b-97a5-cc176f8d972c.trajectory.jsonl": {
+      "mtimeMs": 1777579824111,
+      "size": 206662,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -449,12 +694,54 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/67c0d1b2-bcd4-42b6-8a9d-46bae49baefb.jsonl": {
+      "mtimeMs": 1777572772023,
+      "size": 435384,
+      "contentHash": "9c8eab84e015ae0b3c4c760bf9f8c8285bfa499f30ef1f3f7923b4354a250405",
+      "lineCount": 5,
+      "lastContentLine": 5
+    },
+    "krypto:sessions/67c0d1b2-bcd4-42b6-8a9d-46bae49baefb.trajectory.jsonl": {
+      "mtimeMs": 1777572772086,
+      "size": 649515,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/69884761-e448-4e7d-885e-fdb3de4c1282.jsonl": {
       "mtimeMs": 1776529431680,
       "size": 155818,
       "contentHash": "ed67a0f2d6534e3dc37411ec8574f615463f4b8f0c6374cc0b48bef4e2a04455",
       "lineCount": 4,
       "lastContentLine": 4
+    },
+    "krypto:sessions/6a37e917-80a6-4857-aae5-367f626def85.jsonl": {
+      "mtimeMs": 1777640676893,
+      "size": 558084,
+      "contentHash": "e50ba205cc0615f75166b6eb352ea46aaede5f818e100d0604e7ba907a32ca84",
+      "lineCount": 25,
+      "lastContentLine": 24
+    },
+    "krypto:sessions/6a37e917-80a6-4857-aae5-367f626def85.trajectory.jsonl": {
+      "mtimeMs": 1777640676944,
+      "size": 827822,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/6d970d39-4e06-4499-89de-84da429c6bbc.jsonl": {
+      "mtimeMs": 1777637966663,
+      "size": 322927,
+      "contentHash": "64241b2b6a7f00b09bfbe9de8ad1f8d60736238fca7a008b5bf6953441594dd7",
+      "lineCount": 15,
+      "lastContentLine": 15
+    },
+    "krypto:sessions/6d970d39-4e06-4499-89de-84da429c6bbc.trajectory.jsonl": {
+      "mtimeMs": 1777637966709,
+      "size": 2826827,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
     },
     "krypto:sessions/6eac4368-ed51-4441-9171-a0cddc8f0b4f.trajectory.jsonl": {
       "mtimeMs": 1777184789561,
@@ -512,6 +799,20 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/7b49c9f7-ed30-4af3-9f57-57f33f343d78.jsonl": {
+      "mtimeMs": 1777605019857,
+      "size": 142423,
+      "contentHash": "1ea2ffbc97a423518e1daee3325599b27e6ad529d6ebc51e085fdeff1e4cacc8",
+      "lineCount": 9,
+      "lastContentLine": 9
+    },
+    "krypto:sessions/7b49c9f7-ed30-4af3-9f57-57f33f343d78.trajectory.jsonl": {
+      "mtimeMs": 1777605019897,
+      "size": 418254,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/7b6d21d5-5929-419e-a8ad-02feaae1ed49.trajectory.jsonl": {
       "mtimeMs": 1777215849254,
       "size": 754851,
@@ -543,6 +844,20 @@
     "krypto:sessions/7f4ea9c1-fd66-4116-adc5-5bf95f38c1f7.trajectory.jsonl": {
       "mtimeMs": 1777498649856,
       "size": 446160,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/801c080b-0202-4d22-95f7-4bac33c640c8.jsonl": {
+      "mtimeMs": 1777583932735,
+      "size": 639338,
+      "contentHash": "acebd9e4696b220757b0adcf03eab74237f4b073acda6fc8f35b4fbd7efadaca",
+      "lineCount": 15,
+      "lastContentLine": 15
+    },
+    "krypto:sessions/801c080b-0202-4d22-95f7-4bac33c640c8.trajectory.jsonl": {
+      "mtimeMs": 1777583932832,
+      "size": 650112,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -645,9 +960,16 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/9ef2e31c-c860-4563-85bb-353511ef4a1b.jsonl.deleted.2026-04-28T00-23-24.326Z": {
-      "mtimeMs": 1777249542418,
-      "size": 505958,
+    "krypto:sessions/9dea42fe-6907-4384-a3ed-397f95d2511a.jsonl": {
+      "mtimeMs": 1777551969904,
+      "size": 132623,
+      "contentHash": "f1af10425ef56a6494aff94c8d126e0d9ee89d9d07acd3c7313293d397211d93",
+      "lineCount": 8,
+      "lastContentLine": 8
+    },
+    "krypto:sessions/9dea42fe-6907-4384-a3ed-397f95d2511a.trajectory.jsonl": {
+      "mtimeMs": 1777551969936,
+      "size": 391396,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -655,6 +977,20 @@
     "krypto:sessions/9ef2e31c-c860-4563-85bb-353511ef4a1b.trajectory.jsonl": {
       "mtimeMs": 1777249542492,
       "size": 203640,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/9f9f0802-8c9e-46d5-bc6e-aa8ad00fd256.jsonl": {
+      "mtimeMs": 1777564108453,
+      "size": 541502,
+      "contentHash": "260dba76b4b120190274107ed908e08bb1918767d0f026da4279b39a7a201dc1",
+      "lineCount": 12,
+      "lastContentLine": 12
+    },
+    "krypto:sessions/9f9f0802-8c9e-46d5-bc6e-aa8ad00fd256.trajectory.jsonl": {
+      "mtimeMs": 1777564108558,
+      "size": 637172,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -673,9 +1009,16 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/a7b6a469-8d5f-49c7-87aa-09b428d83a00.jsonl.deleted.2026-04-28T22-17-30.366Z": {
-      "mtimeMs": 1777328472452,
-      "size": 95640,
+    "krypto:sessions/a2c72f53-ffbf-4183-a0a3-bbb5dac4e574.jsonl": {
+      "mtimeMs": 1777543253114,
+      "size": 512003,
+      "contentHash": "e2d11448a87028074ea84d40f8840029c71abb3084b0da258615a77eb555aa2e",
+      "lineCount": 10,
+      "lastContentLine": 10
+    },
+    "krypto:sessions/a2c72f53-ffbf-4183-a0a3-bbb5dac4e574.trajectory.jsonl": {
+      "mtimeMs": 1777543253226,
+      "size": 939574,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -683,6 +1026,20 @@
     "krypto:sessions/a7b6a469-8d5f-49c7-87aa-09b428d83a00.trajectory.jsonl": {
       "mtimeMs": 1777328472504,
       "size": 330464,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/a7cb1668-7783-4608-877c-aaf56098e868.jsonl": {
+      "mtimeMs": 1777670955177,
+      "size": 478930,
+      "contentHash": "91fb3e4c5dcf47c106125589d28961fa41b87de63dbe631b94d43a329e66df9b",
+      "lineCount": 12,
+      "lastContentLine": 12
+    },
+    "krypto:sessions/a7cb1668-7783-4608-877c-aaf56098e868.trajectory.jsonl": {
+      "mtimeMs": 1777670955241,
+      "size": 227426,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -697,6 +1054,20 @@
     "krypto:sessions/a7f7f077-7814-4303-9cfc-5a4f30c3f1fc.trajectory.jsonl": {
       "mtimeMs": 1777496186006,
       "size": 370190,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/a91633f6-b341-4eaa-833c-89de520fb8ba.jsonl": {
+      "mtimeMs": 1777631132376,
+      "size": 147011,
+      "contentHash": "4d7201e16660e82562df9fdcbc7a152c5c1dd2b0c2c4a2ef3ff77179ff4dd304",
+      "lineCount": 5,
+      "lastContentLine": 5
+    },
+    "krypto:sessions/a91633f6-b341-4eaa-833c-89de520fb8ba.trajectory.jsonl": {
+      "mtimeMs": 1777631132403,
+      "size": 423107,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -718,9 +1089,9 @@
     "krypto:sessions/aa1cc001-9e13-42f1-af02-673a27a03f8e.jsonl": {
       "mtimeMs": 1775406712210,
       "size": 8551,
-      "contentHash": "265de0f0bca58beb1dfa0e4d32d1f0ca61f7b8d15433bd184985f2243be07896",
-      "lineCount": 3,
-      "lastContentLine": 3
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
     },
     "krypto:sessions/ab7f4370-edc1-45a2-85c8-6dffbe94a0f9.jsonl": {
       "mtimeMs": 1777405220325,
@@ -736,9 +1107,37 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/ad6d7fd9-a444-4c73-91c8-194c907bf5a7.jsonl": {
+      "mtimeMs": 1777666588346,
+      "size": 114803,
+      "contentHash": "0811bc5d44666997551ae7b8f89f8a891e4f7f89bf6baab3f443e19bbda9c8be",
+      "lineCount": 7,
+      "lastContentLine": 7
+    },
+    "krypto:sessions/ad6d7fd9-a444-4c73-91c8-194c907bf5a7.trajectory.jsonl": {
+      "mtimeMs": 1777666588385,
+      "size": 377473,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/adb8da4c-e8d5-467d-9422-8e86d48ab9e9.trajectory.jsonl": {
       "mtimeMs": 1777205944069,
       "size": 1846318,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/af0a60b1-f812-436e-8169-620ac2ea7dde.jsonl": {
+      "mtimeMs": 1777632388177,
+      "size": 418429,
+      "contentHash": "39e6ee8aefc263957e3f141e6a745ecf3650cebf02e95f5fab7ed7d86819fe45",
+      "lineCount": 15,
+      "lastContentLine": 12
+    },
+    "krypto:sessions/af0a60b1-f812-436e-8169-620ac2ea7dde.trajectory.jsonl": {
+      "mtimeMs": 1777632388289,
+      "size": 2576831,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -750,19 +1149,33 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/b103a186-02e8-452c-bf83-ebb431ed3485.jsonl": {
+      "mtimeMs": 1777638794334,
+      "size": 166039,
+      "contentHash": "b9ab1982685b88e99afc09746e7362de0143b0630dd68cda95dc6d6208c83fc0",
+      "lineCount": 5,
+      "lastContentLine": 5
+    },
+    "krypto:sessions/b103a186-02e8-452c-bf83-ebb431ed3485.trajectory.jsonl": {
+      "mtimeMs": 1777638794363,
+      "size": 428988,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/b66ea2ca-8d61-4a41-a9ec-407d1a64c316.jsonl": {
       "mtimeMs": 1775927599793,
       "size": 135744,
-      "contentHash": "fdeaa3b98443cb3b9adf542b625bfe2bca47d496adf0420cc133281bed6527f4",
-      "lineCount": 3,
-      "lastContentLine": 3
+      "contentHash": "a4bc2026695f082a934739ca3b814d3a209cf3a3d3ecf99e5dceb811b4f7c7dc",
+      "lineCount": 2,
+      "lastContentLine": 2
     },
     "krypto:sessions/b7262730-22e6-4929-b8fa-c8c8c4113cfa.jsonl": {
       "mtimeMs": 1775107225627,
       "size": 21561,
-      "contentHash": "a1aaab1e5b03a7a4e7798fffae397e0f02c86dfd23e618f015b8d44229d9c34f",
-      "lineCount": 7,
-      "lastContentLine": 7
+      "contentHash": "1bf264dfe2def20fcbe7036aac71075c7730b975c19c2b22a23c6cffca8304d3",
+      "lineCount": 12,
+      "lastContentLine": 12
     },
     "krypto:sessions/b9913031-fa22-4542-95c1-c7438c089e60.trajectory.jsonl": {
       "mtimeMs": 1777097036078,
@@ -795,9 +1208,23 @@
     "krypto:sessions/bc7a695f-fe77-4ef8-a1a9-9ea34a2f9748.jsonl": {
       "mtimeMs": 1776788232367,
       "size": 239805,
-      "contentHash": "9af9bb92591186e5a192cfd53d030434f923142fce0090814ad0577799b46af0",
-      "lineCount": 10,
-      "lastContentLine": 10
+      "contentHash": "8579e37936049e0942fe339718bcd13fa45688c2c69432bc957c0106dbb1dc10",
+      "lineCount": 7,
+      "lastContentLine": 7
+    },
+    "krypto:sessions/bcb111f8-171d-467b-8c51-f44edfc7ee8c.jsonl": {
+      "mtimeMs": 1777651912198,
+      "size": 257860,
+      "contentHash": "e0cbc8f7d082ac678fd5238b807e09d1210ab6856cda8a6845441b4affbc0699",
+      "lineCount": 11,
+      "lastContentLine": 11
+    },
+    "krypto:sessions/bcb111f8-171d-467b-8c51-f44edfc7ee8c.trajectory.jsonl": {
+      "mtimeMs": 1777651912256,
+      "size": 2002110,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
     },
     "krypto:sessions/bd955e5f-a2d6-47ea-a586-1d118da968a8.trajectory.jsonl": {
       "mtimeMs": 1777162072374,
@@ -830,6 +1257,34 @@
     "krypto:sessions/c0b77d2d-f227-4b89-81b6-efa0f7e2add2.trajectory.jsonl": {
       "mtimeMs": 1777412105412,
       "size": 1364841,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/c1731bf9-0613-40bb-b497-b345010bf23d.jsonl": {
+      "mtimeMs": 1777597654935,
+      "size": 526349,
+      "contentHash": "a4a6ab8206b38e2573ba5fdf9a06ba0c46e6c582898552c14533e8881fc0f5d3",
+      "lineCount": 10,
+      "lastContentLine": 10
+    },
+    "krypto:sessions/c1731bf9-0613-40bb-b497-b345010bf23d.trajectory.jsonl": {
+      "mtimeMs": 1777597655009,
+      "size": 450135,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/c254ae72-17fe-4303-9598-e2f77c9b6c90.jsonl": {
+      "mtimeMs": 1777541611366,
+      "size": 336274,
+      "contentHash": "83d49c8a46236ce403b4ed806294194f470932ba296aa7f65f0692f85af9a40a",
+      "lineCount": 10,
+      "lastContentLine": 10
+    },
+    "krypto:sessions/c254ae72-17fe-4303-9598-e2f77c9b6c90.trajectory.jsonl": {
+      "mtimeMs": 1777541611404,
+      "size": 223117,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -869,13 +1324,6 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/c6eda1d8-a598-48ad-b86e-db812fc94d44.jsonl.deleted.2026-04-28T22-42-31.275Z": {
-      "mtimeMs": 1777330507374,
-      "size": 513367,
-      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
-      "lineCount": 0,
-      "lastContentLine": 0
-    },
     "krypto:sessions/c6eda1d8-a598-48ad-b86e-db812fc94d44.trajectory.jsonl": {
       "mtimeMs": 1777330507438,
       "size": 221140,
@@ -897,16 +1345,37 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/d02658ce-0e82-4128-84d8-25b85afdc00a.trajectory.jsonl": {
-      "mtimeMs": 1777208098501,
-      "size": 633833,
+    "krypto:sessions/cae6df4e-038c-4155-a759-c0bd2c6df3d5.jsonl": {
+      "mtimeMs": 1777552766453,
+      "size": 479283,
+      "contentHash": "c40dd9be6d093a77ea4f830518b28f9feee559997920957eceb1e8f937483634",
+      "lineCount": 8,
+      "lastContentLine": 8
+    },
+    "krypto:sessions/cae6df4e-038c-4155-a759-c0bd2c6df3d5.trajectory.jsonl": {
+      "mtimeMs": 1777552766537,
+      "size": 1226317,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/d19053a8-a6e8-4383-b8aa-02faf1edd83a.jsonl.deleted.2026-04-28T11-06-56.827Z": {
-      "mtimeMs": 1777253958760,
-      "size": 253402,
+    "krypto:sessions/cd6b8175-4c6f-4a5c-8ea3-5c9c4c7ca7e7.jsonl": {
+      "mtimeMs": 1777584364795,
+      "size": 196726,
+      "contentHash": "a9d32a58976b12f5e5dabab28e2cfdc718fa0b6467d84e7a196e553ed4264d76",
+      "lineCount": 9,
+      "lastContentLine": 9
+    },
+    "krypto:sessions/cd6b8175-4c6f-4a5c-8ea3-5c9c4c7ca7e7.trajectory.jsonl": {
+      "mtimeMs": 1777584364825,
+      "size": 472533,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/d02658ce-0e82-4128-84d8-25b85afdc00a.trajectory.jsonl": {
+      "mtimeMs": 1777208098501,
+      "size": 633833,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -925,6 +1394,62 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/d3bbc1ff-7d7b-4d9c-a8cf-4c7dbbdf5d63.jsonl": {
+      "mtimeMs": 1777607088569,
+      "size": 442564,
+      "contentHash": "b16b38ccf20c8604b005b3d0de052c19f461b0fb11a516762f15112187c9606e",
+      "lineCount": 9,
+      "lastContentLine": 9
+    },
+    "krypto:sessions/d3bbc1ff-7d7b-4d9c-a8cf-4c7dbbdf5d63.trajectory.jsonl": {
+      "mtimeMs": 1777607088648,
+      "size": 1720736,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/d400a875-3b48-449b-9085-fbb01bc115a1.jsonl": {
+      "mtimeMs": 1777608838310,
+      "size": 244425,
+      "contentHash": "642c158e92f4cf06c35bd4dc8840ad6122ca44048da9ced8cb85ed95f6250ca3",
+      "lineCount": 7,
+      "lastContentLine": 7
+    },
+    "krypto:sessions/d400a875-3b48-449b-9085-fbb01bc115a1.trajectory.jsonl": {
+      "mtimeMs": 1777608838376,
+      "size": 1224061,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/d422e76d-9a40-4316-95ed-9168af5ed117.jsonl": {
+      "mtimeMs": 1777681687951,
+      "size": 157268,
+      "contentHash": "e492ef695193f16d449007409d24d4534c4a11d7d21e54678f89294ee2b9bfd8",
+      "lineCount": 8,
+      "lastContentLine": 8
+    },
+    "krypto:sessions/d422e76d-9a40-4316-95ed-9168af5ed117.trajectory.jsonl": {
+      "mtimeMs": 1777681687981,
+      "size": 423008,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
+    "krypto:sessions/d493fa8f-5852-4b95-a785-b94c9510aa77.jsonl": {
+      "mtimeMs": 1777521823161,
+      "size": 448508,
+      "contentHash": "a6fde3000590f2500c2ce2760036d8bb18cccbbb8656fc7f6236b48336a052f7",
+      "lineCount": 9,
+      "lastContentLine": 9
+    },
+    "krypto:sessions/d493fa8f-5852-4b95-a785-b94c9510aa77.trajectory.jsonl": {
+      "mtimeMs": 1777521823229,
+      "size": 1596061,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/d50f8105-52fd-495d-a0fe-dd29ff684c14.trajectory.jsonl": {
       "mtimeMs": 1777234202267,
       "size": 414838,
@@ -932,9 +1457,16 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/decd32e6-042d-489d-b8d7-47009776e6cf.jsonl.deleted.2026-04-29T00-06-53.207Z": {
-      "mtimeMs": 1777335801560,
-      "size": 452451,
+    "krypto:sessions/d8f7ec02-f1ea-4624-a0cf-7ac27083a35e.jsonl": {
+      "mtimeMs": 1777616984618,
+      "size": 661625,
+      "contentHash": "b80629ae5d9a9e7b38019522992fde402da431e4878ae00918e29b6d570152ec",
+      "lineCount": 8,
+      "lastContentLine": 8
+    },
+    "krypto:sessions/d8f7ec02-f1ea-4624-a0cf-7ac27083a35e.trajectory.jsonl": {
+      "mtimeMs": 1777616984719,
+      "size": 1179476,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -967,6 +1499,20 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/e1d45742-3fbb-42be-a0bc-b16b562b8bde.jsonl": {
+      "mtimeMs": 1777565394731,
+      "size": 272317,
+      "contentHash": "1c7a1554e72b7fd3c6f620b766506a3844d6c3bc7f22349d6f62316d323d3421",
+      "lineCount": 5,
+      "lastContentLine": 5
+    },
+    "krypto:sessions/e1d45742-3fbb-42be-a0bc-b16b562b8bde.trajectory.jsonl": {
+      "mtimeMs": 1777565394800,
+      "size": 1054305,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/e28783ed-7d5f-45a8-80d3-5d39e95b67b2.trajectory.jsonl": {
       "mtimeMs": 1777107098829,
       "size": 699146,
@@ -991,9 +1537,23 @@
     "krypto:sessions/e6ca8332-6122-40dd-9841-73d4b61ca47a.jsonl": {
       "mtimeMs": 1775489604320,
       "size": 107384,
-      "contentHash": "e768ed29e5f1dbdd3dbe2b00a27e8703c203c004521bef6378ac962c4fd810e2",
-      "lineCount": 3,
-      "lastContentLine": 3
+      "contentHash": "b9ba3a31ba782761541d26b90ef69378428cfb231c67a14130e758833a67d750",
+      "lineCount": 1,
+      "lastContentLine": 1
+    },
+    "krypto:sessions/ecb6558f-bf3f-4561-92a9-e928d276d281.jsonl": {
+      "mtimeMs": 1777562312298,
+      "size": 414675,
+      "contentHash": "35c743de6fd24cfb01a0d779b25eb350764bf6a64d3d7a803ff0fde15b94288e",
+      "lineCount": 13,
+      "lastContentLine": 12
+    },
+    "krypto:sessions/ecb6558f-bf3f-4561-92a9-e928d276d281.trajectory.jsonl": {
+      "mtimeMs": 1777562312336,
+      "size": 219094,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
     },
     "krypto:sessions/ef188ccd-3a44-4743-b7c5-5594cfcde19e.trajectory.jsonl": {
       "mtimeMs": 1777112719582,
@@ -1019,13 +1579,6 @@
     "krypto:sessions/f28874eb-4ef7-49f7-b641-4b7f8e5bc264.trajectory.jsonl": {
       "mtimeMs": 1777239516916,
       "size": 635256,
-      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
-      "lineCount": 0,
-      "lastContentLine": 0
-    },
-    "krypto:sessions/f74e9fdb-39f4-4a49-b3a3-9ecd487292f6.jsonl.deleted.2026-04-28T21-57-29.652Z": {
-      "mtimeMs": 1777327532280,
-      "size": 220179,
       "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
       "lineCount": 0,
       "lastContentLine": 0
@@ -1058,6 +1611,20 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
+    "krypto:sessions/f80303bd-cb01-4bd2-8eb1-ce4bd79e2635.jsonl": {
+      "mtimeMs": 1777536681779,
+      "size": 153794,
+      "contentHash": "85e828316c459065dbe21bf0d1b24530cde40858a270641abefc6d42cdef973b",
+      "lineCount": 7,
+      "lastContentLine": 7
+    },
+    "krypto:sessions/f80303bd-cb01-4bd2-8eb1-ce4bd79e2635.trajectory.jsonl": {
+      "mtimeMs": 1777536681802,
+      "size": 409625,
+      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
+      "lineCount": 0,
+      "lastContentLine": 0
+    },
     "krypto:sessions/f8064eb2-8274-4555-a635-1622119972ec.jsonl": {
       "mtimeMs": 1777202860631,
       "size": 77739,
@@ -1075,16 +1642,16 @@
     "krypto:sessions/f82c8f26-19b7-414a-b72c-8c6b3d3499b3.jsonl": {
       "mtimeMs": 1775106890752,
       "size": 21347,
-      "contentHash": "7ba6efeb93c7457f637d51f4096af4f95e3124edb83d4f5aea621de41787e82c",
-      "lineCount": 11,
-      "lastContentLine": 11
+      "contentHash": "9d38677b434e64e4e281538825b4b740add731df7f1660571b0fc841f02d1093",
+      "lineCount": 12,
+      "lastContentLine": 12
     },
     "krypto:sessions/f912aac5-c896-4355-b415-02c08e0387c1.jsonl": {
       "mtimeMs": 1775756597997,
       "size": 110052,
-      "contentHash": "ea4a6aa516be079531a5a6904076e6eaa5b633669cc48880e0f1618a7ee50b59",
-      "lineCount": 6,
-      "lastContentLine": 6
+      "contentHash": "ad0077816c295e8a61fc2ad9c06dc5e1996f79b251f3649214d91f46508db901",
+      "lineCount": 5,
+      "lastContentLine": 5
     },
     "krypto:sessions/f9e35973-28ba-465c-b823-5ee8e393b342.jsonl": {
       "mtimeMs": 1777411680489,
@@ -1114,47 +1681,12 @@
       "lineCount": 0,
       "lastContentLine": 0
     },
-    "krypto:sessions/fd445a12-04f6-4f7b-bdef-076fcb52f6a9.jsonl.deleted.2026-04-28T11-06-56.828Z": {
-      "mtimeMs": 1777255056889,
-      "size": 341013,
-      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
-      "lineCount": 0,
-      "lastContentLine": 0
-    },
-    "krypto:sessions/fd445a12-04f6-4f7b-bdef-076fcb52f6a9.trajectory.jsonl": {
-      "mtimeMs": 1777255056969,
-      "size": 206173,
-      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
-      "lineCount": 0,
-      "lastContentLine": 0
-    },
-    "krypto:sessions/fe25a2ef-8bbf-43fb-851c-f019b988f250.jsonl": {
-      "mtimeMs": 1777376670445,
-      "size": 494646,
-      "contentHash": "2ff470bdbc8629bce3713f1e1bc8b05f9db119d9a530e61f7598b5dc2211bcd5",
-      "lineCount": 15,
-      "lastContentLine": 15
-    },
-    "krypto:sessions/fe25a2ef-8bbf-43fb-851c-f019b988f250.trajectory.jsonl": {
-      "mtimeMs": 1777376670492,
-      "size": 2185786,
-      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
-      "lineCount": 0,
-      "lastContentLine": 0
-    },
-    "krypto:sessions/fe7e4f98-d93d-4276-83c5-06915ea2f374.jsonl": {
-      "mtimeMs": 1777510215433,
-      "size": 223311,
-      "contentHash": "f3d9040107bc2a5bd3a370a2d49cf6a20c0a04f9f5e446214f0adda770bb94ae",
-      "lineCount": 6,
-      "lastContentLine": 6
-    },
-    "krypto:sessions/fe7e4f98-d93d-4276-83c5-06915ea2f374.trajectory.jsonl": {
-      "mtimeMs": 1777510215451,
-      "size": 205060,
-      "contentHash": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070",
-      "lineCount": 0,
-      "lastContentLine": 0
+    "krypto:sessions/fca08bfd-a792-4d0e-8389-910b0d63f478.jsonl": {
+      "mtimeMs": 1777671252049,
+      "size": 54295,
+      "contentHash": "02cb07f6827e8c33963ca2ab9e6708519c065c181ef3bd1f229fceabd0e481c1",
+      "lineCount": 7,
+      "lastContentLine": 7
     }
   },
   "seenMessages": {
@@ -1327,7 +1859,19 @@
       "5655067c7407b81044f6be49784f6143a7ba5a12",
       "9b25124dc19161b59d9cff0000fd9e6910336edb",
       "e2496149ec27ccc7e2e6a51c372d717edc000c2b",
-      "daaa022fd3df590443e95cec6143de1e60e284ad"
+      "daaa022fd3df590443e95cec6143de1e60e284ad",
+      "770a42573368a45e0af3c1ee97543b038e7a0c93",
+      "1f5cd94dcafacd8e627d055a6f60270cbc6e091d",
+      "565422abe8d57fb2d7cf2e5ddac3f5114196a0d9",
+      "6d31440f0442058109cefb5172db2e0133b86898",
+      "2476644a74b026a3d13b3a78e42e10a94f675fd8",
+      "e731f201460b0420dfeab3cfcaa6dbed77269595",
+      "66dce126d494b3f2804a73adb7bd15eac55c208b",
+      "be06b79bc56f6e2cf76917d36aaf838e19021325",
+      "ee402dbedf4cc539b8d669f2d03d516c625d8c76",
+      "837a6b80c964a097775bd6831e85676c48676e7e",
+      "d6e03cb6eca4cfdfea56e8742d8ecc223cb7fd7a",
+      "69134af896fc0b22e6ffcf8ab128268483a16aa3"
     ],
     "krypto:2063fe70-012b-44c5-a4f1-4b2c894daeb3": [
       "3f46e3173871c72ca6673b821ea296be912ad94f",
@@ -5074,6 +5618,626 @@
       "eb28053f9917389a4bf7eec0df54ba7465e120c6",
       "2f3de2e5566d7955bcbdbb3be81f834f76c83046",
       "c7664f848145bf84c81b55c51edc387858f5919f"
+    ],
+    "krypto:02337639-76a0-4b00-b36c-6a036ec978e7": [
+      "b7e7a9ef87b7eb30e1df8ee40556b967a46811fe",
+      "e51dd45730bf5d0a812de03fcc82f825545bd438",
+      "8b2436eb6c6bdd7bae7b0cd1bc6835f048f5ab7f",
+      "695f9552bddf6e90e13496414f121b8f68c45acf",
+      "45e60407d058dce71161a148ca461ee52b0dabcc",
+      "b6a2a6c5655ec18271619cd37f02c80d4370377e",
+      "b977d46daec88d723c8a963a5eb9a9b0cdc4a192",
+      "c104aafede8b61f5d1a8ab13ac5cb9d03d9587d7",
+      "57d2be8c894cad600b33c390653c36921ec930da",
+      "4f35081ce277f5f012bf9b099afb8b7dfd5c40ce",
+      "7818351934426acd3e9e56bc5aaa78fa85ea2d39",
+      "2a651875c58868a8ec8c567f1b467bf3da368a83"
+    ],
+    "krypto:05781cc5-f7bd-4cbb-8248-87793b075dc5": [
+      "51f70ad8a4996ae17d213ef5f56a29dcddca52fa",
+      "7c34cfa612cc4a68629e50e2297deae99f8fa93a",
+      "e341df73208d5c475e8bba49289341db2f52e572",
+      "66763c10746e780b7fc9358248402b2d281771fc",
+      "2772c9776510d5a42e106a6440d4d3598831bb14",
+      "fa1cb839e647d4168bdb07a0a6d0b5e3bd71fe36",
+      "02fa6cfa2b632f69b56e12eabebdc3a259f10aca"
+    ],
+    "krypto:0e78c080-0df1-4e73-bd09-cb76da4e93f2": [
+      "3b63881103c5508c339141e5b54e4199d8ca4ef2",
+      "79ffe3a874577f62274628ce824a4d5b1de29be2",
+      "fa79ff978039dc3e52f90e42e0350a4fcb68e0e1",
+      "6a1806c80dc567eb23f676987647981bc21a5ae4",
+      "0fe157599c87e53077a66edd272da1610c50735a",
+      "4058c9604838fe7e4b6513c673829c872c98d66a",
+      "e8b42f89c05958a6623f518ef6c2181f2e2e3773",
+      "db2842638681179b731ec5ae764a0304bea47207",
+      "18afc56d6b91dd20749c0897183f572044b0d23d"
+    ],
+    "krypto:109f0214-606d-44c0-8df7-524b639fbf4a": [
+      "1f8a468b974c409e0455877bf0cf8af213395d20",
+      "e6d5c1bcd2f296e52bd7461ea80afe240e887c6f",
+      "4c07e06eae450761bd878df42f6b225bcd39bf47",
+      "ff4ebc4373a4623eb8710199bc92530660e3c4d6",
+      "2d92f3b8fedf67c0f24d867ca95b5310e75fb2d9",
+      "718b2195b89961031f2daa7bc6cf86edd19849c8",
+      "b729cac52002e255e4b22e54ca0bd79b5cc69314",
+      "6c1d918cb67dd8978d9a42d9ec94542742f8cc71",
+      "451989d348d37639c761a968dc7405abe495275e",
+      "5aaa5b3867f70c48074f1bca3a64cc0533308061",
+      "20b88dc70c71c50228aa1874890aedeb565e75c8",
+      "655aecd183c943c53a6c2bfed2dd499c155899de",
+      "6ade21d22cf6edac8d3b18950f42f761915eca1c",
+      "130b5ad35993d9bde10e419ace1a937bd081a163",
+      "2dd2a79106bfc633a83a7d05dc94c90fb5ab17ce",
+      "783a62499bdf5331b10015a90356208f2b912d71",
+      "b76eed7c8c61f3e581f913a68f365c95a5994875",
+      "e60a8cda8f6a389f09bd6695bf5f92ef4aa8b439",
+      "28fd371808e2dc7bf7cfa640517d3dd913825d05",
+      "b34c5ab60f709fee8c509b43a273655483c15330",
+      "6566fef77fe911a5255b373273f0a91caf11cf8e"
+    ],
+    "krypto:1adcba41-7f7c-4c06-a471-83005d885f0a": [
+      "f2667474507d57923079d11dc3f578bf98188555",
+      "402622f5a907038b46b782d5ebc19e483f28a360",
+      "91cfd717980af785f3fd7892de063b1c9ae724c9",
+      "f69d34a0b54abde99a40cc7df572fdc854afc99b",
+      "6ddeada54c7b5f2d0149161d35bedbcf77a2d2c2",
+      "bdc7697c35daf528a9adda8e2953de47cf08dfc0",
+      "00d960b7504a52e468dd1b94657ac18e3da84747",
+      "21acb1143dd3c0615ef1c9c35bd07c01a87da24e",
+      "d80d586b1e4a9ac1898e2b6a653cccafbeaad960",
+      "1ce33460031f1c3c12e89243f91a268f6dd6b000",
+      "0eb846292d15c4a4923798e62ce9e2124e2b2691",
+      "67ff91862485df2e094ea005e240b4a7f815f992",
+      "3f35ba00e6c193fa978164b8b80acb0e4921f8d8"
+    ],
+    "krypto:1b6c7ab9-75d4-4496-9679-3e0a90276ba2": [
+      "28649f2269d7a963710804b091f0a9ce3f6570c1",
+      "21b2d88b78a19bcff0b9cd391f9223bedb6c18cc",
+      "00545649444705bdbbff901ef8250b9560e7ea25",
+      "c30a3e3f543cb74acc2c76a533588284cd80d731",
+      "9693bc1bd1f9a13a9c550924ce143c2b8e943b3c",
+      "728cb1787ec4b713b0736cf9949a40d7143d61e3",
+      "b80e4274d9591d7c5901e5c4afa52c6126e7ebe9",
+      "f7d15849bb76dd68832ab271f22e6b8e8959c73e",
+      "6775cc33eb2b4ebdae1a1fc33a0dd9a855d45916",
+      "154cd94267b65b62f4b20c79d0cfe2a35b54eec6",
+      "07829362e5d0e055a8d7adeddeba43ef688bdfac",
+      "4df96fbe881e55db6effdf3f30183dc51beb2a45",
+      "0f2950fb3a64793c4bbe183b0951e6f85aa0a908",
+      "5394a2b130059d95b4ffed6e9493f7db9b9718b4",
+      "3273531f27b210e18cdc70d2c43abe54c6c17d54",
+      "cd0098119fe2edb8f68bdb710ea1a63e7ba61e5a"
+    ],
+    "krypto:1c7b058a-4d6d-47c0-b475-82a277325905": [
+      "6f052aeaf5102b8768c9bcb49a1c9a4166da421c",
+      "650d3abffe824d9c5031b278eaf7362eff740bab",
+      "61f6c4016c0b99014e9fde12c0867436ac430f2f",
+      "6238714ddffbff17ec1d9697516a95376a2c3b09",
+      "f9fbf72cbff7ded00a93eedc5bb3e1400a651f84",
+      "435918dc216806c420a2034bfb92ce9366f1c6d7",
+      "92debd8eaeaa5d0b8296c493493bba1bf0284cc1",
+      "3b4239eab66487c158c3ba3bf34477ca1b49de35",
+      "8ad44c69d59cbc4f5193c53374078385ed1a09a4",
+      "27ea7dd3b1e440dbbef02620e44e00ffc8656eb4",
+      "3fad01402d6f98463333a5b639fb90b43b079e9d",
+      "8ee07327dc9b5a2682594069a597857880b43d90",
+      "1f9346bab5147d1b91217242e1a5dd676f9c58a3",
+      "64e00668fcfa4f9f55448371d4f3d0445af9ba95"
+    ],
+    "krypto:306251f9-3d32-4837-8f6c-55ef385f41a7": [
+      "edbec0188b07f85f965d711913735356b1e77da6",
+      "61b4950a6a875e0b0a8c5c2480797990d018e358",
+      "f7c586f328ca01d35b1cbcfa9a9fa831315db62a",
+      "3d2d7c755a34418e021d3af1f76d43d127b72c74",
+      "589da6264ef83bd190441df98f1ce9b86a92404d",
+      "1ff2fdfcfe1139a637b125fe95d853a789c16dbd",
+      "63ad558bfdf31b06c8db56267db47f73ed3a87b4",
+      "850414911bb138d1dc504793eec8d20d57cb8ddc",
+      "093cf04c0dcdf17006338783e8a2840dbc70f5b7",
+      "ac461cec9d11654a0268db5c384a78855bf9e12f",
+      "483b9e1d41af5ca1e21d7fbcbb28d6a920598aa3",
+      "7e4bc492a3f409226a1f5758a54cffc080ebdcdf",
+      "bce689bf8501fc8d623b4c10cef7cd740671f04c",
+      "8575b3c47609221f84681d97c7be86a2b2a97090",
+      "4f50a93367100e0ebd154ff4a9d270fa228151dd",
+      "5792a3b99d0c80a3af56b639f55511b4f15340f8",
+      "5c55a669208c240d25d3a67fb926582b82e64623",
+      "15212735ec0554d716f8922c328afbeeddd379be",
+      "d94a2f94c79f85683d9a0d5518d5c3ead929004c",
+      "002cf284a01e239473974483a313aec2c819d8c7",
+      "3e0d2fce956b54eda491a7ce36ea94144c1bfdea"
+    ],
+    "krypto:3a6fff0c-cbc6-4cab-a191-fc4c194d6fb5": [
+      "927f651bace176019c4b8b130b11312a7fa1b568",
+      "aace30f7445eb61ea68a132a3f7374917ad995b9",
+      "3fdd1f77ae680ff55b219b977d2dcb7cf443b26d",
+      "03a83e3448399dbbe907695bcabac0e0f2a5f1f2"
+    ],
+    "krypto:3ec4f689-9325-4911-bff6-bb3ce49152b6": [
+      "051d05924ba688452b31f4dba5ecf3df6ec46839",
+      "ddb976dc60fc979526c4033a1d4f43fa602db7f3",
+      "76696bd4036db6af390ab2c239c38e72483c755f",
+      "31e76f18638f82f9ab0642f2b5466e9c93cfba2d"
+    ],
+    "krypto:4939b09a-f7f4-4cff-9a69-6a0ed74eecb1": [
+      "e2be4548093c8052f2515dde05a26ddf9ed8ee56",
+      "c4221a9ecb9c48ddb081f4539b32d2be343e0b48",
+      "8951a7412423f21edd7d549f8afdb8f3982785d0",
+      "78efb9c8748da6ea31ca4d5ba071b23c6fe608b6",
+      "e9d132f205dece98b9f2fcdae010fee720ad31a5",
+      "3f4a7febd0a79b5ffac6c54137e1c064d9109e14",
+      "84e2e3a335feb35e455a077ed6ac697b7f24cdac",
+      "c6ee1270b63cfa9a422ea4f55cf5917f42f37aba",
+      "7834d3d5386c277ca67233034576b26cbd776091",
+      "98dd556c6fdf4f382f8b9d3861dac78011a50bc4",
+      "977c1eae3cf8c94bdd9e8b006394bbeaa25036d8",
+      "a35eda2feabb78f24d430fcd3ce212f197121ac0",
+      "9ddbc2a27ecd161f2c7b16b5e5a3f137f3cf133f",
+      "3f92dce7139ae93a6e8ad54a0d95d7f55d656efa",
+      "1b6d3416ca415ec1ff1910c942a76b7a566c0a86"
+    ],
+    "krypto:4f927876-22de-485d-82b5-2c84d4a93b50": [
+      "76aaa94d6a5baf240eacd8dca09e69dfe3869a31",
+      "87ac909c76d9689e8576decd9da5d88f2fdd5270",
+      "7bc39a710a63abe724a26c7e21a346004c0d7d1e"
+    ],
+    "krypto:58070e24-a4c0-4a38-9e2f-804354b4f2b2": [
+      "4f648528174a2d89803b977564217abda3f20105",
+      "fbcd12e4363b75ada70c455a5d3dd392632fd83a",
+      "1209def9bef02b549b93e45767090ec8f1280089",
+      "c2fdf0c78235ff7eaf8a10f0f07a4cc31153a36a",
+      "a1ef83dc73c7bb598ab74001f8360ad429402523",
+      "28f02e5f33ada3ac8302cb4eecf6274fb400b4bf",
+      "ec6545b281778b219369e431ad0cddc3da928288"
+    ],
+    "krypto:5a20a6f7-9cf2-4ec7-b22c-7972b25b1ef9": [
+      "237e5e8e96d8a8f6772528b52a28afd34dfa66c4",
+      "495b24c05cb271f563cf2c4c022cd216fd80e2b2",
+      "9a410443e442396bcd893ac6d52edebdbfb863a8",
+      "3e737704a6521819339f7c5ddac5e8a231e3ff53",
+      "b7fc4aa1596f6aed296eecc45ee08a6bcdd648a2"
+    ],
+    "krypto:5c0284bd-31f8-48b1-abed-67dbc3ee58b0": [
+      "5d069b1ceda05e6715a38f6e8471a181558ed4f0",
+      "5280c17ee4bf37d52b916f61459ee5933108f5c6",
+      "ab239b57fd72da55e73436fb523acec09a8aa0cf",
+      "39a8c48ca08de8b74c9dab1c298f2812b8980cb8",
+      "e0048ab6791948ad558afa5f7f7d38ee49043f2c",
+      "ca6b3393ecdd8a466c3cc16dd76ebc261b5b6e5e",
+      "2c8070fbdb4c034a18da385dd46625bcc08a2e78",
+      "57f2f68e6cbbce8d07b8cca4fc8dcb3d8e9a12bb",
+      "3e50b7e87c24a05db27fbbb31a42413919c9db76",
+      "42f82782b1e9d9bc3fdd2200e7556c39d5726d9f",
+      "c9636e6566919f00826b425eec0d213992463023",
+      "b7b48df742930fba8d58b210dc7ec06f29ae4ae3",
+      "769ef3cb69f9e5870f129e0e6ebf118fee77db0a",
+      "feeaa5d05736be2fec853865322452337c8a5ad7"
+    ],
+    "krypto:5d2091fa-d7b7-4dab-bd3c-9e5ccf2cd3a1": [
+      "eb29a857c8f324e16d6ef4f5cf6a828c132008da",
+      "826b71025cbcdaaa5dea8ce8cfc351f5cb59d67f",
+      "4f913287a9e17580e1b9edc6c36a1e6da09f9b44",
+      "9557f3c8c440304d25aabf8e4a2f7c9525e0cb86",
+      "5ed2c4f8278f455632ed228ba67eef17298421e7",
+      "920ad705355746434ed563ceb2aa0ffb48c67a0b",
+      "930e9541210819e803ca08013efea8dde4b875d3",
+      "4feae316a407e6b84645b06138ee45e9c7be61d7",
+      "9c80154f6b4fe26f8f85981ced7f996941fe6a75",
+      "2b68fbec384d315b5f7c70d029dda1191b3e7cc5",
+      "c107237ba3b85f5eb9e2495f61ab48dc1e0b3fea",
+      "3dc376feb1b14614cfc419af821370cebf90efe3",
+      "c2138a9fd57beda330b0df1aa1b852f9d80ba022",
+      "468e5ce245cba0021deb663fb64a759a2d596dbf"
+    ],
+    "krypto:63881f48-11ff-483b-bc4b-2ac9537a048c": [
+      "1395167546b2f4b90d2df6fd948156eedaab1497",
+      "c06672cd12d602267d35c81a6f33460fe2e0ad10",
+      "d0a8b2b3e13cdc4e6882b99d7f353711d4bca53a",
+      "a23b57ff34082b7a37b0b52671af9e36b0faf8fc",
+      "aacdc9f03dade18b14dfed38c2147bc8fcd3b0e1",
+      "644e40b639880cdcdc1ee3e81f124ca2161aff89",
+      "28af31bbd56cb2ee76b9b6b7e8a492a2b8874097",
+      "b88c39edbc6945b47f1e78fed10fc366f338dbc8",
+      "5469285f4054525cc6ebb27619ae42f3ea4550e5",
+      "464b418504dbdeafd179ba4951f8bc5a4dc2426f",
+      "8991db78a3a58bbee86d74973f3a5de2267dd635",
+      "57520c2a90e689646b1f0b870f9af4c7a515b4d1",
+      "1982e0810f95eef69d8e9551841f4742fad91021",
+      "47a30344c7afbb274eb5ac670a85367727709913",
+      "e175dbaec0a200d5d9a20043cf5ab8061c6d4146",
+      "0f75184c9b96dfc428c9614233c2d79ee06ff77c",
+      "7f76fd4445e19adc39e6a4b67cdf6a0df5f92b21",
+      "cb5f890253dd0ac65d328827bd88f9079c7d5496",
+      "0d47e9497f98981141c499853cfd32bc0aa5c72a",
+      "96e2022221b3bb321d311dc7450376d4a03e6737",
+      "20652f1a2ea93eddb6ec7b46fb4218ce2b63f747"
+    ],
+    "krypto:6433c19b-ed7b-4a4b-97a5-cc176f8d972c": [
+      "72fe0ee31c32088a41c3e6f14a3366c937fec221",
+      "7ae909182fee84715a91b4436a79b572fdfa479c",
+      "ba68c05cea40e95dc625fdbb4a4f63e18f6ce82b",
+      "dee66f9b4ed0ae7709faae2f5e8a22ff4868184f",
+      "cc7138c890cca70a6e2e19ca74b62c03b23df0a7",
+      "4d6d0d701e110e3274f04a9781cc049d36ee6abf",
+      "646b7bd10b1f438116204e2196dc229e6477be7d",
+      "0a694768bca4e064a378061cdf5083e95c981a57",
+      "913b3f0dabaa8446c5cb1fe1aef6dabdf32cdc2e"
+    ],
+    "krypto:67c0d1b2-bcd4-42b6-8a9d-46bae49baefb": [
+      "ba433cf03d4e421eff09361acc9932ef95259440",
+      "85516b876484b352dcdcf04e2a7b9d015737a189",
+      "b02cfb19003bcb6741027bfec66c3fd67a68c329",
+      "6873a8d9c77605ddc5b5db189c8f107848fa6a51",
+      "93bc388957cb4597a947e282da9c3e0ee95f4d26"
+    ],
+    "krypto:6a37e917-80a6-4857-aae5-367f626def85": [
+      "1630c74c1b603ee28042552dc05377c79355e5c3",
+      "7abe8eb7c8815c432d51d751af413c5741d4065f",
+      "dd2e15b341d011eee2f021f23e6f33ddc84ce4c5",
+      "e38f211734330d37bca020a4cab27c07434a36da",
+      "55222a0ae4253b042e4c410d7c44557c79121f2c",
+      "cf309727f85cb4bde135c1dfe66b1db977a32416",
+      "b5f7b6df8be91e01ef292f42933dbe8f5a0a096b",
+      "517ee0154182423da72a084b837e65a7228d550a",
+      "bf9ca5a42e58614b5a5dafaaaae86ebc13db45b5",
+      "bd424ea070667943fd5a48ac7418a05bdb07cee5",
+      "da50887428309b413b531a8c75c4f9d493b154fa",
+      "8cc1f7b268ba6c9697ec80be9a78492aa58f34dd",
+      "b258b5d978332b05fd32f120e97b5e21b6de58d4",
+      "b393130c2fe8d6dd41c7c917d8e720c48c77b566",
+      "70221517b2a1b92a32070e15e3176a5e6108974e",
+      "9641ad7538bb9c419a1961864197ae72baff249d",
+      "ef171c959c9df4581dccafd6e65affd2b21dc7a8",
+      "1170e7c78030031c6db033a0bf935492990d7a66",
+      "45e8fc81f618821ec814b07c7cffd6b798d26787",
+      "03a264ea9e871bc685d1be6ab7615a1daac2bcc6",
+      "874314853dbbc235577536051ccd1f048f5218e0",
+      "273fd0bd99579945d4c7879c03487a9246163e9f",
+      "e3f278b4dc60cfe407317acbd49720aa557b3103",
+      "8d4f216d3a8b1e1948ec946bea4fbfffb802b6df"
+    ],
+    "krypto:6d970d39-4e06-4499-89de-84da429c6bbc": [
+      "12e8a2be26c275d13ab72b93b432659e531d5178",
+      "a9b98d6706c618d148e344c52a72dfcc5f8a799b",
+      "dd6fe3af73b5e80ffafa4027f11d635e31662195",
+      "6d6d0476625584f61dfd3a5e4097578fe4061915",
+      "64322e34332209a1e487ce2b4a2613e85cc0989f",
+      "7cd761cbf680348b907893264d936f6d0ad9e4da",
+      "4d334b57134829bc856ffd845d427e8683330598",
+      "6195fffe49da65100ba218ee9fb1b8c5aba23441",
+      "c8137c58062c287271602c5147b1279fa79b00e1",
+      "e68c4810a9cfa9f7ae155f49676cf5c9cba5a732",
+      "be25ce1ba5460f6f95a578ba2966fdaf6dc62d86",
+      "e5eba9a16e845ca293671d980e058e8a78a9434a",
+      "47ce4daaa78fdff8bed57355f42aed8259ac018f",
+      "4717951fc30b2d0d5c5495a9199986f76e8df1a8",
+      "f3b640e27c32d3fdbcd9f5243f2f8c9a3f3580ef"
+    ],
+    "krypto:7b49c9f7-ed30-4af3-9f57-57f33f343d78": [
+      "cec4f1adc0cc31f5341cc6a206e302b782e3fd3c",
+      "9231a4e3f114898650a9f1303c0b921209ddaba9",
+      "cc8f50021b31d94e2b6af8e6a91c8d3c002e0d1a",
+      "dd408cb29ab6a28c685f220002aacda8defc3976",
+      "9aaa20647ae5921f36794d8d8990ce3d0e0361dc",
+      "0c22eadc4fe38255f974d13d72bc4f6b384b2d81",
+      "1569ff3da5953fc3cfa04abeff950ca2c30a444b",
+      "2c71ba27cd7c522c6bcd7e8f611223b6ce234226",
+      "9be1b75d79a72d3292ccd1a756fbc2787a3bc8f7"
+    ],
+    "krypto:801c080b-0202-4d22-95f7-4bac33c640c8": [
+      "64dce20ffe5822e6933603cc2ef7a92780b48fec",
+      "f530ec21dcda675a27fa364421cba8093a30c71b",
+      "2296252e464a10a92341edabbdda4a469f18686c",
+      "70849769d883b17640a4884e77a0e47a417e4ee9",
+      "84fc2e5da257e8bba62b560965a4c0ea81af19ea",
+      "782b4193a62d8fd42ea72761e235c76a893a5d25",
+      "3e9748119fd2482cb5ab961ddff42a82a7b8e45a",
+      "ffb09de3eee5ee1619f043734eefb1888673d03c",
+      "e3b58a9b72ac45f02922723a8604edcbb0c24b57",
+      "47fa5b7682e44c324a59a70ac9a135a710df2a3c",
+      "a729b7967f99d69865548b143114809c11f9c4b2",
+      "e6caa734c81d72e3a3c21d0f9fe0faaa9af799be",
+      "28297afdca73211b661e027a2fe01b438fb97bf8",
+      "25e99ee2af4bbb1a8f600bdea11fba64a910415f",
+      "0ac24dd3a0b44417703584e0d54fb3d6cc381702"
+    ],
+    "krypto:9dea42fe-6907-4384-a3ed-397f95d2511a": [
+      "2ac20b04b8cf1bbfa5dcfc9f58b4b82e468459c9",
+      "809740121f24110715fae5c7a3fcea1386dba15f",
+      "448e44be9ff4564df8cf4335b6ff2bfb8673a973",
+      "5ad948a5e5d75c8c3414dbb441c5485da64052ae",
+      "b4e1798236d7bc9750a13192f13654de405a599c",
+      "6190ca767bace3db1276696fd06ff35fb8ffc223",
+      "07fd3029c3c903e6ddd3055420a46f476b3d1834",
+      "35306edf7c7cc785e9b88da22f27e6edcbd5dd1e"
+    ],
+    "krypto:9f9f0802-8c9e-46d5-bc6e-aa8ad00fd256": [
+      "c7e45c07135a462c6b5667cfcbf253e23c45d675",
+      "cf4e5fe7b07532edea52becb1533edaa8dec0e4a",
+      "f9cf5084426433e76a9e5365e0bfb790f44c248c",
+      "71678e594a5735331028c72a81a5b9824705fe82",
+      "13ddc33a92ed4505a81ed5a6bd75bae8e7beaddf",
+      "70c0182268ac4924c9d64eb81005e28bfcee1b5c",
+      "53360e683b7882405960f20d0a4d5665431fa805",
+      "6e5ec2e19ff2a89a18af6aece3a5c378c0ba96ee",
+      "6a7ba04797ae84fcaecf3a7fa9ac91c132c94727",
+      "94916fec823b49322ad53ffcd9c046518f2ab4fc",
+      "57c57eb6c2a751cb90420b697497714c5e7c936e",
+      "53a809740df6a26965f816351d1976228a4e5668"
+    ],
+    "krypto:9f9f0802-8c9e-46d5-bc6e-aa8ad00fd256.trajectory": [],
+    "krypto:a05b4078-4ecb-4018-b6ba-165f17728144.trajectory": [],
+    "krypto:a2c72f53-ffbf-4183-a0a3-bbb5dac4e574": [
+      "6ce3cc997ff9d4f71b7e511a182871e53d329315",
+      "1b9b5b70ea3d85c5fd8732c0848df7b9a0e371d0",
+      "022285a24918e119f68e34aadefa0f12ce45da6c",
+      "09f1d16ad46bea78e99d0a7e4719b8f34a63a967",
+      "77731e23034631ebeb5ad1be2cf9b21fdacaec2e",
+      "5e41f067d8bcce3eee70399cf9dab0d79bc5cac5",
+      "7cf20caa846efd7f74a3720f27af7ae072f3c156",
+      "d1aca2fbe8f29ce5a2606b8c7eb52d8651810e51",
+      "e96424449f2792ae7d27aa37bd028cc1e73f06de",
+      "1a954666c0d4d25d9233c5e8b32d16aaa7c174d0"
+    ],
+    "krypto:a2c72f53-ffbf-4183-a0a3-bbb5dac4e574.trajectory": [],
+    "krypto:a7b6a469-8d5f-49c7-87aa-09b428d83a00.trajectory": [],
+    "krypto:a7cb1668-7783-4608-877c-aaf56098e868": [
+      "e6cb3fa24602bc3b971f11e0ca97f053907978e6",
+      "2bbdf51a53a6bc6ed51c032a9dc733bc3f46f571",
+      "666ee51ef98320702d9abc36ede2eae2b4dfe2d1",
+      "74c01745b7b0313c89e038b14db8bcf575b6baba",
+      "34f080b5b2958d5726f12237989e8b1364858d30",
+      "9623adf6d4b3477e2b16375ce43d614212b9f5c0",
+      "0e8868c670d3cf36f435fa14906763cb67b0372e",
+      "07d2b3ae7a990f8432fad36b33d2eed0e3b09cdd",
+      "5e45b52781436a2310005633c0fce00df30c6ede",
+      "36e94356a141a526e9cd35c2130f4fa7f1d844d0",
+      "9862033d6e8a631380f89cf7b0add184add3f632",
+      "d5462ba798cf030b0a48ff285a18440b58f038af"
+    ],
+    "krypto:a7cb1668-7783-4608-877c-aaf56098e868.trajectory": [],
+    "krypto:a7f7f077-7814-4303-9cfc-5a4f30c3f1fc.trajectory": [],
+    "krypto:a91633f6-b341-4eaa-833c-89de520fb8ba": [
+      "cb55fa3847f9b1c41dff47efe03b96b0c3e2e309",
+      "c39f70b1a08c35e3d0d6b81fd0f7ac4293daac65",
+      "24694011d2a9f728a54b5febfaba407fb9302e7c",
+      "07c8f0cabdba8477a40416c2e07e7c7ee8bf760c",
+      "0bdf05dea30b83e9c39e7376b15a62f4b17db8e0"
+    ],
+    "krypto:a91633f6-b341-4eaa-833c-89de520fb8ba.trajectory": [],
+    "krypto:a9f0f105-357f-4a3e-8f6b-0aec29ed5b3b.trajectory": [],
+    "krypto:aa1cc001-9e13-42f1-af02-673a27a03f8e": [],
+    "krypto:ab7f4370-edc1-45a2-85c8-6dffbe94a0f9.trajectory": [],
+    "krypto:ad6d7fd9-a444-4c73-91c8-194c907bf5a7": [
+      "2cf77714b2f5b087f9db0a0f40e5a981ee587463",
+      "733fb9619b4e07f9e5210d49ca5b4870aa977063",
+      "9219ffaaa4fa8c1db2b9626ab59e87476f1d9418",
+      "f90fa3a6c79e16229e5abc8f88627d9827d2095a",
+      "03c42be362dbe010692697cc7e58c96051a71329",
+      "400b1d03c483ce8bd7f6f1557da8a37659b077c0",
+      "4487fa63002866e7aa33a8de7a2c0937197d7d6c"
+    ],
+    "krypto:ad6d7fd9-a444-4c73-91c8-194c907bf5a7.trajectory": [],
+    "krypto:adb8da4c-e8d5-467d-9422-8e86d48ab9e9.trajectory": [],
+    "krypto:af0a60b1-f812-436e-8169-620ac2ea7dde": [
+      "b3ea28c3f866c6e7a49e1b63f3e0125fd6dae9b3",
+      "0a976a98f964b9c452b070ab9b9e55c95aaee033",
+      "a94c49ca8f4f2ec8ff695ee3813905d4709bb4a4",
+      "f8df6ba02556d9942d84db853bda928b39b929a1",
+      "d8ba145654f3d94f3f5ad4fa6a43f00925d1befb",
+      "95af5581789864020a557b70faa100f96c2e2b41",
+      "2cee8827b390760fcd71527c9b1f99b12179251d",
+      "f7a937ec01d06336f9f4c1c175ac7c412f871916",
+      "79b0c12232edd09c2b6e8ea4205556bf336d405b",
+      "f49e3d13f51f7f47859344c6d551b25c0aaf2d57",
+      "220f4ddcd6d830645e038952f9b3b070be6953f7",
+      "ee8a0253adb83d66af71da73d20fec3aa96c7848"
+    ],
+    "krypto:af0a60b1-f812-436e-8169-620ac2ea7dde.trajectory": [],
+    "krypto:b07fcacf-2c4f-4cab-bb0e-2dc1ad0fc844.trajectory": [],
+    "krypto:b103a186-02e8-452c-bf83-ebb431ed3485": [
+      "8548a836eac0741f66ca351557218d22ee0b836b",
+      "5694ab1652414f545a59bfcb54688127a5bc1408",
+      "e740eb11669f186a085792cc9e33b5f24d493204",
+      "a3a76af264e2a6b673ee07e7853331a71ec94786",
+      "033430fcafc5313d23cd2fa3fc5ed5b23a352ae6"
+    ],
+    "krypto:b103a186-02e8-452c-bf83-ebb431ed3485.trajectory": [],
+    "krypto:b7262730-22e6-4929-b8fa-c8c8c4113cfa": [],
+    "krypto:b9913031-fa22-4542-95c1-c7438c089e60.trajectory": [],
+    "krypto:b9ae881b-8611-4999-853d-e9d900f5bb46.trajectory": [],
+    "krypto:baa8e7ba-d2b7-4ecd-a7f9-011a86e3a0ea.trajectory": [],
+    "krypto:bc7a695f-fe77-4ef8-a1a9-9ea34a2f9748": [],
+    "krypto:bcb111f8-171d-467b-8c51-f44edfc7ee8c": [
+      "d2d88de27b018132ac7be15c615e387fbd603b8f",
+      "4648274484864e4034a29a39e257975659850f7d",
+      "214e1c837f618b559a708e88e89d1310073b6215",
+      "5ea6cf71145553c33094e25a851a938e6c542e3a",
+      "388aa26396bfa5f6d6408f8d608136400d14c529",
+      "561312a912c143689486c5ddaace2ae87848a762",
+      "074b0dfab29b144a6139a1649fbecedc30876d53",
+      "b1b8fa1d87018693d64a5dcd78f6d6bddd4a5a06",
+      "e28ec31d7fd21d640c661ccef68bca72f58a3cec",
+      "b61a2282d4424563794c5b1937a45812272d4f44",
+      "877bee435050392f209860f041420e8a219edda7"
+    ],
+    "krypto:bcb111f8-171d-467b-8c51-f44edfc7ee8c.trajectory": [],
+    "krypto:bd955e5f-a2d6-47ea-a586-1d118da968a8.trajectory": [],
+    "krypto:bee99565-8d61-4a73-8033-2b353802962f.trajectory": [],
+    "krypto:c07638b9-01ac-4798-85fa-af8ea5fb92f4.trajectory": [],
+    "krypto:c0b77d2d-f227-4b89-81b6-efa0f7e2add2.trajectory": [],
+    "krypto:c1731bf9-0613-40bb-b497-b345010bf23d": [
+      "cdd045ff789ef4ac4606aa9ec8b0587cf95eff44",
+      "2d30bd081d1b77cdff75058b345a874694ea8bd7",
+      "eafafbb2042224714f328ef9300212cdfd355b27",
+      "96021d9dfb8369be4c97a2a43c4f74c875e1bf67",
+      "4dd1a4fc8f2b401d2ce1eae5373540f5ce4cc4cc",
+      "4283912887ec65931885922e9684de0fa77106cf",
+      "0ae8c3ecfe30fcf3a39801cba834aee41a4d5b3b",
+      "c2112096428f969ca0bbb0efdd3b4759cea8a755",
+      "b556040d559a181922fd2855ac451938eb8e28e2",
+      "7dcb3619ce227e80ea91efeaa3e3a6d1cc1461ee"
+    ],
+    "krypto:c1731bf9-0613-40bb-b497-b345010bf23d.trajectory": [],
+    "krypto:c254ae72-17fe-4303-9598-e2f77c9b6c90": [
+      "9e0e11b5155d87f6aefad138b046a578032e22f1",
+      "f0cce43b4a120a09415f13943c0165e76fca66fd",
+      "5a334bebe0c32ec77d5520734da32150154b11bc",
+      "a023b9a13fab400f2bc78c450b90ec6f52bcb5bf",
+      "de95f8ecca390f569d2f6c6b3cad0835e2472636",
+      "01d15f632cfa36e880115046cfa797039d80b082",
+      "13afef45ee7e15a0c806a54589975135e48a2898",
+      "86b565fe6e8e7285f44f3f4f0ac61951a81e700f",
+      "91ea2ef8568fc91a5e271c1652f74ae807d09da7",
+      "23a522f5992b1a88c6df888f69b81303c5cc8329"
+    ],
+    "krypto:c254ae72-17fe-4303-9598-e2f77c9b6c90.trajectory": [],
+    "krypto:c4e02597-e320-4e33-a86f-f8301ba1b288.trajectory": [],
+    "krypto:c5021cb3-4b32-4f51-b0e5-91c04dd57376.trajectory": [],
+    "krypto:c6590bcb-f489-42c9-be37-79d0e559d38c.trajectory": [],
+    "krypto:c6eda1d8-a598-48ad-b86e-db812fc94d44.trajectory": [],
+    "krypto:c788167d-ba76-4c53-ac61-b5582db2c697.trajectory": [],
+    "krypto:c9b82849-2b40-4881-9050-6f99f64f0429.trajectory": [],
+    "krypto:cae6df4e-038c-4155-a759-c0bd2c6df3d5": [
+      "bb01d307fef7c44dbb51b9e8622f69226b384973",
+      "2cfaf3e0e2c8ffa041554031961d9708919402cd",
+      "0bab19c8f531e27383afe843c418c70c452c7ca8",
+      "0195e9e5ff76d6c85a601afc67f0c96d003f680a",
+      "c7cd2edb0512134500855d1f5cc95a81f22fe32b",
+      "8d509ab33f573e9a9f8b314646b633a62e8d0553",
+      "fcc6b59b86e71f18df5239edfce11ca03b28bfba",
+      "d8594b9cf64c4126a3bb3c604a69cb1e548b4717"
+    ],
+    "krypto:cae6df4e-038c-4155-a759-c0bd2c6df3d5.trajectory": [],
+    "krypto:cd6b8175-4c6f-4a5c-8ea3-5c9c4c7ca7e7": [
+      "d5e2a304db9151a258e0be287308fd8c17e67253",
+      "85ab00f786ba904c248625486b7dfca29fc3fc28",
+      "3160227431e9dae2b08fe39ae3887e9d04ff9d78",
+      "f33d6bc3b17fed9d77281a5a708c185941ed3d1f",
+      "3e14a3d4319cce738f2ed7999db6ad4d716ef94b",
+      "4cde949d372767a207ecd8425b29af0eeb515001",
+      "8c92e6d834a601ae90f737d9c38a1a2ca8797fb4",
+      "cb9f8fef642950dc6e68a25a9dc658ce72ec9f24",
+      "9b0eb768e1ef3c29a7218d0ba72f84fab11bf596"
+    ],
+    "krypto:cd6b8175-4c6f-4a5c-8ea3-5c9c4c7ca7e7.trajectory": [],
+    "krypto:d02658ce-0e82-4128-84d8-25b85afdc00a.trajectory": [],
+    "krypto:d19053a8-a6e8-4383-b8aa-02faf1edd83a.trajectory": [],
+    "krypto:d34af646-048f-4cad-830a-e9a8d7b29e50.trajectory": [],
+    "krypto:d3bbc1ff-7d7b-4d9c-a8cf-4c7dbbdf5d63": [
+      "1836718007d52e15557044c5bf6be69cab34b2d5",
+      "c3389723c679ec12f4c1174d1a1cd6e9e6b3688c",
+      "f3135c44dfc6068a39c58f99de9c6957fde1cf13",
+      "ae3c360e315454f1c9cbc208ac53082b78a97613",
+      "0dd9d8243a44abc51cabbd80b2c410cca416fc11",
+      "fb1d7dd62de653eaddd86dbb35f8828c21ede611",
+      "07c6be55cd1a4504f917750565f9f9f507a4640f",
+      "8e918bc43eecc2bc3acd9e93219af9a947c00475",
+      "41f8ab90cdbac45637662c79143dae4cbf87c4d8"
+    ],
+    "krypto:d3bbc1ff-7d7b-4d9c-a8cf-4c7dbbdf5d63.trajectory": [],
+    "krypto:d400a875-3b48-449b-9085-fbb01bc115a1": [
+      "5b0589a4642c5cfefc9e1c06d061f85d7ad10955",
+      "634592740d08b0224c51d9afb2b497152391c588",
+      "41818afc87c4cd898eb65fde7aaeeb8dadfb5423",
+      "4c7ce0770773d9aada7d80ed9517b0cf438988d2",
+      "6aa4d052a2e6410c8846136bccd615b8c13e02c1",
+      "e06fa1beeeebf9312f3683bbcab45a2648914c1f",
+      "49aa33cf60a4ac6c1338bf416c7a1b051790089a"
+    ],
+    "krypto:d400a875-3b48-449b-9085-fbb01bc115a1.trajectory": [],
+    "krypto:d422e76d-9a40-4316-95ed-9168af5ed117": [
+      "4a03d5e1310f859e578c92fad0a05a4a9635a5f3",
+      "d58abbbfd482e18726cbc781c9b8ef63068c93e8",
+      "c6ce4d5c836c4b579b7229359106e57b800f6dbd",
+      "226bdfabb35a912dd2c7550f4cd0773a55eae44c",
+      "4455ca5358c371bc234f0cfb5da9fece5ca79670",
+      "300c75b6205167d13a051ccf4d04d3dbc744c3b7",
+      "8a0dcc44948bad8cdfeff8f8c1bd1dc0d13ae052",
+      "3b20d1baa0023072173a1219f8c62ad8efc65fd6"
+    ],
+    "krypto:d422e76d-9a40-4316-95ed-9168af5ed117.trajectory": [],
+    "krypto:d493fa8f-5852-4b95-a785-b94c9510aa77": [
+      "0bad32104c8e5739f6d8315209f3f599debd2007",
+      "9d5d34b5dce64dc1f8656e4cfbc66b9f9b1fad33",
+      "1d269df5d4954d37b1af9e85981238a15c4a39c8",
+      "21f58a49a3225e831b6726fbed758208e0b238a8",
+      "f2865e7624266fb38c019b60b9ced1cf79818850",
+      "9d55fb2f317c89f22cf18a2d042f4d94fe60dd81",
+      "a81f500da1a3989275f692541ad59bead425887b",
+      "c82f8326d6efd883b406090044bc1dce8151bd6f",
+      "f1b952baa52be067f2140d9382f216ea142a69a0"
+    ],
+    "krypto:d493fa8f-5852-4b95-a785-b94c9510aa77.trajectory": [],
+    "krypto:d50f8105-52fd-495d-a0fe-dd29ff684c14.trajectory": [],
+    "krypto:d8f7ec02-f1ea-4624-a0cf-7ac27083a35e": [
+      "0675345261bc122e2b730194835debcd516ba1ba",
+      "bbc82dfbc89038a43654fea3a70cd64f1cf90283",
+      "5262a07cdc0c49432151cd3c0ed74772db0e98ec",
+      "89f8651ca63a24b13e022ce139a3f8384f26bbcd",
+      "9b3c4f1effe288bea2947486543569aee5bf5d06",
+      "2149ed0d3342936cc6c2dc88df517e3d44c1987f",
+      "d82731c059edd7e42dc8faffcc0c2e4442b355f1",
+      "a8ba94c245f97ccd6266ea2e356e6355185f3886"
+    ],
+    "krypto:d8f7ec02-f1ea-4624-a0cf-7ac27083a35e.trajectory": [],
+    "krypto:decd32e6-042d-489d-b8d7-47009776e6cf.trajectory": [],
+    "krypto:df5f3b4c-0233-4ab2-a884-82cfecdf53ee.trajectory": [],
+    "krypto:dffd4bc2-38a9-41c0-ab66-609732c65a8c.trajectory": [],
+    "krypto:e1d45742-3fbb-42be-a0bc-b16b562b8bde": [
+      "efb57bbf31239344240286c32a1a9a2785718300",
+      "0d4a134602a9cb65147cec27315b84b96fa4eb01",
+      "b3bc2186527ad08d40efa90812ada214faa6b97c",
+      "c9a927950d99b299d539198463978cc29ad6eba5",
+      "1b5c5348d6f8644cb574c1b48bfbaaf900f20a2b"
+    ],
+    "krypto:e1d45742-3fbb-42be-a0bc-b16b562b8bde.trajectory": [],
+    "krypto:e28783ed-7d5f-45a8-80d3-5d39e95b67b2.trajectory": [],
+    "krypto:e3c817a0-dd71-4fb1-bb7f-23c6099b6886.trajectory": [],
+    "krypto:ecb6558f-bf3f-4561-92a9-e928d276d281": [
+      "4bcd662d73454391a92c22cc7e514afc5acba370",
+      "1ef26b3e34f2cbfb48f898bdfb96b7d165ab90f0",
+      "772a28f9e6b62a0f4129c2d942a5e0a8eeb5932b",
+      "d5ab55fe5d676beba64e11aea8a6bd90d80f4fc4",
+      "0097230e3e7867ab612635ba3c2aea1ca79ff61e",
+      "53b5f90c051337ed7bf6d578cde407c21528917a",
+      "27af8e833a687e31fad085d9b7be7486f187bffc",
+      "501a70788c5cece542f68e3dc152b9d1ec62e0b0",
+      "d6884eb45d117d5d9dfe5c3a61f92eae18937412",
+      "5bbc9f51c429481d8a8ef68aaafa696d489db346",
+      "9d7b906d8ecf827a7243103dd65ae2fba307f1ae",
+      "39e157779dcf876cf5c137067a7f52586bef8dc5"
+    ],
+    "krypto:ecb6558f-bf3f-4561-92a9-e928d276d281.trajectory": [],
+    "krypto:ef188ccd-3a44-4743-b7c5-5594cfcde19e.trajectory": [],
+    "krypto:ef24adf0-95ee-4f58-8b12-a836661c7246.trajectory": [],
+    "krypto:f28874eb-4ef7-49f7-b641-4b7f8e5bc264.trajectory": [],
+    "krypto:f74e9fdb-39f4-4a49-b3a3-9ecd487292f6.trajectory": [],
+    "krypto:f79ffeb4-8750-461f-8d6d-0cf04c20504b.trajectory": [],
+    "krypto:f7cd5be2-76e7-4134-bcda-02e67cfd6328.trajectory": [],
+    "krypto:f80303bd-cb01-4bd2-8eb1-ce4bd79e2635": [
+      "8e8c28310f44902a876d8ccfff489da12f8712e2",
+      "44e2cec6d3c87f628f15ec21f912d96ba2716a04",
+      "d5ec501f00ab8bd99b93cf02a97f39887bb5243b",
+      "ca7540bce0ff504d155d4c339b498a61d146f259",
+      "e49267b453cf6b7f87d6b4bb85c175659a48f73c",
+      "d036b7aa5b698025cba68cce52d3b0d4fed11965",
+      "ba0e1a3411f7f3f8b5fdc1a45f9d0f3d22f827ac"
+    ],
+    "krypto:f80303bd-cb01-4bd2-8eb1-ce4bd79e2635.trajectory": [],
+    "krypto:f8064eb2-8274-4555-a635-1622119972ec.trajectory": [],
+    "krypto:f82c8f26-19b7-414a-b72c-8c6b3d3499b3": [],
+    "krypto:f9e35973-28ba-465c-b823-5ee8e393b342.trajectory": [],
+    "krypto:fbdd3253-98c1-4ced-ab66-a71e0bb0936a.trajectory": [],
+    "krypto:fca08bfd-a792-4d0e-8389-910b0d63f478": [
+      "33cf5db6cd42fc19850a25aedabf7a973492bd9c",
+      "849f90b7063a64d4a385687c3862e7bc65681dc7",
+      "9189f3740970174d4860aeea4dcd564907ac0520",
+      "699cc2002d0c112c49e30edae55edd65762c4550",
+      "20ba98c515afd67a6e389fd496379bf47799f77d",
+      "d71d075b1d63d23e5dcf73e4c2c6569c2bd9dd9a",
+      "71566d301b3d2280cef6e1cc12045ac8995381ec"
     ]
   }
 }

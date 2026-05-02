@@ -132,3 +132,7 @@ Everything in HALL_OF_FAME.md is a simulation maximum. The real validation path 
 **Source of truth for production params: `src/live/config.rs`. Last verified: 2026-05-01.**
 
 ---
+### Bypass Blocker: Local Mock Exchange
+**Status:** UNBUILT.
+**Why:** Noah's API keys have been blocking testnet for 5+ weeks. We need to test the `bot.rs` execution logic (order placement, state machine, latency handling).
+**What:** Build a lightweight local Rust HTTP/WS server that mocks the `binance-rs-async` endpoints we use. Seed it with historical 1m data to simulate fills and slippage locally.
