@@ -13,11 +13,14 @@
 - AP=64 rejected on fewer passes + lower return. Reverted to AP=12 in config.rs
 - **Anti-spin rule confirmed:** Sequential optimization on same harness = artifact risk
 
-**Genuinely unresolved:**
-- ATR_RANK=24: first on harness, genuinely validated (52/63 pass, 9-0 universe sweep)
-- REGIME_LOOKBACK=42: had prior theoretical justification, acceptable
-- T40 (RAE): genuinely untested, next real research opportunity
-- Live testnet: 5+ weeks blocked on API keys
+**Genuinely resolved:**
+- T40 Regime-Adaptive Exit: REJECTED — baseline M=2.30 wins all configs (2026-05-02)
+- AP=64: REJECTED via held-out validation — same-harness artifact (2026-05-02)
+- ATR_RANK=24: genuinely validated (first on harness, 52/63, 9-0 universe sweep)
+- REGIME_LOOKBACK=42: confirmed optimal via 196-value dense sweep
+- VL=96: REJECTED via Base5 confirmation — VL=8 remains
+
+**Remaining blocker: Live testnet BLOCKED on Noah's Binance testnet API keys (5+ weeks).**
 
 **Biggest blind spots:**
 1. Sequential optimization pattern — we found it, we flagged it, AP=64 bypassed it anyway
@@ -86,7 +89,7 @@ VOL_LOOKBACK        = 8       ← conservative; VL=96 rejected as artifact (T37)
 - Unblocks execution logic testing without credentials
 
 ### T9: Live Testnet
-**Status:** BLOCKED on Noah's Binance testnet API key + secret. 5+ weeks blocked. All metrics remain simulation upper bounds.
+**Status:** BLOCKED on Noah's Binance testnet API keys (5+ weeks). This is the only remaining path forward.
 
 ---
 
