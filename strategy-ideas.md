@@ -1,79 +1,81 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-01 20:13 UTC. Critique cycle complete. Research loop genuinely CLOSED. Infrastructure debt (T36/T38) is blocking credible reporting. Live testnet BLOCKED 4+ weeks.*
+*Last updated: 2026-05-02 08:44 UTC. Critique cycle complete. Research loop is documentation spiral, not discovery spiral. T37 (VL=96) 2+ sessions overdue. AP=64 has same-harness artifact risk.*
 
 ---
 
-## Critical Alert: Same-Harness Artifact Pattern (EP=24/VL)
+## Critical Alert: Sequential Optimization Pattern (EP=24 Repeating)
 
-**EP=24 (REVERTED):** Found on the same harness (EP sweep) during the same session that validated CHAND_P=11. Sequential optimization on same OOS data → in-sample inflation. Reverted after held-out confirmed EP=21 wins.
+**AP=64 is the same trap as EP=24.** REGIME_ATR_PERIOD=64 was found on the same `live_compatible_wf.rs` harness that produced:
+1. ATR_RANK_THRESHOLD=24 (found first on this harness)
+2. REGIME_LOOKBACK=42 (found second on this harness)
+3. REGIME_ATR_PERIOD=64 (found third on this harness)
 
-**VOL_LOOKBACK VL=96 (UNCONFIRMED):** Found on the same 100-value sweep harness (VL=1..100 step 1, 9 universes × 6 windows) that produced VL=8 on 2026-04-29. One day later, VL=96 was "found" using identical methodology. This is the same pattern as EP=24.
+Three sequential optimizations on the same OOS grid. EP=24 failed held-out validation. AP=64 must complete held-out validation before being trusted as production default.
+
+**Anti-spin rule:** When 3+ params are optimized on the same harness in sequence, the latest param needs held-out validation before trust.
+
+---
+
+## Critical Alert: Same-Harness Artifact Pattern (VL=96)
+
+**VOL_LOOKBACK=96 (UNCONFIRMED):** Found on the same 100-value sweep harness (VL=1..100 step 1) that produced VL=8 two days prior. Same-harness artifact pattern (EP=24). One day later, VL=96 was "found" using identical methodology.
 
 **Rule:** Never re-run confirmed params at higher resolution on the same harness. VL=8 was settled. VL=96 is a same-harness artifact risk. **Do not promote VL=96 to production without T37 Base5-only held-out confirmation.**
 
 ---
 
-## Critical Alert: Infrastructure Is Broken, Not Research
+## Critical Alert: Documentation Spiral, Not Discovery Spiral
 
-The research loop is GENUINELY CLOSED. Every testable mechanism has been tested:
-- Entry alternatives: ATR filter, volume confirmation, correlation filter, Donchian, EMA crossover, CTREND, A/D — all rejected
-- Exit alternatives: vol-contingent Chandelier (uniform), asymmetric exit, ATR_EMA, chop filter — all rejected
-- Position sizing: ATR-norm, trend scalar, USDT hedge, drawdown trigger — all marginal or rejected
-- Portfolio: equity integration, A/D sleeve, Donchian sleeve, CTREND sleeve — all rejected
+The research loop is NOT closed — it's spinning. Last 8 commits: 5 docs/audits, 3 hyperopts (2 confirming already-known params). REGIME_LOOKBACK=42 sweep (196 values) confirmed the obvious. REGIME_ATR_PERIOD=64 is sequential optimization on the same harness that found T=24 and LB=42.
 
-**The problem is not that we need more research. The problem is we can't trust the numbers we have because the harness that produces them doesn't match the live bot.**
+**Genuinely unresolved research topics:**
+- VL=96 Base5 confirmation (T37)
+- AP=64 held-out validation
+- T38 complete equity export
+- Fee model reality check (backtest uses 10bps, live likely ~4-5bps due to 70% maker fills)
 
----
-
-## Critical Alert: All Turtle-Only Metrics Are Stale (2026-05-01)
-
-**Bug fix (commit `79a3442d`):** `src/live/bot.rs` was using wrong ATR period for Turtle ATR buffer, wrong stop direction (lowest_low - ATR instead of highest_high - ATR), and not enforcing HOLD_MAX during ATR warmup. Fixed 2026-05-01 02:00 UTC.
-
-**ALL prior Turtle-only walk-forward results are stale.** The following require re-run under corrected live-path semantics before they can be cited as production evidence:
-- ATR_RANK=5 (Turtle-only validation pre-dates bug fix)
-- TURTLE_ATR_PERIOD=24 (sweep results were degenerate because stop was unreachable)
-- Any walk-forward that used "Turtle-only exit" as its exit mechanism
-
-**Action required:** T38 (corrected live-path walk-forward) after T36 syncs progress harness to config.rs.
+**Genuinely novel untested idea:** Regime-Adaptive Exit (RAE) — conditional Chandelier multiplier (mechanistically different from the uniform multiplier failure).
 
 ---
 
 ## Top 3 Most Promising Unbuilt Ideas
 
-### #1: T38 — Corrected Live Turtle-Only Walk-Forward (CRITICAL — BLOCKED ON T36)
-**Status:** PARTIAL/STALE. Most important unstarted task.
-**Why:** All Turtle-only metrics are stale after the 2026-05-01 bug fix. Without this, nothing we say about Turtle-only performance is credible.
-**What:** Rebuild harness matching `src/live/bot.rs` exactly — Turtle-only exit, correct ATR buffer, HOLD_MAX independent of warmup. Use CHAND_PERIOD=7, VL=8 from config.rs. Export full-history equity CSV. Label `LIVE_COMPATIBLE` vs `RESEARCH_ONLY`.
-**Dependency:** T36 must complete first (sync progress harness to config.rs) — this is a prerequisite for a trustworthy equity number.
+### #1: T37 — VL=96 vs VL=8 Base5 Confirmation (MANDATORY)
+**Status:** UNBUILT, 2+ sessions overdue.
+**Why:** VL=96 found on same-harness artifact pattern. Must confirm on Base5 or remove claim.
+**What:** Run `live_compatible_wf.rs` on Base5 only (6 windows) with VL=96 vs VL=8.
+**If VL=96 wins:** Promote to config.rs.
+**If VL=96 loses:** Remove claim from all files, keep VL=8.
 
-### #2: T37 — VL=96 vs VL=8 Base5-Only Confirmation
-**Status:** UNBUILT. Small, definitive one-run test.
-**Why new:** VL=96 is unconfirmed. Same-harness artifact pattern (EP=24). Either it wins on Base5 and should be promoted, or it doesn't and the claim should be removed.
-**What:** Run `live_compatible_wf.rs` on Base5 only (6 windows) with VL=96 vs VL=8. If VL=96 wins on Base5: promote. If not: VL=96 claim is removed from all files.
-**Value:** Eliminates noise from claims. Makes production default trustworthy.
+### #2: AP=64 Held-Out Validation
+**Status:** UNCONFIRMED — same-harness artifact risk.
+**Why:** Three sequential optimizations on same OOS harness (T=24 → LB=42 → AP=64). EP=24 pattern.
+**What:** Run AP=12 vs AP=64 on pre-2021 held-out data.
+**If AP=64 wins held-out:** Confirm as production default.
+**If AP=64 loses:** Revert to AP=12 (well-validated from prior sweep).
 
-### #3: Regime-Adaptive Exit (RAE) — Vol-Conditional Chandelier Multiplier
-**Status:** UNBUILT. Genuinely novel mechanism.
-**Why different from prior vol-contingent attempt:** Prior attempt (GRAVEYARD) tested UNIFORM multiplier change — all configs produced identical results. RAE proposes CONDITIONAL adjustment: high-vol → M×1.1 (looser, avoid premature stop-out), low-vol → M×0.9 (tighter, capture choppy range breaks faster), neutral → M=2.30.
-**What to build:** `examples/regime_adaptive_exit_walkforward.rs` — grid of high_vol_mult × low_vol_mult × 9 universes × 6 windows.
-**Reject if:** Pass rate or Sharpe degrades vs fixed M=2.30. This closes the vol-conditional exit space definitively.
+### #3: T38-COMPLETE — Full-History Equity Export from live_compatible_wf.rs
+**Status:** PARTIAL, 3+ sessions.
+**Why:** Live bot equity (75.1x) comes from progress_equity_curves.rs, not from live_compatible_wf.rs. Need clean equity export from actual live bot path.
+**What:** Add equity CSV export to live_compatible_wf.rs, run full timeline, produce clean snapshot.
 
 ---
 
 ## Unbuilt Ideas (Priority Within Category)
 
 ### Infrastructure / Trust (Must Fix)
-- [x] **T36**: Sync progress_equity_curves.rs to config.rs — CRITICAL (CHAND_PERIOD=11 vs 7, VL mismatch)
-- [ ] **T38**: Corrected Turtle-only walk-forward (BLOCKED on T36 — equity number unreliable until synced)
-- [ ] **T37**: VL=96 vs VL=8 Base5-only confirmation (small, definitive)
-- [ ] **S6 GRAVEYARD**: Move close_losers from "candidate" to GRAVEYARD (0 trades on Turtle-only exit)
+- [x] **T36**: Sync progress_equity_curves.rs to config.rs ✅ (CHAND_P=7, VL=8, ATR_RANK=24)
+- [ ] **T37**: VL=96 vs VL=8 Base5 confirmation — MANDATORY, 2+ sessions overdue
+- [ ] **AP=64 held-out**: Sequential optimization risk — validate or revert
+- [ ] **T38-complete**: Full-history equity from live_compatible_wf.rs — 3+ sessions partial
+- [ ] **S6 GRAVEYARD**: Move close_losers from "candidate" to GRAVEYARD (0 trades on Turtle-only)
 
 ### Research (Genuinely Untested)
-- [ ] **T40**: Regime-Adaptive Exit (RAE) — vol-conditional Chandelier multiplier (build once if approved)
+- [ ] **T40**: Regime-Adaptive Exit (RAE) — vol-conditional Chandelier multiplier (conditional vs uniform — genuinely different mechanism)
 
 ### Blocked on Credentials
-- [ ] **T9**: Live testnet (BLOCKED 4+ weeks on Noah's Binance testnet API keys)
+- [ ] **T9**: Live testnet (BLOCKED 5+ weeks on Noah's Binance testnet API keys)
 
 ---
 
@@ -103,41 +105,29 @@ The research loop is GENUINELY CLOSED. Every testable mechanism has been tested:
 | CTREND fixed 25% sleeve | REJECTED | Sharpe destroyed 1.38→0.33 |
 | ATR-norm position sizing | REJECTED | Inverts dollar-volume ranking |
 | Rebalancing trim_losers | REJECTED | Identical Sharpe, lower return |
+| REGIME_ATR_PERIOD=64 | UNCONFIRMED | Sequential optimization on same harness (EP=24 pattern) |
 
 ---
 
-## Research Loop Status: CLOSED (Genuinely)
-
-**CLOSED by exhaustion. NOT by proof.** Every testable mechanism has been tried:
-- Entry alternatives: ATR filter, volume confirmation, correlation filter, Donchian, EMA crossover, CTREND, A/D — all rejected
-- Exit alternatives: vol-contingent Chandelier (uniform), asymmetric exit, ATR_EMA, chop filter — all rejected
-- Position sizing: ATR-norm, trend scalar, USDT hedge, drawdown trigger — all marginal or rejected
-- Portfolio: equity integration, A/D sleeve, Donchian sleeve, CTREND sleeve — all rejected
-
-**The research loop is not closed because we haven't found the right idea — it's closed because all testable ideas have been tested and rejected. Only genuinely novel mechanisms (RAE) or infrastructure (T38/T36/T37) remain.**
-
-**Remaining paths:**
-1. **Live testnet** (BLOCKED 4+ weeks on Noah's API keys — the only path that produces real feedback)
-2. **T36/T38 infrastructure** (fixes the credibility of what we already have)
-3. **T37 VL confirmation** (removes noise from production params)
-4. **RAE** (build once if approved — genuinely novel mechanism)
-
----
-
-## Anti-Overfitting Rules (Established 2026-04-25)
+## Anti-Overfitting Rules (Updated 2026-05-02)
 
 1. Minimum 3-window (5.5%) improvement on OOS before accepting any param change
-2. No sequential optimization on same data (EP=24 lesson)
+2. No sequential optimization on same data (EP=24 lesson — applies to AP=64)
 3. Never re-run confirmed params at higher resolution on the same harness (VL=96 lesson)
-4. Held-out validation required for marginal wins
+4. Held-out validation required for marginal wins (< 3 windows over baseline)
 5. Equity curve dominance required (>80% of time bars)
 6. **Absolute guardrails over relative improvement** (Donchian: +11% Sharpe but 63% pass < 69.1% guardrail → REJECTED)
+7. **Sequential optimization detection:** When 3+ params optimized on same harness in sequence, latest param needs held-out validation before trust
 
 ---
 
 ## Key Insight: All Metrics Are Upper Bounds
 
 Everything in HALL_OF_FAME.md is a simulation maximum. The real validation path is live testnet paper trading + comparing actual vs predicted metrics.
+
+**Biggest unmeasured risk:** Optimizing into a bull market. No 12-18 month sustained bear window in OOS data. 2026 YTD (-22.7%) is the closest proxy but only 4 months. A genuine prolonged bear market is the real test.
+
+**Fee model reality check:** Backtest uses 10bps taker, but microstructure analysis shows ~70% maker fills on entries → real expected cost ~4-5bps. Backtest may be pessimistic by 2-3x. Live could outperform walk-forward numbers.
 
 **Source of truth for production params: `src/live/config.rs`. Last verified: 2026-05-01.**
 
