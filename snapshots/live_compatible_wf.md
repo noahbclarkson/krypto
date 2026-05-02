@@ -1,30 +1,30 @@
 # Live-Compatible Walk-Forward Results
 
 **Strategy:** Turtle-only exit (matching `src/live/bot.rs` after 2026-05-01 bug fix)
-- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=64, LB=42, T=24) gate
+- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=12, LB=42, T=24) gate
 - Exit: Turtle ATR trailing stop (AP=24, M=2.0) + HOLD_MAX=12
 - Risk overlay: USDT 30% size when BTC 21d ATR > 75th pct of 252d history
 - Fee: 0.10% taker (both sides)
 - VOL_LOOKBACK: 8
 
-## Global Results (55/63 pass, 252-bar windows)
+## Global Results (53/63 pass, 252-bar windows)
 | Metric | Value |
 |--------|-------|
-| Pass Rate | 55/63 (87.3%) |
-| Avg Sharpe | 6.188 |
-| Avg Return | 73.8% |
+| Pass Rate | 53/63 (84.1%) |
+| Avg Sharpe | 5.428 |
+| Avg Return | 85.4% |
 
 ## Per-Universe Summary
 | Universe | Pass | Sharpe | Return% | DD% | Trades |
 |----------|-------|--------|---------|-----|--------|
-| Base5 | 6/7 | 4.47 | 101.4% | 20.5% | 52 |
-| NoDOGE | 7/7 | 9.49 | 66.4% | 16.8% | 52 |
-| Legacy4 | 7/7 | 8.82 | 101.5% | 13.7% | 49 |
-| Legacy5BNB | 6/7 | 11.01 | 108.5% | 11.4% | 44 |
-| OldGuardNoBNB | 6/7 | 3.71 | 84.0% | 22.1% | 51 |
-| LargeCaps5 | 7/7 | 9.17 | 47.5% | 17.0% | 49 |
-| Legacy3 | 6/7 | 6.12 | 67.9% | 17.9% | 53 |
-| LowVolume5 | 5/7 | 0.80 | 43.2% | 31.1% | 57 |
-| OldGuard4 | 5/7 | 2.11 | 44.3% | 26.8% | 57 |
+| Base5 | 7/7 | 7.14 | 141.1% | 22.0% | 64 |
+| NoDOGE | 7/7 | 6.43 | 64.9% | 21.0% | 61 |
+| Legacy4 | 6/7 | 7.77 | 100.5% | 19.7% | 60 |
+| Legacy5BNB | 6/7 | 7.63 | 92.9% | 19.3% | 53 |
+| OldGuardNoBNB | 5/7 | 3.48 | 77.9% | 28.8% | 62 |
+| LargeCaps5 | 7/7 | 6.08 | 50.5% | 22.1% | 60 |
+| Legacy3 | 6/7 | 6.17 | 77.3% | 26.0% | 66 |
+| LowVolume5 | 4/7 | 1.77 | 114.1% | 46.3% | 77 |
+| OldGuard4 | 5/7 | 2.39 | 49.7% | 35.0% | 71 |
 
 *Pass = windows with ≥3 trades AND Sharpe>0 / total windows.*
