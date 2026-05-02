@@ -1,11 +1,13 @@
 # Live-Compatible Walk-Forward Results
 
 **Strategy:** Turtle-only exit (matching `src/live/bot.rs` after 2026-05-01 bug fix)
-- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=12, LB=42, T=5) gate
+- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=64, LB=42, T=24) gate
 - Exit: Turtle ATR trailing stop (AP=24, M=2.0) + HOLD_MAX=12
 - Risk overlay: USDT 30% size when BTC 21d ATR > 75th pct of 252d history
 - Fee: 0.10% taker (both sides)
 - VOL_LOOKBACK: 8
+- REGIME_ATR_PERIOD: 64 (AP=64 hyperopt 2026-05-02: 55/63 pass vs AP=12 at 53/63, Sharpe 6.19 vs 5.43)
+- ATR_RANK_THRESHOLD: 24 (hyperopt 2026-05-01: 52/63 pass vs T=5 at 45/63, Sharpe 5.59 vs 3.31)
 
 ## Global Results (55/63 pass, 252-bar windows)
 | Metric | Value |

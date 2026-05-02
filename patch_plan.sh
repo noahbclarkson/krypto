@@ -1,0 +1,1 @@
+sed -i 's/### T37.*/### T37: Base5-only VL=96 vs VL=8 confirmation \x2d\x2d DONE\n**Status:** REJECTED. VL=96 provides NO edge when evaluated symbol-by-symbol without full universe cross-sectional ranking. Result was 0% improvement over VL=8. Retain conservative VL=8 default. VL=96 claim was an artifact of the EP=24 Dual Chandelier harness./g' ../PLAN.md
