@@ -29,11 +29,11 @@ const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 const ATR_ENTRY_MULT: f64 = 0.00;
-const VOL_LOOKBACK: usize = 8; // production baseline
+const VOL_LOOKBACK: usize = 8; // production default; T37 will test VL=96 on Base5
 
-const REGIME_ATR_PERIOD: usize = 12;
-const REGIME_LOOKBACK: usize = 42;
-const ATR_RANK_T: f64 = 24.0; // Updated 2026-05-01: T=24 wins T=24-27 plateau; T=5 was mediocre (45/63 pass, Sharpe 3.31). See memory/hyperopt-2026-05-01-atr-rank-threshold.md.
+const REGIME_ATR_PERIOD: usize = 64; // hyperopt 2026-05-02: AP∈[5..=80] sweep → AP=64 wins 55/63 pass vs AP=12 at 53/63. Same-harness risk (EP=24 pattern) — await held-out before trusting.
+const REGIME_LOOKBACK: usize = 42; // confirmed 2026-05-02: LB∈[5..=200] sweep → LB=42 optimal (Sharpe 6.188, 55/63 pass, 9/9 positive)
+const ATR_RANK_T: f64 = 24.0; // hyperopt 2026-05-01: T∈[0..=100] sweep → T=24 wins 52/63 pass, Sharpe 5.59, +132% return. T=24 wins ALL 9 universes 9-0 vs T=5.
 
 const UNIVERSES: &[(&str, &[&str])] = &[
     ("Base5",        &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]),
@@ -347,7 +347,7 @@ async fn main() -> Result<()> {
     writeln!(f, "# Live-Compatible Walk-Forward Results")?;
     writeln!(f, "")?;
     writeln!(f, "**Strategy:** Turtle-only exit (matching `src/live/bot.rs` after 2026-05-01 bug fix)")?;
-    writeln!(f, "- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=12, LB=42, T=5) gate")?;
+    writeln!(f, "- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=64, LB=42, T=24) gate")?;
     writeln!(f, "- Exit: Turtle ATR trailing stop (AP=24, M=2.0) + HOLD_MAX=12")?;
     writeln!(f, "- Risk overlay: USDT 30% size when BTC 21d ATR > 75th pct of 252d history")?;
     writeln!(f, "- Fee: 0.10% taker (both sides)")?;
