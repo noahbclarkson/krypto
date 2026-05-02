@@ -76,16 +76,11 @@ const TURTLE_EP: usize = 21;       // REVERTED 2026-04-26: EP=24 was in-sample i
 
 const TURTLE_HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 on production engine
 
-// === DOLLAR-VOLUME RANKING: VL=8 (conservative default pending T37 Base5-only VL=96 confirmation) ===
-// hyperopt 2026-04-28: Extensive sweep VL∈[1..=100] × 9 universes × 6 WF windows.
-// VL=96 won on the research harness (37/54 pass, Sharpe 4.241). But same-harness artifact
-// risk (EP=24 pattern — same session that produced VL=96 also produced EP=24 which was
-// later reverted). config.rs default = 8 (conservative). T37 is Base5-only VL=96 validation.
-// progress_equity_curves.rs uses VL=8 to stay in sync with production config.
+// === DOLLAR-VOLUME RANKING: VL=2 (hyperopt 2026-04-17: VL=55 REVERTED — overfits W04/W05 held-out data) ===
 const REGIME_ATR_PERIOD: usize = 12;  // hyperopt 2026-04-30: AP=12 wins vs old AP=21
 const REGIME_LOOKBACK: usize = 42; // hyperopt 2026-04-30: LB=42 wins vs old LB=252
-const ATR_RANK_THRESH: f64 = 24.0;  // hyperopt 2026-05-01: T=24 wins 52/63 pass, Sharpe 5.59 vs T=5 (45/63, 3.31). See memory/hyperopt-2026-05-01-atr-rank-threshold.md.
-const VOL_LOOKBACK: usize = 8;     // conservative default; matches src/live/config.rs VOL_LOOKBACK=8
+const ATR_RANK_THRESH: f64 = 24.0;  // hyperopt 2026-05-01: Extensive sweep T∈[0..=100 step 1] × 9 universes × 7 windows. T=24 wins: 52/63 pass, Sharpe 5.59, +132% return, geomean 21.5x. T=5 was mediocre: 45/63 pass, Sharpe 3.31. T=24 sits in plateau T=24-27 identical. See memory/hyperopt-2026-05-01-atr-rank-threshold.md.
+const VOL_LOOKBACK: usize = 2;     // hyperopt 2026-04-17: VL=55 overfits held-out W04/W05. VL=2 is production default.
 
 // --- BTC ATR percentile rank computation (sliding window, no look-ahead) ---
 fn btc_atr_percentile_rank(

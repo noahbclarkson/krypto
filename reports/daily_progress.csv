@@ -1,11 +1,6 @@
 # DAILY PROGRESS TRACKING — Krypto Strategies
 # NOTE: sharpe_methodology is required. DDBudget's reported Sharpe is milestone-aggregated and not comparable to Turtle's daily compounded equity Sharpe.
 date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades
-2026-05-02,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
-2026-05-02,FactorSmallByDV,15.5x,1.99,fixed_hold_daily_equity,1257
-2026-05-02,DDBudget 3-Sleeve,62.2x,7.20,milestone_aggregated_not_comparable,776
-2026-05-02,Turtle+Chandelier,143.4x,1.02,daily_compounded_equity,397
-2026-05-02,Turtle+ATR_RANK=24,86.1x,1.01,regime filter T=24; walk-forward: 52/63 pass; Sharpe 5.59; +132% ret. See snapshots/progress_equity_curves_atrrank24.md,n/a
 2026-04-30,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
 2026-04-30,FactorSmallByDV,15.0x,1.97,fixed_hold_daily_equity,1257
 2026-04-30,DDBudget 3-Sleeve,62.5x,7.22,milestone_aggregated_not_comparable,776

@@ -1,112 +1,137 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-02 04:35 UTC. VL=96 confirmed NULL (T37: 6/6 tie, 0 delta). AP=64 cliff suspicious (needs held-out T44). T40 (RAE) still untested — highest-value remaining mechanism. Live testnet BLOCKED 5+ weeks.*
+*Last updated: 2026-05-01 20:13 UTC. Critique cycle complete. Research loop genuinely CLOSED. Infrastructure debt (T36/T38) is blocking credible reporting. Live testnet BLOCKED 4+ weeks.*
 
 ---
 
-## Critical Alert: REGIME_ATR_PERIOD=64 Has Suspicious Overfitting Cliff
+## Critical Alert: Same-Harness Artifact Pattern (EP=24/VL)
 
-**AP=64 (REGIME_ATR_PERIOD=64) promoted 2026-05-02:** From extensive sweep (AP∈[5..=80 step 1] × 9 universes × 7 windows): 55/63 pass, Sharpe 6.19, DD -7.0pp vs AP=12 baseline.
+**EP=24 (REVERTED):** Found on the same harness (EP sweep) during the same session that validated CHAND_P=11. Sequential optimization on same OOS data → in-sample inflation. Reverted after held-out confirmed EP=21 wins.
 
-**The problem:** "sole peak — Sharpe drops sharply to AP=65 (3.07) and AP=63 (5.27)." A -46% Sharpe drop at AP=65 is a classic single-parameter overfitting signature. AP=65 is also a parameter value — the discontinuity is extreme.
+**VOL_LOOKBACK VL=96 (UNCONFIRMED):** Found on the same 100-value sweep harness (VL=1..100 step 1, 9 universes × 6 windows) that produced VL=8 on 2026-04-29. One day later, VL=96 was "found" using identical methodology. This is the same pattern as EP=24.
 
-**Rule:** Suspicious single-parameter cliffs require held-out validation. T44 is the held-out test (pre-2026 split). If AP=64 fails held-out, revert to AP=12 or AP=39 (tied 55/63 at Sharpe 5.43, stable plateau).
+**Rule:** Never re-run confirmed params at higher resolution on the same harness. VL=8 was settled. VL=96 is a same-harness artifact risk. **Do not promote VL=96 to production without T37 Base5-only held-out confirmation.**
 
 ---
 
-## Critical Alert: Harness Mismatch With Live Bot
+## Critical Alert: Infrastructure Is Broken, Not Research
 
-`live_compatible_wf.rs` hardcodes `regime_atr_period=12` (from old joint sweep). Live bot uses `AP=64`. The 55/63 pass rate and Sharpe 6.188 from the harness reflect AP=12, not AP=64. We don't know what AP=64 actually produces on the live Turtle-only path.
+The research loop is GENUINELY CLOSED. Every testable mechanism has been tested:
+- Entry alternatives: ATR filter, volume confirmation, correlation filter, Donchian, EMA crossover, CTREND, A/D — all rejected
+- Exit alternatives: vol-contingent Chandelier (uniform), asymmetric exit, ATR_EMA, chop filter — all rejected
+- Position sizing: ATR-norm, trend scalar, USDT hedge, drawdown trigger — all marginal or rejected
+- Portfolio: equity integration, A/D sleeve, Donchian sleeve, CTREND sleeve — all rejected
 
-**Do not cite `snapshots/live_compatible_wf.md` as authoritative** until T38-SYNC completes.
+**The problem is not that we need more research. The problem is we can't trust the numbers we have because the harness that produces them doesn't match the live bot.**
+
+---
+
+## Critical Alert: All Turtle-Only Metrics Are Stale (2026-05-01)
+
+**Bug fix (commit `79a3442d`):** `src/live/bot.rs` was using wrong ATR period for Turtle ATR buffer, wrong stop direction (lowest_low - ATR instead of highest_high - ATR), and not enforcing HOLD_MAX during ATR warmup. Fixed 2026-05-01 02:00 UTC.
+
+**ALL prior Turtle-only walk-forward results are stale.** The following require re-run under corrected live-path semantics before they can be cited as production evidence:
+- ATR_RANK=5 (Turtle-only validation pre-dates bug fix)
+- TURTLE_ATR_PERIOD=24 (sweep results were degenerate because stop was unreachable)
+- Any walk-forward that used "Turtle-only exit" as its exit mechanism
+
+**Action required:** T38 (corrected live-path walk-forward) after T36 syncs progress harness to config.rs.
 
 ---
 
 ## Top 3 Most Promising Unbuilt Ideas
 
-### #1: T44 — REGIME_ATR_PERIOD=64 Held-Out Validation (HIGH — immediate)
-**Status:** UNVALIDATED. Required before AP=64 is trusted.
-**Why:** The cliff at AP=65 (6.19→3.07 = -46%) is suspicious. This could be genuine parameter boundary or artifact.
-**What:** Run pre-2026 held-out test (2018-2025 data) comparing AP=64 vs AP=12. If AP=64 wins on held-out: accept. If AP=64 loses or ties: revert to AP=12.
-**Mechanism:** AP=64 uses 64-bar ATR for regime detection. That's ~10 weeks. Combined warmup: AP+LB+2 = 108 bars before filter activates.
+### #1: T38 — Corrected Live Turtle-Only Walk-Forward (CRITICAL — BLOCKED ON T36)
+**Status:** PARTIAL/STALE. Most important unstarted task.
+**Why:** All Turtle-only metrics are stale after the 2026-05-01 bug fix. Without this, nothing we say about Turtle-only performance is credible.
+**What:** Rebuild harness matching `src/live/bot.rs` exactly — Turtle-only exit, correct ATR buffer, HOLD_MAX independent of warmup. Use CHAND_PERIOD=7, VL=8 from config.rs. Export full-history equity CSV. Label `LIVE_COMPATIBLE` vs `RESEARCH_ONLY`.
+**Dependency:** T36 must complete first (sync progress harness to config.rs) — this is a prerequisite for a trustworthy equity number.
 
-### #2: T38-SYNC — Sync live_compatible_wf.rs to AP=64 (HIGH — prerequisite for trustworthy equity)
-**Status:** MISMATCH. Harness uses AP=12, live bot uses AP=64.
-**What:** Update harness to hardcode AP=64 (or read from config). Re-run and regenerate snapshot. This is the prerequisite for a trustworthy equity number and for comparing live vs backtest behavior.
+### #2: T37 — VL=96 vs VL=8 Base5-Only Confirmation
+**Status:** UNBUILT. Small, definitive one-run test.
+**Why new:** VL=96 is unconfirmed. Same-harness artifact pattern (EP=24). Either it wins on Base5 and should be promoted, or it doesn't and the claim should be removed.
+**What:** Run `live_compatible_wf.rs` on Base5 only (6 windows) with VL=96 vs VL=8. If VL=96 wins on Base5: promote. If not: VL=96 claim is removed from all files.
+**Value:** Eliminates noise from claims. Makes production default trustworthy.
 
-### #3: T40 — Regime-Adaptive Exit (RAE) — Vol-Conditional Chandelier Multiplier (HIGH — genuinely novel)
-**Status:** UNBUILT. 3+ sessions overdue. **This is the highest-value untested mechanism in the exit space.**
-**Why different from prior GRAVEYARD attempt:** Prior vol-contingent attempt tested UNIFORM multiplier — all configs produced identical results. RAE proposes CONDITIONAL switching: high-vol → M×1.1 (looser), low-vol → M×0.9 (tighter), neutral → M=2.30.
+### #3: Regime-Adaptive Exit (RAE) — Vol-Conditional Chandelier Multiplier
+**Status:** UNBUILT. Genuinely novel mechanism.
+**Why different from prior vol-contingent attempt:** Prior attempt (GRAVEYARD) tested UNIFORM multiplier change — all configs produced identical results. RAE proposes CONDITIONAL adjustment: high-vol → M×1.1 (looser, avoid premature stop-out), low-vol → M×0.9 (tighter, capture choppy range breaks faster), neutral → M=2.30.
 **What to build:** `examples/regime_adaptive_exit_walkforward.rs` — grid of high_vol_mult × low_vol_mult × 9 universes × 6 windows.
-**Reject if:** No improvement over fixed M=2.30.
+**Reject if:** Pass rate or Sharpe degrades vs fixed M=2.30. This closes the vol-conditional exit space definitively.
 
 ---
 
 ## Unbuilt Ideas (Priority Within Category)
 
 ### Infrastructure / Trust (Must Fix)
-- [x] **T36**: Sync progress_equity_curves.rs to config.rs — COMPLETE
-- [x] **T37**: VL=96 vs VL=8 Base5 confirmation — **NULL RESULT: 6/6 tie, 0 delta → VL=8 retained**
-- [ ] **T38-SYNC**: Sync live_compatible_wf.rs to AP=64 — harness mismatch (AP=12 vs AP=64)
-- [ ] **T41**: Regenerate live_compatible_wf.md — stale report (T=5 label vs T=24 code)
-- [ ] **S6 GRAVEYARD**: close_losers incompatible with Turtle-only exit (0 trades) — clean up
+- [x] **T36**: Sync progress_equity_curves.rs to config.rs — CRITICAL (CHAND_PERIOD=11 vs 7, VL mismatch)
+- [ ] **T38**: Corrected Turtle-only walk-forward (BLOCKED on T36 — equity number unreliable until synced)
+- [ ] **T37**: VL=96 vs VL=8 Base5-only confirmation (small, definitive)
+- [ ] **S6 GRAVEYARD**: Move close_losers from "candidate" to GRAVEYARD (0 trades on Turtle-only exit)
 
 ### Research (Genuinely Untested)
-- [ ] **T40**: Regime-Adaptive Exit (RAE) — vol-conditional Chandelier multiplier
-- [ ] **T42**: ATR_ENTRY_MULT=0.94 held-out validation (pre-2026 split)
-- [ ] **T43**: Mid-cap re-test on Base5+LargeCaps5 only
+- [ ] **T40**: Regime-Adaptive Exit (RAE) — vol-conditional Chandelier multiplier (build once if approved)
 
 ### Blocked on Credentials
-- [ ] **T9**: Live testnet (BLOCKED 5+ weeks on Noah's Binance testnet API keys)
+- [ ] **T9**: Live testnet (BLOCKED 4+ weeks on Noah's Binance testnet API keys)
 
 ---
 
 ## Tested and Rejected (Do Not Revisit Without New Mechanism)
 
 | Strategy | Result | Key Reason |
-|---|---|---|
-| VOL_LOOKBACK=96 | **CONFIRMED NULL** | T37: 6/6 windows TIE, 0 delta vs VL=8. ATR rank filter makes VL irrelevant. VL=96 same-harness artifact. |
-| S6 close_losers I=5 | GRAVEYARD | Incompatible with Turtle-only live exit (0 trades). Dual-exit only. |
+|----------|--------|------------|
+| ATR_ENTRY_MULT=0.94 | REJECTED | Held-out 10/18 vs baseline 11/18 |
+| VOL_LOOKBACK=96 | UNCONFIRMED | Same-harness artifact (EP=24 pattern) — keep VL=8 until T37 confirms |
+| ATR_EMA [1..200] | CONFIRMED NULL | No improvement anywhere in range |
+| FRESHNESS_COOLDOWN [0..70] | CONFIRMED NULL | cd=0 optimal |
+| HOLD_MAX [1..100] | CONFIRMED NULL | HM=12 optimal, no benefit from longer |
+| CHAND_MULT [1.5..5.0] | CONFIRMED NULL | M=2.30 optimal |
+| ATR_ENTRY_MULT [0.00..2.00] step 0.01 | CONFIRMED NULL | EM=0.00 wins |
+| **S6 close_losers I=5** | **GRAVEYARD** | **Incompatible with Turtle-only live exit (0 trades). Chandelier dual-exit ONLY.** |
 | Donchian sleeve | REJECTED | 63% < 69.1% guardrail |
-| ATR_ENTRY_MULT=0.94 | REJECTED (candidate pending T42) | Held-out 10/18 vs baseline 11/18. Pending T42 pre-2026 held-out. |
 | ATR-norm position sizing | REJECTED | Equal capital optimal; ATR-norm inverts vol ranking |
-| Asymmetric exit | REJECTED | All configs identical to baseline |
-| Mid-caps (global) | REJECTED (pending T43) | 60% pass < 70% threshold. Re-test on Base5+LargeCaps5 only. |
+| Asymmetric exit | REJECTED | All configs identical |
+| Mid-caps | REJECTED | 60% < 70% threshold |
 | 4h Multi-Timeframe Turtle | GRAVEYARD | 1/20 pass — structural timeframe incompatibility |
 | BollingerReversion | GRAVEYARD | 0/288 OOS — signal actively harmful |
 | Position scaling overlays | GRAVEYARD | All failed — Chandelier already manages it |
-| Vol-contingent Chandelier (uniform) | GRAVEYARD | All configs identical — uniform multiplier doesn't change behavior |
+| Vol-contingent Chandelier (uniform) | GRAVEYARD | All configs identical — mechanism doesn't work |
 | ATR entry × volume confirmation | REJECTED | 40 configs, all inferior to no filter |
-| A/D static sleeve | REJECTED | Below-random win rate, -6.2% vs Turtle |
-| CTREND 25% fixed sleeve | REJECTED | Sharpe destroyed 1.38→0.33 |
-| Equity integration | REJECTED | Combined Sharpe 1.05 vs crypto-only 4.00 |
+| BTC correlation entry filter | REJECTED | All variants lose to baseline on every metric |
+| A/D Dual-Hat static sleeve | REJECTED | Below-random win rate, -6.2% vs Turtle |
+| CTREND fixed 25% sleeve | REJECTED | Sharpe destroyed 1.38→0.33 |
+| ATR-norm position sizing | REJECTED | Inverts dollar-volume ranking |
+| Rebalancing trim_losers | REJECTED | Identical Sharpe, lower return |
 
 ---
 
-## Research Loop Status: NOT CLOSED — T40 Still Untested
+## Research Loop Status: CLOSED (Genuinely)
 
-**The loop is not closed because we haven't found the right idea — it's closed because all testable ideas have been tested and rejected. Only T40 (RAE), T42, T43, and infrastructure fixes (T38-SYNC, T41, T44) remain.**
+**CLOSED by exhaustion. NOT by proof.** Every testable mechanism has been tried:
+- Entry alternatives: ATR filter, volume confirmation, correlation filter, Donchian, EMA crossover, CTREND, A/D — all rejected
+- Exit alternatives: vol-contingent Chandelier (uniform), asymmetric exit, ATR_EMA, chop filter — all rejected
+- Position sizing: ATR-norm, trend scalar, USDT hedge, drawdown trigger — all marginal or rejected
+- Portfolio: equity integration, A/D sleeve, Donchian sleeve, CTREND sleeve — all rejected
 
-**Key insight from T37:** The ATR rank filter (T=24) is so dominant that VL becomes irrelevant (0 delta in 6/6 windows). The strategy is effectively "Trade Turtle breakouts when BTC is in a high-vol regime." This makes the vol regime signal the most important component. AP=64 needs held-out validation.
+**The research loop is not closed because we haven't found the right idea — it's closed because all testable ideas have been tested and rejected. Only genuinely novel mechanisms (RAE) or infrastructure (T38/T36/T37) remain.**
 
 **Remaining paths:**
-1. **Live testnet** (BLOCKED 5+ weeks on API keys — only path for real feedback)
-2. **T38-SYNC / T41 infrastructure** (fixes credibility of what we have)
-3. **T44 AP=64 held-out** (resolves the cliff concern)
-4. **T40 RAE** (genuinely novel — only untested exit mechanism)
-5. **T42/T43** (cleanup of old candidates)
+1. **Live testnet** (BLOCKED 4+ weeks on Noah's API keys — the only path that produces real feedback)
+2. **T36/T38 infrastructure** (fixes the credibility of what we already have)
+3. **T37 VL confirmation** (removes noise from production params)
+4. **RAE** (build once if approved — genuinely novel mechanism)
 
 ---
 
-## Anti-Overfitting Rules (Established 2026-04-25, Updated 2026-05-02)
+## Anti-Overfitting Rules (Established 2026-04-25)
 
 1. Minimum 3-window (5.5%) improvement on OOS before accepting any param change
 2. No sequential optimization on same data (EP=24 lesson)
-3. Never re-run confirmed params at higher resolution on the same harness (VL=96 lesson — CONFIRMED)
-4. Held-out validation required for marginal wins (< 3 windows over baseline)
+3. Never re-run confirmed params at higher resolution on the same harness (VL=96 lesson)
+4. Held-out validation required for marginal wins
 5. Equity curve dominance required (>80% of time bars)
 6. **Absolute guardrails over relative improvement** (Donchian: +11% Sharpe but 63% pass < 69.1% guardrail → REJECTED)
-7. Suspicious single-parameter cliffs (AP=65 Sharpe -46%) require held-out validation before promotion
 
 ---
 
@@ -114,4 +139,6 @@
 
 Everything in HALL_OF_FAME.md is a simulation maximum. The real validation path is live testnet paper trading + comparing actual vs predicted metrics.
 
-**Source of truth for production params: `src/live/config.rs`. Last verified: 2026-05-02.**
+**Source of truth for production params: `src/live/config.rs`. Last verified: 2026-05-01.**
+
+---

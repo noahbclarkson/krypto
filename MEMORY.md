@@ -706,3 +706,10 @@ Critical live-path bug found while investigating why Turtle ATR period sweeps we
 Fixed in `src/live/bot.rs`: ATR buffer now seeds with `config.atr_period`, HOLD_MAX is checked before ATR-warmup return, and long stop uses `highest_high - ATR_MULT*ATR`. Added unit tests for ATR buffer seeding, highest-high stop trigger, and HOLD_MAX enforcement without ATR warmup. Verification: `cargo test live::bot --profile sweep` = 7/7 pass; `cargo build --profile sweep` passes.
 
 Important consequence: prior Turtle-only live-path metrics and ATR_RANK=5 Turtle-only validation are no longer authoritative until rerun under the corrected live stop. This is trust-lab work, not a new edge hunt. Live testnet remains blocked on Noah's Binance testnet API keys.
+
+## Promoted From Short-Term Memory (2026-05-02)
+
+<!-- openclaw-memory-promotion:memory:memory/2026-04-25.md:3:4 -->
+- **Session:** 22:00 UTC, 4h cron. Author: Kira. **Trigger:** Autonomous research + critique cycle. [score=0.859 recalls=0 avg=0.620 source=memory/2026-04-25.md:3-4]
+<!-- openclaw-memory-promotion:memory:memory/2026-04-26.md:3:3 -->
+- **Session:** 2026-04-26 18:01–18:35 UTC | S6 Execution [score=0.803 recalls=0 avg=0.620 source=memory/2026-04-26.md:3-3]
