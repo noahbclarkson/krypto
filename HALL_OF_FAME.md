@@ -28,7 +28,7 @@ TURTLE_ATR_M    = 2.0    // Turtle ATR stop multiplier
 ATR_ENTRY_MULT  = 0.00   // Entry filter — any non-zero degrades pass rate
 HOLD_MAX        = 12     // Max hold bars
 POSITION_CAP    = 3      // Max concurrent positions
-REGIME_ATR_P    = 12     // BTC ATR period for regime filter
+REGIME_ATR_P    = 64     // hyperopt 2026-05-02: AP=64 wins on live Turtle-only path. 55/63 pass, Sharpe 6.19 vs AP=12 (53/63, 5.43). Extensive sweep AP∈[5..=80 step 1] × 9 universes × 7 WF windows. AP=64 sharp peak (AP=65 cliff at Sharpe 3.07). AP=39 tied backup at 55/63.
 REGIME_LOOKBACK = 42     // BTC ATR percentile lookback
 ATR_RANK_THRESH = 24.0   // hyperopt 2026-05-01: T=24 wins T=5 52/63 pass (82.5%) vs 45/63 (71.4%). ALL 9 universes 9-0 on OOS Sharpe. T=24 plateau T=24-27 identical.
 ```
