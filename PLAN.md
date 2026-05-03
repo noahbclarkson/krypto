@@ -1,39 +1,34 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-03 08:05 UTC. Critique cycle. ATR_RANK=24 extensive sweep done (T∈[0..100]). VL=96 validated in live_compatible_wf.rs (54/63 pass, Sharpe 7.652). Config drift: live_compatible_wf.rs has VL=96, config.rs has VL=8 — UNRECONCILED. Three ideas overdue 3-4 weeks: LOB NOBI, BTC-ETH cointegration, ETF flow. Live testnet BLOCKED 5+ weeks.**
+**State: 2026-05-03 16:05 UTC. Critique cycle complete.** VL=96 vs VL=8 config drift UNRESOLVED. ATR_RANK=24 same-harness artifact risk UNVALIDATED. All Turtle-only equity numbers STALE (progress_equity_curves.rs not re-run after 2026-05-01 live exit bug fix). Three tasks overdue: LOB NOBI (3+ weeks), short-side sleeve (4 weeks), VL reconciliation (urgent). Live testnet BLOCKED 5+ weeks.
 
 ---
 
 ## Critique Findings (2026-05-03)
 
-**Core judgment:** The research loop is more productive than last cycle — ATR_RANK extensive sweep (T∈[0..100] × 9 universes × 7 windows) and VL=96 validation are real hyperopt results. But three genuinely novel ideas (LOB NOBI, BTC-ETH cointegration, ETF flow) were proposed 3-4 weeks ago and remain unbuilt. We generate at 10x the rate we test.
+**Core judgment:** 8 recent commits: 3 valid results (37%), 5 meta-work/docs. The project is generating at 10x the rate it tests. BTC-ETH GRAVEYARD (6f0af262) was the only result-producing commit in 2 sessions. The rest is documentation cycling.
 
-**ATR_RANK=24 same-harness artifact risk (UNRESOLVED):** Found on `live_compatible_wf.rs`, validated extensively on the same harness (T∈[0..100]). EP=24 failed held-out after being found on the same harness. ATR_RANK=24 has NOT been held-out validated. The 54/63 pass rate reflects in-sample OOS optimization on a specific grid. Must run held-out validation before citing as truth.
+**Critical finding — Config drift (URGENT):** `src/live/config.rs:47` has `VOL_LOOKBACK=8`; `examples/live_compatible_wf.rs:32` has `VOL_LOOKBACK=96`. The walk-forward harness validates VL=96 (54/63 pass, 251.8x) but the deployed bot uses VL=8. These are 12x different smoothing windows. **The HALL_OF_FAME headline "251.8x / 85.7% pass" is for VL=96. The live bot runs VL=8.** Must reconcile before citing any VL=96 result as production-trusted.
 
-**Config drift (NEW FINDING):** `examples/live_compatible_wf.rs:32` has `VOL_LOOKBACK=96` while `src/live/config.rs:47` has `VOL_LOOKBACK=8`. The walk-forward harness validates VL=96 but the deployed bot uses VL=8. These are 12x different smoothing windows — the harness tests a different strategy than what's deployed. **Must reconcile before next commit.**
+**Critical finding — ATR_RANK=24 same-harness artifact risk (UNRESOLVED):** Found as 3rd sequential optimization on `live_compatible_wf.rs` (after REGIME_LOOKBACK=42 and REGIME_ATR_PERIOD=12). EP=24 failed held-out after being found on the same harness. ATR_RANK=24 has NOT been held-out validated. The 54/63 pass rate reflects in-sample OOS optimization on a specific grid. **ATR_RANK=24 is a candidate, NOT a production default.**
 
-**Genuinely promising unbuilt (overdue 3-4 sessions each):**
-- LOB NOBI signal: daemon running since 1862b57, data collected, signal NEVER tested — lowest lift, highest value
-- BTC-ETH cointegration: first credible mean-reversion candidate with academic backing — proposed 4 weeks ago, zero commits
-- ETF flow: institutional signal from public data (CoinGlass/Farside), never built
+**Critical finding — All Turtle-only equity numbers are STALE:** The 2026-05-01 live exit bug fix corrected `src/live/bot.rs`. `live_compatible_wf.rs` was re-run under corrected semantics. But `progress_equity_curves.rs` has NOT been re-run. All Turtle-only equity figures (Turtle ATR_RANK=24: 77.4x / 0.97 Sharpe) are from pre-fix code. Must re-run.
 
-**Bear market gap:** 2018-2019 (BTC -83%, 12+ months) NOT in any walk-forward window. A grinding prolonged bear has never been tested.
+**Bear market gap:** 2018-2019 (BTC -83%, 12+ months of grinding decline) is NOT in any walk-forward window. The worst stress tests are sharp V-shape crashes (W02 COVID). A grinding 12-month bear has never been tested. Sharpe numbers are inflated by bull-bias in OOS data.
 
-**Fee model inconsistent:** A/D (3933 trades) may have different fee treatment than Turtle (397 trades). A/D Sharpe 3.61 vs Turtle Sharpe 0.98 — the 10x trade count gap needs audit.
-
-**Three unbuilt ideas overdue:**
-1. LOB NOBI signal test — data collected, one harness run, 4 sessions overdue
-2. BTC-ETH cointegration — proposed 4 weeks ago, zero commits
-3. ETF flow institutional signal — proposed 3 weeks ago, zero commits
+**Three overdue unbuilt ideas:**
+1. LOB NOBI signal — data collected, one harness file away, 3+ weeks overdue
+2. Short-side sleeve — proposed 2026-04-05, zero commits, 4 weeks overdue
+3. VOL_LOOKBACK reconciliation — config drift, 12x difference, urgent
 
 ---
 
 ## Current Truth
 
 - `src/live/bot.rs` live path is **Turtle-only exit**; no Chandelier exit exists in the deployed bot.
-- ATR_RANK=24: 54/63 pass (85.7%), Sharpe 7.652, Base5 aggregate 251.8x — candidate, NOT production default until held-out validated.
-- **VOL_LOOKBACK CONFLICT:** live_compatible_wf.rs uses VL=96, config.rs uses VL=8. Must reconcile before trust.
-- `progress_equity_curves.rs` Turtle+Chandelier: 110.1x / Sharpe 0.98 (daily equity, honest baseline).
+- `live_compatible_wf.rs` (corrected 2026-05-01): ATR_RANK=24, VL=96 — 54/63 pass (85.7%), Sharpe 7.652, Base5 251.8x — candidate metrics, NOT production-trusted until reconciliation.
+- **VOL_LOOKBACK CONFLICT:** config.rs has VL=8, live_compatible_wf.rs has VL=96. Harness and deployed bot test different strategies.
+- `progress_equity_curves.rs`: STALE — not re-run after 2026-05-01 live exit bug fix.
 
 ---
 
@@ -49,8 +44,8 @@ FRESHNESS_COOLDOWN  = 0
 ATR_ENTRY_MULT      = 0.00
 REGIME_ATR_P        = 12      ✅ confirmed optimal
 REGIME_LOOKBACK     = 42      ✅ confirmed optimal (196-value LB sweep)
-ATR_RANK_THRESHOLD  = 24      ⚠️ candidate — needs held-out validation
-VOL_LOOKBACK        = 8       ⚠️ CONFLICT: live_compatible_wf uses 96
+ATR_RANK_THRESHOLD  = 24.0    ⚠️ candidate — needs held-out validation (same-harness artifact risk)
+VOL_LOOKBACK        = 8       ⚠️ CONFLICT: live_compatible_wf uses 96 — UNRECONCILED
 ```
 
 ---
@@ -58,70 +53,46 @@ VOL_LOOKBACK        = 8       ⚠️ CONFLICT: live_compatible_wf uses 96
 ## Next Tasks (Priority Order)
 
 ### T49: LOB NOBI Signal Harness (IMMEDIATE — 1 session)
-**Status:** 3 WEEKS OVERDUE — data collected, one harness run away.
-- LOB daemon ran in April, data in `data/cache/lob_nobi/`
+**Status:** 3+ WEEKS OVERDUE — data collected in `data/cache/lob_nobi/`, one harness file away.
 - `examples/depth_imbalance_pipeline.rs` is a 6-line stub — replace with proper walk-forward harness
 - Compute: daily depth imbalance `(bidQty-askQty)/(bidQty+askQty)` → SG smoothing → z-score
 - Test: NOBI z-score > threshold predicts next-24h directional continuation vs zero baseline
 - If edge exists → build microstructure sleeve. If null → GRAVEYARD cleanly.
 - **Why:** Lowest lift, highest value in project history. Data already there. One new file.
-- Read LOB daemon data from `data/cache/lob_nobi/`
-- Compute: daily depth imbalance `(bidQty-askQty)/(bidQty+askQty)` per symbol → SG smoothing → z-score
-- Test: NOBI z-score > threshold predicts next-24h directional continuation vs zero baseline
-- If edge exists → build microstructure sleeve. If null → GRAVEYARD cleanly.
-- **Why:** Lowest-lift highest-value test in project history. Data already there. One new file.
 
-### T50: Reconcile VOL_LOOKBACK and ATR_RANK (URGENT — config integrity)
-**Status:** UNRECONCILED — live_compatible_wf.rs has VL=96/T=24, config.rs has VL=8/T=5.0.
-- The live bot (`src/live/bot.rs`) reads from config.rs → it uses VL=8, T=5.0 (NOT the validated values)
-- Two options: update config.rs to VL=96/T=24, OR downgrade live_compatible_wf.rs to match config
-- Must do one commit, not leave them drifting
-- **Why:** A strategy where the harness and deployed bot use different params is not a valid result.
+### T50: Reconcile VOL_LOOKBACK + Re-run progress_equity_curves.rs (URGENT — 30 min)
+**Status:** UNRECONCILED — config.rs VL=8, live_compatible_wf.rs VL=96. Also: all Turtle equity numbers stale.
 - Run both VL=8 and VL=96 on Base5 × 7 windows in live_compatible_wf.rs
 - If VL=96 wins → update config.rs. If VL=8 wins → update live_compatible_wf.rs
-- Commit reconciled value to BOTH files. Do not let this drift again.
-- **Why:** A strategy where the harness and deployed bot use different params is not a valid result.
+- Commit reconciled value to BOTH files. No drift.
+- **Also:** Re-run `cargo run --example progress_equity_curves --profile sweep` with corrected live exit semantics
+- All "Turtle+Chandelier" and "Turtle ATR_RANK=24" equity numbers in HALL_OF_FAME are stale until re-run
+- **Why:** A strategy where the harness and deployed bot use different params is not a valid result. Stale equity undermines all reporting.
 
-### T51: ATR_RANK=24 Held-Out Validation (HIGH — 1 session)
-**Status:** UNBUILT — same-harness artifact risk (EP=24 pattern).
+### T51: Short-Side Sleeve (HIGH — 1-2 sessions)
+**Status:** PROPOSED 2026-04-05, zero commits. 4+ weeks overdue.
+- Book is 100% long — structural liability in bear regimes (2026 YTD: Turtle -22.7% vs BTC -14.2%)
+- Simple hypothesis: BTC 21d vol > 90th pct of 252d AND SMA21 < SMA200 → take 5% short position
+- Test: Base5 × 7 windows. If pass ≥ 69% → HOF candidate. If fail → GRAVEYARD cleanly.
+- **Why:** Crisis alpha is uncorrelated with trend-following. Completely different mechanism from any prior strategy.
+- Mechanism is NOT another entry filter variant — it's a genuinely new strategy class
+
+### T52: ATR_RANK=24 Held-Out Validation (MEDIUM — 1 session, after T50)
+**Status:** PENDING — same-harness artifact risk (EP=24 pattern).
 - Run live_compatible_wf.rs on pre-2021 data only with T=24 vs T=5
 - If T=24 wins held-out → promote to production default in config.rs
-- If T=24 loses → revert to T=5 or run new search
-- **Why:** We learned this lesson with EP=24 (failed held-out after being found on same harness). ATR_RANK=24 is cited as production-ready but has never been held-out validated.
-
-### T52: BTC-ETH Cointegration Harness (HIGH — 1-2 sessions)
-**Status:** PROPOSED 4 weeks ago, zero commits.
-- Every prior mean-reversion: GRAVEYARD (RSI, BollingerReversion, OFI, VPIN, 4h MR, 1h MR)
-- BTC-ETH has academic backing (Frontiers Jan 2026, coefficient ~0.0587) — genuinely different mechanism
-- Build: rolling Johansen test + spread z-score entry/exit
-- Test: 9 universes × 6 walk-forward windows
-- If positive → first credible mean-reversion strategy. If null → GRAVEYARD (clean kill).
-- **Why:** Completely orthogonal to the entire directional trend book. First novel strategy class in months.
+- If T=24 loses → revert to T=5.0 or run fresh search.
+- **Why:** ATR_RANK=24 found as 3rd sequential optimization on same harness. Same pattern as EP=24 which failed held-out.
 
 ### T44: Config Cleanup — Remove Dead CHAND Code
 **Status:** READY — confirmed dead code (0 effort).
 - `src/live/bot.rs` is Turtle-only exit — Chandelier is NEVER invoked
-- `examples/chand_p_live_sweep.rs`: ALL 56 CHAND_PERIOD values produce IDENTICAL results (53/63 pass)
 - `src/live/config.rs` still defines `CHAND_PERIOD` and `CHAND_MULT` — creates false impression Chandelier is active
-- **Action:** Remove `CHAND_PERIOD` and `CHAND_MULT` from `src/live/config.rs`, OR add `#[allow(dead_code)]` with comment `// INERT: live bot uses Turtle-only exit; Chandelier confirmed dead on live path`
+- **Action:** Add `#[allow(dead_code)]` with comment `// INERT: live bot uses Turtle-only exit; Chandelier confirmed dead on live path`
 - **Why:** Config clarity. Every reader of config.rs sees CHAND_PERIOD=7 and assumes it does something.
 
-### T38-complete: Fix daily_progress.csv Strategy Tracking
-**Status:** URGENT — tracking wrong strategy.
-- `daily_progress.csv` tracks "Turtle+Chandelier" (dual exit) as the live bot — WRONG
-- Live bot (`src/live/bot.rs`) is Turtle-only with ATR_RANK=24 gate
-- progress_equity_curves.rs uses dual Chandelier exit — NOT what the live bot does
-- **Action:** Export equity from `live_compatible_wf.rs` (Turtle-only, corrected exit semantics) and populate `daily_progress.csv` with the correct strategy
-- The CSV should track the strategy that's actually running live, not a research variant
-- **Why:** Any automated report or dashboard is currently showing the wrong strategy's numbers
-- Lightweight Rust HTTP mock for binance-rs-async endpoints
-- Seed with historical 1m klines to simulate fills and slippage
-- Would have caught the 2026-05-01 live exit bug before testnet
-- Milestone: serve `/api/v3/klines` from historical data, return mock fills for market orders
-- **Why:** Unblocks execution logic testing without credentials.
-
 ### T9: Live Testnet
-**Status:** BLOCKED on Noah's Binance testnet API keys (5+ weeks). T45 bypasses this.
+**Status:** BLOCKED on Noah's Binance testnet API keys (5+ weeks). T45 mock exchange bypasses this.
 
 ---
 
@@ -135,6 +106,7 @@ VOL_LOOKBACK        = 8       ⚠️ CONFLICT: live_compatible_wf uses 96
 6. DDBudget Sharpe is milestone-aggregated — never compare directly to daily-equity Sharpe numbers.
 7. **ATR_RANK=24 is a candidate pending held-out validation — NOT a production default.**
 8. When 3+ params optimized on same harness in sequence, latest needs held-out validation.
+9. **All equity numbers are STALE until progress_equity_curves.rs is re-run with corrected live exit semantics.**
 
 ---
 
@@ -167,24 +139,28 @@ VOL_LOOKBACK        = 8       ⚠️ CONFLICT: live_compatible_wf uses 96
 | 4h Multi-Timeframe Turtle | GRAVEYARD | 1/20 pass — structural timeframe incompatibility |
 | BollingerReversion | GRAVEYARD | 0/288 OOS — signal actively harmful |
 | REGIME_ATR_PERIOD=64 | REJECTED | Same-harness artifact (3rd sequential opt on live_compatible_wf.rs) |
+| BTC-ETH cointegration | GRAVEYARD | All 12 configs negative Sharpe, -16 to -46% return (2026-05-01) |
 | VPIN crash-state overlay | GRAVEYARD | Signal-to-noise too low |
 | OFI proxy | GRAVEYARD | Wrong normalization; abandoned |
 | 1h/4h Mean Reversion | GRAVEYARD | All symbols negative Sharpe on full history |
 | ATR-norm position sizing | REJECTED | Inverts dollar-volume ranking |
 | VOL_LOOKBACK=96 | ⚠️ CONFLICT | live_compatible_wf uses 96; config.rs uses 8 — UNRECONCILED |
+| ATR_RANK=24 | ⚠️ CANDIDATE | 3rd sequential optimization on live_compatible_wf.rs — needs held-out |
 
 ---
 
 ## Unbuilt High-Priority Ideas (Pipeline)
 
 | Idea | Priority | Status |
-|---|---|---|
-| **T49: LOB NOBI signal** | HIGH | Data collected, one harness file away |
-| **T52: BTC-ETH cointegration** | HIGH | First credible mean-reversion, proposed 4 weeks ago |
-| **ETF flow institutional signal** | HIGH | Data publicly available, never built |
-| Short-side sleeve | HIGH | 100% long book gap, proposed 2026-04-05 |
+|---|---|
+| **T49: LOB NOBI signal** | HIGH | Data collected, one harness file away — 3+ weeks overdue |
+| **T51: Short-side sleeve** | HIGH | Proposed 2026-04-05, zero commits — 4+ weeks overdue |
+| **T50: VOL_LOOKBACK reconciliation** | URGENT | Config drift: config.rs VL=8, live_compatible_wf.rs VL=96 |
+| **Re-run progress_equity_curves.rs** | URGENT | All Turtle-only equity numbers stale after 2026-05-01 bug fix |
+| **T52: ATR_RANK=24 held-out** | MEDIUM | Same-harness artifact risk (EP=24 pattern) — after T50 |
+| ETF flow institutional signal | MEDIUM | Data publicly available, never built |
 | DXY-Realized-Vol regime gate | MEDIUM | BTC now liquidity-sensitive risk asset |
-| LOB NOBI daily aggregate (arxiv 2602.00776) | HIGH | Market-cap normalized, Binance public endpoint |
+| LOB NOBI daily aggregate (arxiv 2602.00776) | MEDIUM | Market-cap normalized, Binance public endpoint |
 | Stablecoin exchange reserve state | MEDIUM | Binance public API, no auth required |
 | Leverage-fragility state (Oct 2025 mechanics) | MEDIUM | Funding data in cache, proxy bug needs fix |
 
@@ -192,12 +168,19 @@ VOL_LOOKBACK        = 8       ⚠️ CONFLICT: live_compatible_wf uses 96
 
 ## Project Status (2026-05-03)
 
-**Research loop:** PRODUCTIVE this cycle (ATR_RANK extensive sweep, VL=96 validation are real). But novel ideas still unbuilt after 3-4 weeks.
+**Research loop:** MIXED — ATR_RANK extensive sweep and VL=96 validation are real hyperopt results. But 5/8 recent commits are meta-work/docs. The project is generating at 10x the rate it tests. BTC-ETH GRAVEYARD was the only result-producing commit in 2 sessions.
+
+**What's genuinely unresolved:**
+1. VOL_LOOKBACK config drift — harness and deployed bot use different values
+2. ATR_RANK=24 same-harness artifact risk — never held-out validated
+3. All equity numbers stale — progress_equity_curves.rs not re-run after live exit bug fix
+4. LOB NOBI — data collected 3+ weeks ago, never tested
+5. Short-side sleeve — proposed 4 weeks ago, zero commits
 
 **What needs to happen this week:**
 1. T49 — LOB NOBI harness (one file, data already there)
-2. T50 — VL reconciliation (config integrity, 30 minutes)
-3. T51 — ATR_RANK held-out validation (1 session)
-4. T52 — BTC-ETH cointegration (1-2 sessions)
+2. T50 — VL reconciliation + re-run progress_equity_curves.rs (30 min, urgent)
+3. T51 — short-side sleeve (1-2 sessions)
+4. T52 — ATR_RANK=24 held-out (after T50)
 
 **Remaining blocker:** Live testnet (Noah's API keys, 5+ weeks). T45 mock exchange bypasses this.

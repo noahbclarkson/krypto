@@ -1,6 +1,6 @@
 # Progress Equity Curves — ATR_RANK=24 Variant
 
-Generated: 2026-05-03 06:08:53.009314208 UTC
+Generated: 2026-05-03 15:37:52.976682400 UTC
 
 Universe: Base5 (BTCUSDT, ETHUSDT, SOLUSDT, XRPUSDT, DOGEUSDT, ADAUSDT)
 
