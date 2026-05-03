@@ -39,12 +39,12 @@ pub const REGIME_ATR_PERIOD: usize = 12;
 pub const REGIME_LOOKBACK: usize = 42; // hyperopt 2026-05-02: EXTENSIVE sweep LB∈[5..=200 step 1] × 9 universes × 7 WF windows under live Turtle-only path (T=24). LB=42 is the center of a robust 4-value plateau (LB=42-45: identical 55/63 pass, Sharpe 6.188, DD 19.7%, 464 trades, 9/9 positive universes). LB=42 confirmed as production default. LB≥59 Sharpe→0 or negative (regime filter too noisy with few historical bars). See memory/hyperopt-2026-05-02-regime-lookback.md.
 pub const ATR_RANK_THRESHOLD: f64 = 24.0; // hyperopt 2026-05-01: EXTENSIVE sweep T∈[0..=100 step 1] × 9 universes × 7 windows. T=24 wins: 52/63 pass, Sharpe 5.59, +132% return, geomean 21.5x. T=5 (old default): 45/63 pass, Sharpe 3.31. T=24 wins ALL 9 universes 9-0 on OOS Sharpe vs T=5. T=24 sits in plateau T=24-27 identical. See memory/hyperopt-2026-05-01-atr-rank-threshold.md.
 
-/// Volume lookback window for dollar-volume ranking (default: 8)
-/// hyperopt 2026-04-28: Extensive sweep VL∈[1..=100] × 9 universes × 6 WF windows.
-/// VL=96 wins: 37/54 pass, Sharpe 4.241, 9/9 positive universes. VL=8 baseline: 34/54 pass.
-/// However, VL=96 is same-harness artifact risk (EP=24 pattern). Until Base5-only confirmation,
-/// conservative default stays VL=8. T37 is the Base5-only validation task.
-pub const VOL_LOOKBACK: usize = 8;
+/// Volume lookback window for dollar-volume ranking for top-N symbol selection.
+/// Updated 2026-05-03: live_compatible_wf.rs uses VL=96 and matches live bot exactly.
+/// 100-value sweep (VL=1..=100 step 1) × 9 universes × 7 WF windows: VL=96 plateau (91-100)
+/// confirmed as global winner: 54/63 pass, Sharpe 7.65, Base5 aggregate 251.8x.
+/// Prior conservative default VL=8 superseded. See memory/hyperopt-2026-05-01-vol-lookback.md.
+pub const VOL_LOOKBACK: usize = 96;
 
 /// Configuration for live trading bot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
