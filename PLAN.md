@@ -58,15 +58,25 @@ VOL_LOOKBACK        = 8       ⚠️ CONFLICT: live_compatible_wf uses 96
 ## Next Tasks (Priority Order)
 
 ### T49: LOB NOBI Signal Harness (IMMEDIATE — 1 session)
-**Status:** READY — data already collected (daemon running since 1862b57), one harness file.
+**Status:** 3 WEEKS OVERDUE — data collected, one harness run away.
+- LOB daemon ran in April, data in `data/cache/lob_nobi/`
+- `examples/depth_imbalance_pipeline.rs` is a 6-line stub — replace with proper walk-forward harness
+- Compute: daily depth imbalance `(bidQty-askQty)/(bidQty+askQty)` → SG smoothing → z-score
+- Test: NOBI z-score > threshold predicts next-24h directional continuation vs zero baseline
+- If edge exists → build microstructure sleeve. If null → GRAVEYARD cleanly.
+- **Why:** Lowest lift, highest value in project history. Data already there. One new file.
 - Read LOB daemon data from `data/cache/lob_nobi/`
 - Compute: daily depth imbalance `(bidQty-askQty)/(bidQty+askQty)` per symbol → SG smoothing → z-score
 - Test: NOBI z-score > threshold predicts next-24h directional continuation vs zero baseline
 - If edge exists → build microstructure sleeve. If null → GRAVEYARD cleanly.
 - **Why:** Lowest-lift highest-value test in project history. Data already there. One new file.
 
-### T50: Reconcile VOL_LOOKBACK (URGENT — config integrity)
-**Status:** UNRECONCILED — live_compatible_wf.rs has VL=96, config.rs has VL=8.
+### T50: Reconcile VOL_LOOKBACK and ATR_RANK (URGENT — config integrity)
+**Status:** UNRECONCILED — live_compatible_wf.rs has VL=96/T=24, config.rs has VL=8/T=5.0.
+- The live bot (`src/live/bot.rs`) reads from config.rs → it uses VL=8, T=5.0 (NOT the validated values)
+- Two options: update config.rs to VL=96/T=24, OR downgrade live_compatible_wf.rs to match config
+- Must do one commit, not leave them drifting
+- **Why:** A strategy where the harness and deployed bot use different params is not a valid result.
 - Run both VL=8 and VL=96 on Base5 × 7 windows in live_compatible_wf.rs
 - If VL=96 wins → update config.rs. If VL=8 wins → update live_compatible_wf.rs
 - Commit reconciled value to BOTH files. Do not let this drift again.
@@ -88,15 +98,22 @@ VOL_LOOKBACK        = 8       ⚠️ CONFLICT: live_compatible_wf uses 96
 - If positive → first credible mean-reversion strategy. If null → GRAVEYARD (clean kill).
 - **Why:** Completely orthogonal to the entire directional trend book. First novel strategy class in months.
 
-### T44: Config Cleanup — Remove Dead CHAND_PERIOD
+### T44: Config Cleanup — Remove Dead CHAND Code
 **Status:** READY — confirmed dead code (0 effort).
-- `examples/chand_p_live_sweep.rs` confirmed: ALL 56 CHAND_PERIOD values produce IDENTICAL Turtle-only results.
-- Live Turtle path NEVER reads CHAND_PERIOD.
-- Keep in config.rs but mark as "dual-exit research path only".
-- **Why:** Clutter reduction. Zero risk change.
+- `src/live/bot.rs` is Turtle-only exit — Chandelier is NEVER invoked
+- `examples/chand_p_live_sweep.rs`: ALL 56 CHAND_PERIOD values produce IDENTICAL results (53/63 pass)
+- `src/live/config.rs` still defines `CHAND_PERIOD` and `CHAND_MULT` — creates false impression Chandelier is active
+- **Action:** Remove `CHAND_PERIOD` and `CHAND_MULT` from `src/live/config.rs`, OR add `#[allow(dead_code)]` with comment `// INERT: live bot uses Turtle-only exit; Chandelier confirmed dead on live path`
+- **Why:** Config clarity. Every reader of config.rs sees CHAND_PERIOD=7 and assumes it does something.
 
-### T45: Mock Exchange (Bypass Live Testnet Blocker)
-**Status:** UNBUILT. 5+ weeks blocked on API keys.
+### T38-complete: Fix daily_progress.csv Strategy Tracking
+**Status:** URGENT — tracking wrong strategy.
+- `daily_progress.csv` tracks "Turtle+Chandelier" (dual exit) as the live bot — WRONG
+- Live bot (`src/live/bot.rs`) is Turtle-only with ATR_RANK=24 gate
+- progress_equity_curves.rs uses dual Chandelier exit — NOT what the live bot does
+- **Action:** Export equity from `live_compatible_wf.rs` (Turtle-only, corrected exit semantics) and populate `daily_progress.csv` with the correct strategy
+- The CSV should track the strategy that's actually running live, not a research variant
+- **Why:** Any automated report or dashboard is currently showing the wrong strategy's numbers
 - Lightweight Rust HTTP mock for binance-rs-async endpoints
 - Seed with historical 1m klines to simulate fills and slippage
 - Would have caught the 2026-05-01 live exit bug before testnet
