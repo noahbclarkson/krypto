@@ -1,6 +1,33 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-02 08:44 UTC. Critique cycle complete. Research loop is documentation spiral, not discovery spiral. T37 (VL=96) 2+ sessions overdue. AP=64 has same-harness artifact risk.*
+*Last updated: 2026-05-03 08:05 UTC. Critique cycle complete. ATR_RANK extensive sweep done (T∈[0..100]). VL=96 validated in live_compatible_wf (54/63 pass, Sharpe 7.652) but CONFLICTS with config.rs VL=8 — UNRECONCILED. T49 LOB NOBI, T52 BTC-ETH cointegration, ETF flow all overdue 3-4 weeks.*
+
+---
+
+## Critical Alert: Config Drift — VOL_LOOKBACK
+
+**live_compatible_wf.rs:32 → VOL_LOOKBACK=96**
+**src/live/config.rs:47 → VOL_LOOKBACK=8**
+
+12x difference in smoothing window. The walk-forward validates VL=96 but the deployed bot uses VL=8. T50 must reconcile this before citing any live_compatible_wf results as truth.
+
+---
+
+## Critical Alert: ATR_RANK=24 Same-Harness Artifact Risk
+
+ATR_RANK=24 was found on `live_compatible_wf.rs` and validated on the same harness (T∈[0..100]). EP=24 failed held-out after being found on the same harness. ATR_RANK=24 has NOT been held-out validated. The 54/63 pass rate reflects in-sample OOS optimization on a specific grid — it should be treated as a candidate, not a production default. T51 runs held-out validation.
+
+---
+
+## New Tasks (T49-T52)
+
+- **T49: LOB NOBI Signal Harness** — Data already collected (daemon since 1862b57). One harness file. Compute daily depth imbalance → SG smoothing → z-score → test directional continuation. Lowest lift, highest value test in project history.
+
+- **T50: VOL_LOOKBACK Reconciliation** — Run VL=8 vs VL=96 on Base5 × 7 windows. Commit reconciled value to BOTH live_compatible_wf.rs AND config.rs. No drift allowed.
+
+- **T51: ATR_RANK=24 Held-Out Validation** — Run on pre-2021 data. If wins → promote. If loses → revert to T=5.
+
+- **T52: BTC-ETH Cointegration** — First credible mean-reversion candidate. Rolling Johansen + spread z-score. 9 universes × 6 windows. If null → GRAVEYARD cleanly.
 
 ---
 
