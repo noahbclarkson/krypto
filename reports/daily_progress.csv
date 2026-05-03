@@ -52,3 +52,8 @@ date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades
 2026-05-01,DDBudget 3-Sleeve,63.1x,7.23,milestone_aggregated_not_comparable,776
 2026-05-01,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
 2026-05-01,FactorSmallByDV,16.9x,2.05,fixed_hold_daily_equity,1257
+2026-05-03,Turtle+Chandelier,111.4x,0.98,daily_compounded_equity,397
+2026-05-03,A/D Momentum,40.3x,3.60,fixed_hold_daily_equity,3933
+2026-05-03,FactorSmallByDV,15.5x,1.99,fixed_hold_daily_equity,1257
+2026-05-03,DDBudget 3-Sleeve,62.1x,7.20,milestone_aggregated_not_comparable,776
+2026-05-03,Turtle+ATR_RANK=24,77.4x,0.97,regime filter T=24; walk-forward: 54/63 pass; Sharpe 7.65; +138% ret. live_compatible_wf (unchanged),n/a
