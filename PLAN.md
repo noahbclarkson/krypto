@@ -1,26 +1,32 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-02 20:06 UTC. Critique cycle complete. T42/T43/T44 identified. ATR_RANK=24 promotion overdue. LOB NOBI signal never tested. Documentation spiral confirmed (5/8 recent commits). Live testnet BLOCKED 5+ weeks.**
+**State: 2026-05-03 00:12 UTC. Critique cycle. Documentation spiral confirmed (4/8 recent commits). CHAND_PERIOD=7 is dead code in live Turtle path. ATR_RANK=24 has same-harness artifact signature as EP=24. LOB NOBI never tested (data collected 2026-04). BTC-ETH cointegration proposed 4 weeks ago, zero commits. Short-side sleeve: 100% long book, zero commits. Live testnet BLOCKED 5+ weeks.**
 
 ---
 
-## Critique Findings (2026-05-02)
+## Critique Findings (2026-05-03)
 
-**Core judgment:** ATR_RANK=24 is our best validated strategy (82.5% pass, Sharpe 5.590, +132% OOS) and is NOT the production default. This is a promotion failure. The program is optimizing the same basin while leaving genuinely validated strategies on the bench.
+**Core judgment:** The research loop is a confirmation spiral, not a discovery loop. Last 8 commits: 4 pure docs, 2 confirming null results, 2 genuine kills. We keep auditing ourselves and finding nothing new. The "research loop closed" declaration has become a comfortable hammock.
 
-**DDBudget Sharpe 7.20 is structurally misleading:** milestone-aggregated returns smooth drawdowns and inflate Sharpe vs daily-equity strategies. Turtle (0.98) and DDBudget (7.20) are not comparable. daily_progress.csv mixes these without methodology warnings.
+**CHAND_PERIOD=7 is dead code (confirmed 2026-05-02):** `examples/chand_p_live_sweep.rs` (56 values, 3,528 runs) proved ALL values produce IDENTICAL results. The Turtle-only live path NEVER references CHAND_PERIOD. It was optimized in dual-exit research harness, integrated into config.rs, but never used in the live bot. This was 3 commits to confirm a mistake.
 
-**Equity metric instability:** Turtle equity collapsed from 734x (2026-04-20) → 124x → 110x purely from methodology corrections. HOF number is current truth but unstable.
+**ATR_RANK=24 has same-harness artifact signature as EP=24:** Found on `live_compatible_wf.rs` harness, then AP=64 and LB=42 were optimized sequentially on the same harness (sequential optimizations #2 and #3). EP=24 failed held-out validation. ATR_RANK=24 has NOT been held-out validated. The 52/63 pass rate reflects in-sample OOS optimization on a specific grid — it should be treated as a candidate, not a production default.
 
-**Biggest structural gaps (never touched):**
-- LOB NOBI daemon running since 1862b57, signal never tested (lowest-lift highest-value)
-- BTC-ETH cointegration pair trading (first credible mean-reversion, proposed 2026-04-06, zero commits)
-- Short-side sleeve (100% long book, zero commits since proposed 2026-04-05)
-- ETF flow institutional signal (proposed 2026-04-07, zero commits)
+**Genuinely promising unbuilt (overdue 2+ sessions each):**
+- LOB NOBI daemon running since 1862b57, signal NEVER tested — lowest lift, highest potential value
+- BTC-ETH cointegration pair trade — proposed 2026-04-06, zero commits
+- Short-side sleeve — 100% long book, proposed 2026-04-05, zero commits
 
-**Bear market gap:** Only ~12 months of bear OOS data (2022). 2018-2019 (90% BTC drawdown) not in any window. Strategies untested in sustained multi-year bear.
+**Bear market gap:** 2018-2019 (BTC -83% over 12+ months) NOT in any walk-forward window. 2022 was fast crash + fast recovery. A grinding prolonged bear has never been tested.
 
-**Documentation spiral:** 5/8 recent commits are pure docs. Ideas generated 10x faster than tested.
+**Fee model unvalidated:** Backtest assumes 10bps taker. Microstructure analysis suggests ~70% maker fills → ~4-5bps real cost. We could be 2-3x more efficient than our simulations show, or we could be wrong.
+
+**415 example files:** Most are graveyard clutter (~20-30 are relevant). Confuses codebase, slows onboarding, obscures production path.
+
+**Three unbuilt ideas overdue:**
+1. LOB NOBI signal test — data collected, one harness run
+2. BTC-ETH cointegration — proposed 4 weeks ago
+3. Short-side sleeve — 100% long book gap
 
 ---
 
@@ -67,24 +73,29 @@ VOL_LOOKBACK        = 8       ← conservative; VL=96 rejected as artifact (T37)
 
 ## Next Tasks (Priority Order)
 
-### T42: Promote ATR_RANK=24 to production default
-**Status:** READY — one config change, no new code.
+### T42: ATR_RANK=24 Held-Out Validation (BEFORE PROMOTION)
+**Status:** BLOCKED — same-harness artifact risk. NOT production default.
 - ATR_RANK=24: 52/63 pass (82.5%), Sharpe 5.590, +132.3% avg OOS return
-- Turtle (current default): 34/54 pass (63%), Sharpe 1.00, 110x equity
-- ATR_RANK=24 is better on every objective metric (pass rate, Sharpe, return)
-- Update `src/live/config.rs`: ATR_RANK_THRESHOLD default → 24
-- Update HALL_OF_FAME.md to reflect ATR_RANK=24 as the primary production strategy
-- One commit. Immediate production value.
+- SAME-HARNESS ARTIFACT RISK: Found on `live_compatible_wf.rs`, then AP=64 and LB=42 optimized sequentially on the same harness (sequential opts #2 and #3). Same pattern as EP=24 which failed held-out.
+- Anti-spin rule: "When 3+ params are optimized on the same harness in sequence, the latest param needs held-out validation."
+- Action: Run T42-held-out to validate on pre-2021 data. If wins → promote to config.rs. If loses → ATR_RANK=5 (well-validated old default) remains.
+- Do NOT promote ATR_RANK=24 to config.rs without held-out validation.
 
-### T43: LOB NOBI Signal Test
-**Status:** READY — data already collected, one harness run.
-- LOB daemon running since commit 1862b57 — NOBI depth data in file
+### T43: LOB NOBI Signal Harness
+**Status:** READY — data collected (daemon running since 1862b57), one harness run.
 - Compute: daily top-5 depth imbalance `(bidQty-askQty)/(bidQty+askQty)` → SG smoothing → z-score signal
-- Test: NOBI > threshold predicts next-24h directional continuation vs zero baseline
+- Test: NOBI z-score > threshold predicts next-24h directional continuation vs zero baseline
 - If positive edge → build microstructure sleeve. If null → GRAVEYARD cleanly.
-- Lowest-lift highest-value test in entire program history.
+- Lowest-lift highest-value test in entire program history. One new example file.
 
-### T44: Mock Exchange (Bypass Live Testnet Blocker)
+### T44: Config Cleanup — Remove Dead CHAND_PERIOD
+**Status:** READY — confirmed dead code, 0 effort.
+- `examples/chand_p_live_sweep.rs` confirmed: ALL 56 CHAND_PERIOD values produce IDENTICAL Turtle-only results.
+- Live Turtle path NEVER reads CHAND_PERIOD.
+- Remove `CHAND_PERIOD` and `CHAND_MULT` from `src/live/config.rs` (they are research artifacts in live execution).
+- Exception: if we ever re-introduce dual-exit Chandelier path, these are needed. Keep in config but mark clearly as "dual-exit research path only".
+
+### T45: Mock Exchange (Bypass Live Testnet Blocker)
 **Status:** UNBUILT. 5+ weeks blocked on API keys.
 - Lightweight Rust HTTP mock for binance-rs-async endpoints
 - Seed with historical 1m klines to simulate fills and slippage
@@ -92,7 +103,7 @@ VOL_LOOKBACK        = 8       ← conservative; VL=96 rejected as artifact (T37)
 - Unblocks execution logic testing without credentials — infinite iteration speed
 - Milestone: serve `/api/v3/klines` from historical data, return mock fills for market orders
 
-### T45: BTC-ETH Cointegration Pair Trade
+### T46: BTC-ETH Cointegration Pair Trade
 **Status:** PROPOSED. First credible mean-reversion in pipeline.
 - Every prior mean-reversion attempt is GRAVEYARD: RSI, BollingerReversion, OFI, VPIN, 4h MR, 1h MR
 - BTC-ETH has academic backing (Frontiers Jan 2026, cointegrating coefficient ~0.0587)
@@ -100,8 +111,15 @@ VOL_LOOKBACK        = 8       ← conservative; VL=96 rejected as artifact (T37)
 - Completely orthogonal to entire existing directional trend book
 - Medium complexity — one new harness file
 
+### T47: Example File Hygiene Sprint
+**Status:** UNBUILT. 415 files, ~20-30 relevant.
+- Archive all graveyard/abandoned examples to `examples/archive/`
+- Keep only: active production strategies, actively-validated candidates, core infrastructure (walk_forward.rs, progress_equity_curves.rs, etc.)
+- Target: reduce from 415 → ~50 relevant files
+- Makes codebase navigable, clarifies production path, speeds up CI
+
 ### T9: Live Testnet
-**Status:** BLOCKED on Noah's Binance testnet API keys (5+ weeks). T44 bypasses this.
+**Status:** BLOCKED on Noah's Binance testnet API keys (5+ weeks). T45 bypasses this.
 
 ---
 
@@ -114,7 +132,7 @@ VOL_LOOKBACK        = 8       ← conservative; VL=96 rejected as artifact (T37)
 5. T38 partial (live_compatible_wf.rs) is credible but incomplete — no equity export, no Base5 breakdown, VOL mismatch vs progress harness.
 6. **Max 2 sequential optimizations per harness before mandatory held-out validation.** (AP=64 was #3 → REJECTED.)
 7. **DDBudget Sharpe is milestone-aggregated — never compare directly to daily-equity Sharpe numbers.**
-8. **ATR_RANK=24 must be promoted before further optimization on same basin.**
+8. **ATR_RANK=24 is a candidate pending held-out validation — NOT a production default.** Same-harness sequential optimization pattern (EP=24 lesson applies). Run T42-held-out before any promotion.
 
 ---
 
