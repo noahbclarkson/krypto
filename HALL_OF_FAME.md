@@ -30,7 +30,8 @@ HOLD_MAX        = 12     // Max hold bars
 POSITION_CAP    = 3      // Max concurrent positions
 REGIME_ATR_P    = 12     // BTC ATR period for regime filter
 REGIME_LOOKBACK = 42     // BTC ATR percentile lookback
-ATR_RANK_THRESH = 5.0    // Minimum BTC ATR percentile rank for entries
+ATR_RANK_THRESH = 24.0    // hyperopt 2026-05-03: EXTENSIVE sweep T∈[0..=100 step 1]. T=24 confirmed robust winner (52/63 pass, Sharpe 6.05, 267x Base5). T=5 (old): 0/63 pass.
+                               // See memory/hyperopt-2026-05-03.md and memory/hyperopt-2026-05-01-atr-rank-threshold.md
 ```
 
 **Validation evidence:**
@@ -40,7 +41,8 @@ ATR_RANK_THRESH = 5.0    // Minimum BTC ATR percentile rank for entries
 - Pre-2021 held-out stress: 19/28 (67.9%)
 - T22 exit attribution: Chandelier adds secondary robustness; live bot currently uses Turtle ATR as sole live exit
 - 2026-05-01 caveat: live Turtle-only exit implementation was bug-fixed (`highest_high - ATR`, ATR buffer seeded with `TURTLE_ATR_PERIOD`, HOLD_MAX enforced independently). Prior Turtle-only live-path metrics need revalidation under corrected semantics.
-- ATR_RANK=5: validated under dual-exit and prior Turtle-only logic; keep integrated, but do not cite Turtle-only validation as authoritative until rerun after the 2026-05-01 live stop fix.
+- ATR_RANK=24 (hyperopt 2026-05-03): EXTENSIVE sweep T∈[0..=100 step 1] × 9 universes × 7 windows. Full validation confirms T=24 as robust winner. T=5 (old default): 0/63 pass. T=24: 52/63 pass.
+- ATR_RANK=24 held-out validation: T=24 wins ALL 9 universes 9-0 on OOS Sharpe vs T=5. Sits in plateau T=24-27 identical. See memory/hyperopt-2026-05-03.md.
 - Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76–0.87)
 
 **Fee model:** 0.04% taker fee in live dry-run; prior execution realism suggested ~22–33% Sharpe degradation under realistic costs.
