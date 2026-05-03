@@ -24,8 +24,10 @@ pub mod bot;
 pub mod config;
 pub mod executor;
 pub mod feed;
+pub mod mock_exchange;
 
 pub use bot::{BotState, LiveBot};
 pub use config::LiveConfig;
 pub use executor::{Executor, OrderResult, PositionInfo};
 pub use feed::{KlineEvent, LiveFeed};
+pub use mock_exchange::{Bar, MockExchange, MockExchangeConfig, MockFill, MockOrder, MockOrderStatus, MockOrderType, MockPosition, MockSide};

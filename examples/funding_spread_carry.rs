@@ -12,7 +12,7 @@
 
 use anyhow::{anyhow, Result};
 use krypto::data::funding_rate::FundingRateLoader;
-use krypto::data::{align_to_ohlcv, DataLoader};
+use krypto::data::{align_funding_to_ohlcv, DataLoader};
 use krypto::features::indicators::FeatureEngine;
 use polars::prelude::*;
 use std::collections::{BTreeSet, HashMap};
@@ -97,7 +97,7 @@ async fn main() -> Result<()> {
         let price_df = loader.fetch_with_cache(symbol, INTERVAL, CANDLES).await?;
         let tech_df = FeatureEngine::add_technicals(&price_df, None)?;
         let funding_df = funding_loader.fetch(symbol, None, None).await?;
-        let aligned = align_to_ohlcv(&tech_df, &funding_df, Z_WINDOW)?;
+        let aligned = align_funding_to_ohlcv(&tech_df, &funding_df, Z_WINDOW)?;
         println!(
             "{} bars, {} funding rows",
             aligned.height(),

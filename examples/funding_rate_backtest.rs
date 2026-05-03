@@ -12,7 +12,7 @@ use colored::*;
 use krypto::algo::strategies::FundingRateReversion;
 use krypto::backtest::walk_forward::{WalkForwardBacktester, WalkForwardConfig};
 use krypto::data::funding_rate::FundingRateLoader;
-use krypto::data::{align_to_ohlcv, DataLoader};
+use krypto::data::{align_funding_to_ohlcv, DataLoader};
 use krypto::features::indicators::FeatureEngine;
 
 // Funding is for USDT-M perpetuals — use USDT pairs
@@ -91,7 +91,7 @@ async fn main() -> anyhow::Result<()> {
             };
 
             // Align funding rate to OHLCV timestamps
-            let df_with_funding = match align_to_ohlcv(&df_tech, &funding_df, Z_WINDOW) {
+            let df_with_funding = match align_funding_to_ohlcv(&df_tech, &funding_df, Z_WINDOW) {
                 Ok(df) => df,
                 Err(e) => {
                     println!("ERROR aligning funding: {e}");
