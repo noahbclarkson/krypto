@@ -33,6 +33,8 @@
 | Rebalancing trim_losers I=5 | 2026-04-30 | REJECTED | 9-universe S6 validation: pass improved 51/54 vs baseline 46/54 and DD improved 69.9% vs 71.6%, but Sharpe was identical (+3.828) and avg return fell +81.1% vs +87.8%. Mechanism did not create risk-adjusted edge. |
 | S6 close_losers I=5 — Turtle-only | 2026-04-30 | INCOMPATIBLE | Turtle-only exit (live bot) fires in ~3-5 bars. close_losers checks at 5-bar rebalancing interval requiring >5% loss — structurally incompatible. Chandelier's longer holds (7+ bars) are what enable close_losers. Dual Chandelier+Turtle: 48/54 pass, Sharpe +3.067 improvement. Live bot Turtle-only: 0/162 (0%) — 0 trades across all universes/windows/configs. S6 is a dual-exit harness strategy only. |
 
+| Funding Rate Regime Filter (T57) | 2026-05-04 | NULL | BTC 3d rolling funding avg as Turtle entry gate. Dense sweep (51 values × 9 universes × 10 WF windows = 4,590 runs). Pass rate NEVER improves (67/90 at all viable thresholds). Best equity +12.5% at t=0.0008 (274 blocked entries / 2849 total). Marginal — likely noise from handful of lucky blocks. Not a robustness improvement. Distinct from GRAVEYARD'd funding rate MR (trading on funding) — this tested regime gating. Both fail. |
+
 ## Why These Died
 
 - **Mean reversion strategies** fail in crypto's high-vol regime: fees (20bp RT) destroy edges that are <50bp
