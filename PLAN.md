@@ -1,15 +1,12 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-04 09:23 UTC**
+**State: 2026-05-04 15:01 UTC**
 
 ## What Changed This Session
 
-1. **T=65 REJECTED via held-out validation.** Pre-2021 data: 10/22 pass, Sharpe -1.900. Even worse than T=24 (-0.964). Config.rs reverted to T=5.0. GRAVEYARD'd.
-2. **T54 COMPLETE.** ATR_RANK=5 equity now measured:
-   - Dual exit (progress_equity_curves): 43.1x, Sharpe 0.87
-   - Turtle-only walk-forward (live_compatible_wf, T=5, VL=96): 55/63 pass, Sharpe 4.910, Base5 622.98x aggregate
-3. **daily_progress.csv cleaned.** Stale T=24 row removed, T=5 + Turtle-only rows added.
-4. **ATR rank filter fully settled.** Entire T range [0..100] tested in-sample AND held-out. Only T=0/5 survive. Filter mechanism itself is not a viable edge — BTC ATR rank distributions are non-stationary.
+1. **T57 Funding Rate Regime Filter: GRAVEYARD.** Dense sweep (51 thresholds × 9 universes × 10 WF windows = 4,590 runs). Pass rate NEVER improves. Best equity +12.5% at t=0.0008 is marginal/noise. Both funding-as-signal and funding-as-filter fail.
+2. **T56 FEE BUG: CONFIRMED FIXED.** Re-ran progress_equity_curves.rs. Numbers match T56 fix: Turtle+Chandelier 86.9x, ATR_RANK=5 33.9x.
+3. **live_compatible_wf fresh run:** 56/63 pass (88.9%), Sharpe 5.171, Base5 458.8x.
 
 ## Production Params (Frozen — 2026-05-04)
 
@@ -38,13 +35,11 @@ SIZE_MULT           = 0.70   // INERT — pure risk knob
 
 ## Next Tasks (Priority Order)
 
-### T56: FIX Fee Bug in progress_equity_curves.rs (CRITICAL — 30 min)
-**Status:** BUG FOUND (2026-05-04 12:58 UTC critique). NOT YET FIXED.
-- Line 875: `entry_px * (1.0 - TAKER_FEE)` is WRONG for longs. Should be `* (1.0 + TAKER_FEE)`
-- live_compatible_wf.rs line 198 is CORRECT: `entry_px * (1.0 + TAKER_FEE)`
-- Impact: ALL equity figures from progress_equity_curves.rs are OVERSTATED (113.6x, 43.1x)
-- Fix: change sign, rerun, update HALL_OF_FAME.md and daily_progress.csv with corrected numbers
-- **Why CRITICAL:** The single equity reference in HOF is wrong. We don't know true equity.
+### T56: FIX Fee Bug in progress_equity_curves.rs — COMPLETE ✔ (2026-05-04)
+**Status:** FIXED (commit 1e841c23, confirmed 15:01 UTC rerun).
+- Line 878 now uses `entry_px * (1.0 + TAKER_FEE)` (correct for longs)
+- Corrected equity: Turtle+Chandelier 86.9x (was 113.6x), ATR_RANK=5 33.9x (was 43.1x)
+- HOF, daily_progress.csv, and snapshots all updated with corrected numbers
 
 ### T55: LOB NOBI Data Collection (MEDIUM — multi-session)
 **Status:** COLLECTING (aa393d7e). Daemon running since 2026-05-04 12:20 UTC.
@@ -58,14 +53,13 @@ SIZE_MULT           = 0.70   // INERT — pure risk knob
 - **Realistic timeline:** 4-6 weeks to first LOB signal test
 - **Why:** Genuinely novel edge (arxiv 2602.00776). But honest about timeline.
 
-### T57: Funding Rate Regime Filter (NEW — 1-2 sessions)
-**Status:** UNBUILT. Conceptually distinct from GRAVEYARD'd funding rate alpha.
-- Prior work (GRAVEYARD) tried to TRADE on funding rates — failed (autocorrelated)
-- NEW: use aggregate funding rate as REGIME FILTER. High funding (>0.1%) = overleveraged → skip entries or tighten stops
-- This is a FILTER on Turtle entries, not a standalone signal
-- Data: already have `funding_cache/` with historical funding rates
-- Mechanism: reduce crash exposure during leveraged euphoria periods
-- **Why:** Different mechanism from tested. Data exists. Could complement ATR_RANK=5.
+### T57: Funding Rate Regime Filter — GRAVEYARD ✘ (2026-05-04)
+**Status:** TESTED AND REJECTED. Dense sweep (51 thresholds × 9 universes × 10 WF windows = 4,590 runs).
+- Pass rate NEVER improves at any threshold (always ≤67/90 vs 67/90 baseline)
+- Best equity +12.5% at t=0.0008 — blocking only 274/2849 entries (9.6%). Marginal, likely noise.
+- Aggressive thresholds (t<0.0005) destroy performance via trade starvation
+- **Mechanism doesn't work:** Funding rate level doesn't predict Turtle breakout entry quality.
+- **Meta-lesson:** Both funding-as-signal (prior GRAVEYARD) and funding-as-filter (T57) fail. Funding rate is not useful for this strategy class.
 
 ### COMPLETED
 
@@ -101,7 +95,8 @@ SIZE_MULT           = 0.70   // INERT — pure risk knob
 
 | Strategy | Result | Key Reason |
 |---|---|---|
-| **ATR_RANK=65** | **GRAVEYARD** | **Held-out: 10/22 pass, Sharpe -1.900. Worse than T=24. Trade starvation.** |
+| **Funding Rate Regime Filter (T57)** | **GRAVEYARD** | **Pass rate never improves. Best equity +12.5% at t=0.0008 is marginal/noise. 4,590 runs.** |
+| ATR_RANK=65 | GRAVEYARD | Held-out: 10/22 pass, Sharpe -1.900. Worse than T=24. Trade starvation. |
 | ATR_RANK=24 | GRAVEYARD | Held-out: 10/22 pass, Sharpe -0.964. Same-harness artifact. |
 | Short-side sleeve | GRAVEYARD | 37.5% pass vs 69.1% guardrail |
 | SIZE_MULT overlay | INERT | Pure risk knob, no alpha |
