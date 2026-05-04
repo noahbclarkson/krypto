@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-04 06:15 UTC**
+**State: 2026-05-04 09:23 UTC**
 
 ## What Changed This Session
 
@@ -38,14 +38,15 @@ SIZE_MULT           = 0.70   // INERT — pure risk knob
 
 ## Next Tasks (Priority Order)
 
-### T53: Mock Exchange Bypass (HIGH — 1 session remaining)
-**Status:** API VALIDATED (32fe20c4). Integration with LiveBot pending.
-- ✓ MockExchange API smoke test passing (synthetic + real 4h data)
-- ✓ 13 round-trip trades on real BTC data, fills/fees/slippage tracked
-- ✗ NOT yet wired into LiveBot (needs ExecutorTrait abstraction)
-- ✗ Live testnet still BLOCKED on Noah's Binance testnet API keys
-- Next: Create ExecutorTrait shared by Executor and MockExchange → test bot state machine
-- **Why:** Only way to test execution without API keys. Mock validates fill mechanics.
+### T53: Mock Exchange Bypass — COMPLETE ✔
+**Status:** State machine VALIDATED (7b94003a). Only testnet API keys remain.
+- ✓ MockExchange API smoke test passing (32fe20c4)
+- ✓ 13 round-trip trades on real BTC data
+- ✓ **LiveBot state-machine simulation: 275 trades, 5 symbols, realistic fills** (7b94003a)
+- ✓ ATR-rank filter corrected to match bot.rs (ATR-as-pct-of-price)
+- ✗ Live testnet BLOCKED on Noah's Binance testnet API keys
+- **Why complete:** Full execution path (entry → trail → exit) validated against MockExchange.
+  Only remaining gap is live WebSocket + real order execution, which requires API keys.
 
 ### T55: LOB NOBI Data Collection (MEDIUM — multi-session)
 **Status:** DATA MISSING. `data/cache/lob_nobi/` is empty.
