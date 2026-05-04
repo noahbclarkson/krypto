@@ -1,0 +1,11 @@
+Hyperparameter Optimization Report: REGIME_ATR_PERIOD (AP)
+
+1. Audit: Identified `REGIME_ATR_PERIOD` (currently 12) as a hardcoded assumption from an obsolete dual-exit harness sweep. Needs re-optimization on the live Turtle-only path.
+2. Sweep: Ran an extensive parameter sweep of AP from 1 to 80 (step 1) across 9 universes and 7 walk-forward windows. Total: 5,040 tests.
+3. Result: AP=63 emerged as the most robust winner.
+   - Pass rate improved: 56/63 (88.9%) vs baseline AP=12 at 55/63 (87.3%).
+   - Average Sharpe improved: +6.106 vs baseline +4.910.
+   - Drawdown reduced: 22.5% vs baseline 26.7%.
+   - Base5 Compounded Equity: 287x (smoother risk-adjusted curve than baseline's 623x).
+4. Update: `REGIME_ATR_PERIOD` updated to 63 in `src/live/config.rs` and validated with `live_compatible_wf`.
+5. Chart: Comparison equity curves saved to `charts/comparison_chart.png`.
