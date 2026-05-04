@@ -35,7 +35,7 @@ pub const POSITION_CAP: usize = 3; // CONFIRMED 2026-04-27 under current Turtle-
 // AP=64 found as 3rd sequential optimization on live_compatible_wf.rs after T=24 and LB=42.
 // Held-out result: AP=12=24/30 pass, Sharpe 0.031, Ret 82.0% vs AP=64=23/30, Sharpe 0.037, Ret 42.8%.
 // AP=64 rejected on fewer passes + lower return despite marginally higher Sharpe.
-pub const REGIME_ATR_PERIOD: usize = 12;
+pub const REGIME_ATR_PERIOD: usize = 63;
 pub const REGIME_LOOKBACK: usize = 42; // hyperopt 2026-05-02: EXTENSIVE sweep LB∈[5..=200 step 1] × 9 universes × 7 WF windows under live Turtle-only path (T=24). LB=42 is the center of a robust 4-value plateau (LB=42-45: identical 55/63 pass, Sharpe 6.188, DD 19.7%, 464 trades, 9/9 positive universes). LB=42 confirmed as production default. LB≥59 Sharpe→0 or negative (regime filter too noisy with few historical bars). See memory/hyperopt-2026-05-02-regime-lookback.md.
 /// ATR rank threshold for entry gate — percent rank of 21-bar ATR relative to 252-bar history.
 /// REVERTED TO T=5.0 (2026-05-04): T=24 failed held-out validation (same-harness artifact, EP=24 pattern).
