@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-04T03:41:27.602Z",
+  "updatedAt": "2026-05-04T12:01:40.630Z",
   "entries": {
     "memory:memory/2026-04-13.md:5:7": {
       "key": "memory:memory/2026-04-13.md:5:7",
@@ -200483,6 +200483,161 @@
         "stable",
         "slightly",
         "better"
+      ]
+    },
+    "memory:memory/2026-04-05.md:339:354": {
+      "key": "memory:memory/2026-04-05.md:339:354",
+      "path": "memory/2026-04-05.md",
+      "startLine": 339,
+      "endLine": 354,
+      "source": "memory",
+      "snippet": "- Web searches: VPIN/OFI, crypto alpha signals 2025-2026, funding rate term structure, RL crypto sizing, cross-asset macro, stablecoin reserves, bear market strategies. - Fetched Bitmex Q3 2025 funding report, arXiv RL crypto paper (2511.20678). - Updated strategy-ideas.md with 6 new ideas from this research sweep. - Updated PLAN.md with new priority order. - Posted Discord update to #krypto. ### Key findings this cycle 1. **Bitmex Q3 2025 funding report**: 0.01%/8h anchor is enforced by institutional arb capital (Ethena). High funding is short-lived spike, not stable carry. This EXPLAINED why perp-perp carry failed structurally — shorting high-funding assets means fighting institutional ca",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.3716691792011261,
+      "maxScore": 0.3716691792011261,
+      "firstRecalledAt": "2026-05-04T12:01:40.630Z",
+      "lastRecalledAt": "2026-05-04T12:01:40.630Z",
+      "queryHashes": [
+        "45e1943da023"
+      ],
+      "recallDays": [
+        "2026-05-04"
+      ],
+      "conceptTags": [
+        "vpin/ofi",
+        "2025-2026",
+        "cross-asset",
+        "2511.20678",
+        "strategy-ideas.md",
+        "plan.md",
+        "0.01",
+        "short-lived"
+      ]
+    },
+    "memory:memory/2026-04-05.md:318:345": {
+      "key": "memory:memory/2026-04-05.md:318:345",
+      "path": "memory/2026-04-05.md",
+      "startLine": 318,
+      "endLine": 345,
+      "source": "memory",
+      "snippet": "- **ETH 123 trades / 4 windows / +8.6% avg = genuinely interesting signal** - **XRP 64 trades / 3 windows / +5.2% avg = genuinely interesting signal** ### Honest Caveats 1. Selection bias: \"best OOS window\" inflates returns; multi-window average is more honest 2. BTC/SOL thin trades: 6-7 trades per window is NOT enough (30-trade threshold violated) 3. Config search over 192 combos on 65% train → train set overfitting risk 4. 1 year of hourly data is still limited for regime stress 5. DOGE's failure shows mean reversion is conditional on symbol/market regime ### What's Next 1. Deeper data: try 4h bars for more bars per config search 2. ETH/XRP intraday: test on 15m bars (more granular, more",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.3697581499814987,
+      "maxScore": 0.3697581499814987,
+      "firstRecalledAt": "2026-05-04T12:01:40.630Z",
+      "lastRecalledAt": "2026-05-04T12:01:40.630Z",
+      "queryHashes": [
+        "45e1943da023"
+      ],
+      "recallDays": [
+        "2026-05-04"
+      ],
+      "conceptTags": [
+        "8.6",
+        "5.2",
+        "multi-window",
+        "btc/sol",
+        "6-7",
+        "30-trade",
+        "symbol/market",
+        "eth/xrp"
+      ]
+    },
+    "memory:memory/2026-04-02.md:847:858": {
+      "key": "memory:memory/2026-04-02.md:847:858",
+      "path": "memory/2026-04-02.md",
+      "startLine": 847,
+      "endLine": 858,
+      "source": "memory",
+      "snippet": "- Critiqued the most recent implementation loop honestly: A/D decomposition, HMM kill, SMA200-conditional Turtle×A/D, OFI cleanup, RSI falsification, harsh-universe stress. - Researched wider next directions using current literature/search results: multi-horizon crypto trend factors (CTREND-style), derivatives-state signals (OI + funding as crowding/confirmation, not carry), crypto microstructure / LOB feature libraries, and risk-managed momentum / drawdown-control overlays. - Updated `memory/strategy-ideas.md` and `PLAN.md` accordingly. ### Honest critique of recent work 1. **The local-optimum risk is real.** Recent useful work still lived mostly inside one basin: long crypto trend/beta ex",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.35844987630844116,
+      "maxScore": 0.35844987630844116,
+      "firstRecalledAt": "2026-05-04T12:01:40.630Z",
+      "lastRecalledAt": "2026-05-04T12:01:40.630Z",
+      "queryHashes": [
+        "45e1943da023"
+      ],
+      "recallDays": [
+        "2026-05-04"
+      ],
+      "conceptTags": [
+        "a/d",
+        "sma200-conditional",
+        "harsh-universe",
+        "literature/search",
+        "multi-horizon",
+        "ctrend-style",
+        "derivatives-state",
+        "crowding/confirmation"
+      ]
+    },
+    "memory:memory/2026-04-10.md:20:39": {
+      "key": "memory:memory/2026-04-10.md:20:39",
+      "path": "memory/2026-04-10.md",
+      "startLine": 20,
+      "endLine": 39,
+      "source": "memory",
+      "snippet": "- 144 configs swept: lookback 30-120, entry_z 1.5-3.0, exit_z 0.3-1.0, max_hold 3-12. - **43% pass rate** (19/44 windows), avg OOS Sharpe -0.05. - Funding is overwhelmingly positive (66-90%) and highly autocorrelated (0.47-0.77). Crowded longs stay crowded longer than the strategy can survive. - DOGE has one outlier (+145% in one window) but overall the signal is noise. - GRAVEYARD updated. ### Track C Result 3: Cross-Sectional Momentum Rotation — BORDERLINE ⚠️ Built `cross_sectional_momentum_walkforward.rs` — long top N / short bottom N by momentum rank, market-neutral, 8-asset universe, 1d bars. - 120 configs swept: lookback 5-63, top_n 1-3, bottom_n 1-2, rebalance 1-21. - **Best: LB=21,",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.35694625377655026,
+      "maxScore": 0.35694625377655026,
+      "firstRecalledAt": "2026-05-04T12:01:40.630Z",
+      "lastRecalledAt": "2026-05-04T12:01:40.630Z",
+      "queryHashes": [
+        "45e1943da023"
+      ],
+      "recallDays": [
+        "2026-05-04"
+      ],
+      "conceptTags": [
+        "30-120",
+        "entry-z",
+        "1.5-3.0",
+        "exit-z",
+        "0.3-1.0",
+        "max-hold",
+        "3-12",
+        "19/44"
+      ]
+    },
+    "memory:memory/2026-04-02.md:607:629": {
+      "key": "memory:memory/2026-04-02.md:607:629",
+      "path": "memory/2026-04-02.md",
+      "startLine": 607,
+      "endLine": 629,
+      "source": "memory",
+      "snippet": "- Overfitting / trust risk still remains: this CTREND row is a hand-built proxy on cached Binance history, not a license to open a local threshold/weight tuning loop. - I am **not** promoting CTREND to HALL_OF_FAME or paper use from this alone. ### What next 1. **Factor-decomposition audit** on `A/D`, `CTREND`, `MACD+Regime`, and `Turtle+MACD` 2. Keep **`DDHard`** as allocator baseline 3. Avoid a local CTREND tuning loop unless it answers a clearly different trust question ## [19:50 UTC] Cron summary — Kira (Research & critique cycle) ### What I did - Read today + yesterday memory, `PLAN.md`, `HALL_OF_FAME.md`, `GRAVEYARD.md`, `strategy-ideas.md`, and the last 20 git commits. - Reviewed t",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.3502701371908188,
+      "maxScore": 0.3502701371908188,
+      "firstRecalledAt": "2026-05-04T12:01:40.630Z",
+      "lastRecalledAt": "2026-05-04T12:01:40.630Z",
+      "queryHashes": [
+        "45e1943da023"
+      ],
+      "recallDays": [
+        "2026-05-04"
+      ],
+      "conceptTags": [
+        "hand-built",
+        "threshold/weight",
+        "hall-of-fame",
+        "factor-decomposition",
+        "a/d",
+        "plan.md",
+        "hall-of-fame.md",
+        "graveyard.md"
       ]
     }
   }

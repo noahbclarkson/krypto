@@ -722,3 +722,19 @@ Important consequence: prior Turtle-only live-path metrics and ATR_RANK=5 Turtle
 
 <!-- openclaw-memory-promotion:memory:memory/2026-04-27.md:5:6 -->
 - **Session:** 2026-04-27 19:52 UTC | Kira cron — critique only **Mission:** Read, think, criticize. Do NOT execute. [score=0.830 recalls=0 avg=0.620 source=memory/2026-04-27.md:5-6]
+
+## ATR_ENTRY_MULT Turtle-Only Validation (2026-05-04)
+
+**First validation on Turtle-only live path** (previously only tested on dual Chandelier path).
+
+Sweep: 41 values (0.00..=2.00 step 0.05) × 9 universes × 7 WF windows on `live_compatible_wf.rs` strategy.
+
+**Result: EM=0.00 CONFIRMED. 88.9% pass, Sharpe 5.17, 706 trades, 458.8x equity (7-WF).**
+
+- EM=0.90: 71.4% pass (below 74.1% baseline guardrail) — rejected
+- EM=1.55: 58.7% pass (below 69.1% guardrail), numerically inflated Sharpe (near-zero variance) — rejected
+- Higher EM monotonically reduces trades (706 → 211) — trade starvation removes edge
+
+**ATR_ENTRY_MULT=0.00 is confirmed on both dual Chandelier and Turtle-only paths.** The Turtle ATR trailing stop + HOLD_MAX already provide quality control; entry-side ATR filtering is redundant.
+
+Files: `examples/atr_entry_mult_turtle_only_sweep.rs`, `snapshots/atr_entry_mult_turtle_sweep_report.md`, `memory/hyperopt-2026-05-04-atr-entry-mult.md`, `charts/comparison_chart.png`.
