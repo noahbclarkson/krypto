@@ -33,7 +33,7 @@ const VOL_LOOKBACK: usize = 96; // updated 2026-05-01 from VL=8 (extensive 100-v
 
 const REGIME_ATR_PERIOD: usize = 12; // hyperopt 2026-05-02: AP∈[5..=80] sweep → AP=64 wins 55/63 pass vs AP=12 at 53/63. Same-harness risk (EP=24 pattern) — await held-out before trusting.
 const REGIME_LOOKBACK: usize = 42; // confirmed 2026-05-02: LB∈[5..=200] sweep → LB=42 optimal (Sharpe 6.188, 55/63 pass, 9/9 positive)
-const ATR_RANK_T: f64 = 24.0; // PRODUCTION DEFAULT (src/live/config.rs): matches live bot ATR rank gate threshold
+const ATR_RANK_T: f64 = 5.0; // REVERTED 2026-05-04: T=24 was 3rd sequential optimization on this harness. T52 held-out on pre-2021 data: T=24 → 10/22 pass, Sharpe -0.964. T=5 → 14/22 pass, Sharpe +0.664. Same EP=24 pattern. ATR_RANK=24 is a same-harness artifact. T=5 is the correct production default.
 
 const UNIVERSES: &[(&str, &[&str])] = &[
     ("Base5",        &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]),

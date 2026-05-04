@@ -37,7 +37,13 @@ pub const POSITION_CAP: usize = 3; // CONFIRMED 2026-04-27 under current Turtle-
 // AP=64 rejected on fewer passes + lower return despite marginally higher Sharpe.
 pub const REGIME_ATR_PERIOD: usize = 12;
 pub const REGIME_LOOKBACK: usize = 42; // hyperopt 2026-05-02: EXTENSIVE sweep LB∈[5..=200 step 1] × 9 universes × 7 WF windows under live Turtle-only path (T=24). LB=42 is the center of a robust 4-value plateau (LB=42-45: identical 55/63 pass, Sharpe 6.188, DD 19.7%, 464 trades, 9/9 positive universes). LB=42 confirmed as production default. LB≥59 Sharpe→0 or negative (regime filter too noisy with few historical bars). See memory/hyperopt-2026-05-02-regime-lookback.md.
-pub const ATR_RANK_THRESHOLD: f64 = 24.0; // hyperopt 2026-05-01: EXTENSIVE sweep T∈[0..=100 step 1] × 9 universes × 7 windows. T=24 wins: 52/63 pass, Sharpe 5.59, +132% return, geomean 21.5x. T=5 (old default): 45/63 pass, Sharpe 3.31. T=24 wins ALL 9 universes 9-0 on OOS Sharpe vs T=5. T=24 sits in plateau T=24-27 identical. See memory/hyperopt-2026-05-01-atr-rank-threshold.md.
+/// ATR rank threshold for entry gate — percent rank of 21-bar ATR relative to 252-bar history.
+/// REVERTED TO T=5.0 (2026-05-04): T=24 failed held-out validation (same-harness artifact, EP=24 pattern).
+/// T=24 passed 54/63 (86%) on post-2021 OOS windows but only 10/22 on pre-2021 held-out data.
+/// T=5 passed 14/22 on pre-2021 held-out (same as T=0 no-filter), Sharpe +0.664 vs T=24 at -0.964.
+/// EP=24 showed the identical pattern (3rd sequential opt, then failed held-out 25/29 vs 27/29).
+/// ATR_RANK=24 is the same artifact. Revert to T=5.0. See snapshots/t52_atr_rank_held_out.csv.
+pub const ATR_RANK_THRESHOLD: f64 = 5.0;
 
 /// Volume lookback window for dollar-volume ranking for top-N symbol selection.
 /// Updated 2026-05-03: live_compatible_wf.rs uses VL=96 and matches live bot exactly.
