@@ -1,12 +1,13 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-04 15:01 UTC**
+**State: 2026-05-04 15:51 UTC**
 
 ## What Changed This Session
 
-1. **T57 Funding Rate Regime Filter: GRAVEYARD.** Dense sweep (51 thresholds × 9 universes × 10 WF windows = 4,590 runs). Pass rate NEVER improves. Best equity +12.5% at t=0.0008 is marginal/noise. Both funding-as-signal and funding-as-filter fail.
-2. **T56 FEE BUG: CONFIRMED FIXED.** Re-ran progress_equity_curves.rs. Numbers match T56 fix: Turtle+Chandelier 86.9x, ATR_RANK=5 33.9x.
-3. **live_compatible_wf fresh run:** 56/63 pass (88.9%), Sharpe 5.171, Base5 458.8x.
+1. **T58 USDT Hedge Threshold: INERT (confirmed).** Extensive sweep (101 values × 9 universes × 7 WF windows = 6,363 runs). All 101 values produce identical 706 trades — overlay is pure risk knob. Return/DD ratio constant (~4.0-4.8). HEDGE_PCT=75 confirmed. No change.
+2. **T57 Funding Rate Regime Filter: GRAVEYARD.** Dense sweep (51 thresholds × 9 universes × 10 WF windows = 4,590 runs). Pass rate NEVER improves.
+3. **T56 FEE BUG: CONFIRMED FIXED.** Re-ran progress_equity_curves.rs. Numbers match T56 fix.
+4. **live_compatible_wf fresh run:** 55/63 pass (87.3%), Sharpe 4.910, Base5 622.98x.
 
 ## Production Params (Frozen — 2026-05-04)
 
@@ -22,6 +23,7 @@ REGIME_LOOKBACK     = 42
 ATR_RANK_THRESHOLD  = 5.0    // T=65 REJECTED held-out. T=24 REJECTED. T=5 is production.
 VOL_LOOKBACK        = 96
 SIZE_MULT           = 0.70   // INERT — pure risk knob
+HEDGE_PCT           = 75     // INERT — pure risk knob (T58: 101-value sweep confirms)
 ```
 
 ## Current Truth
@@ -34,6 +36,16 @@ SIZE_MULT           = 0.70   // INERT — pure risk knob
 - All Turtle params are frozen and confirmed
 
 ## Next Tasks (Priority Order)
+
+### T58: USDT Hedge Threshold Extensive Hyperopt — COMPLETE ✔ (2026-05-04)
+**Status:** CONFIRMED INERT. 101 values (HEDGE_PCT∈[0..100] step 1) × 9 universes × 7 WF windows = 6,363 simulations.
+- All values produce exactly 706 trades — overlay only scales position size
+- Return/DD ratio constant (~4.0-4.8) — no risk-adjusted alpha
+- PCT=16 "wins" pass rate (57/63) but is equivalent to global 30% size reduction
+- HEDGE_PCT=75 confirmed as production default
+- Combined with SIZE_MULT sweep: entire USDT hedge overlay = cosmetic risk knob
+- Charts: `charts/comparison_chart.png`, `charts/hedge_threshold_heatmap.png`
+- See `memory/hyperopt-2026-05-04-hedge-threshold-extensive.md`
 
 ### T56: FIX Fee Bug in progress_equity_curves.rs — COMPLETE ✔ (2026-05-04)
 **Status:** FIXED (commit 1e841c23, confirmed 15:01 UTC rerun).
@@ -89,12 +101,14 @@ SIZE_MULT           = 0.70   // INERT — pure risk knob
 4. **If blocked on credentials, say so plainly and build the workaround (T53 — DONE).**
 5. **Max 2 sequential optimizations per harness before mandatory held-out validation.**
 6. **Do NOT re-confirm settled parameters.** EM=0.00 was confirmed 3 times. Stop.
+8. **USDT hedge overlay is SETTLED.** Both SIZE_MULT and HEDGE_PCT are INERT risk knobs. No more sweeps.
 7. **Walk-forward Sharpe ≠ daily equity Sharpe.** Never compare 4.91 WF avg to 0.87 daily. They measure different things.
 
 ## Graveyard Summary (Latest)
 
 | Strategy | Result | Key Reason |
 |---|---|---|
+| **USDT Hedge Threshold (T58)** | **INERT** | **101-value sweep: all produce 706 trades. Pure risk knob, no alpha. HEDGE_PCT=75 confirmed.** |
 | **Funding Rate Regime Filter (T57)** | **GRAVEYARD** | **Pass rate never improves. Best equity +12.5% at t=0.0008 is marginal/noise. 4,590 runs.** |
 | ATR_RANK=65 | GRAVEYARD | Held-out: 10/22 pass, Sharpe -1.900. Worse than T=24. Trade starvation. |
 | ATR_RANK=24 | GRAVEYARD | Held-out: 10/22 pass, Sharpe -0.964. Same-harness artifact. |
