@@ -717,3 +717,8 @@ Important consequence: prior Turtle-only live-path metrics and ATR_RANK=5 Turtle
 - **Session:** 22:00 UTC, 4h cron. Author: Kira. **Trigger:** Autonomous research + critique cycle. [score=0.859 recalls=0 avg=0.620 source=memory/2026-04-25.md:3-4]
 <!-- openclaw-memory-promotion:memory:memory/2026-04-26.md:3:3 -->
 - **Session:** 2026-04-26 18:01–18:35 UTC | S6 Execution [score=0.803 recalls=0 avg=0.620 source=memory/2026-04-26.md:3-3]
+
+## Promoted From Short-Term Memory (2026-05-04)
+
+<!-- openclaw-memory-promotion:memory:memory/2026-04-27.md:5:6 -->
+- **Session:** 2026-04-27 19:52 UTC | Kira cron — critique only **Mission:** Read, think, criticize. Do NOT execute. [score=0.830 recalls=0 avg=0.620 source=memory/2026-04-27.md:5-6]

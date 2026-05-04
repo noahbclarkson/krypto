@@ -28,12 +28,11 @@
 
 ## Top 3 Most Promising Unbuilt Ideas
 
-### #1: T54 — ATR_RANK=5 Equity Run (IMMEDIATE — 10 min)
-**Status:** UNBUILT, production is flying blind.
-- ATR_RANK=5 is in `config.rs` as production regime filter — never had an equity run
-- `progress_equity_curves.rs` only ran dual-exit (Chandelier+Turtle) and Turtle-only T=24
-- Run: Turtle-only + ATR_RANK=5 + production params → full timeline equity
-- **Why:** We are reporting HOF "113.6x / Sharpe 0.99" which is the wrong harness. Live equity is unknown.
+### #1: T54 — Fresh ATR_RANK=5 Equity Run (IMMEDIATE — ⚠️ RE-RUN REQUIRED)
+**Status:** STALE DATA. Equity was run (43.1x/0.87) but BEFORE live-bot Turtle-only ATR fix (2026-05-01). The 43.1x is from broken code.
+- Re-run `progress_equity_curves.rs` Turtle-only + ATR_RANK=5 on current (fixed) code
+- Update HOF and daily_progress.csv with correct figure
+- **Why:** Every equity number for live strategy is wrong or missing.
 
 ### #2: T53 — Mock Exchange Bypass (HIGH — 2-3 sessions)
 **Status:** UNBUILT, 5+ weeks overdue.
@@ -44,11 +43,11 @@
 - **Why:** Highest-leverage unbuilt item. Execution testing unblocks all downstream validation. Data exists.
 
 ### #3: T55 — LOB NOBI Data Collection (MEDIUM — multi-session)
-**Status:** DATA MISSING. `data/cache/lob_nobi/` is empty. Multi-session project.
+**Status:** DATA MISSING. `data/cache/lob_nobi/` is empty. Multi-session project — NOT "one run away".
 - Build collector daemon: Binance depth API → parquet persistence (run 2+ weeks)
 - Then build harness: daily depth imbalance → SG smoothing → z-score → directional continuation test
 - arxiv 2602.00776 — genuinely novel microstructure edge.
-- **Why:** Worth the multi-session investment. Data collection must start before the harness can be built.
+- **Why:** Worth the multi-session investment. Stop claiming it's close.
 
 ---
 

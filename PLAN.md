@@ -38,13 +38,14 @@ SIZE_MULT           = 0.70   // INERT — pure risk knob
 
 ## Next Tasks (Priority Order)
 
-### T53: Mock Exchange Bypass (HIGH — 2-3 sessions)
-**Status:** UNBUILT, identified 5+ weeks ago, zero commits.
-- Live testnet BLOCKED on Noah's Binance testnet API keys for 5+ weeks
-- Build local Rust HTTP server mocking binance-rs-async endpoints
-- Seed with historical 1m data from `data/cache/`
-- Test `src/live/bot.rs` order placement, state machine, latency handling
-- **Why:** Only way to test execution without API keys. Highest-leverage unbuilt infrastructure.
+### T53: Mock Exchange Bypass (HIGH — 1 session remaining)
+**Status:** API VALIDATED (32fe20c4). Integration with LiveBot pending.
+- ✓ MockExchange API smoke test passing (synthetic + real 4h data)
+- ✓ 13 round-trip trades on real BTC data, fills/fees/slippage tracked
+- ✗ NOT yet wired into LiveBot (needs ExecutorTrait abstraction)
+- ✗ Live testnet still BLOCKED on Noah's Binance testnet API keys
+- Next: Create ExecutorTrait shared by Executor and MockExchange → test bot state machine
+- **Why:** Only way to test execution without API keys. Mock validates fill mechanics.
 
 ### T55: LOB NOBI Data Collection (MEDIUM — multi-session)
 **Status:** DATA MISSING. `data/cache/lob_nobi/` is empty.
