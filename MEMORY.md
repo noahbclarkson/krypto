@@ -52,13 +52,17 @@
 
 ---
 
-## Strategy Params (Frozen — 2026-04-28)
+## Strategy Params (Frozen — 2026-05-04)
 
 ```
 EP=21, CHAND_PERIOD=7, CHAND_MULT=2.30, HOLD_MAX=12,
 ATR_PERIOD=24, TURTLE_ATR_MULT=2.00, ATR_ENTRY_MULT=0.00,
-POSITION_CAP=3, VOL_LOOKBACK=8, FRESHNESS_COOLDOWN=0
+POSITION_CAP=3, VOL_LOOKBACK=96, FRESHNESS_COOLDOWN=0,
+REGIME_ATR_P=12, REGIME_LOOKBACK=42, ATR_RANK_THRESHOLD=5.0,
+SIZE_MULT=0.70
 ```
+
+**ATR_RANK filter is SETTLED (2026-05-04):** Entire T∈[0..100] tested in-sample AND held-out on pre-2021 data. T=24 and T=65 both fail held-out catastrophically (Sharpe -0.964 and -1.900). Only T=0/5 survive. Mechanism is non-stationary — BTC ATR distributions shift across eras. No more ATR rank sweeps.
 
 **Note:** TURTLE_ENTRY uses `close > max(close)` (Turtle). Donchian (`close > max(high)`) tested but rejected as production replacement — lower pass rate (-14pp) outweighs Sharpe gain (+3.81 avg).
 
