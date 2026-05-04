@@ -1,59 +1,63 @@
 # HALL_OF_FAME.md — Proven Strategies
 
-_Auto-generated from production config + validated snapshots on 2026-05-03._
+_Auto-generated from production config + validated snapshots on 2026-05-04._
 _Run `python3 scripts/gen_hof.py` to regenerate. Do not hand-edit headline metrics._
 
 ---
 
 ## PRODUCTION — DEPLOYABLE AFTER TESTNET
 
-### Turtle+ATR Live Variant (ATR_RANK=24 gate)
+### Turtle+Chandelier / Turtle ATR live variant
+- **Equity harness universe:** Base5 — BTC, ETH, SOL, XRP, DOGE, ADA
+- **Live bot universe:** BTC, ETH, SOL, XRP, DOGE
+- **Base5 walk-forward pass rate:** 6/6 (100.0%)
+- **Global walk-forward pass rate:** 37/54 (68.5%) (9-universe, current validated harness)
+- **Walk-forward avg Sharpe:** 4.241 (724 trades, per-window metric)
+- **Daily equity Sharpe:** 0.99 (honest compounded-equity metric)
+- **Validated daily equity:** $10K → $1,136,000 (113.6x)
 
-**LIVE-COMPATIBLE WALK-FORWARD (2026-05-03 — corrected exit semantics):**
-- **Global pass rate:** 54/63 (85.7%), avg Sharpe 7.652, avg return +138.3%
-- **Base5 aggregate:** 251.8x compounded over 7 walk-forward windows
-- **Per-universe:** Base5 6/7, NoDOGE 7/7, Legacy4 6/7, LargeCaps5 7/7 — all strong
-- **9/9 universes positive** at the aggregate level
-- ATR_RANK threshold: 24.0 (live bot default in `src/live/config.rs`)
+**Important reconciliation:** The old `$10K → $67M` headline was a stale/full-sample artifact and is no longer cited. The authoritative current daily-equity number is `snapshots/progress_equity_curves.md`: 113.6x / Sharpe 0.99.
 
-**DAILY EQUITY HARNESS (progress_equity_curves.rs):**
-- Turtle+Chandelier (dual exit): 111.4x, daily Sharpe 0.98 — NOT directly comparable to live Turtle-only path
-- Turtle ATR_RANK=24 (live bot variant): 77.4x, daily Sharpe 0.97
-
-**Live bot universe:** BTC, ETH, SOL, XRP, DOGE
-**Production params (from `src/live/config.rs`):**
+**Frozen production params (from `src/live/config.rs`):**
 ```text
-EP              = 21
-TURTLE_ATR_P    = 24
-TURTLE_ATR_M    = 2.0
-ATR_ENTRY_MULT  = 0.00
-HOLD_MAX        = 12
-POSITION_CAP    = 3
-REGIME_ATR_P    = 12
-REGIME_LOOKBACK = 42
-ATR_RANK_T      = 24.0   // live entry gate: BTC ATR percentile must be ≥24
-VOL_LOOKBACK    = 96     // dollar-volume ranking window
+EP              = 21     // Turtle entry lookback
+CHAND_PERIOD    = 7      // Stored in config; secondary validation layer
+CHAND_MULT      = 2.30   // Stored in config; secondary validation layer
+TURTLE_ATR_P    = 24     // Turtle ATR stop period
+TURTLE_ATR_M    = 2.0    // Turtle ATR stop multiplier
+ATR_ENTRY_MULT  = 0.00   // Entry filter — any non-zero degrades pass rate
+HOLD_MAX        = 12     // Max hold bars
+POSITION_CAP    = 3      // Max concurrent positions
+REGIME_ATR_P    = 12     // BTC ATR period for regime filter
+REGIME_LOOKBACK = 42     // BTC ATR percentile lookback
+ATR_RANK_THRESH = 5.0    // Minimum BTC ATR percentile rank for entries
 ```
 
-**Key validation notes:**
-- 2026-05-01 live exit bug FIXED: ATR buffer now seeded with `TURTLE_ATR_PERIOD` (24), long stop uses `highest_high - ATR_MULT*ATR`, HOLD_MAX enforced before ATR warmup return. live_compatible_wf.rs reflects corrected semantics — metrics now authoritative.
-- ATR_RANK=24 confirmed via EXTENSIVE sweep T∈[0..=100] × 9 universes × 7 WF windows. T=24 wins ALL 9 universes 9-0 on OOS Sharpe vs T=5. Plateau T=24-27 identical. See `memory/hyperopt-2026-05-01-atr-rank-threshold.md`.
-- REGIME_ATR_PERIOD=12 (AP=64 rejected: 3rd sequential optimization on this harness, same pattern as EP=24).
+**Validation evidence:**
+- Progress equity harness: 113.6x, daily Sharpe 0.99
+- Walk-forward (Base5): 6/6 (100.0%)
+- Walk-forward (global 9-universe): 37/54 (68.5%)
+- Pre-2021 held-out stress: 19/28 (67.9%)
+- T22 exit attribution: Chandelier adds secondary robustness; live bot currently uses Turtle ATR as sole live exit
+- ATR_RANK=5: validated under both dual-exit and Turtle-only live logic; AP=12/LB=42/T=5 joint regime sweep wins vs old AP=21/LB=252 baseline
 - Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76–0.87)
 
-**Fee model:** 0.10% taker per side in walk-forward. Live execution: ~70% maker fills expected → ~4-5bps effective cost vs 10bps backtest assumption.
+**Fee model:** 0.04% taker fee in live dry-run; prior execution realism suggested ~22–33% Sharpe degradation under realistic costs.
 
-**Critical blocker:** Binance testnet API key + secret. All metrics remain simulation upper bounds until live testnet run.
+**Critical blocker:** Binance testnet API key + secret. All metrics remain simulation upper bounds until 30-day testnet paper trading runs.
 
 ---
 
 ## BORDERLINE — NOT PRODUCTION
 
-### A/D Dual-Hat
-- 52% walk-forward pass — too weak alone. Potential as 20% sleeve.
+### Turtle+Chandelier (Base5 — with ADA)
+- ADA has been a portfolio drag in bull years (+whipsaw, no benefit). Live bot excludes ADA.
+
+### A/D Dual-Hat (standalone)
+- 52% walk-forward pass — too weak alone. Potential as a 20% sleeve.
 
 ### DDBudget 3-Sleeve
-- 72% walk-forward pass. Milestone-aggregated equity (not daily compounded) — NOT comparable to Turtle daily Sharpe.
+- 72% walk-forward pass. Milestone-aggregated equity (not daily compounded).
 
 ---
 
@@ -65,16 +69,20 @@ See `GRAVEYARD.md` for full list. Key invalidations:
 |----------|-------------|
 | EP=24 | In-sample inflation — held-out confirmed EP=21 wins |
 | ATR_ENTRY_MULT=0.85 | In-sample inflation — held-out confirmed EM=0.00 wins |
-| ATR_ENTRY_MULT=0.94 | Same-harness artifact — no held-out confirmation |
-| REGIME_ATR_PERIOD=64 | 3rd sequential optimization on live_compatible_wf.rs (EP=24 pattern); held-out rejects |
-| ATR_RANK=5 | Old default — 0/63 pass in live_compatible_wf; T=24 wins 9-0 |
-| ATR_RANK_THRESHOLD=24 (old conflated claims) | Correct production default is 24.0 per EXTENSIVE 2026-05-01 sweep |
-| VL=96 | Same-harness artifact risk (EP=24 pattern); production stays VL=8 pending Base5-only confirmation |
 | CP=42 | Backward search artifact |
-| CTREND 25% sleeve | Sharpe destroyed 1.38→0.33 |
+| CTREND 25% fixed sleeve | Sharpe destroyed 1.38→0.33 |
 | MACD+Regime | Stale cache, OOS 2/7 pass |
 | BollingerReversion | Full-sample look-ahead contamination, 0/288 OOS |
+| Regime switching | All configs fail |
 | Position scaling overlays | All failed — equal capital wins |
+
+---
+
+## CROSS-MARKET EDGE (Non-Crypto)
+
+- SPY: valid (Sharpe ~0.76)
+- GLD: valid (Sharpe ~0.81)
+- QQQ: valid (Sharpe ~0.87)
 
 ---
 
@@ -83,8 +91,7 @@ See `GRAVEYARD.md` for full list. Key invalidations:
 | File | Contents |
 |------|----------|
 | `src/live/config.rs` | Production constants — frozen params |
-| `examples/live_compatible_wf.rs` | Live path WF (corrected semantics) — source of truth |
 | `examples/live_turtle_chandelier.rs` | Live dry-run / testnet entrypoint |
 | `examples/progress_equity_curves.rs` | Honest daily-equity progress harness |
-| `snapshots/live_compatible_wf.md` | Current live path walk-forward results |
-| `snapshots/progress_equity_curves.md` | Daily equity source of truth |
+| `snapshots/progress_equity_curves.md` | Current daily equity + Sharpe source of truth |
+| `snapshots/turtle_chandelier_9way_wf_latest.md` | Current walk-forward validation source |
