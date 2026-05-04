@@ -57,4 +57,4 @@ date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades
 2026-05-03,FactorSmallByDV,15.5x,1.99,fixed_hold_daily_equity,1257
 2026-05-03,DDBudget 3-Sleeve,62.1x,7.20,milestone_aggregated_not_comparable,776
 2026-05-04,Turtle+ATR_RANK=5 (T56-fixed),33.9x,0.42,dual_exit_daily_equity (progress_equity_curves.rs). T=65 REJECTED held-out (10/22 pass -1.900 Sharpe). T=5 is production.,2092
-2026-05-04,Turtle-only (live_compatible_wf),n/a,4.91,walk-forward: 55/63 pass (87.3%) Sharpe 4.910 +129.7% avg ret. Base5: 622.98x aggregate. T=5 VL=96.,556
+2026-05-04,Turtle-only (live_compatible_wf),n/a,5.17,walk-forward: 56/63 pass (88.9%) Sharpe 5.171 +112.4% avg ret. Base5: 458.8x aggregate. T=5 VL=96.,556
