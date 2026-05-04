@@ -738,3 +738,13 @@ Sweep: 41 values (0.00..=2.00 step 0.05) × 9 universes × 7 WF windows on `live
 **ATR_ENTRY_MULT=0.00 is confirmed on both dual Chandelier and Turtle-only paths.** The Turtle ATR trailing stop + HOLD_MAX already provide quality control; entry-side ATR filtering is redundant.
 
 Files: `examples/atr_entry_mult_turtle_only_sweep.rs`, `snapshots/atr_entry_mult_turtle_sweep_report.md`, `memory/hyperopt-2026-05-04-atr-entry-mult.md`, `charts/comparison_chart.png`.
+
+## 2026-05-04 — REGIME_ATR_PERIOD Extensive Hyperopt
+- **Parameter:** `REGIME_ATR_PERIOD` (AP) — BTC ATR lookback for regime filtering.
+- **Context:** Previously hardcoded to `AP=12` based on an obsolete dual-exit harness sweep. Needs re-optimization on live Turtle-only path.
+- **Sweep Range:** AP = 1 to 80 (step 1). Extensively swept 80 values × 9 universes × 7 windows = 5,040 tests.
+- **Result:** AP=63 won as the most robust default.
+  - Pass rate: 56/63 (88.9%) vs baseline 55/63.
+  - Avg Sharpe: +6.106 vs baseline +4.910.
+  - Base5 Equity: 287x (smoother equity curve with 22.5% DD vs baseline 26.7%).
+- **Action:** Updated `REGIME_ATR_PERIOD = 63` in `src/live/config.rs`. Validated passing on full harness.

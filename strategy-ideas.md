@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-04 00:18 UTC. Critique cycle complete. ATR_RANK=24 GRAVEYARD'd (held-out). VL=96 reconciled. Short-side sleeve GRAVEYARD'd. SIZE_MULT INERT (cosmetic risk knob). T54 ATR_RANK=5 equity run is top immediate priority. T53 mock exchange is highest overdue infrastructure. T55 LOB NOBI data MISSING — multi-session.*
+*Last updated: 2026-05-04 20:05 UTC. Critique cycle complete. AP=63 anti-overfit violation identified — config.rs updated without held-out validation (same EP=24 pattern). T59 and T60 still unbuilt (second session overdue). New concepts added: weekend filter, per-bar PnL attribution, aggTrades order flow.*
 
 ---
 
@@ -10,6 +10,15 @@
 - Pre-2021 held-out: T=24 → **10/22 pass, Sharpe -0.964** vs T=5 → **14/22 pass, Sharpe +0.664**
 - Same EP=24 pattern: 3rd sequential optimization on same harness → failed held-out
 - Production: **ATR_RANK_THRESHOLD = 5.0** (reverted from 24)
+
+## Critical Alert: AP=63 ANTI-OVERFIT VIOLATION
+
+**config.rs was updated to `REGIME_ATR_PERIOD = 63` without held-out validation.**
+- `snapshots/ap_hyperopt.md` own "Next Steps" says: "Held-out validation required before updating config.rs"
+- But config.rs was already updated to AP=63
+- Pattern: AP=63 won by +1 window (+1.197 Sharpe, marginal) on the same OOS harness
+- This is EXACTLY the EP=24 failure mode: marginal win → promoted to production → failed held-out
+- **Action:** Run held-out validation (T62) before trusting AP=63. Do not let it sit unvalidated in production.
 
 ## Critical Alert: LOB NOBI Data Is Missing
 
@@ -46,6 +55,18 @@
 - **Problem:** LOB NOBI (T55) is 6+ weeks away from having enough data.
 - **Action:** Download historical `aggTrades` from data.binance.vision. Build rolling 5-min buy/sell imbalance. Test as entry confirmation gate.
 - **Why:** Genuinely novel microstructure edge that doesn't require a 6-week collection period.
+
+### T62: Weekend Liquidity Filter (NEW — 1 session)
+**Status:** NEW CONCEPT.
+- **Hypothesis:** Crypto weekend volume is 30-50% lower. Breakout breakouts on Saturday/Sunday bars may be structurally less reliable due to thinner books and higher slippage.
+- **Action:** Add day-of-week filter to Turtle entries. Skip entries on Sat/Sun (or reduce position size). Test on existing daily data immediately.
+- **Why:** Immediately testable, no new data required, low implementation complexity.
+
+### T63: Per-Bar PnL Attribution (NEW — 1 session)
+**Status:** NEW CONCEPT.
+- **Hypothesis:** Turtle trend-following should show: few large wins, many small losses. Need to confirm this distribution.
+- **Action:** Using Turtle-only daily equity curve (T59), decompose returns by trade outcome: (a) winners vs losers distribution, (b) fee cost as % of gross, (c) largest drawdown periods.
+- **Why:** Identifies if the edge is from rare large trends (robust) or many small edges (fragile to outlier events). Answers "how much of equity is from 2020-2021 mega-bull vs distributed across years?".
 
 ---
 
