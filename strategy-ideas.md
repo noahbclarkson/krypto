@@ -28,26 +28,24 @@
 
 ## Top 3 Most Promising Unbuilt Ideas
 
-### #1: T54 — Fresh ATR_RANK=5 Equity Run (IMMEDIATE — ⚠️ RE-RUN REQUIRED)
-**Status:** STALE DATA. Equity was run (43.1x/0.87) but BEFORE live-bot Turtle-only ATR fix (2026-05-01). The 43.1x is from broken code.
-- Re-run `progress_equity_curves.rs` Turtle-only + ATR_RANK=5 on current (fixed) code
-- Update HOF and daily_progress.csv with correct figure
-- **Why:** Every equity number for live strategy is wrong or missing.
+### T59: Turtle-Only Daily Equity Curve (IMMEDIATE)
+**Status:** UNBUILT.
+- **Problem:** The live bot runs Turtle-only + ATR_RANK=5. `progress_equity_curves.rs` runs Dual Exit (Chandelier+Turtle). We have NO compounded daily equity curve for the live strategy.
+- **Action:** Build a Turtle-only mode for `progress_equity_curves.rs` that exactly matches `src/live/bot.rs` (using `check_turtle_exit` logic).
+- **Why:** Every reporting metric for production is currently using the wrong strategy.
 
-### #2: T53 — Mock Exchange Bypass (HIGH — 2-3 sessions)
-**Status:** UNBUILT, 5+ weeks overdue.
-- Live testnet BLOCKED on Noah's API keys for 5+ weeks
-- Build Rust HTTP server that mocks binance-rs-async endpoints we use
-- Seed with historical 1m data from `data/cache/` to simulate fills and slippage
-- Test `src/live/bot.rs` order placement, state machine, latency handling
-- **Why:** Highest-leverage unbuilt item. Execution testing unblocks all downstream validation. Data exists.
+### T60: Per-Year Performance Decomposition (IMMEDIATE)
+**Status:** UNBUILT.
+- **Problem:** Unknown bull market bias. Walk-forward Sharpe averages per-window metrics, masking multi-year drawdowns.
+- **Action:** Decompose the (new) Turtle-only daily equity curve by calendar year (2020-2026).
+- **Output:** Report Sharpe, MaxDD, Return, and Trade Count per year.
+- **Why:** If the edge only exists in 2020-2021, the strategy is not robust for 2026.
 
-### #3: T55 — LOB NOBI Data Collection (MEDIUM — multi-session)
-**Status:** DATA MISSING. `data/cache/lob_nobi/` is empty. Multi-session project — NOT "one run away".
-- Build collector daemon: Binance depth API → parquet persistence (run 2+ weeks)
-- Then build harness: daily depth imbalance → SG smoothing → z-score → directional continuation test
-- arxiv 2602.00776 — genuinely novel microstructure edge.
-- **Why:** Worth the multi-session investment. Stop claiming it's close.
+### T61: Binance aggTrades Order Flow Signal (HIGH — 1-2 Sessions)
+**Status:** NEW CONCEPT.
+- **Problem:** LOB NOBI (T55) is 6+ weeks away from having enough data.
+- **Action:** Download historical `aggTrades` from data.binance.vision. Build rolling 5-min buy/sell imbalance. Test as entry confirmation gate.
+- **Why:** Genuinely novel microstructure edge that doesn't require a 6-week collection period.
 
 ---
 
