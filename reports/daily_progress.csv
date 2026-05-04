@@ -58,3 +58,8 @@ date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades
 2026-05-03,DDBudget 3-Sleeve,62.1x,7.20,milestone_aggregated_not_comparable,776
 2026-05-04,Turtle+ATR_RANK=5 (T56-fixed),33.9x,0.42,dual_exit_daily_equity (progress_equity_curves.rs). T=65 REJECTED held-out (10/22 pass -1.900 Sharpe). T=5 is production.,2092
 2026-05-04,Turtle-only (live_compatible_wf),n/a,5.17,walk-forward: 56/63 pass (88.9%) Sharpe 5.171 +112.4% avg ret. Base5: 458.8x aggregate. T=5 VL=96.,556
+2026-05-04,Turtle+ATR_RANK=5 (live bot path),33.9x,0.42,daily_compounded_equity; live_compatible_wf: 55/63 pass (87.3%), Sharpe 4.91, Base5 623x aggregate. ATR_RANK=5 near-inert (T=65 REJECTED held-out 10/22).,2092
+2026-05-04,Turtle+Chandelier (dual exit,not live),86.9x,0.95,daily_compounded_equity; NOT the live bot path. Live bot is Turtle-only.,397
+2026-05-04,A/D Momentum,39.3x,3.58,fixed_hold_daily_equity,3829
+2026-05-04,FactorSmallByDV,15.5x,1.99,fixed_hold_daily_equity,1446
+2026-05-04,DDBudget 3-Sleeve,61.6x,7.17,milestone_aggregated_not_comparable,777
