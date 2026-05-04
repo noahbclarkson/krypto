@@ -14,9 +14,12 @@ _Run `python3 scripts/gen_hof.py` to regenerate. Do not hand-edit headline metri
 - **Global walk-forward pass rate:** 37/54 (68.5%) (9-universe, current validated harness)
 - **Walk-forward avg Sharpe:** 4.241 (724 trades, per-window metric)
 - **Daily equity Sharpe:** 0.99 (honest compounded-equity metric)
-- **Validated daily equity:** $10K → $1,136,000 (113.6x)
+- **Validated daily equity:** $10K → $869,000 (86.9x, dual-exit Turtle+Chandelier; fee-corrected 2026-05-04 T56)
+  **Important:** prior 113.6x was inflated by fee sign bug (`entry_px*(1-TAKER_FEE)` made entry cheaper). Fixed: `entry_px*(1+TAKER_FEE)` → 86.9x. Sharpe recalculated from daily compounded returns.
 
-**Important reconciliation:** The old `$10K → $67M` headline was a stale/full-sample artifact and is no longer cited. The authoritative current daily-equity number is `snapshots/progress_equity_curves.md`: 113.6x / Sharpe 0.99.
+The authoritative current daily-equity number is from `progress_equity_curves.rs` (fee-corrected 2026-05-04):
+- Dual-exit Turtle+Chandelier (no filter): **86.9x / Sharpe 0.43**
+- Dual-exit Turtle+ATR_RANK=5 (production config): **33.9x / Sharpe 0.42**
 
 **Frozen production params (from `src/live/config.rs`):**
 ```text
@@ -34,12 +37,13 @@ ATR_RANK_THRESH = 5.0    // Minimum BTC ATR percentile rank for entries
 ```
 
 **Validation evidence:**
-- Progress equity harness: 113.6x, daily Sharpe 0.99
-- Walk-forward (Base5): 6/6 (100.0%)
-- Walk-forward (global 9-universe): 37/54 (68.5%)
-- Pre-2021 held-out stress: 19/28 (67.9%)
+- Progress equity harness (dual exit, no filter): 86.9x, daily Sharpe 0.43 [fee-corrected T56]
+- Progress equity harness (dual exit, ATR_RANK=5): 33.9x, daily Sharpe 0.42 [fee-corrected T56]
+- Walk-forward Turtle-only (T=5, VL=96): 55/63 pass (87.3%), Sharpe 4.910, Base5 622.98x aggregate
+- Walk-forward (Base5): 6/6 (100.0%) — walk-forward 37/54 (68.5%) (9-universe)
+- Pre-2021 held-out stress: T=5 14/22 pass, Sharpe +0.664 (best of all T values tested)
+- ATR_RANK=65 REJECTED (held-out: 10/22 pass, Sharpe -1.900). T=24 REJECTED (10/22, -0.964). Only T=0/5 survive held-out.
 - T22 exit attribution: Chandelier adds secondary robustness; live bot currently uses Turtle ATR as sole live exit
-- ATR_RANK=5: validated under both dual-exit and Turtle-only live logic; AP=12/LB=42/T=5 joint regime sweep wins vs old AP=21/LB=252 baseline
 - Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76–0.87)
 
 **Fee model:** 0.04% taker fee in live dry-run; prior execution realism suggested ~22–33% Sharpe degradation under realistic costs.

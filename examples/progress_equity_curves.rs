@@ -872,7 +872,10 @@ fn simulate_turtle_chandelier_equity(
             // Entry at next bar open (close of current bar minus fee)
             let entry_px = sd.close.get(bar).copied().unwrap_or(0.0);
             if entry_px <= 0.0 { bar += 1; continue; }
-            let entry = entry_px * (1.0 - TAKER_FEE);
+            // T56 FIX: long entry pays taker fee (effective entry is higher by fee)
+            // prior: entry_px * (1.0 - TAKER_FEE) was WRONG — made entry cheaper = inflated returns
+            // fix: entry_px * (1.0 + TAKER_FEE) + exit_px * (1.0 - TAKER_FEE) for longs
+            let entry = entry_px * (1.0 + TAKER_FEE);
             let next_bar = bar + 1;
             let n = sd.close.len();
             let max_hold = (next_bar + TURTLE_HOLD_MAX).min(n.saturating_sub(1));

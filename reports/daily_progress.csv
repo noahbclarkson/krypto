@@ -5,7 +5,7 @@ date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades
 2026-05-02,FactorSmallByDV,15.5x,1.99,fixed_hold_daily_equity,1257
 2026-05-02,DDBudget 3-Sleeve,62.2x,7.20,milestone_aggregated_not_comparable,776
 2026-05-02,Turtle+Chandelier,110.1x,0.98,daily_compounded_equity,397
-2026-05-02,Turtle+ATR_RANK=24,76.5x,0.96,regime filter T=24; walk-forward: 52/63 pass; Sharpe 5.59; +132% ret. See snapshots/progress_equity_curves_atrrank24.md,n/a
+2026-05-02,Turtle+ATR_RANK=24[GRAVEYARD],76.5x,0.96,[GRAVEYARD] T=24 held-out rejected 2026-05-04: 10/22 pass/-0.964 Sharpe. T=5 is production. DO NOT USE.
 2026-04-30,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
 2026-04-30,FactorSmallByDV,15.0x,1.97,fixed_hold_daily_equity,1257
 2026-04-30,DDBudget 3-Sleeve,62.5x,7.22,milestone_aggregated_not_comparable,776
@@ -56,4 +56,5 @@ date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades
 2026-05-03,A/D Momentum,40.3x,3.60,fixed_hold_daily_equity,3933
 2026-05-03,FactorSmallByDV,15.5x,1.99,fixed_hold_daily_equity,1257
 2026-05-03,DDBudget 3-Sleeve,62.1x,7.20,milestone_aggregated_not_comparable,776
-2026-05-03,Turtle+ATR_RANK=24,77.4x,0.97,regime filter T=24; walk-forward: 54/63 pass; Sharpe 7.65; +138% ret. live_compatible_wf (unchanged),n/a
+2026-05-04,Turtle+ATR_RANK=5 (T56-fixed),33.9x,0.42,dual_exit_daily_equity (progress_equity_curves.rs). T=65 REJECTED held-out (10/22 pass -1.900 Sharpe). T=5 is production.,2092
+2026-05-04,Turtle-only (live_compatible_wf),n/a,4.91,walk-forward: 55/63 pass (87.3%) Sharpe 4.910 +129.7% avg ret. Base5: 622.98x aggregate. T=5 VL=96.,556
