@@ -49,11 +49,14 @@ SIZE_MULT           = 0.70   // INERT — pure risk knob
   Only remaining gap is live WebSocket + real order execution, which requires API keys.
 
 ### T55: LOB NOBI Data Collection (MEDIUM — multi-session)
-**Status:** DATA MISSING. `data/cache/lob_nobi/` is empty.
-- Build collector daemon: Binance depth API → aggregate → persist parquet
-- Run for 2+ weeks for sufficient microstructure data
-- Then: walk-forward harness for depth imbalance directional signal
-- **Why:** Genuinely novel edge (arxiv 2602.00776). Requires sustained data collection.
+**Status:** COLLECTING (aa393d7e). Daemon running since 2026-05-04 09:40 UTC.
+- ✓ Collector built: `scripts/lob_collector.py` (Binance depth API, 15min interval)
+- ✓ CSV output: `data/cache/lob_nobi/{btcusdt,ethusdt,solusdt}_depth.csv`
+- ✓ NOBI at top-1/5/20 levels + mid price + spread
+- ✗ Need 2+ weeks of data before signal testing
+- ✗ Daemon is background process (not systemd) — restart if killed
+- Next: after 2 weeks, build walk-forward harness for depth imbalance signal
+- **Why:** Genuinely novel edge (arxiv 2602.00776). Data collection now active.
 
 ### Track C Pipeline (MEDIUM — research)
 - ETF flow institutional signal (data publicly available)
