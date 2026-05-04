@@ -31,7 +31,7 @@ const TURTLE_ATR_MULT: f64 = 2.00;
 const ATR_ENTRY_MULT: f64 = 0.00;
 const VOL_LOOKBACK: usize = 96; // updated 2026-05-01 from VL=8 (extensive 100-value sweep, VL=96 plateau 91-100)
 
-const REGIME_ATR_PERIOD: usize = 63; // hyperopt 2026-05-04: AP=63 wins 56/63 pass vs AP=12 at 55/63. +1.197 Sharpe. Smoother equity curve.
+const REGIME_ATR_PERIOD: usize = 17; // hyperopt 2026-05-04: AP=17 wins OOS on Sharpe/Return, AP=63 wins on pass rate. Held-out (4-period pre-2021): AP=17: 4/4 pass, Sharpe 7.715, equity 1.9481x. AP=63: 4/4 pass, Sharpe 5.721, equity 1.3976x. AP=17 dominates all held-out metrics. Updated from AP=63.
 const REGIME_LOOKBACK: usize = 42; // confirmed 2026-05-02: LB∈[5..=200] sweep → LB=42 optimal (Sharpe 6.188, 55/63 pass, 9/9 positive)
 const ATR_RANK_T: f64 = 5.0; // REVERTED 2026-05-04: T=24 was 3rd sequential optimization on this harness. T52 held-out on pre-2021 data: T=24 → 10/22 pass, Sharpe -0.964. T=5 → 14/22 pass, Sharpe +0.664. Same EP=24 pattern. ATR_RANK=24 is a same-harness artifact. T=5 is the correct production default.
 

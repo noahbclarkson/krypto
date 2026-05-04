@@ -7,24 +7,24 @@
 - Fee: 0.10% taker (both sides)
 - VOL_LOOKBACK: 96
 
-## Global Results (56/63 pass, 252-bar windows)
+## Global Results (55/63 pass, 252-bar windows)
 | Metric | Value |
 |--------|-------|
-| Pass Rate | 56/63 (88.9%) |
-| Avg Sharpe | 6.106 |
-| Avg Return | 116.1% |
+| Pass Rate | 55/63 (87.3%) |
+| Avg Sharpe | 6.371 |
+| Avg Return | 150.8% |
 
 ## Per-Universe Summary
 | Universe | Pass | Sharpe | Return% | DD% | Trades |
 |----------|-------|--------|---------|-----|--------|
-| Base5 | 7/7 | 8.80 | 192.6% | 19.7% | 69 |
-| NoDOGE | 7/7 | 9.35 | 83.0% | 18.5% | 66 |
-| Legacy4 | 6/7 | 5.84 | 130.8% | 20.4% | 66 |
-| Legacy5BNB | 7/7 | 6.18 | 131.3% | 17.6% | 60 |
-| OldGuardNoBNB | 4/7 | 2.08 | 104.7% | 25.8% | 65 |
-| LargeCaps5 | 7/7 | 9.12 | 66.8% | 19.9% | 64 |
-| Legacy3 | 6/7 | 4.26 | 67.8% | 24.2% | 70 |
-| LowVolume5 | 6/7 | 5.60 | 221.0% | 29.1% | 70 |
-| OldGuard4 | 6/7 | 3.72 | 47.1% | 27.2% | 69 |
+| Base5 | 7/7 | 8.91 | 198.6% | 23.8% | 75 |
+| NoDOGE | 7/7 | 10.56 | 154.1% | 18.2% | 74 |
+| Legacy4 | 6/7 | 5.02 | 163.8% | 30.9% | 77 |
+| Legacy5BNB | 6/7 | 7.31 | 199.9% | 19.8% | 68 |
+| OldGuardNoBNB | 5/7 | 3.56 | 147.9% | 29.1% | 74 |
+| LargeCaps5 | 7/7 | 10.15 | 143.5% | 18.1% | 73 |
+| Legacy3 | 6/7 | 4.15 | 73.9% | 28.4% | 79 |
+| LowVolume5 | 5/7 | 3.40 | 217.5% | 37.8% | 82 |
+| OldGuard4 | 6/7 | 4.27 | 58.1% | 31.6% | 80 |
 
 *Pass = windows with ≥3 trades AND Sharpe>0 / total windows.*
