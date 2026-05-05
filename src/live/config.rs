@@ -59,9 +59,10 @@ pub const ATR_RANK_THRESHOLD: f64 = 5.0;
 pub const VOL_LOOKBACK: usize = 92;
 
 /// USDT hedge overlay: reduce position size when BTC 21d ATR is above this percentile of its 252d history.
-/// Updated 2026-05-05: extensive AP17/VL92 sweep HEDGE_PCT∈[0..=100] step 1 × 9 universes × 7 WF windows.
-/// PCT=45 wins robustness-first: 58/63 pass, Sharpe 7.079, DD 21.2% vs prior PCT=75 at 57/63, Sharpe 6.874, DD 24.1%.
-/// Evidence: examples/usdt_hedge_threshold_extensive.rs, snapshots/hedge_threshold_extensive_summary.md.
+/// T67 hyperopt 2026-05-05: INERT — full 101-value sweep (PCT∈[0..100] step 1) × 9 universes × 7 WF windows.
+/// ALL values produce IDENTICAL pass (56/63, 88.9%), Sharpe (6.941), and trades (689).
+/// The mechanism never fires regardless of threshold. ATR_RANK already provides regime filtering.
+/// This parameter is dead code; HEDGE_ATR_PCT=0.45 maintained for historical compatibility.
 pub const HEDGE_ATR_PCT: f64 = 0.45;
 
 /// Position-size multiplier when the USDT hedge overlay is active.
