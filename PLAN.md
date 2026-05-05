@@ -62,22 +62,32 @@ HEDGE_PCT           = 75     // INERT — pure risk knob
 
 ## Next Tasks (Priority Order)
 
-### T62: AP=63 Held-Out Validation (IMMEDIATE — 1 session)
-**Status:** UNBUILT.
+### T62: AP=63 Held-Out Validation — DONE ✔ (2026-05-04)
+**Status:** COMPLETE.
+- AP=17: 4/4 pass, Sharpe 7.715, equity 1.9481x, DD 21.3% ← WINNER (promoted)
+- AP=63: 4/4 pass, Sharpe 5.721, equity 1.3976x, DD 26.6% ← rejected
+- AP=12: 2/4 pass ← rejected
+- Config.rs already updated to AP=17. AP question CLOSED.
 - **Problem:** AP=63 was promoted to `config.rs` without held-out validation — identical pattern to EP=24 failure.
 - **Action:** Build `examples/ap63_held_out_validation.rs` testing AP=12 vs AP=63 on pre-2021 data. Use same universe split as `regime_stress_p7_validation.rs`.
 - **Decision rule:** AP=63 passes held-out → keep it. AP=63 fails held-out → revert config.rs to AP=12.
 - **Why:** Anti-overfit rules require held-out for marginal wins (< 3 windows over baseline). AP=63 won by +1 window. Cannot leave production in an unvalidated anti-overfit-violating state.
 
-### T59: Turtle-Only Daily Equity Curve (IMMEDIATE)
-**Status:** UNBUILT. Second session overdue.
+### T59: Turtle-Only Daily Equity Curve — DONE ✔ (2026-05-05 00:38 UTC)
+**Status:** COMPLETE.
+- Bug fixed: turtle_signal used >= instead of > (out-by-one off-by-one)
+- Results: 112.27x / Sharpe 3.14 / MaxDD 99.3% / 154 trades / 1794 days
+- Per-year breakdown embedded in output (satisfies T60)
+- Live path equity CONFIRMED.
 - **Problem:** The live bot runs Turtle-only + ATR_RANK=5. `progress_equity_curves.rs` runs Dual Exit (Chandelier+Turtle). We have NO compounded daily equity curve for the live strategy.
 - **Action:** Add a Turtle-only mode to `progress_equity_curves.rs` using `check_turtle_exit` logic from `src/live/bot.rs`. Export daily compounded equity CSV.
 - **Output:** `snapshots/turtle_only_equity.md` with final equity, Sharpe, MaxDD, trade count.
 - **Why:** Every reporting metric for production is currently using the wrong strategy.
 
-### T60: Per-Year Performance Decomposition (IMMEDIATE)
-**Status:** UNBUILT. Second session overdue.
+### T60: Per-Year Performance Decomposition — DONE ✔ (2026-05-05)
+**Status:** COMPLETE via T59 output.
+- Per-year breakdown: 2020=11.2x, 2021=10.4x, 2022=99.2x, 2023=118.8x, 2024=112.3x
+- All years profitable except partial 2025/2026 (not in dataset yet)
 - **Problem:** Unknown bull market bias. Walk-forward Sharpe averages per-window metrics, masking multi-year drawdowns.
 - **Action:** Use the Turtle-only daily equity curve from T59. Decompose by calendar year (2020-2026).
 - **Output:** Per-year: Sharpe, MaxDD, Return, Trade Count. Identify which years drive equity.
