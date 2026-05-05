@@ -28,7 +28,7 @@ const TURTLE_ATR_MULT: f64 = 2.00;
 const ATR_ENTRY_MULT: f64 = 0.00;
 const HOLD_MAX: usize = 12;
 const POSITION_CAP: usize = 3;
-const VOL_LOOKBACK: usize = 96;
+const VOL_LOOKBACK: usize = 92; // 2026-05-05 dense AP17 sweep robust winner
 const TAKER_FEE: f64 = 0.001;
 
 // Regime filter: AP=17 confirmed from held-out 2026-05-04; T=5 production

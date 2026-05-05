@@ -52,11 +52,11 @@ pub const REGIME_LOOKBACK: usize = 42; // hyperopt 2026-05-02: EXTENSIVE sweep L
 pub const ATR_RANK_THRESHOLD: f64 = 5.0;
 
 /// Volume lookback window for dollar-volume ranking for top-N symbol selection.
-/// Updated 2026-05-03: live_compatible_wf.rs uses VL=96 and matches live bot exactly.
-/// 100-value sweep (VL=1..=100 step 1) × 9 universes × 7 WF windows: VL=96 plateau (91-100)
-/// confirmed as global winner: 54/63 pass, Sharpe 7.65, Base5 aggregate 251.8x.
-/// Prior conservative default VL=8 superseded. See memory/hyperopt-2026-05-01-vol-lookback.md.
-pub const VOL_LOOKBACK: usize = 96;
+/// Updated 2026-05-05: dense AP17 live-compatible sweep VL∈[1..=200] step 1 × 9 universes × 7 WF windows.
+/// VL=92 is the robust winner by pass-rate-first ranking: 54/63 pass (85.7%), Sharpe 3.794, DD 27.9%.
+/// VL=96 remains in the same plateau (54/63 pass, Sharpe 3.550), but VL=92 is slightly stronger and no less robust.
+/// Evidence: examples/vl_dense_sweep.rs, snapshots/vl_dense_ap17_summary.csv, memory/hyperopt-2026-05-05.md.
+pub const VOL_LOOKBACK: usize = 92;
 
 /// Configuration for live trading bot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
