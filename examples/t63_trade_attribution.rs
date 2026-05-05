@@ -1,12 +1,10 @@
-//! T63: Per-Bar / Per-Trade PnL Attribution
+//! T63: Per-Trade PnL Attribution
 //!
-//! Mission: Given Turtle-only live path equity, answer:
-//!   (a) Is equity concentrated in few mega-trades or distributed across many?
-//!   (b) What % of gross equity comes from top-5 / top-10 / bottom-half trades?
-//!   (c) Win rate, avg win, avg loss, profit factor
-//!   (d) How many consecutive losing bars before 50% equity loss?
+//! Asks: Is Turtle edge from few giant wins (fragile) or many small edges (robust)?
+//! Also measures: fee impact, win/loss distribution, exit-type PnL, equity concentration.
 //!
-//! This is the most important trust question for the strategy.
+//! Matches `turtle_only_equity.rs` exactly — bar-by-bar, dollar-volume ranking,
+//! REGIME_ATR_PERIOD=17, REGIME_LOOKBACK=42, ATR_RANK_T=5.0, VOL_LOOKBACK=92.
 
 use anyhow::Result;
 use krypto::data::loader::DataLoader;
@@ -15,31 +13,20 @@ use std::fs::File;
 use std::io::Write;
 
 const CANDLES: u32 = 3000;
-const TRAIN_BARS: usize = 252;
-const TEST_BARS: usize = 252;
-const HOLD_MAX: usize = 12;
-const TAKER_FEE: f64 = 0.001;
-const POSITION_CAP: usize = 3;
-
+const WARMUP_BARS: usize = 300;
 const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
-const ATR_ENTRY_MULT: f64 = 0.00;
-const VOL_LOOKBACK: usize = 96;
-const REGIME_ATR_P: usize = 17;
+const HOLD_MAX: usize = 12;
+const POSITION_CAP: usize = 3;
+const VOL_LOOKBACK: usize = 92;
+const REGIME_ATR_PERIOD: usize = 17;
 const REGIME_LOOKBACK: usize = 42;
 const ATR_RANK_T: f64 = 5.0;
+const TAKER_FEE: f64 = 0.001;
 
-const UNIVERSES: &[(&str, &[&str])] = &[
-    ("Base5",        &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]),
-    ("NoDOGE",       &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT"]),
-    ("Legacy4",      &["BTCUSDT","ETHUSDT","XRPUSDT","LTCUSDT","EOSUSDT"]),
-    ("Legacy5BNB",   &["BTCUSDT","ETHUSDT","XRPUSDT","LTCUSDT","BNBUSDT","EOSUSDT"]),
-    ("OldGuardNoBNB",&["BTCUSDT","ETHUSDT","XRPUSDT","LTCUSDT","EOSUSDT","BCHUSDT"]),
-    ("LargeCaps5",   &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","BNBUSDT","ADAUSDT"]),
-    ("Legacy3",      &["BTCUSDT","XRPUSDT","LTCUSDT","EOSUSDT"]),
-    ("LowVolume5",   &["XRPUSDT","LTCUSDT","EOSUSDT","BCHUSDT","ADAUSDT"]),
-    ("OldGuard4",    &["BTCUSDT","XRPUSDT","LTCUSDT","EOSUSDT","BCHUSDT"]),
+const SYMBOLS: [&str; 6] = [
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT",
 ];
 
 struct SymData {
@@ -49,184 +36,259 @@ struct SymData {
     vol: Vec<f64>,
 }
 
+fn true_range(h: f64, l: f64, pc: f64) -> f64 {
+    (h - l).max((h - pc).abs()).max((l - pc).abs())
+}
+
 fn atr_at(high: &[f64], low: &[f64], close: &[f64], period: usize, idx: usize) -> f64 {
-    if idx < period { return 0.0; }
-    let mut trs = Vec::with_capacity(period);
-    for i in (idx + 1 - period)..=idx {
-        let h = high[i];
-        let l = low[i];
-        let c0 = close[i.saturating_sub(1)];
-        trs.push((h - l).max((h - c0).abs()).max((l - c0).abs()));
+    if idx < period {
+        return 0.0;
     }
-    trs.iter().sum::<f64>() / period as f64
+    let mut sum = 0.0;
+    for i in (idx + 1 - period)..=idx {
+        sum += true_range(high[i], low[i], close[i.saturating_sub(1)]);
+    }
+    sum / period as f64
 }
 
 fn rolling_avg(vals: &[f64], window: usize, idx: usize) -> f64 {
-    if idx < window { return 0.0; }
-    vals[idx.saturating_sub(window - 1)..=idx].iter().sum::<f64>() / window as f64
+    if idx < window {
+        return 0.0;
+    }
+    vals[idx + 1 - window..=idx].iter().sum::<f64>() / window as f64
 }
 
-fn turtle_signal(close: &[f64], high: &[f64], low: &[f64], entry_period: usize, atr_period: usize, atr_mult: f64, idx: usize) -> bool {
-    if idx < entry_period { return false; }
+fn btc_atr_pct(
+    btc_close: &[f64],
+    btc_high: &[f64],
+    btc_low: &[f64],
+    period: usize,
+    lookback: usize,
+    idx: usize,
+) -> f64 {
+    if idx < lookback + period {
+        return 50.0;
+    }
+    let curr = atr_at(btc_high, btc_low, btc_close, period, idx);
+    if curr <= 0.0 {
+        return 50.0;
+    }
+    let start = idx + 1 - lookback - period;
+    let end = idx + 1 - period;
+    if end <= start {
+        return 50.0;
+    }
+    let below = (start..=end)
+        .filter(|&i| atr_at(btc_high, btc_low, btc_close, period, i) < curr)
+        .count();
+    below as f64 / (end - start + 1) as f64 * 100.0
+}
+
+fn turtle_signal(close: &[f64], entry_period: usize, idx: usize) -> bool {
+    if idx < entry_period {
+        return false;
+    }
     let start = idx - entry_period;
-    let max_close = close[start..idx].iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
-    if close[idx] > max_close {
-        if atr_mult > 0.0 {
-            let atr = atr_at(high, low, close, atr_period, idx);
-            if close[idx] < max_close + atr * atr_mult { return false; }
-        }
-        true
-    } else { false }
-}
-
-fn btc_atr_pct(btc_data: &SymData, ap: usize, lb: usize, idx: usize) -> f64 {
-    let warmup = ap.max(lb) + 1;
-    if idx < warmup { return 50.0; }
-    let curr_atr = atr_at(&btc_data.high, &btc_data.low, &btc_data.close, ap, idx);
-    let mut hist = Vec::with_capacity(lb);
-    for j in (idx + 1 - lb)..=idx {
-        if j >= ap {
-            hist.push(atr_at(&btc_data.high, &btc_data.low, &btc_data.close, ap, j));
+    let mut max_close = f64::NEG_INFINITY;
+    for i in start..idx {
+        if let Some(&c) = close.get(i) {
+            max_close = max_close.max(c);
         }
     }
-    if hist.is_empty() { return 50.0; }
-    let count = hist.iter().filter(|&&x| x < curr_atr).count();
-    (count as f64 / hist.len() as f64) * 100.0
+    close.get(idx).copied().is_some_and(|c| c > max_close)
 }
 
-#[derive(Default)]
-struct TradeStats {
-    total_trades: usize,
-    winning_trades: usize,
-    losing_trades: usize,
-    gross_pnl: f64,
-    gross_wins: f64,
-    gross_losses: f64,
-    total_fees: f64,
-    all_returns: Vec<f64>,
-    equity_per_trade: Vec<f64>,
-    bars_in_winners: usize,
-    bars_in_losers: usize,
-    max_consecutive_losing_bars: usize,
-    equity_by_trade_rank: Vec<f64>, // equity contribution by trade rank
+// ── Trade record ─────────────────────────────────────────────────────────────────
+
+#[derive(Clone)]
+struct Trade {
+    symbol: String,
+    entry_bar: usize,
+    exit_bar: usize,
+    bars_held: usize,
+    entry_price: f64,
+    exit_price: f64,
+    gross_pct: f64,
+    net_pct: f64,
+    fee_pct: f64,
+    by_turtle: bool,
+    by_maxhold: bool,
 }
 
-fn run_sim_tracked(
-    sym_data: &HashMap<String, SymData>,
-    symbols: &[String],
-    test_start: usize,
-    test_end: usize,
-    equity_curve: &mut Vec<f64>,
-) -> TradeStats {
-    let mut stats = TradeStats::default();
-    let mut equity = 1.0;
-    let mut bar = test_start;
-    let mut trade_equity_contrib: Vec<f64> = Vec::new();
-    let mut peak = 1.0;
-    let mut losing_bar_streak = 0usize;
-    let mut max_losing_streak = 0usize;
-    let mut current_losing_streak = 0usize;
+// ── Main ─────────────────────────────────────────────────────────────────────
 
-    while bar + 2 < test_end {
-        let btc = sym_data.get("BTCUSDT");
-        let btc_pct = if let Some(b) = btc {
-            btc_atr_pct(b, REGIME_ATR_P, REGIME_LOOKBACK, bar)
-        } else {
-            50.0
-        };
+#[tokio::main]
+async fn main() -> Result<()> {
+    println!("T63: Per-Trade PnL Attribution\n");
 
+    let loader = DataLoader::new(None, None);
+    let mut sym_data: HashMap<String, SymData> = HashMap::new();
+    let mut min_len = usize::MAX;
+
+    for &sym in &SYMBOLS {
+        print!("  Loading {}...", sym);
+        let df = loader.fetch_data(sym, "1d", CANDLES).await?;
+        let close: Vec<f64> = df.column("close")?.f64()?.into_no_null_iter().collect();
+        let high: Vec<f64> = df.column("high")?.f64()?.into_no_null_iter().collect();
+        let low: Vec<f64> = df.column("low")?.f64()?.into_no_null_iter().collect();
+        let vol: Vec<f64> = df.column("volume")?.f64()?.into_no_null_iter().collect();
+        println!(" {} bars", close.len());
+        let len = close.len();
+        min_len = min_len.min(len);
+        sym_data.insert(
+            sym.to_string(),
+            SymData {
+                close,
+                high,
+                low,
+                vol,
+            },
+        );
+    }
+
+    // BTC for regime filter
+    let btc_df = loader.fetch_data("BTCUSDT", "1d", CANDLES).await?;
+    let btc_close: Vec<f64> = btc_df.column("close")?.f64()?.into_no_null_iter().collect();
+    let btc_high: Vec<f64> = btc_df.column("high")?.f64()?.into_no_null_iter().collect();
+    let btc_low: Vec<f64> = btc_df.column("low")?.f64()?.into_no_null_iter().collect();
+
+    let n = min_len;
+    let warmup = WARMUP_BARS;
+    let symbols: Vec<String> = SYMBOLS.iter().map(|s| s.to_string()).collect();
+
+    let mut trades: Vec<Trade> = Vec::new();
+    let mut bar = warmup;
+
+    while bar + 2 < n {
+        // Regime entry gate
+        let btc_pct = btc_atr_pct(
+            &btc_close,
+            &btc_high,
+            &btc_low,
+            REGIME_ATR_PERIOD,
+            REGIME_LOOKBACK,
+            bar,
+        );
         if btc_pct < ATR_RANK_T {
-            equity_curve.push(equity);
             bar += 1;
             continue;
         }
 
+        // Dollar-volume ranking
         let mut scores: Vec<(&str, f64)> = Vec::new();
-        for sym in symbols {
-            if let Some(sd) = sym_data.get(sym) {
-                if bar >= sd.close.len() { continue; }
+        for sym in &symbols {
+            let sym_str: &str = sym;
+            if let Some(sd) = sym_data.get(sym_str) {
+                if bar >= sd.close.len() {
+                    continue;
+                }
                 let rol_vol = rolling_avg(&sd.vol, VOL_LOOKBACK, bar);
                 let price = sd.close.get(bar).copied().unwrap_or(0.0);
                 let dv = rol_vol * price;
-                scores.push((sym.as_str(), if dv.is_finite() && dv > 0.0 { dv } else { 0.0 }));
+                scores.push((
+                    sym.as_str(),
+                    if dv.is_finite() && dv > 0.0 { dv } else { 0.0 },
+                ));
             }
         }
         scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-        let top_syms: Vec<String> = scores.into_iter().take(POSITION_CAP).map(|(s, _)| s.to_string()).collect();
+        let top_syms: Vec<String> = scores
+            .into_iter()
+            .take(POSITION_CAP)
+            .map(|(s, _)| s.to_string())
+            .collect();
 
         if top_syms.is_empty() {
-            equity_curve.push(equity);
             bar += 1;
             continue;
         }
 
+        // Try Turtle entry
         let mut entered = false;
         for sym in &top_syms {
-            if let Some(sd) = sym_data.get(sym) {
+            let sym_str: &str = sym;
+            if let Some(sd) = sym_data.get(sym_str) {
                 if bar >= TURTLE_ENTRY + 1 && bar < sd.close.len() {
-                    if turtle_signal(&sd.close, &sd.high, &sd.low, TURTLE_ENTRY, TURTLE_ATR_PERIOD, ATR_ENTRY_MULT, bar) {
+                    if turtle_signal(&sd.close, TURTLE_ENTRY, bar) {
                         let entry_px = sd.close[bar];
-                        let entry_fee = entry_px * TAKER_FEE;
-                        let exit_fee: f64;
                         let entry_bar_next = bar + 1;
-                        let n = sd.close.len();
+                        let n_sd = sd.close.len();
 
+                        // Turtle ATR trailing stop
                         let mut highest_high = sd.high[entry_bar_next];
-                        let max_bar = (entry_bar_next + HOLD_MAX).min(n.saturating_sub(1));
+                        let max_bar = (entry_bar_next + HOLD_MAX).min(n_sd.saturating_sub(1));
                         let mut exit_bar = max_bar;
 
-                        let mut atr_buf: VecDeque<f64> = VecDeque::new();
+                        // Seed ATR buffer from bars before entry
+                        let warm_start = entry_bar_next.saturating_sub(TURTLE_ATR_PERIOD);
+                        let mut atr_buf: VecDeque<f64> = VecDeque::with_capacity(TURTLE_ATR_PERIOD);
+                        for b in warm_start..entry_bar_next {
+                            if b > 0 {
+                                let c0 = sd.close[b.saturating_sub(1)];
+                                let tr = true_range(sd.high[b], sd.low[b], c0);
+                                atr_buf.push_back(tr);
+                            }
+                        }
 
+                        let mut exited_turtle = false;
                         for b in entry_bar_next..=max_bar {
-                            if sd.high[b] > highest_high { highest_high = sd.high[b]; }
+                            if sd.high[b] > highest_high {
+                                highest_high = sd.high[b];
+                            }
                             let c0 = sd.close[b.saturating_sub(1)];
-                            let tr = (sd.high[b] - sd.low[b]).max((sd.high[b] - c0).abs()).max((sd.low[b] - c0).abs());
+                            let tr = true_range(sd.high[b], sd.low[b], c0);
                             atr_buf.push_back(tr);
-                            if atr_buf.len() > TURTLE_ATR_PERIOD { atr_buf.pop_front(); }
+                            if atr_buf.len() > TURTLE_ATR_PERIOD {
+                                atr_buf.pop_front();
+                            }
 
+                            // Turtle ATR exit (when buffer warm)
                             if atr_buf.len() == TURTLE_ATR_PERIOD {
-                                let atr = atr_buf.iter().sum::<f64>() / TURTLE_ATR_PERIOD as f64;
+                                let atr_sum: f64 = atr_buf.iter().sum();
+                                let atr = atr_sum / TURTLE_ATR_PERIOD as f64;
                                 let turtle_stop = highest_high - TURTLE_ATR_MULT * atr;
                                 if sd.low[b] <= turtle_stop {
                                     exit_bar = b;
+                                    exited_turtle = true;
                                     break;
                                 }
+                            }
+
+                            // HOLD_MAX enforced independently of ATR warmup
+                            if b >= entry_bar_next + HOLD_MAX {
+                                exit_bar = b;
+                                break;
                             }
                         }
 
                         if let Some(&exit_px) = sd.close.get(exit_bar) {
-                            let exit = exit_px * (1.0 - TAKER_FEE);
-                            exit_fee = exit_px * TAKER_FEE;
-                            let pct_ret = exit / (entry_px * (1.0 + TAKER_FEE)) - 1.0;
-                            let bars_held = (exit_bar as i64 - entry_bar_next as i64).max(1) as usize;
+                            let gross = (exit_px / entry_px - 1.0) * 100.0;
+                            let net = ((exit_px * (1.0 - TAKER_FEE))
+                                / (entry_px * (1.0 + TAKER_FEE))
+                                - 1.0)
+                                * 100.0;
+                            let fee = gross - net;
+                            let bars_held =
+                                (exit_bar as i64 - entry_bar_next as i64).max(1) as usize;
 
-                            stats.total_trades += 1;
-                            stats.total_fees += entry_fee + exit_fee;
-                            stats.all_returns.push(pct_ret);
+                            trades.push(Trade {
+                                symbol: sym.to_string(),
+                                entry_bar: entry_bar_next,
+                                exit_bar,
+                                bars_held,
+                                entry_price: entry_px,
+                                exit_price: exit_px,
+                                gross_pct: gross,
+                                net_pct: net,
+                                fee_pct: fee,
+                                by_turtle: exited_turtle,
+                                by_maxhold: !exited_turtle,
+                            });
 
-                            if pct_ret > 0.0 {
-                                stats.winning_trades += 1;
-                                stats.gross_wins += pct_ret;
-                                stats.bars_in_winners += bars_held;
-                                current_losing_streak = 0;
-                            } else {
-                                stats.losing_trades += 1;
-                                stats.gross_losses += pct_ret.abs();
-                                stats.bars_in_losers += bars_held;
-                                current_losing_streak += bars_held;
-                                if current_losing_streak > max_losing_streak {
-                                    max_losing_streak = current_losing_streak;
-                                }
+                            bar = exit_bar;
+                            if bar >= n {
+                                bar = n.saturating_sub(1);
                             }
-
-                            let prev_equity = equity;
-                            equity *= 1.0 + pct_ret;
-                            trade_equity_contrib.push(equity / prev_equity - 1.0);
-                            equity_curve.push(equity);
-
-                            if equity > peak { peak = equity; }
-
-                            bar = exit_bar + 1;
                             entered = true;
                             break;
                         }
@@ -236,271 +298,264 @@ fn run_sim_tracked(
         }
 
         if !entered {
-            equity_curve.push(equity);
             bar += 1;
         }
     }
 
-    stats.max_consecutive_losing_bars = max_losing_streak;
+    // ── ANALYSIS ─────────────────────────────────────────────────────────────────
 
-    // Compute equity contribution per trade rank
-    let mut with_ranking: Vec<(usize, f64)> = trade_equity_contrib.into_iter().enumerate().collect();
-    with_ranking.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-    let total_contrib: f64 = with_ranking.iter().map(|(_, c)| c.abs()).sum();
-    let mut running_pct = 0.0;
-    stats.equity_by_trade_rank = with_ranking.iter().map(|(rank, &c)| {
-        running_pct += c.abs() / total_contrib;
-        running_pct
-    }).collect();
+    let n_t = trades.len();
+    println!("");
+    println!("T63: Per-Trade PnL Attribution Results");
+    println!("{}", "=".repeat(55));
 
-    stats
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    println!("=== T63: Per-Trade PnL Attribution ===\");
-    println!();
-
-    let loader = DataLoader::new(None, None);
-    let mut sym_data: HashMap<String, SymData> = HashMap::new();
-
-    let all_symbols = UNIVERSES.iter().flat_map(|(_, s)| s.iter().copied()).collect::<std::collections::HashSet<_>>();
-    for sym in all_symbols {
-        let df = loader.fetch_data(sym, "1d", CANDLES).await?;
-        let close = df.column("close")?.f64()?.into_no_null_iter().collect::<Vec<_>>();
-        let high = df.column("high")?.f64()?.into_no_null_iter().collect::<Vec<_>>();
-        let low = df.column("low")?.f64()?.into_no_null_iter().collect::<Vec<_>>();
-        let vol = df.column("volume")?.f64()?.into_no_null_iter().collect::<Vec<_>>();
-        sym_data.insert(sym.to_string(), SymData { close, high, low, vol });
+    if n_t == 0 {
+        println!("\nNo trades generated. Check data and signal logic.");
+        return Ok(());
     }
 
-    let mut all_trade_stats: Vec<TradeStats> = Vec::new();
-    let mut all_equity_curves: Vec<Vec<f64>> = Vec::new();
-    let mut universe_names: Vec<String> = Vec::new();
-    let mut window_ids: Vec<String> = Vec::new();
+    let gross_sum: f64 = trades.iter().map(|t| t.gross_pct).sum();
+    let fee_sum: f64 = trades.iter().map(|t| t.fee_pct).sum();
+    let net_sum: f64 = trades.iter().map(|t| t.net_pct).sum();
+    let full_equity: f64 = trades
+        .iter()
+        .fold(1.0, |eq, t| eq * (1.0 + t.net_pct / 100.0));
+    let log_total: f64 = trades
+        .iter()
+        .map(|t| (1.0 + t.net_pct / 100.0).max(1e-12).ln())
+        .sum();
 
-    let min_len = sym_data.values().map(|s| s.close.len()).min().unwrap_or(0);
-    let windows = (min_len.saturating_sub(TRAIN_BARS)) / TEST_BARS;
+    println!("\nTotal trades: {}", n_t);
+    println!("Compounded equity: {:.2}x", full_equity);
+    println!("Gross PnL:   {:+.1}%", gross_sum);
+    println!("Fees:         {:.1}%", fee_sum);
+    println!("Net PnL:      {:+.1}%", net_sum);
+    if gross_sum != 0.0 {
+        println!("Fees/gross:   {:.1}%", fee_sum / gross_sum.abs() * 100.0);
+    }
 
-    let mut detail_file = File::create("snapshots/t63_trade_detail.csv")?;
-    writeln!(detail_file, "universe,window,trade_num,return_pct,bars_held,winners_after,equity_cumulative")?;
+    let winners = trades.iter().filter(|t| t.net_pct > 0.0).count();
+    let losers = n_t - winners;
+    println!(
+        "\nWin rate:  {}/{} ({:.1}%)",
+        winners,
+        n_t,
+        winners as f64 / n_t as f64 * 100.0
+    );
+    let avg_win = trades
+        .iter()
+        .filter(|t| t.net_pct > 0.0)
+        .map(|t| t.net_pct)
+        .sum::<f64>()
+        / winners.max(1) as f64;
+    let avg_loss = trades
+        .iter()
+        .filter(|t| t.net_pct <= 0.0)
+        .map(|t| t.net_pct)
+        .sum::<f64>()
+        / losers.max(1) as f64;
+    println!("Avg win:   {:+.2}%", avg_win);
+    println!("Avg loss:  {:+.2}%", avg_loss);
+    println!("W/L ratio: {:.2}x", avg_win / avg_loss.abs());
 
-    let mut agg_win_returns: Vec<f64> = Vec::new();
-    let mut agg_loss_returns: Vec<f64> = Vec::new();
-    let mut agg_all_returns: Vec<f64> = Vec::new();
-    let mut total_trades = 0usize;
-    let mut total_wins = 0usize;
-    let mut total_loss = 0usize;
-    let mut total_fees = 0.0;
-    let mut gross_wins_total = 0.0;
-    let mut gross_losses_total = 0.0;
-    let mut total_bars_winners = 0usize;
-    let mut total_bars_losers = 0usize;
-    let mut max_streak = 0usize;
-    let mut max_eq_from_one_trade = 0.0f64;
-    let mut all_trade_eq_contribs: Vec<f64> = Vec::new();
+    // Equity concentration
+    let mut sorted = trades.clone();
+    sorted.sort_by(|a, b| b.net_pct.partial_cmp(&a.net_pct).unwrap());
+    println!("\n--- Equity Concentration ---");
+    for top in [1, 3, 5, 10, 20, 30] {
+        if top > n_t {
+            break;
+        }
+        let top_sum: f64 = sorted.iter().take(top).map(|t| t.net_pct).sum();
+        let top_log: f64 = sorted
+            .iter()
+            .take(top)
+            .map(|t| (1.0 + t.net_pct / 100.0).max(1e-12).ln())
+            .sum();
+        let share = if log_total.abs() > 1e-12 {
+            top_log / log_total * 100.0
+        } else {
+            0.0
+        };
+        let equity_without = (log_total - top_log).exp();
+        println!(
+            "  Top-{:2}: {:+8.1}% additive | {:5.1}% log-share | equity w/o top = {:7.2}x",
+            top, top_sum, share, equity_without
+        );
+    }
 
-    for (uni_name, u_syms) in UNIVERSES {
-        let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
-        for w in 0..windows {
-            let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
-            let end = start + TEST_BARS + TRAIN_BARS;
-            let test_start = start + TRAIN_BARS;
+    // Loss concentration
+    println!("\n--- Loss Concentration ---");
+    for bot in [1, 3, 5, 10] {
+        if bot > n_t {
+            break;
+        }
+        let bot_sum: f64 = sorted.iter().rev().take(bot).map(|t| t.net_pct).sum();
+        println!("  Bot-{:2}: {:+8.1}%", bot, bot_sum);
+    }
 
-            let mut equity_curve = Vec::new();
-            let stats = run_sim_tracked(&sym_data, &syms, test_start, end, &mut equity_curve);
-            all_equity_curves.push(equity_curve);
-            universe_names.push(uni_name.to_string());
-            window_ids.push(format!("{}_{}", uni_name, w));
-
-            if stats.total_trades > 0 {
-                for (ti, &ret) in stats.all_returns.iter().enumerate() {
-                    writeln!(detail_file, "{},{},{},{:.4f},{},{},{:.6}",
-                        uni_name, w, ti, ret,
-                        if ret > 0.0 { stats.winning_trades } else { 0 },
-                        1.0 + stats.all_returns[..=ti].iter().map(|&x| x).sum::<f64>())?;
-                }
-            }
-
-            total_trades += stats.total_trades;
-            total_wins += stats.winning_trades;
-            total_loss += stats.losing_trades;
-            total_fees += stats.total_fees;
-            gross_wins_total += stats.gross_wins;
-            gross_losses_total += stats.gross_losses;
-            total_bars_winners += stats.bars_in_winners;
-            total_bars_losers += stats.bars_in_losers;
-            if stats.max_consecutive_losing_bars > max_streak {
-                max_streak = stats.max_consecutive_losing_bars;
-            }
-            agg_win_returns.extend(stats.all_returns.iter().filter(|&&r| r > 0.0).copied());
-            agg_loss_returns.extend(stats.all_returns.iter().filter(|&&r| r <= 0.0).copied());
-            agg_all_returns.extend(stats.all_returns.iter().copied());
-            all_trade_eq_contribs.extend(stats.equity_by_trade_rank.iter().copied());
-            all_trade_stats.push(stats);
+    // Distribution
+    println!("\n--- PnL Distribution ---");
+    let labels = [
+        ">20%", "10-20%", "5-10%", "2-5%", "0-2%", "-2-0%", "-5--2%", "-10--5%", "-20--10%",
+        "<-20%",
+    ];
+    let mut cnt = [0usize; 10];
+    let mut sum = [0.0_f64; 10];
+    for t in &trades {
+        let p = t.net_pct;
+        let i = match p {
+            p if p > 20.0 => 0,
+            p if p > 10.0 => 1,
+            p if p > 5.0 => 2,
+            p if p > 2.0 => 3,
+            p if p > 0.0 => 4,
+            p if p > -2.0 => 5,
+            p if p > -5.0 => 6,
+            p if p > -10.0 => 7,
+            p if p > -20.0 => 8,
+            _ => 9,
+        };
+        cnt[i] += 1;
+        sum[i] += p;
+    }
+    println!(
+        "{:>10}  {:>5}  {:>10}  {:>9}",
+        "Bucket", "N", "Net%", "Avg%"
+    );
+    for i in 0..10 {
+        if cnt[i] > 0 {
+            println!(
+                "{:>10}  {:>5}  {:>+9.1}%  {:>+8.2}%",
+                labels[i],
+                cnt[i],
+                sum[i],
+                sum[i] / cnt[i] as f64
+            );
         }
     }
 
-    // ----- AGGREGATE STATS                                                                                                                                                    
-    let win_rate = total_trades as f64 / (total_wins.max(1) as f64);
-    let avg_win = if total_wins > 0 { gross_wins_total / total_wins as f64 } else { 0.0 };
-    let avg_loss = if total_loss > 0 { gross_losses_total / total_loss as f64 } else { 0.0 };
-    let profit_factor = if gross_losses_total > 0.0 { gross_wins_total / gross_losses_total } else { 0.0 };
-    let avg_return = if total_trades > 0 { agg_all_returns.iter().sum::<f64>() / total_trades as f64 } else { 0.0 };
-    let avg_bars_winner = if total_wins > 0 { total_bars_winners as f64 / total_wins as f64 } else { 0.0 };
-    let avg_bars_loser = if total_loss > 0 { total_bars_losers as f64 / total_loss as f64 } else { 0.0 };
-
-    // Equity concentration: sort trades by return contribution
-    let mut sorted_contribs = all_trade_eq_contribs.clone();
-    sorted_contribs.sort_by(|a, b| b.partial_cmp(a).unwrap());
-    let top5_pct = sorted_contribs.iter().take(5).sum::<f64>() * 100.0;
-    let top10_pct = sorted_contribs.iter().take(10).sum::<f64>() * 100.0;
-    let top20_pct = sorted_contribs.iter().take((total_trades / 5).max(1)).sum::<f64>() * 100.0;
-    let bottom50_pct: f64 = sorted_contribs.iter().rev().take(total_trades / 2).sum::<f64>() * 100.0;
-
-    // Cumulative equity curve
-    let portfolio_equity: Vec<f64> = {
-        let n = all_equity_curves[0].len();
-        let mut port = vec![1.0; n];
-        for curve in &all_equity_curves {
-            for (i, &v) in curve.iter().enumerate() {
-                if i < n {
-                    port[i] *= v;
-                }
-            }
-        }
-        port
+    // Exit types
+    let t_exit = trades.iter().filter(|t| t.by_turtle).count();
+    let h_exit = trades.iter().filter(|t| t.by_maxhold).count();
+    let e_exit = n_t - t_exit - h_exit;
+    let t_net: f64 = trades
+        .iter()
+        .filter(|t| t.by_turtle)
+        .map(|t| t.net_pct)
+        .sum();
+    let h_net: f64 = trades
+        .iter()
+        .filter(|t| t.by_maxhold)
+        .map(|t| t.net_pct)
+        .sum();
+    let e_net: f64 = trades
+        .iter()
+        .filter(|t| !t.by_turtle && !t.by_maxhold)
+        .map(|t| t.net_pct)
+        .sum();
+    println!("\n--- Exit Types ---");
+    let fmt = |cnt, net, label| {
+        let avg = if cnt > 0 { net / cnt as f64 } else { 0.0 };
+        println!(
+            "  {}: {:4} ({:5.1}%)  net {:+9.1}%  avg {:+.2}%/trade",
+            label,
+            cnt,
+            cnt as f64 / n_t as f64 * 100.0,
+            net,
+            avg
+        );
     };
+    fmt(t_exit, t_net, "Turtle ATR");
+    fmt(h_exit, h_net, "Max-hold");
+    fmt(e_exit, e_net, "End-data");
 
-    let final_equity = portfolio_equity.last().copied().unwrap_or(1.0);
-    let peak = portfolio_equity.iter().fold(1.0f64, |a, &b| a.max(b));
-    let max_dd = {
-        let mut mdd = 0.0;
-        let mut p = 1.0;
-        for &v in &portfolio_equity {
-            if v > p { p = v; }
-            let dd = 1.0 - v / p;
-            if dd > mdd { mdd = dd; }
+    // Consecutive losers / losing bars in chronological order
+    let mut max_trade_streak = 0usize;
+    let mut cur_trade_streak = 0usize;
+    let mut max_losing_bars = 0usize;
+    let mut cur_losing_bars = 0usize;
+    for t in &trades {
+        if t.net_pct < 0.0 {
+            cur_trade_streak += 1;
+            max_trade_streak = max_trade_streak.max(cur_trade_streak);
+            cur_losing_bars += t.bars_held;
+            max_losing_bars = max_losing_bars.max(cur_losing_bars);
+        } else {
+            cur_trade_streak = 0;
+            cur_losing_bars = 0;
         }
-        mdd * 100.0
-    };
+    }
+    println!("\nMax consecutive losing trades: {}", max_trade_streak);
+    println!(
+        "Max consecutive attributed losing bars: {}",
+        max_losing_bars
+    );
 
-    // Annualised Sharpe from daily returns
-    let daily_rets: Vec<f64> = portfolio_equity.windows(2).map(|w| w[1] / w[0] - 1.0).collect();
-    let mean_ret = if !daily_rets.is_empty() { daily_rets.iter().sum::<f64>() / daily_rets.len() as f64 } else { 0.0 };
-    let var_ret = if !daily_rets.is_empty() { daily_rets.iter().map(|x| (x - mean_ret).powi(2)).sum::<f64>() / daily_rets.len() as f64 } else { 0.0 };
-    let sharpe = if var_ret > 0.0 { (mean_ret / var_ret.sqrt()) * (365.0_f64).sqrt() } else { 0.0 };
-
-    // ----- PRINT REPORT                                                                                                                                                                
-    println!("=== T63: Per-Trade PnL Attribution ===");
-    println!();
-    println!("OVERALL ({} universes x {} windows, {} trades)", UNIVERSES.len(), windows, total_trades);
-    println!("{:<30} {:>12.3}", "Portfolio Final Equity:", final_equity);
-    println!("{:<30} {:>12.3}", "Portfolio Sharpe:", sharpe);
-    println!("{:<30} {:>12.2}%", "Max Drawdown:", max_dd);
-    println!();
-    println!("TRADE DISTRIBUTION");
-    println!("{:<30} {:>10} ({:.1}% of {} total)",
-        "Total Trades:", total_trades, 100.0, total_trades);
-    println!("{:<30} {:>10} ({:.1}%)", "Winning trades:", total_wins, total_wins as f64 / total_trades.max(1) as f64 * 100.0);
-    println!("{:<30} {:>10} ({:.1}%)", "Losing trades:", total_loss, total_loss as f64 / total_trades.max(1) as f64 * 100.0);
-    println!("{:<30} {:>10.4}%", "Avg Return per trade:", avg_return * 100.0);
-    println!("{:<30} {:>10.4}%", "Avg Winning trade:", avg_win * 100.0);
-    println!("{:<30} {:>10.4}%", "Avg Losing trade:", -(avg_loss * 100.0));
-    println!("{:<30} {:>10.4}", "Profit Factor:", profit_factor);
-    println!("{:<30} {:>10.1} bars", "Avg bars in winners:", avg_bars_winner);
-    println!("{:<30} {:>10.1} bars", "Avg bars in losers:", avg_bars_loser);
-    println!("{:<30} {:>10.4}%", "Total fees paid:", total_fees * 100.0);
-    println!();
-    println!("EQUITY CONCENTRATION");
-    println!("{:<30} {:>10.2}%", "Top-5 trades:", top5_pct);
-    println!("{:<30} {:>10.2}%", "Top-10 trades:", top10_pct);
-    println!("{:<30} {:>10.2}%", "Top-20% of trades:", top20_pct);
-    println!("{:<30} {:>10.2}%", "Bottom-50% of trades:", bottom50_pct);
-    println!();
-    println!("RISK METRICS");
-    println!("{:<30} {:>10} bars", "Max consecutive losing bars:", max_streak);
-    println!();
-
-    // Percentile analysis
-    let mut sorted_returns = agg_all_returns.clone();
-    sorted_returns.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    let pct_95 = sorted_returns[(sorted_returns.len() as f64 * 0.95) as usize].min(sorted_returns.len()-1)];
-    let pct_75 = sorted_returns[(sorted_returns.len() as f64 * 0.75) as usize].min(sorted_returns.len()-1)];
-    let pct_50 = sorted_returns[(sorted_returns.len() as f64 * 0.50) as usize].min(sorted_returns.len()-1)];
-    let pct_25 = sorted_returns[(sorted_returns.len() as f64 * 0.25) as usize].min(sorted_returns.len()-1)];
-    let pct_5  = sorted_returns[(sorted_returns.len() as f64 * 0.05) as usize].min(sorted_returns.len()-1)];
-    println!("RETURN DISTRIBUTION");
-    println!("{:<30} {:>10.2}%", "P95 (best):", pct_95 * 100.0);
-    println!("{:<30} {:>10.2}%", "P75:", pct_75 * 100.0);
-    println!("{:<30} {:>10.2}%", "P50 (median):", pct_50 * 100.0);
-    println!("{:<30} {:>10.2}%", "P25:", pct_25 * 100.0);
-    println!("{:<30} {:>10.2}%", "P5 (worst):", pct_5 * 100.0);
-
-    // ----- WRITE EQUITY CURVE                                                                                                                                                 
-    let mut eq_file = File::create("snapshots/t63_portfolio_equity.csv")?;
-    writeln!(eq_file, "step,equity")?;
-    for (i, &eq) in portfolio_equity.iter().enumerate() {
-        writeln!(eq_file, "{},{:.6}", i, eq)?;
+    // Top / worst
+    let float_str = |v: f64| -> String { format!("{:+.2}", v) };
+    println!("\n--- Top 10 Trades ---");
+    for (i, t) in sorted.iter().take(10).enumerate() {
+        let exit = if t.by_turtle {
+            "T"
+        } else if t.by_maxhold {
+            "H"
+        } else {
+            "E"
+        };
+        println!(
+            "  {:2}. {} {}b {}% / {}% [{}]",
+            i + 1,
+            t.symbol,
+            t.bars_held,
+            float_str(t.net_pct),
+            float_str(t.gross_pct),
+            exit
+        );
+    }
+    println!("\n--- Worst 10 Trades ---");
+    for (i, t) in sorted.iter().rev().take(10).enumerate() {
+        let exit = if t.by_turtle {
+            "T"
+        } else if t.by_maxhold {
+            "H"
+        } else {
+            "E"
+        };
+        println!(
+            "  {:2}. {} {}b {}% / {}% [{}]",
+            i + 1,
+            t.symbol,
+            t.bars_held,
+            float_str(t.net_pct),
+            float_str(t.gross_pct),
+            exit
+        );
     }
 
-    // ----- WRITE MARKDOWN REPORT                                                                                                                                        
-    let mut md_file = File::create("snapshots/t63_report.md")?;
-    writeln!(md_file, "# T63: Per-Trade PnL Attribution Report")?;
-    writeln!(md_file)?;
-    writeln!(md_file, "**Date:** 2026-05-05")?;
-    writeln!(md_file, "**Scope:** {} universes x {} WF windows, {} trades total", UNIVERSES.len(), windows, total_trades)?;
-    writeln!(md_file)?;
-    writeln!(md_file, "## Portfolio Summary")?;
-    writeln!(md_file, "| Metric | Value |")?;
-    writeln!(md_file, "|--------|-------|")?;
-    writeln!(md_file, "| Final Equity | {:.3f}x |", final_equity)?;
-    writeln!(md_file, "| Annualised Sharpe | {:.3f} |", sharpe)?;
-    writeln!(md_file, "| Max Drawdown | {:.2f}% |", max_dd)?;
-    writeln!(md_file, "| Total Trades | {} |", total_trades)?;
-    writeln!(md_file, "| Total Fees | {:.4f}% |", total_fees * 100.0)?;
-    writeln!(md_file, "## Trade Distribution")?;
-    writeln!(md_file, "| Metric | Value |")?;
-    writeln!(md_file, "|--------|-------|")?;
-    writeln!(md_file, "| Win Rate | {:.1}% |", total_wins as f64 / total_trades.max(1) as f64 * 100.0)?;
-    writeln!(md_file, "| Avg Win | {:.3f}% |", avg_win * 100.0)?;
-    writeln!(md_file, "| Avg Loss | {:.3f}% |", -(avg_loss * 100.0))?;
-    writeln!(md_file, "| Profit Factor | {:.3f} |", profit_factor)?;
-    writeln!(md_file, "| Avg Bars (winners) | {:.1f} |", avg_bars_winner)?;
-    writeln!(md_file, "| Avg Bars (losers) | {:.1f} |", avg_bars_loser)?;
-    writeln!(md_file, "| Median Return | {:.3f}% |", pct_50 * 100.0)?;
-    writeln!(md_file, "## Equity Concentration")?;
-    writeln!(md_file, "| Top-N Trades | Equity % |")?;
-    writeln!(md_file, "|-----------|--------|")?;
-    writeln!(md_file, "| Top-5 | {:.1f}% |", top5_pct)?;
-    writeln!(md_file, "| Top-10 | {:.1f}% |", top10_pct)?;
-    writeln!(md_file, "| Top-20% | {:.1f}% |", top20_pct)?;
-    writeln!(md_file, "| Bottom-50% | {:.1f}% |", bottom50_pct)?;
-    writeln!(md_file, "## Risk")?;
-    writeln!(md_file, "| Metric | Value |")?;
-    writeln!(md_file, "|--------|-------|")?;
-    writeln!(md_file, "| Max Consecutive Losing Bars | {} |", max_streak)?;
-    writeln!(md_file, "| P5 Return | {:.3f}% |", pct_5 * 100.0)?;
-    writeln!(md_file, "| P95 Return | {:.3f}% |", pct_95 * 100.0)?;
-    let verdict = if top5_pct > 50.0 {
-        "**WARNING FRAGILE:** Top-5 trades account for >50% of equity. Strategy depends on mega-trends."
-    } else if top10_pct > 70.0 {
-        "**WARNING CONCENTRATED:** Top-10 trades account for >70% of equity. Moderately fragile."
-    } else {
-        "**OK ROBUST:** Equity is distributed across many trades. Strategy is resilient."
-    };
-    writeln!(md_file)?;
-    writeln!(md_file, "## Verdict")?;
-    writeln!(md_file, "{}", verdict)?;
-
-    println!();
-    println!("{}", verdict);
-
-    println!();
-    println!("Files written:");
-    println!("  snapshots/t63_portfolio_equity.csv");
-    println!("  snapshots/t63_trade_detail.csv");
-    println!("  snapshots/t63_report.md");
+    // Export CSV
+    let csv_path = "snapshots/t63_trade_attribution.csv";
+    let mut f = File::create(csv_path)?;
+    writeln!(f, "symbol,entry_bar,exit_bar,bars_held,entry_price,exit_price,gross_pct,net_pct,fee_pct,by_turtle,by_maxhold")?;
+    for t in &trades {
+        writeln!(
+            f,
+            "{},{},{},{},{},{},{},{},{},{},{}",
+            t.symbol,
+            t.entry_bar,
+            t.exit_bar,
+            t.bars_held,
+            t.entry_price,
+            t.exit_price,
+            t.gross_pct,
+            t.net_pct,
+            t.fee_pct,
+            t.by_turtle as u32,
+            t.by_maxhold as u32
+        )?;
+    }
+    println!("\nExported: {}", csv_path);
+    println!("\n=== T63 COMPLETE ===");
 
     Ok(())
 }
