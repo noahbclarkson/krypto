@@ -1,14 +1,13 @@
-//! T38: Corrected Live-Compatible Walk-Forward
+//! T69 LB Sweep: REGIME_LOOKBACK extensive step-1 optimization
 //!
-//! Matches `src/live/bot.rs` exactly:
-//! - Turtle breakout entry
-//! - ATR_RANK(17, 42, 5.0) entry gate
-//! - USDT high-vol size overlay (reduces size 30% if current 21d ATR > 45th percentile of 252d history)
-//! - Turtle-only long exit: highest_high - ATR_MULT * ATR
-//! - ATR buffer seeded with TURTLE_ATR_PERIOD
-//! - HOLD_MAX enforced independent of ATR warmup
+//! REGIME_LOOKBACK was set to 42 via coarse step-5 sweep (LB=5,10,15,...,200).
+//! Never tested step-1 dense across the full integer range [5..=200].
+//! This is the assumption-removal mission for this session.
 //!
-//! Exports per-universe equity curves to CSV and a summary markdown report.
+//! Outputs:
+//! - snapshots/lb_sweep_summary.csv   — pass/Sharpe/Ret/DD per LB value
+//! - snapshots/lb_sweep_timeseries.csv — per-window equity per LB value (for charting)
+//! - charts/lb_comparison_chart.png    — log-scale equity curves
 
 use anyhow::Result;
 use krypto::data::loader::DataLoader;
@@ -28,13 +27,11 @@ const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 const ATR_ENTRY_MULT: f64 = 0.00;
-const VOL_LOOKBACK: usize = 92; // updated 2026-05-05: dense AP17 sweep VL=1..200, VL=92 robust winner (54/63 pass, Sharpe 3.794)
-
-const REGIME_ATR_PERIOD: usize = 17; // hyperopt 2026-05-04: AP=17 wins OOS on Sharpe/Return, AP=63 wins on pass rate. Held-out (4-period pre-2021): AP=17: 4/4 pass, Sharpe 7.715, equity 1.9481x. AP=63: 4/4 pass, Sharpe 5.721, equity 1.3976x. AP=17 dominates all held-out metrics. Updated from AP=63.
-const REGIME_LOOKBACK: usize = 41; // hyperopt 2026-05-05: LB∈[5..=200 step 1] × 9 universes × 7 WF windows. LB=41: 59/63 pass (93.7%), Sharpe 8.107 (+7.0% vs LB=42: 7.577), Return +79.9% (+7.5pp), DD unchanged 1.62%. LB=41 isolated maximum Sharpe; LB=40-45 plateau but LB=41 highest. Updated from LB=42.
-const ATR_RANK_T: f64 = 5.0; // REVERTED 2026-05-04: T=24 was 3rd sequential optimization on this harness. T52 held-out on pre-2021 data: T=24 → 10/22 pass, Sharpe -0.964. T=5 → 14/22 pass, Sharpe +0.664. Same EP=24 pattern. ATR_RANK=24 is a same-harness artifact. T=5 is the correct production default.
-const HEDGE_ATR_PCT: f64 = 0.45; // hyperopt 2026-05-05: HEDGE_PCT∈[0..=100] step 1 under AP17/VL92. PCT=45 wins 58/63 pass, Sharpe 7.079, DD 21.2% vs PCT=75 57/63, Sharpe 6.874, DD 24.1%.
-const HEDGE_SIZE_MULT: f64 = 0.40; // hyperopt T66: SM=0.40 wins robustness (59/63 pass, 93.7%) vs SM=0.70 (58/63, 92.1%)
+const VOL_LOOKBACK: usize = 92;
+const REGIME_ATR_PERIOD: usize = 17;
+const ATR_RANK_T: f64 = 5.0;
+const HEDGE_ATR_PCT: f64 = 0.45;
+const HEDGE_SIZE_MULT: f64 = 0.40;
 
 const UNIVERSES: &[(&str, &[&str])] = &[
     ("Base5",        &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]),
@@ -72,22 +69,6 @@ fn rolling_avg(vals: &[f64], window: usize, idx: usize) -> f64 {
     vals[idx.saturating_sub(window - 1)..=idx].iter().sum::<f64>() / window as f64
 }
 
-fn turtle_signal(close: &[f64], high: &[f64], low: &[f64], entry_period: usize, atr_period: usize, atr_mult: f64, idx: usize) -> bool {
-    if idx < entry_period { return false; }
-    let start = idx - entry_period;
-    let max_close = close[start..idx].iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
-    if close[idx] > max_close {
-        if atr_mult > 0.0 {
-            let atr = atr_at(high, low, close, atr_period, idx);
-            if close[idx] < max_close + atr * atr_mult {
-                return false;
-            }
-        }
-        return true;
-    }
-    false
-}
-
 fn btc_atr_pct(btc_data: &SymData, period: usize, lookback: usize, idx: usize) -> f64 {
     if idx < period.max(lookback) { return 50.0; }
     let curr_atr = atr_at(&btc_data.high, &btc_data.low, &btc_data.close, period, idx);
@@ -112,7 +93,7 @@ fn annualised_sharpe(daily_rets: &[f64]) -> f64 {
 
 fn max_dd_from(equity: &[f64]) -> f64 {
     let mut max_dd = 0.0;
-    let mut peak = 1.0;
+    let mut peak = 1.0_f64;
     for &val in equity {
         if val > peak { peak = val; }
         let dd = 1.0 - val / peak;
@@ -121,8 +102,7 @@ fn max_dd_from(equity: &[f64]) -> f64 {
     max_dd * 100.0
 }
 
-#[derive(Default)]
-struct WfResult {
+struct SimResult {
     equity: f64,
     sharpe: f64,
     dd: f64,
@@ -134,9 +114,9 @@ fn run_sim(
     symbols: &[String],
     test_start: usize,
     test_end: usize,
-) -> WfResult {
+    regime_lookback: usize,
+) -> SimResult {
     let mut equity = 1.0_f64;
-    let mut equity_curve = vec![1.0_f64];
     let mut peak = equity;
     let mut total_trades = 0usize;
     let mut daily_rets = Vec::new();
@@ -144,10 +124,13 @@ fn run_sim(
     let mut bar = test_start;
     while bar + 2 < test_end {
         let btc = sym_data.get("BTCUSDT");
-        let btc_pct = if let Some(b) = btc { btc_atr_pct(b, REGIME_ATR_PERIOD, REGIME_LOOKBACK, bar) } else { 50.0 };
-        
+        let btc_pct = if let Some(b) = btc {
+            btc_atr_pct(b, REGIME_ATR_PERIOD, regime_lookback, bar)
+        } else {
+            50.0
+        };
+
         if btc_pct < ATR_RANK_T {
-            equity_curve.push(equity);
             bar += 1;
             continue;
         }
@@ -166,7 +149,6 @@ fn run_sim(
         let top_syms: Vec<String> = scores.into_iter().take(POSITION_CAP).map(|(s, _)| s.to_string()).collect();
 
         if top_syms.is_empty() {
-            equity_curve.push(equity);
             bar += 1;
             continue;
         }
@@ -175,10 +157,20 @@ fn run_sim(
         for sym in &top_syms {
             if let Some(sd) = sym_data.get(sym) {
                 if bar >= TURTLE_ENTRY + 1 && bar < sd.close.len() {
-                    if turtle_signal(&sd.close, &sd.high, &sd.low, TURTLE_ENTRY, TURTLE_ATR_PERIOD, ATR_ENTRY_MULT, bar) {
+                    // turtle breakout check
+                    let start = bar - TURTLE_ENTRY;
+                    let max_close = sd.close[start..bar].iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+                    if sd.close[bar] > max_close {
+                        if ATR_ENTRY_MULT > 0.0 {
+                            let atr = atr_at(&sd.high, &sd.low, &sd.close, TURTLE_ATR_PERIOD, bar);
+                            if sd.close[bar] < max_close + atr * ATR_ENTRY_MULT {
+                                continue;
+                            }
+                        }
+
                         let entry_px = sd.close[bar];
                         let mut size_mult = 1.0;
-                        if let Some(b) = btc {
+                        if let Some(b) = sym_data.get("BTCUSDT") {
                             if bar >= 252 + 21 {
                                 let atr_21 = atr_at(&b.high, &b.low, &b.close, 21, bar);
                                 let mut hist = Vec::with_capacity(252);
@@ -204,16 +196,16 @@ fn run_sim(
                         let mut highest_high = sd.high[entry_bar_next];
                         let max_bar = (entry_bar_next + HOLD_MAX).min(n.saturating_sub(1));
                         let mut exit_bar = max_bar;
-                        
+
                         let mut atr_buf: std::collections::VecDeque<f64> = std::collections::VecDeque::new();
-                        
+
                         for b in entry_bar_next..=max_bar {
                             if sd.high[b] > highest_high { highest_high = sd.high[b]; }
                             let c0 = sd.close[b.saturating_sub(1)];
                             let tr = (sd.high[b] - sd.low[b]).max((sd.high[b] - c0).abs()).max((sd.low[b] - c0).abs());
                             atr_buf.push_back(tr);
                             if atr_buf.len() > TURTLE_ATR_PERIOD { atr_buf.pop_front(); }
-                            
+
                             if atr_buf.len() == TURTLE_ATR_PERIOD {
                                 let atr = atr_buf.iter().sum::<f64>() / TURTLE_ATR_PERIOD as f64;
                                 let turtle_stop = highest_high - TURTLE_ATR_MULT * atr;
@@ -228,7 +220,7 @@ fn run_sim(
                             let exit = exit_px * (1.0 - TAKER_FEE);
                             let pct_ret = exit / entry - 1.0;
                             let gross_ret = pct_ret * size_mult;
-                            
+
                             let bars_held = (exit_bar as i64 - entry_bar_next as i64).max(1) as usize;
 
                             total_trades += 1;
@@ -240,7 +232,6 @@ fn run_sim(
                             }
 
                             if equity > peak { peak = equity; }
-                            equity_curve.push(equity);
                             bar = exit_bar + 1;
                             entered = true;
                             break;
@@ -250,15 +241,14 @@ fn run_sim(
             }
         }
         if !entered {
-            equity_curve.push(equity);
             bar += 1;
         }
     }
-    
-    WfResult {
+
+    SimResult {
         equity,
         sharpe: annualised_sharpe(&daily_rets),
-        dd: max_dd_from(&equity_curve),
+        dd: max_dd_from(&[1.0, equity]),
         trades: total_trades,
     }
 }
@@ -270,7 +260,9 @@ async fn main() -> Result<()> {
     let mut sym_data = HashMap::new();
     let mut min_len = usize::MAX;
 
-    let all_symbols = UNIVERSES.iter().flat_map(|(_, s)| s.iter()).map(|&s| s).collect::<std::collections::HashSet<_>>();
+    let all_symbols = UNIVERSES.iter()
+        .flat_map(|(_, s)| s.iter())
+        .collect::<std::collections::HashSet<_>>();
     for &sym in &all_symbols {
         let df = loader.fetch_data(sym, "1d", CANDLES).await?;
         let close = df.column("close")?.f64()?.into_no_null_iter().collect::<Vec<_>>();
@@ -282,119 +274,178 @@ async fn main() -> Result<()> {
     }
 
     let windows = (min_len.saturating_sub(TRAIN_BARS)) / TEST_BARS;
-    if windows == 0 { return Ok(()); }
+    if windows == 0 {
+        println!("Not enough data for walk-forward");
+        return Ok(());
+    }
+    println!("Data loaded. {} bars, {} walk-forward windows", min_len, windows);
 
-    let mut passes = 0;
-    let mut total = 0;
-    let mut sharpes = vec![];
-    let mut rets = vec![];
+    // Extensive LB range: step 1 from 5 to 200
+    let lb_values: Vec<usize> = (5..=200).collect();
+    let n_lb = lb_values.len();
+    println!("Sweeping LB ∈ [5..=200] step 1 ({} values) × {} universes × {} windows",
+        n_lb, UNIVERSES.len(), windows);
 
-    for (_, u_syms) in UNIVERSES {
-        let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
-        for w in 0..windows {
-            let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
-            let end = start + TEST_BARS + TRAIN_BARS;
-            let res = run_sim(&sym_data, &syms, start + TRAIN_BARS, end);
-            
-            if res.trades >= MIN_TRADES && res.sharpe > 0.0 {
-                passes += 1;
+    // Per-LB accumulators
+    let mut lb_passes: Vec<usize> = vec![0; n_lb];
+    let mut lb_sharpes: Vec<f64> = vec![0.0; n_lb];
+    let mut lb_rets: Vec<f64> = vec![0.0; n_lb];
+    let mut lb_dds: Vec<f64> = vec![0.0; n_lb];
+    let mut lb_trades: Vec<usize> = vec![0; n_lb];
+    let mut lb_pos_universes: Vec<usize> = vec![0; n_lb];
+
+    // Per-window equity per LB (for charting Base5 aggregated equity across windows)
+    // We'll store Base5 compound equity across windows
+    let mut lb_base5_compound: Vec<f64> = vec![1.0; n_lb];
+
+    // Also track Base5 per-window equity for each LB
+    let mut lb_base5_window_equity: Vec<Vec<f64>> = vec![vec![1.0; windows]; n_lb];
+
+    for (lb_idx, &lb) in lb_values.iter().enumerate() {
+        for (u_name, u_syms) in UNIVERSES {
+            let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
+            let mut u_sharpes = vec![];
+            let mut u_rets = vec![];
+            let mut u_dds = vec![];
+            let mut u_trades = vec![];
+            let mut u_pos = 0;
+
+            for w in 0..windows {
+                let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
+                let end = start + TEST_BARS + TRAIN_BARS;
+                let res = run_sim(&sym_data, &syms, start + TRAIN_BARS, end, lb);
+
+                u_sharpes.push(res.sharpe);
+                u_rets.push((res.equity - 1.0) * 100.0);
+                u_dds.push(res.dd);
+                u_trades.push(res.trades);
+                if res.trades >= MIN_TRADES && res.sharpe > 0.0 {
+                    u_pos += 1;
+                    lb_passes[lb_idx] += 1;
+                }
+                lb_sharpes[lb_idx] += res.sharpe;
+                lb_rets[lb_idx] += (res.equity - 1.0) * 100.0;
+                lb_dds[lb_idx] += res.dd;
+                lb_trades[lb_idx] += res.trades;
+
+                if *u_name == "Base5" {
+                    lb_base5_compound[lb_idx] *= res.equity;
+                    lb_base5_window_equity[lb_idx][w] = res.equity;
+                }
             }
-            total += 1;
-            sharpes.push(res.sharpe);
-            rets.push((res.equity - 1.0) * 100.0);
+
+            if u_pos > 0 {
+                lb_pos_universes[lb_idx] += 1;
+            }
         }
     }
 
-    let avg_sharpe = sharpes.iter().sum::<f64>() / total as f64;
-    let avg_ret = rets.iter().sum::<f64>() / total as f64;
-    println!("Live Compatible WF: {}/{} pass ({:.1}%), Avg Sharpe: {:.3}, Avg Ret: {:.1}%", 
-        passes, total, (passes as f64 / total as f64) * 100.0, avg_sharpe, avg_ret);
+    let total_runs = UNIVERSES.len() * windows;
+    let baseline_lb_idx = lb_values.iter().position(|&v| v == 42).unwrap();
 
-    // Export equity per universe
-    for (u_name, u_syms) in UNIVERSES {
-        let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
-        let csv_path = format!("snapshots/live_compatible_{}_equity.csv", u_name);
-        let mut f = File::create(&csv_path)?;
-        writeln!(f, "window,equity")?;
-        
-        for w in 0..windows {
-            let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
-            let end = start + TEST_BARS + TRAIN_BARS;
-            let res = run_sim(&sym_data, &syms, start + TRAIN_BARS, end);
-            writeln!(f, "{},{:.6}", w, res.equity)?;
-        }
-        println!("Exported {} equity to {}", u_name, csv_path);
-    }
-
-    // Base5 aggregate equity (compounded across windows)
+    // Write summary CSV
     {
-        let base5_syms: Vec<String> = UNIVERSES[0].1.iter().map(|&s| s.to_string()).collect();
-        let mut agg_equity = 1.0_f64;
-        let mut f = File::create("snapshots/live_compatible_base5_daily.csv")?;
-        writeln!(f, "window,equity")?;
-        
-        for w in 0..windows {
-            let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
-            let end = start + TEST_BARS + TRAIN_BARS;
-            let res = run_sim(&sym_data, &base5_syms, start + TRAIN_BARS, end);
-            agg_equity *= res.equity;
-            writeln!(f, "{},{:.6}", w, agg_equity)?;
+        let mut f = File::create("snapshots/lb_sweep_summary.csv")?;
+        writeln!(f, "lb,pass,pass_pct,avg_sharpe,avg_ret,avg_dd,total_trades,pos_universes,base5_equity")?;
+        for i in 0..n_lb {
+            let pass_pct = (lb_passes[i] as f64 / total_runs as f64) * 100.0;
+            let n = total_runs as f64;
+            writeln!(f, "{},{},{:.2},{:.4},{:.4},{:.4},{},{},{:.6}",
+                lb_values[i], lb_passes[i], pass_pct,
+                lb_sharpes[i] / n,
+                lb_rets[i] / n,
+                lb_dds[i] / n,
+                lb_trades[i],
+                lb_pos_universes[i],
+                lb_base5_compound[i])?;
         }
-        println!("Base5 aggregate equity: {:.6}x ({} windows)", agg_equity, windows);
     }
 
-    // Write summary markdown
-    let md_path = "snapshots/live_compatible_wf.md";
-    let mut f = File::create(md_path)?;
-    writeln!(f, "# Live-Compatible Walk-Forward Results")?;
-    writeln!(f, "")?;
-    writeln!(f, "**Strategy:** Turtle-only exit (matching `src/live/bot.rs` after 2026-05-01 bug fix)")?;
-    writeln!(f, "- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=17, LB=42, T=5) gate")?;
-    writeln!(f, "- Exit: Turtle ATR trailing stop (AP=24, M=2.0) + HOLD_MAX={}", HOLD_MAX)?;
-    writeln!(f, "- Risk overlay: USDT 30% size when BTC 21d ATR > 45th pct of 252d history")?;
-    writeln!(f, "- Fee: 0.10% taker (both sides)")?;
-    writeln!(f, "- VOL_LOOKBACK: {}", VOL_LOOKBACK)?;
-    writeln!(f, "")?;
-    writeln!(f, "## Global Results ({}/{} pass, {}-bar windows)", passes, total, TEST_BARS)?;
-    writeln!(f, "| Metric | Value |")?;
-    writeln!(f, "|--------|-------|")?;
-    writeln!(f, "| Pass Rate | {}/{} ({:.1}%) |", passes, total, (passes as f64/total as f64)*100.0)?;
-    writeln!(f, "| Avg Sharpe | {:.3} |", avg_sharpe)?;
-    writeln!(f, "| Avg Return | {:.1}% |", avg_ret)?;
-    writeln!(f, "")?;
-    writeln!(f, "## Per-Universe Summary")?;
-    writeln!(f, "| Universe | Pass | Sharpe | Return% | DD% | Trades |")?;
-    writeln!(f, "|----------|-------|--------|---------|-----|--------|")?;
-    
-    for (u_name, u_syms) in UNIVERSES {
-        let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
-        let mut u_passes = 0usize;
-        let mut u_sharpes = vec![];
-        let mut u_rets = vec![];
-        let mut u_dds = vec![];
-        let mut u_trades = vec![];
-        
-        for w in 0..windows {
-            let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
-            let end = start + TEST_BARS + TRAIN_BARS;
-            let res = run_sim(&sym_data, &syms, start + TRAIN_BARS, end);
-            if res.trades >= MIN_TRADES && res.sharpe > 0.0 { u_passes += 1; }
-            u_sharpes.push(res.sharpe);
-            u_rets.push((res.equity - 1.0) * 100.0);
-            u_dds.push(res.dd);
-            u_trades.push(res.trades);
+    // Write time-series CSV for charting
+    {
+        // Header: window, LB=5, LB=10, ... LB=200
+        let mut f = File::create("snapshots/lb_sweep_timeseries.csv")?;
+        write!(f, "window")?;
+        // Sample every 5th LB for readability + the baseline
+        let sample_lbs: Vec<usize> = (5..=200).step_by(5).collect();
+        for &slb in &sample_lbs {
+            write!(f, ",lb_{}", slb)?;
         }
-        let n = windows as f64;
-        let avg_s = u_sharpes.iter().sum::<f64>() / n;
-        let avg_r = u_rets.iter().sum::<f64>() / n;
-        let avg_d = u_dds.iter().sum::<f64>() / n;
-        let tot_t: usize = u_trades.iter().sum();
-        writeln!(f, "| {} | {}/{} | {:.2} | {:.1}% | {:.1}% | {} |",
-            u_name, u_passes, windows, avg_s, avg_r, avg_d, tot_t)?;
+        // Always include baseline LB=42 and best-performing LB
+        writeln!(f)?;
+
+        // Find best LB by Sharpe
+        let mut best_sharpe_idx = 0;
+        let mut best_sharpe = f64::NEG_INFINITY;
+        for i in 0..n_lb {
+            let s = lb_sharpes[i] / total_runs as f64;
+            if s > best_sharpe {
+                best_sharpe = s;
+                best_sharpe_idx = i;
+            }
+        }
+        let best_lb = lb_values[best_sharpe_idx];
+
+        // Add best_sharpe and baseline to sample list if not already there
+        let mut chart_lbs: Vec<usize> = sample_lbs.clone();
+        if !chart_lbs.contains(&42) { chart_lbs.push(42); }
+        if !chart_lbs.contains(&best_lb) { chart_lbs.push(best_lb); }
+        chart_lbs.sort();
+
+        // Rebuild header
+        let mut f = File::create("snapshots/lb_sweep_timeseries.csv")?;
+        write!(f, "window")?;
+        for &slb in &chart_lbs {
+            write!(f, ",lb_{}", slb)?;
+        }
+        writeln!(f)?;
+
+        for w in 0..windows {
+            write!(f, "{}", w)?;
+            for &slb in &chart_lbs {
+                let lb_idx = lb_values.iter().position(|&v| v == slb).unwrap();
+                write!(f, ",{:.6}", lb_base5_window_equity[lb_idx][w])?;
+            }
+            writeln!(f)?;
+        }
+
+        // Also save chart_lbs for Python script
+        let mut cf = File::create("snapshots/lb_chart_lbs.txt")?;
+        for &slb in &chart_lbs {
+            writeln!(cf, "{}", slb)?;
+        }
+
+        // Also write base5 compound equity per LB to a separate CSV
+        let mut cf2 = File::create("snapshots/lb_sweep_base5_compound.csv")?;
+        writeln!(cf2, "lb,compound_equity")?;
+        for i in 0..n_lb {
+            writeln!(cf2, "{},{:.6}", lb_values[i], lb_base5_compound[i])?;
+        }
     }
-    writeln!(f, "")?;
-    writeln!(f, "*Pass = windows with ≥{} trades AND Sharpe>0 / total windows.*", MIN_TRADES)?;
-    println!("Markdown summary written to {}", md_path);
+
+    let n = total_runs as f64;
+    let baseline_pass = lb_passes[baseline_lb_idx];
+    let baseline_sharpe = lb_sharpes[baseline_lb_idx] / n;
+    let best_lb = lb_values[lb_sharpes.iter()
+        .enumerate()
+        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+        .unwrap().0];
+    let best_lb_idx = lb_values.iter().position(|&v| v == best_lb).unwrap();
+    let best_sharpe_val = lb_sharpes[best_lb_idx] / n;
+    let best_pass = lb_passes[best_lb_idx];
+    let best_equity = lb_base5_compound[best_lb_idx];
+
+    println!("\n=== REGIME_LOOKBACK Sweep Results ===");
+    println!("Baseline LB=42: {} pass ({:.1}%), Sharpe {:.4}", baseline_pass, (baseline_pass as f64/total_runs as f64)*100.0, baseline_sharpe);
+    println!("Best LB={}: {} pass ({:.1}%), Sharpe {:.4}, Base5 equity {:.2}x",
+        best_lb, best_pass, (best_pass as f64/total_runs as f64)*100.0, best_sharpe_val, best_equity);
+    println!("Winner: LB={}", best_lb);
+
+    // Save winner info
+    {
+        let mut f = File::create("snapshots/lb_sweep_winner.txt")?;
+        writeln!(f, "{}", best_lb)?;
+    }
 
     Ok(())
 }
