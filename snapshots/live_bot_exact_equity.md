@@ -1,6 +1,6 @@
 # T65: Exact Live-Bot Source-of-Truth Equity
 
-Generated: 2026-05-05 18:10 UTC
+Generated: 2026-05-05 21:09 UTC
 
 ## Scope
 
@@ -9,7 +9,7 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 ## Methodology / Exactness Notes
 
 - Entry: current `bot.rs` Turtle condition as coded: current-inclusive EP window and equality allowed (`close < max_close` is rejected, equality passes).
-- Entry gate: ATR_RANK(AP=17, LB=42, T=5.0) using `bot.rs` normalized ATR percentile semantics.
+- Entry gate: ATR_RANK(AP=17, LB=41, T=5.0) using `bot.rs` normalized ATR percentile semantics.
 - Volume ranking: `VOL_LOOKBACK=92` is in config but **not used** by `src/live/bot.rs`; this exact harness therefore does not apply VL ranking.
 - Hedge: BTC ATR21 > 45th percentile of 252 daily TR history => position size × 0.40.
 - Exit: Turtle ATR-only stop (`highest_high - ATR_MULT * ATR`) with HOLD_MAX checked before ATR readiness.
@@ -27,7 +27,7 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 | HOLD_MAX | 12 |
 | POSITION_CAP | 3 |
 | REGIME_ATR_PERIOD | 17 |
-| REGIME_LOOKBACK | 42 |
+| REGIME_LOOKBACK | 41 |
 | ATR_RANK_THRESHOLD | 5.0 |
 | VOL_LOOKBACK | 92 (unused by bot.rs) |
 | HEDGE_ATR_PCT | 0.45 |
@@ -43,11 +43,11 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 | Annualised return | 20.9% |
 | Daily account Sharpe | 0.94 |
 | Max drawdown | 28.8% |
-| Trades | 301 |
-| Win rate | 47.8% |
-| Entry candidates before ATR gate | 518 |
-| ATR gate skips | 217 |
-| Hedged entries | 190 |
+| Trades | 298 |
+| Win rate | 48.0% |
+| Entry candidates before ATR gate | 523 |
+| ATR gate skips | 225 |
+| Hedged entries | 187 |
 | Open positions liquidated at end | 1 |
 
 ## Yearly Table
@@ -56,9 +56,9 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 |---:|---:|---:|---:|---:|
 | 2021 | 1.60x | 60.2% | 2.89 | 5.8% |
 | 2022 | 1.21x | -24.2% | -0.77 | 28.7% |
-| 2023 | 1.74x | 43.5% | 1.77 | 12.1% |
+| 2023 | 1.75x | 43.8% | 1.79 | 11.9% |
 | 2024 | 2.06x | 17.5% | 1.09 | 13.0% |
-| 2025 | 2.74x | 33.2% | 1.58 | 7.9% |
+| 2025 | 2.75x | 33.2% | 1.58 | 7.9% |
 | 2026 | 2.54x | -7.3% | -2.13 | 12.6% |
 
 ## Top-Trade Attribution
@@ -67,8 +67,8 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 |---|---:|
 | Equity without top 5 log contributors | 1.48x |
 | Equity without top 10 log contributors | 1.08x |
-| Top 5 share of log return | 58.0% |
-| Top 10 share of log return | 91.8% |
+| Top 5 share of log return | 57.9% |
+| Top 10 share of log return | 91.6% |
 
 ### Top 10 Trades
 
