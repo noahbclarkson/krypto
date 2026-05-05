@@ -475,7 +475,16 @@ EP=24, CHAND_PERIOD=7, CHAND_MULT=2.30, HOLD_MAX=12,
 ATR_PERIOD=24, ATR_ENTRY_MULT=0.85, POSITION_CAP=3, FRESHNESS_COOLDOWN=0
 ```
 
-## 2026-04-25 — CHAND_MULT Dense Sweep + Pre-2021 Regime Stress
+## 2026-05-05 (15:36 UTC) — HEDGE_SIZE_MULT Hyperopt (T66)
+- **Parameter:** `HEDGE_SIZE_MULT` — position size multiplier when USDT hedge fires.
+- **Prior:** 0.70 (hardcoded magic number, never independently tested).
+- **Range:** SM ∈ {0.30, 0.40, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00} × 9 universes × 7 WF windows = 819 sims.
+- **Winner:** SM=0.40 → 59/63 pass (93.7%), Sharpe 7.577, DD 16.0%. Old SM=0.70: 58/63, Sharpe 7.079, DD 21.2%.
+- **Key insight:** HEDGE_SIZE_MULT is a risk dial, not alpha. Lower exposure = lower raw equity but better risk-adjusted metrics. SM=0.40 is the robustness winner (best pass rate, well within plateau SM=0.40-0.55).
+- **Action:** Updated HEDGE_SIZE_MULT from 0.70→0.40 in config.rs, bot.rs, live_compatible_wf.rs.
+- **Verification:** live_compatible_wf with SM=0.40: 59/63 pass, Sharpe 7.577, Base5 46.95x. Pass rate guardrail ✓.
+- **Files:** examples/hedge_size_mult_sweep.rs, snapshots/hedge_size_mult_*.csv, charts/plot_hedge_size_mult.py, charts/comparison_chart.png.
+- See memory/hyperopt-2026-05-05-hedge-size-mult.md.
 
 ### CHAND_MULT Dense Sweep (M=2.25 → M=2.30)
 - **71-value sweep** M∈[1.50..5.00] step=0.05 × 9 universes × 54 windows = 3,834 runs in 6.5s
