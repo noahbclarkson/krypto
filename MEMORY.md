@@ -748,3 +748,20 @@ Files: `examples/atr_entry_mult_turtle_only_sweep.rs`, `snapshots/atr_entry_mult
   - Avg Sharpe: +6.106 vs baseline +4.910.
   - Base5 Equity: 287x (smoother equity curve with 22.5% DD vs baseline 26.7%).
 - **Action:** Updated `REGIME_ATR_PERIOD = 63` in `src/live/config.rs`. Validated passing on full harness.
+
+## Promoted From Short-Term Memory (2026-05-05)
+
+<!-- openclaw-memory-promotion:memory:memory/2026-04-29.md:3:3 -->
+- **Session: 2026-04-29 20:50 UTC | Kira — Fourth Critique Cycle** [score=0.845 recalls=0 avg=0.620 source=memory/2026-04-29.md:3-3]
+
+
+## 2026-05-05 — T64 Regime Sharpe Decomposition
+
+Built `examples/regime_sharpe_decomposition.rs` for the production Turtle-only live path (EP=21, ATR(24,2), HOLD_MAX=12, CAP=3, VL=96, ATR_RANK AP=17/LB=42/T=5) plus a T=0 no-gate control. Outputs `snapshots/regime_sharpe_decomposition.{csv,md}`.
+
+Key attribution findings:
+- Production T=5 attribution curve: 114.19x / Sharpe 1.68 / MaxDD 51.2% / 154 trades. T59 exact event-compounded headline remains 112.27x / Sharpe 3.14 / MaxDD 99.3%; T64 spreads trade PnL across held bars for regime classification and is not a replacement headline.
+- Direction regimes are balanced: bull_21d Sharpe 1.80, bear_21d Sharpe 1.80. The strategy is not purely a bear-only edge.
+- Volatility regimes are weaker: chop_vol_q1 Sharpe 1.07, trend_vol_q4 Sharpe 1.16.
+- T=0 no-gate control: 206.95x / Sharpe 1.75 / MaxDD 45.9% / 189 trades. ATR_RANK=5 improves bear Sharpe slightly (1.80 vs 1.74) and trend-vol Sharpe (1.16 vs 0.70), but reduces equity/trades and worsens attribution MaxDD.
+- Conclusion: ATR_RANK=5 is not clearly defensive on full-history attribution. Do not promote T=0 without held-out/live-path validation; high-threshold ATR_RANK variants already failed held-out.
