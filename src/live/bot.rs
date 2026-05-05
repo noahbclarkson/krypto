@@ -11,7 +11,7 @@
 //!
 //! Production params (updated 2026-05-05):
 //!   EP=21, TurtleATR(24, 2.0), HM=12, CAP=3, ATR_RANK(AP=17, LB=42, T=5), VL=92
-//!   Live entries also apply USDT hedge: BTC ATR21 > 45th pct => size *= 0.70.
+//!   Live entries also apply USDT hedge: BTC ATR21 > 45th pct => size *= HEDGE_SIZE_MULT (0.40, T66).
 
 const FRESHNESS_COOLDOWN: usize = 0; // bars to wait after exit before re-entry (0=disabled)
 

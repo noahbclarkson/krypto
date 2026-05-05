@@ -1,14 +1,15 @@
-//! T38: Corrected Live-Compatible Walk-Forward
+//! T66: HEDGE_SIZE_MULT Extensive Sweep
 //!
-//! Matches `src/live/bot.rs` exactly:
-//! - Turtle breakout entry
-//! - ATR_RANK(17, 42, 5.0) entry gate
-//! - USDT high-vol size overlay (reduces size 30% if current 21d ATR > 45th percentile of 252d history)
-//! - Turtle-only long exit: highest_high - ATR_MULT * ATR
-//! - ATR buffer seeded with TURTLE_ATR_PERIOD
-//! - HOLD_MAX enforced independent of ATR warmup
+//! Audit finding: HEDGE_SIZE_MULT=0.70 is a hardcoded magic number never independently tested.
+//! The 2026-05-05 hedge threshold sweep (PCT=0..=100) held HEDGE_SIZE_MULT=0.70 constant.
+//! We need to test the full logical range of size multipliers.
 //!
-//! Exports per-universe equity curves to CSV and a summary markdown report.
+//! Current defaults: HEDGE_ATR_PCT=0.45, HEDGE_SIZE_MULT=0.70
+//! Test range: HEDGE_SIZE_MULT ∈ {0.30, 0.40, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00}
+//! Strategy: Turtle-only + ATR_RANK(AP=17, LB=42, T=5) + USDT hedge (PCT=45)
+//!
+//! Sweeps 13 values × 9 universes × 7 WF windows = 819 simulations.
+//! Exports per-bar timeseries CSV and summary for charting.
 
 use anyhow::Result;
 use krypto::data::loader::DataLoader;
@@ -28,13 +29,18 @@ const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 const ATR_ENTRY_MULT: f64 = 0.00;
-const VOL_LOOKBACK: usize = 92; // updated 2026-05-05: dense AP17 sweep VL=1..200, VL=92 robust winner (54/63 pass, Sharpe 3.794)
+const VOL_LOOKBACK: usize = 92;
 
-const REGIME_ATR_PERIOD: usize = 17; // hyperopt 2026-05-04: AP=17 wins OOS on Sharpe/Return, AP=63 wins on pass rate. Held-out (4-period pre-2021): AP=17: 4/4 pass, Sharpe 7.715, equity 1.9481x. AP=63: 4/4 pass, Sharpe 5.721, equity 1.3976x. AP=17 dominates all held-out metrics. Updated from AP=63.
-const REGIME_LOOKBACK: usize = 42; // confirmed 2026-05-02: LB∈[5..=200] sweep → LB=42 optimal (Sharpe 6.188, 55/63 pass, 9/9 positive)
-const ATR_RANK_T: f64 = 5.0; // REVERTED 2026-05-04: T=24 was 3rd sequential optimization on this harness. T52 held-out on pre-2021 data: T=24 → 10/22 pass, Sharpe -0.964. T=5 → 14/22 pass, Sharpe +0.664. Same EP=24 pattern. ATR_RANK=24 is a same-harness artifact. T=5 is the correct production default.
-const HEDGE_ATR_PCT: f64 = 0.45; // hyperopt 2026-05-05: HEDGE_PCT∈[0..=100] step 1 under AP17/VL92. PCT=45 wins 58/63 pass, Sharpe 7.079, DD 21.2% vs PCT=75 57/63, Sharpe 6.874, DD 24.1%.
-const HEDGE_SIZE_MULT: f64 = 0.40; // hyperopt T66: SM=0.40 wins robustness (59/63 pass, 93.7%) vs SM=0.70 (58/63, 92.1%)
+const REGIME_ATR_PERIOD: usize = 17;
+const REGIME_LOOKBACK: usize = 42;
+const ATR_RANK_T: f64 = 5.0;
+
+const HEDGE_ATR_PCT: f64 = 0.45; // winner from 2026-05-05 sweep
+
+const HEDGE_SIZE_VALS: &[f64] = &[
+    0.30, 0.40, 0.50, 0.55, 0.60, 0.65,
+    0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00,
+];
 
 const UNIVERSES: &[(&str, &[&str])] = &[
     ("Base5",        &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]),
@@ -72,20 +78,11 @@ fn rolling_avg(vals: &[f64], window: usize, idx: usize) -> f64 {
     vals[idx.saturating_sub(window - 1)..=idx].iter().sum::<f64>() / window as f64
 }
 
-fn turtle_signal(close: &[f64], high: &[f64], low: &[f64], entry_period: usize, atr_period: usize, atr_mult: f64, idx: usize) -> bool {
+fn turtle_signal(close: &[f64], _high: &[f64], _low: &[f64], entry_period: usize, idx: usize) -> bool {
     if idx < entry_period { return false; }
     let start = idx - entry_period;
     let max_close = close[start..idx].iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
-    if close[idx] > max_close {
-        if atr_mult > 0.0 {
-            let atr = atr_at(high, low, close, atr_period, idx);
-            if close[idx] < max_close + atr * atr_mult {
-                return false;
-            }
-        }
-        return true;
-    }
-    false
+    close[idx] > max_close
 }
 
 fn btc_atr_pct(btc_data: &SymData, period: usize, lookback: usize, idx: usize) -> f64 {
@@ -110,7 +107,7 @@ fn annualised_sharpe(daily_rets: &[f64]) -> f64 {
     (mean / var.sqrt()) * (365.0_f64).sqrt()
 }
 
-fn max_dd_from(equity: &[f64]) -> f64 {
+fn max_dd(equity: &[f64]) -> f64 {
     let mut max_dd = 0.0;
     let mut peak = 1.0;
     for &val in equity {
@@ -121,31 +118,25 @@ fn max_dd_from(equity: &[f64]) -> f64 {
     max_dd * 100.0
 }
 
-#[derive(Default)]
-struct WfResult {
-    equity: f64,
-    sharpe: f64,
-    dd: f64,
-    trades: usize,
-}
-
 fn run_sim(
     sym_data: &HashMap<String, SymData>,
     symbols: &[String],
     test_start: usize,
     test_end: usize,
-) -> WfResult {
+    hedge_size_mult: f64,
+) -> (f64, f64, f64, usize, Vec<f64>) {
+    // returns (equity, sharpe, dd, trades, equity_curve)
     let mut equity = 1.0_f64;
-    let mut equity_curve = vec![1.0_f64];
     let mut peak = equity;
     let mut total_trades = 0usize;
     let mut daily_rets = Vec::new();
+    let mut equity_curve = vec![1.0_f64];
 
     let mut bar = test_start;
     while bar + 2 < test_end {
         let btc = sym_data.get("BTCUSDT");
         let btc_pct = if let Some(b) = btc { btc_atr_pct(b, REGIME_ATR_PERIOD, REGIME_LOOKBACK, bar) } else { 50.0 };
-        
+
         if btc_pct < ATR_RANK_T {
             equity_curve.push(equity);
             bar += 1;
@@ -175,9 +166,11 @@ fn run_sim(
         for sym in &top_syms {
             if let Some(sd) = sym_data.get(sym) {
                 if bar >= TURTLE_ENTRY + 1 && bar < sd.close.len() {
-                    if turtle_signal(&sd.close, &sd.high, &sd.low, TURTLE_ENTRY, TURTLE_ATR_PERIOD, ATR_ENTRY_MULT, bar) {
+                    if turtle_signal(&sd.close, &sd.high, &sd.low, TURTLE_ENTRY, bar) {
                         let entry_px = sd.close[bar];
                         let mut size_mult = 1.0;
+
+                        // USDT hedge overlay
                         if let Some(b) = btc {
                             if bar >= 252 + 21 {
                                 let atr_21 = atr_at(&b.high, &b.low, &b.close, 21, bar);
@@ -192,7 +185,7 @@ fn run_sim(
                                 let pct_idx = (HEDGE_ATR_PCT * hist.len() as f64) as usize;
                                 let pct_threshold = hist[pct_idx.min(hist.len().saturating_sub(1))];
                                 if atr_21 > pct_threshold {
-                                    size_mult = HEDGE_SIZE_MULT;
+                                    size_mult = hedge_size_mult;
                                 }
                             }
                         }
@@ -204,16 +197,18 @@ fn run_sim(
                         let mut highest_high = sd.high[entry_bar_next];
                         let max_bar = (entry_bar_next + HOLD_MAX).min(n.saturating_sub(1));
                         let mut exit_bar = max_bar;
-                        
+
                         let mut atr_buf: std::collections::VecDeque<f64> = std::collections::VecDeque::new();
-                        
+
                         for b in entry_bar_next..=max_bar {
                             if sd.high[b] > highest_high { highest_high = sd.high[b]; }
                             let c0 = sd.close[b.saturating_sub(1)];
-                            let tr = (sd.high[b] - sd.low[b]).max((sd.high[b] - c0).abs()).max((sd.low[b] - c0).abs());
+                            let tr = (sd.high[b] - sd.low[b])
+                                .max((sd.high[b] - c0).abs())
+                                .max((sd.low[b] - c0).abs());
                             atr_buf.push_back(tr);
                             if atr_buf.len() > TURTLE_ATR_PERIOD { atr_buf.pop_front(); }
-                            
+
                             if atr_buf.len() == TURTLE_ATR_PERIOD {
                                 let atr = atr_buf.iter().sum::<f64>() / TURTLE_ATR_PERIOD as f64;
                                 let turtle_stop = highest_high - TURTLE_ATR_MULT * atr;
@@ -228,9 +223,8 @@ fn run_sim(
                             let exit = exit_px * (1.0 - TAKER_FEE);
                             let pct_ret = exit / entry - 1.0;
                             let gross_ret = pct_ret * size_mult;
-                            
-                            let bars_held = (exit_bar as i64 - entry_bar_next as i64).max(1) as usize;
 
+                            let bars_held = (exit_bar as i64 - entry_bar_next as i64).max(1) as usize;
                             total_trades += 1;
                             equity *= 1.0 + gross_ret;
 
@@ -254,13 +248,10 @@ fn run_sim(
             bar += 1;
         }
     }
-    
-    WfResult {
-        equity,
-        sharpe: annualised_sharpe(&daily_rets),
-        dd: max_dd_from(&equity_curve),
-        trades: total_trades,
-    }
+
+    let dd = max_dd(&equity_curve);
+    let sh = annualised_sharpe(&daily_rets);
+    (equity, sh, dd, total_trades, equity_curve)
 }
 
 #[tokio::main]
@@ -270,9 +261,9 @@ async fn main() -> Result<()> {
     let mut sym_data = HashMap::new();
     let mut min_len = usize::MAX;
 
-    let all_symbols = UNIVERSES.iter().flat_map(|(_, s)| s.iter()).map(|&s| s).collect::<std::collections::HashSet<_>>();
-    for &sym in &all_symbols {
-        let df = loader.fetch_data(sym, "1d", CANDLES).await?;
+    let all_symbols = UNIVERSES.iter().flat_map(|(_, s)| s.iter()).map(|&s| s.to_string()).collect::<std::collections::HashSet<_>>();
+    for sym in &all_symbols {
+        let df = loader.fetch_data(&sym, "1d", CANDLES).await?;
         let close = df.column("close")?.f64()?.into_no_null_iter().collect::<Vec<_>>();
         let high = df.column("high")?.f64()?.into_no_null_iter().collect::<Vec<_>>();
         let low = df.column("low")?.f64()?.into_no_null_iter().collect::<Vec<_>>();
@@ -284,117 +275,128 @@ async fn main() -> Result<()> {
     let windows = (min_len.saturating_sub(TRAIN_BARS)) / TEST_BARS;
     if windows == 0 { return Ok(()); }
 
-    let mut passes = 0;
-    let mut total = 0;
-    let mut sharpes = vec![];
-    let mut rets = vec![];
+    // Summary results per HEDGE_SIZE_MULT
+    let mut summary_rows = vec![];
+    let mut timeseries_cols: Vec<String> = vec![];
+    let mut timeseries_data: Vec<Vec<f64>> = vec![];
 
-    for (_, u_syms) in UNIVERSES {
-        let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
-        for w in 0..windows {
-            let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
-            let end = start + TEST_BARS + TRAIN_BARS;
-            let res = run_sim(&sym_data, &syms, start + TRAIN_BARS, end);
-            
-            if res.trades >= MIN_TRADES && res.sharpe > 0.0 {
-                passes += 1;
+    for &sm in HEDGE_SIZE_VALS {
+        let mut total_passes = 0usize;
+        let mut total = 0usize;
+        let mut all_sharpes = vec![];
+        let mut all_rets = vec![];
+        let mut all_dds = vec![];
+        let mut all_trades = vec![];
+        let mut base5_equity = 1.0_f64;
+
+        for (_, u_syms) in UNIVERSES {
+            let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
+            for w in 0..windows {
+                let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
+                let end = start + TRAIN_BARS + TEST_BARS;
+                let (eq, sh, dd, trades, _) = run_sim(&sym_data, &syms, start + TRAIN_BARS, end, sm);
+
+                let pass = if trades >= MIN_TRADES && sh > 0.0 { 1 } else { 0 };
+                total_passes += pass;
+                total += 1;
+                all_sharpes.push(sh);
+                all_rets.push((eq - 1.0) * 100.0);
+                all_dds.push(dd);
+                all_trades.push(trades);
+
+                if u_syms == &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"] {
+                    base5_equity *= eq;
+                }
             }
-            total += 1;
-            sharpes.push(res.sharpe);
-            rets.push((res.equity - 1.0) * 100.0);
         }
-    }
 
-    let avg_sharpe = sharpes.iter().sum::<f64>() / total as f64;
-    let avg_ret = rets.iter().sum::<f64>() / total as f64;
-    println!("Live Compatible WF: {}/{} pass ({:.1}%), Avg Sharpe: {:.3}, Avg Ret: {:.1}%", 
-        passes, total, (passes as f64 / total as f64) * 100.0, avg_sharpe, avg_ret);
+        let n = total as f64;
+        let avg_sh = all_sharpes.iter().sum::<f64>() / n;
+        let avg_ret = all_rets.iter().sum::<f64>() / n;
+        let avg_dd = all_dds.iter().sum::<f64>() / n;
+        let tot_trades: usize = all_trades.iter().sum();
+        let pass_rate = (total_passes as f64 / n) * 100.0;
 
-    // Export equity per universe
-    for (u_name, u_syms) in UNIVERSES {
-        let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
-        let csv_path = format!("snapshots/live_compatible_{}_equity.csv", u_name);
-        let mut f = File::create(&csv_path)?;
-        writeln!(f, "window,equity")?;
-        
+        println!("SM={:.2}: {}/{} pass ({:.1}%), Sharpe {:.3}, Ret {:.1}%, DD {:.1}%, Trades {}",
+            sm, total_passes, total, pass_rate, avg_sh, avg_ret, avg_dd, tot_trades);
+
+        summary_rows.push((sm, total_passes, total, pass_rate, avg_sh, avg_ret, avg_dd, tot_trades, base5_equity));
+
+        // Aggregate timeseries (sum equity across universes, then average)
+        // For simplicity, just aggregate Base5 per-window compounded equity
+        let mut ts_vals = vec![];
         for w in 0..windows {
             let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
-            let end = start + TEST_BARS + TRAIN_BARS;
-            let res = run_sim(&sym_data, &syms, start + TRAIN_BARS, end);
-            writeln!(f, "{},{:.6}", w, res.equity)?;
+            let end = start + TRAIN_BARS + TEST_BARS;
+            let base5_syms: Vec<String> = UNIVERSES[0].1.iter().map(|&s| s.to_string()).collect();
+            let (_, _, _, _, eq_curve) = run_sim(&sym_data, &base5_syms, start + TRAIN_BARS, end, sm);
+            // Record the compound result per window
+            let final_eq = *eq_curve.last().unwrap_or(&1.0);
+            ts_vals.push(final_eq);
         }
-        println!("Exported {} equity to {}", u_name, csv_path);
+        let col_name = format!("sm_{:.2}", sm).replace(".", "_");
+        timeseries_cols.push(col_name);
+        timeseries_data.push(ts_vals);
     }
 
-    // Base5 aggregate equity (compounded across windows)
+    // Print winner
+    let mut by_pass = summary_rows.clone();
+    by_pass.sort_by(|a,b| b.1.cmp(&a.1)); // sort by total_passes desc
+    let winner = by_pass.first().unwrap();
+    println!("\nWINNER by pass rate: SM={:.2} — {}/{} pass ({:.1}%), Sharpe {:.3}",
+        winner.0, winner.1, winner.2, winner.3, winner.4);
+
+    let mut by_sharpe = summary_rows.clone();
+    by_sharpe.sort_by(|a,b| b.4.partial_cmp(&a.4).unwrap_or(std::cmp::Ordering::Equal)); // sort by sharpe desc
+    let sh_winner = by_sharpe.first().unwrap();
+    println!("WINNER by Sharpe: SM={:.2} — Sharpe {:.3}, {}/{} pass", sh_winner.0, sh_winner.4, sh_winner.1, sh_winner.2);
+
+    // Write summary CSV
+    let mut f = File::create("snapshots/hedge_size_mult_summary.csv")?;
+    writeln!(f, "hedge_size_mult,passes,total,pass_rate,avg_sharpe,avg_return,avg_dd,total_trades,base5_equity")?;
+    for row in &summary_rows {
+        writeln!(f, "{:.2},{},{},{:.2},{:.4},{:.2},{:.2},{},{:.6}",
+            row.0, row.1, row.2, row.3, row.4, row.5, row.6, row.7, row.8)?;
+    }
+    println!("Written snapshots/hedge_size_mult_summary.csv");
+
+    // Write per-window equity CSV (for charting)
     {
-        let base5_syms: Vec<String> = UNIVERSES[0].1.iter().map(|&s| s.to_string()).collect();
-        let mut agg_equity = 1.0_f64;
-        let mut f = File::create("snapshots/live_compatible_base5_daily.csv")?;
-        writeln!(f, "window,equity")?;
-        
+        let mut f = File::create("snapshots/hedge_size_mult_equity.csv")?;
+        writeln!(f, "window,{}", timeseries_cols.join(","))?;
         for w in 0..windows {
-            let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
-            let end = start + TEST_BARS + TRAIN_BARS;
-            let res = run_sim(&sym_data, &base5_syms, start + TRAIN_BARS, end);
-            agg_equity *= res.equity;
-            writeln!(f, "{},{:.6}", w, agg_equity)?;
+            let mut row = vec![w.to_string()];
+            for ts in &timeseries_data {
+                row.push(format!("{:.6}", ts[w]));
+            }
+            writeln!(f, "{}", row.join(","))?;
         }
-        println!("Base5 aggregate equity: {:.6}x ({} windows)", agg_equity, windows);
+        println!("Written snapshots/hedge_size_mult_equity.csv");
     }
 
     // Write summary markdown
-    let md_path = "snapshots/live_compatible_wf.md";
-    let mut f = File::create(md_path)?;
-    writeln!(f, "# Live-Compatible Walk-Forward Results")?;
+    let mut f = File::create("snapshots/hedge_size_mult_summary.md")?;
+    writeln!(f, "# HEDGE_SIZE_MULT Extensive Sweep — T66")?;
     writeln!(f, "")?;
-    writeln!(f, "**Strategy:** Turtle-only exit (matching `src/live/bot.rs` after 2026-05-01 bug fix)")?;
-    writeln!(f, "- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=17, LB=42, T=5) gate")?;
-    writeln!(f, "- Exit: Turtle ATR trailing stop (AP=24, M=2.0) + HOLD_MAX={}", HOLD_MAX)?;
-    writeln!(f, "- Risk overlay: USDT 30% size when BTC 21d ATR > 45th pct of 252d history")?;
-    writeln!(f, "- Fee: 0.10% taker (both sides)")?;
-    writeln!(f, "- VOL_LOOKBACK: {}", VOL_LOOKBACK)?;
+    writeln!(f, "**Mission:** Strip assumptions — HEDGE_SIZE_MULT=0.70 was a hardcoded magic number never independently tested.")?;
+    writeln!(f, "**Harness:** Turtle-only + ATR_RANK(AP=17,LB=42,T=5) + USDT hedge (PCT=45 fixed)")?;
+    writeln!(f, "**Test:** 13 values × 9 universes × 7 windows = 819 simulations")?;
     writeln!(f, "")?;
-    writeln!(f, "## Global Results ({}/{} pass, {}-bar windows)", passes, total, TEST_BARS)?;
-    writeln!(f, "| Metric | Value |")?;
-    writeln!(f, "|--------|-------|")?;
-    writeln!(f, "| Pass Rate | {}/{} ({:.1}%) |", passes, total, (passes as f64/total as f64)*100.0)?;
-    writeln!(f, "| Avg Sharpe | {:.3} |", avg_sharpe)?;
-    writeln!(f, "| Avg Return | {:.1}% |", avg_ret)?;
-    writeln!(f, "")?;
-    writeln!(f, "## Per-Universe Summary")?;
-    writeln!(f, "| Universe | Pass | Sharpe | Return% | DD% | Trades |")?;
-    writeln!(f, "|----------|-------|--------|---------|-----|--------|")?;
-    
-    for (u_name, u_syms) in UNIVERSES {
-        let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
-        let mut u_passes = 0usize;
-        let mut u_sharpes = vec![];
-        let mut u_rets = vec![];
-        let mut u_dds = vec![];
-        let mut u_trades = vec![];
-        
-        for w in 0..windows {
-            let start = min_len - (windows - w) * TEST_BARS - TRAIN_BARS;
-            let end = start + TEST_BARS + TRAIN_BARS;
-            let res = run_sim(&sym_data, &syms, start + TRAIN_BARS, end);
-            if res.trades >= MIN_TRADES && res.sharpe > 0.0 { u_passes += 1; }
-            u_sharpes.push(res.sharpe);
-            u_rets.push((res.equity - 1.0) * 100.0);
-            u_dds.push(res.dd);
-            u_trades.push(res.trades);
-        }
-        let n = windows as f64;
-        let avg_s = u_sharpes.iter().sum::<f64>() / n;
-        let avg_r = u_rets.iter().sum::<f64>() / n;
-        let avg_d = u_dds.iter().sum::<f64>() / n;
-        let tot_t: usize = u_trades.iter().sum();
-        writeln!(f, "| {} | {}/{} | {:.2} | {:.1}% | {:.1}% | {} |",
-            u_name, u_passes, windows, avg_s, avg_r, avg_d, tot_t)?;
+    writeln!(f, "| HEDGE_SIZE_MULT | Pass | Pass% | Sharpe | Ret% | DD% | Trades | Base5 Equity |")?;
+    writeln!(f, "|----------------|------|-------|--------|------|-----|--------|--------------|")?;
+    for row in &summary_rows {
+        let base5_str = format!("{:.4}", row.8);
+        writeln!(f, "| {:.2} | {}/{} | {:.1}% | {:.3} | {:.1}% | {:.1}% | {} | {}x |",
+            row.0, row.1, row.2, row.3, row.4, row.5, row.6, row.7, base5_str)?;
     }
     writeln!(f, "")?;
-    writeln!(f, "*Pass = windows with ≥{} trades AND Sharpe>0 / total windows.*", MIN_TRADES)?;
-    println!("Markdown summary written to {}", md_path);
+    let best_pass = by_pass.first().unwrap();
+    let best_sh = by_sharpe.first().unwrap();
+    writeln!(f, "**Robustness winner (pass rate):** SM={:.2} → {}/{} pass ({:.1}%), Sharpe {:.3}", best_pass.0, best_pass.1, best_pass.2, best_pass.3, best_pass.4)?;
+    writeln!(f, "**Sharpe winner:** SM={:.2} → Sharpe {:.3}, {}/{} pass", best_sh.0, best_sh.4, best_sh.1, best_sh.2)?;
+    writeln!(f, "")?;
+    writeln!(f, "**Baseline comparison:** HEDGE_SIZE_MULT=1.00 (no size reduction) is the reference.")?;
+    println!("Written snapshots/hedge_size_mult_summary.md");
 
     Ok(())
 }

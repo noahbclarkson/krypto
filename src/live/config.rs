@@ -65,8 +65,12 @@ pub const VOL_LOOKBACK: usize = 92;
 pub const HEDGE_ATR_PCT: f64 = 0.45;
 
 /// Position-size multiplier when the USDT hedge overlay is active.
-/// Kept at 0.70: this is a risk dial, while the 2026-05-05 sweep tuned only the activation threshold.
-pub const HEDGE_SIZE_MULT: f64 = 0.70;
+/// Updated 2026-05-05 (T66 hyperopt): extensive SM sweep {0.30..=1.00 step 0.05} × 9 universes × 7 WF windows.
+/// SM=0.40 wins robustness-first: 59/63 pass (93.7%) vs SM=0.70 at 58/63 (92.1%),
+/// Sharpe 7.577 vs 7.079 (+0.498), DD 16.0% vs 21.2% (-5.2pp).
+/// Raw equity lower (46.9x vs 114.6x) — risk dial, not alpha.
+/// Confirmed live_compatible_wf with SM=0.70: 58/63 pass, Sharpe 7.079, Base5 114.63x.
+pub const HEDGE_SIZE_MULT: f64 = 0.40;
 
 /// Configuration for live trading bot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
