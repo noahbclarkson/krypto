@@ -2,7 +2,7 @@
 //!
 //! Matches `src/live/bot.rs` exactly:
 //! - Turtle breakout entry
-//! - ATR_RANK(12, 42, 5.0) entry gate
+//! - ATR_RANK(17, 42, 5.0) entry gate
 //! - USDT high-vol size overlay (reduces size 30% if current 21d ATR > 75th percentile of 252d history)
 //! - Turtle-only long exit: highest_high - ATR_MULT * ATR
 //! - ATR buffer seeded with TURTLE_ATR_PERIOD
@@ -347,7 +347,7 @@ async fn main() -> Result<()> {
     writeln!(f, "# Live-Compatible Walk-Forward Results")?;
     writeln!(f, "")?;
     writeln!(f, "**Strategy:** Turtle-only exit (matching `src/live/bot.rs` after 2026-05-01 bug fix)")?;
-    writeln!(f, "- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=12, LB=42, T=24) gate")?;
+    writeln!(f, "- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=17, LB=42, T=5) gate")?;
     writeln!(f, "- Exit: Turtle ATR trailing stop (AP=24, M=2.0) + HOLD_MAX={}", HOLD_MAX)?;
     writeln!(f, "- Risk overlay: USDT 30% size when BTC 21d ATR > 75th pct of 252d history")?;
     writeln!(f, "- Fee: 0.10% taker (both sides)")?;

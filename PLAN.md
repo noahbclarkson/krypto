@@ -1,27 +1,28 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-05 09:20 UTC**
+**State: 2026-05-05 13:33 UTC**
 
 ## What Changed This Session
 
-1. **T64 COMPLETE (2026-05-05 09:20 UTC):** Regime Sharpe decomposition built and run. Production T=5 attribution: 114.19x / Sharpe 1.68 / MaxDD 51.2% / 154 trades (calendar-day attribution; T59 exact headline remains 112.27x / Sharpe 3.14).
-2. **Direction regime finding:** Bull_21d Sharpe 1.80 and Bear_21d Sharpe 1.80 — the leader is not purely bear-only.
-3. **Volatility regime finding:** Chop Q1 Sharpe 1.07 and trend-vol Q4 Sharpe 1.16 are the weakest buckets.
-4. **ATR_RANK=5 control:** T=0 no-gate attribution = 206.95x / Sharpe 1.75 / MaxDD 45.9% / 189 trades. T=5 improves bear/trend-vol Sharpe slightly/materially but cuts equity/trades and worsens attribution DD. Do not promote T=0 without held-out validation.
-5. **Anti-spin check:** Last 3-5 sessions over-spent on hyperopts/critique/doc drift. Next work should close T63/T62 or execution readiness, not rerun settled threshold fights.
+1. **Critique complete:** Last 5 builds reviewed. T63/T64 are useful trust work; VL=92 is a defensible plateau tweak; the repeated critique/doc-drift loop remains a real process failure.
+2. **Source-of-truth drift identified as the biggest blind spot:** `reports/daily_progress.csv`, `HALL_OF_FAME.md`, live-bot comments, live-compatible harness docs, and current config do not all describe the same strategy/metrics.
+3. **Exact live bot still not validated:** T63 validates Turtle-only AP17/T5/VL92, but `src/live/bot.rs` also applies a hardcoded USDT hedge overlay (BTC ATR21 > 75th pct → `size *= 0.70`) not modeled by T63/T64.
+4. **Hedge sweep artifacts are untrustworthy:** pre-existing untracked `usdt_hedge_3d_*` outputs report impossible pass counts (e.g. 68/63). Do not use them until the aggregation bug is fixed.
+5. **Metric reality check:** Sharpe 5.0+ is mostly walk-forward per-window scoring, not account-level daily Sharpe. Honest current Turtle-only research headline is 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades, excluding the live bot hedge overlay.
 
 ## Current Truth
 
-- **Live bot:** Turtle-only exit + ATR_RANK=5 regime gate
-- **Live path equity:** 112.27x / Sharpe 3.14 / MaxDD 99.3% / 154 trades / 1794 days
-- **⚠️ MaxDD 99.3% is near-total capital destruction.** Strategy survived only because unlevered spot. If someone put in $100K and saw $700, they'd quit. Not a low-risk strategy.
-- **ATR_RANK=5 filter is mixed, not clearly defensive.** T64 attribution shows T=5 improves bear Sharpe slightly (1.80 vs T=0 1.74) and trend-vol Sharpe (1.16 vs 0.70), but cuts equity/trades and worsens attribution MaxDD. T=5 stays production only because high-threshold ATR_RANK variants failed held-out; T=0 would need held-out validation before any change.
-- **2022 dominates equity.** The year 2022 (99.2x cumulative equity) accounts for most of the cumulative return. This means the strategy is heavily dependent on large bear-market trends. Single big trend year risk.
-- **Walk-forward Sharpe (5.17) ≠ daily equity Sharpe (3.14).** Different methodologies. Use 3.14 on charts.
-- **All Turtle params frozen.** No more hyperopts needed. Only live execution advances the project.
-- **Live testnet blocked on Noah's Binance testnet API keys (5+ weeks).** T53 mock exchange would bypass this.
+- **Live bot code path:** Turtle-only exit + ATR_RANK=5 regime gate + hardcoded USDT hedge size reducer (`size *= 0.70` when BTC ATR21 > 75th percentile of 252-bar history).
+- **Validated research path:** Turtle-only exit + ATR_RANK=5, AP=17/LB=42/T=5, VL=92, no live-bot hedge overlay.
+- **Validated research equity (T63/Turtle-only):** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades.
+- **⚠️ Exact live bot equity is still unknown** because the hardcoded hedge overlay is not included in the validated Turtle-only equity/attribution harnesses.
+- **⚠️ MaxDD 99.5% is near-total capital destruction.** Strategy survived only because unlevered spot. This is not low-risk in any investor-real sense.
+- **ATR_RANK=5 filter is mixed, not clearly defensive.** T64 attribution: T=5 improves bear Sharpe slightly (1.80 vs T=0 1.74) and trend-vol Sharpe (1.16 vs 0.70), but cuts equity/trades and worsens attribution MaxDD. T=0 needs held-out/live-bot validation before any change.
+- **Top-trade dependency is acceptable but real.** T63: top 5 trades explain 38.2% of log-return; equity without top 5 remains 24.51x. Top 10 explain 60.9%; equity without top 10 falls to 7.58x.
+- **Reports are stale.** `reports/daily_progress.csv` and `HALL_OF_FAME.md` do not match AP17/VL92/T63/T64 state. Do not quote them as production truth until regenerated.
+- **Live testnet blocked on Noah's Binance testnet API keys (5+ weeks).** T53 mock exchange remains the bypass.
 
-## Production Params (FINAL — 2026-05-05)
+## Production Params (CODE — 2026-05-05)
 
 ```text
 EP                  = 21
@@ -30,62 +31,73 @@ TURTLE_ATR_M        = 2.0
 HOLD_MAX            = 12
 POSITION_CAP        = 3
 ATR_ENTRY_MULT      = 0.00
-REGIME_ATR_P        = 17     // AP=17 wins held-out vs AP=63 (Sharpe 7.715 vs 5.721)
+REGIME_ATR_P        = 17
 REGIME_LOOKBACK     = 42
-ATR_RANK_THRESHOLD  = 5.0    // T=24/T=65 fail held-out. T=5 is production.
-VOL_LOOKBACK        = 96
-SIZE_MULT           = 0.70   // INERT — pure risk knob
-HEDGE_PCT           = 75     // INERT — pure risk knob
+ATR_RANK_THRESHOLD  = 5.0
+VOL_LOOKBACK        = 92
+LIVE_HEDGE_TRIGGER  = BTC ATR21 > 75th percentile of last 252 bars
+LIVE_HEDGE_SIZE     = size * 0.70
 ```
 
 ## Next Tasks (Priority Order)
 
-### T63: Per-Bar PnL Attribution — IMMEDIATE (1 session)
-**Status:** UNBUILT. Third session overdue.
-- **Problem:** Unknown if edge is from few large wins (fragile) or many small edges (robust). Unknown how much equity comes from 2022 mega-trend vs distributed across years.
-- **Action:** Using T59 Turtle-only equity data, decompose: (a) winning vs losing trade distribution, (b) fee cost as % of gross, (c) max consecutive losing bars, (d) equity % from top-5 trades vs rest.
-- **Why:** If top-5 trades = 80% of equity, the strategy is a "bet on rare mega-trends" and is fragile. If equity is distributed across 50+ trades, it's robust. This is the most important remaining trust question after T64.
-- **Output:** Trade attribution table + equity breakdown by trade size bucket.
-
-### T62: Weekend Effect Filter — IMMEDIATE (1 session)
+### T65: Exact Live-Bot Source-of-Truth Harness — IMMEDIATE (1 session)
 **Status:** UNBUILT.
-- **Problem:** Crypto weekend volume is 30-50% lower. Breakouts on Sat/Sun bars may be structurally less reliable due to thinner books and higher slippage.
-- **Action:** Add day-of-week filter to Turtle entries. Skip entries on Saturday/Sunday bars (or reduce position size). Test on existing T59 daily data immediately.
-- **Why:** Immediately testable. No new data required. One session to build + validate. We keep choosing complex over simple — this is simple.
-- **Output:** Walk-forward pass rate delta with vs without weekend filter. If no improvement, reject.
+- **Problem:** T63/T64 validate Turtle-only AP17/VL92, but `src/live/bot.rs` includes a hardcoded USDT hedge overlay not modeled by the validation harnesses. Reports/HOF also cite stale metrics.
+- **Action:** Build or refactor one harness that imports/duplicates the exact `src/live/bot.rs` decision path: Turtle entry, ATR_RANK AP17/T5, VL92, Turtle ATR exit, position cap, fees, and live hedge sizing. Output one canonical markdown/CSV.
+- **Why:** Until this exists, every production metric is provisional and source-of-truth drift will continue.
+- **Output:** `snapshots/live_bot_exact_equity.md` with equity, daily Sharpe, MaxDD, trades, yearly breakdown, top-trade attribution, and explicit param table.
 
-### T61: Binance aggTrades Order Flow Signal (MEDIUM — 1-2 Sessions)
+### T66: Metrics Source-of-Truth Regeneration — IMMEDIATE (1 session)
 **Status:** UNBUILT.
-- **Problem:** LOB NOBI (T55) is 6+ weeks away. Need microstructure alpha without the wait.
-- **Action:** Download historical aggTrades from `data.binance.vision`. Aggregate buy/sell imbalance over 5-min windows → rolling daily net flow → test as Turtle entry confirmation gate.
-- **Why:** Genuinely novel microstructure edge. Order flow imbalance is a proven alpha source in TradFi. Not waiting for LOB data.
-- **Risk:** Multi-session. Data download pipeline + signal harness + validation.
+- **Problem:** `HALL_OF_FAME.md` and `reports/daily_progress.csv` are stale/inconsistent (AP=12/old equity) and conflict with T63/T64 AP17/VL92 results.
+- **Action:** After T65, regenerate/update HOF and daily progress from the canonical live-bot exact snapshot only. Fix stale AP/T comments in live docs. Add a rule: reports must state whether metrics are daily compounded, per-window walk-forward, attribution, or milestone-aggregated.
+- **Why:** We are currently flattering ourselves by mixing incompatible Sharpe definitions. This is operationally dangerous.
+- **Output:** Clean HOF/report entries that quote exactly one production headline and label all non-comparable metrics.
 
-### T53: Mock Exchange Bypass — BLOCKED ON NOAH'S KEYS
+### T62: Weekend Effect Filter — SIMPLE EDGE TEST (1 session)
+**Status:** UNBUILT.
+- **Problem:** Crypto weekend volume is structurally thinner; weekend breakouts may be lower quality and higher slippage.
+- **Action:** On the T65 exact harness, compare baseline vs skip/reduce-size Saturday/Sunday entries. Use pass-rate-first ranking and inspect whether top-10 winning trades are skipped.
+- **Why:** Immediately testable with existing data and directly relevant to execution. But it must not be promoted if it misses rare breakout winners.
+- **Output:** Baseline vs weekend-filter table, top-trade skip audit, accept/reject verdict.
+
+### T61: Binance aggTrades Order Flow Signal (NEXT AFTER TRUST GAP)
+**Status:** UNBUILT.
+- Download historical aggTrades from `data.binance.vision` and aggregate buy/sell imbalance into daily confirmation features.
+- Only start after T65/T66, otherwise we will add another signal into a confused metric stack.
+
+### T53: Mock Exchange Bypass — EXECUTION BLOCKER
 **Status:** UNBUILT. 5+ weeks overdue.
-- Noah's Binance testnet API keys blocking live testnet
-- Build Rust HTTP/WS server that mocks binance-rs-async endpoints
-- Seed with historical 1m parquet data
-- Test `src/live/bot.rs` end-to-end without Binance credentials
-- **This is the highest-leverage path forward** for validating real execution assumptions
+- Build local HTTP/WS mock exchange seeded from historical 1m parquet and test `src/live/bot.rs` end-to-end without Binance credentials.
+- This becomes top priority after T65/T66 if Noah's testnet keys remain blocked.
 
 ## COMPLETED (Recent)
 
-### T59: Turtle-Only Daily Equity Curve — DONE ✔ (2026-05-05 00:38 UTC)
-**Results:** 112.27x / Sharpe 3.14 / MaxDD 99.3% / 154 trades / 1794 days
-- Bug fixed: turtle_signal used >= instead of > (off-by-one)
-- Per-year breakdown: 2020=11.2x, 2021=10.4x, 2022=99.2x, 2023=118.8x, 2024=112.3x
-- 2022 bear market dominates cumulative equity (99.2x in one year)
-- Live path equity CONFIRMED. Config updated to AP=17.
+### T63: Per-Trade PnL Attribution — DONE ✔ (2026-05-05 12:20 UTC)
+**Results:** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades (Turtle-only AP17/T5/VL92, no live-bot hedge overlay)
+- Fee drag: 32.6% additive, 4.7% of gross.
+- Win rate: 53.8%, avg win +13.76%, avg loss -6.81%, W/L 2.02x.
+- Top 5 trades explain 38.2% of log-return; equity without top 5 remains 24.51x.
+- Top 10 trades explain 60.9%; equity without top 10 is 7.58x.
+- Verdict: real convex trend-following edge, not single-trade mirage. But missing rare breakout winners can destroy performance.
+- Files: `examples/t63_trade_attribution.rs`, `snapshots/t63_trade_attribution.{md,csv}`.
+
+### T59: Turtle-Only Daily Equity Curve — DONE ✔ (2026-05-05, updated after VL92)
+**Results:** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades / 1794 days (AP17/T5/VL92)
+- Earlier T59 112.27x / Sharpe 3.14 used VL96 before the dense AP17 sweep promoted VL92.
+- Live path research equity confirmed for Turtle-only/AP17/T5/VL92, but exact `src/live/bot.rs` remains unconfirmed because of hardcoded hedge overlay.
 
 ### T60: Per-Year Performance Decomposition — DONE ✔ (2026-05-05)
-**Status:** COMPLETE via T59 output. See above.
+**Status:** COMPLETE via Turtle-only equity output.
+- 2022 mega-trend remains the dominant contributor to compounded equity.
+- Use exact-live T65 harness before quoting final production yearly metrics.
 
 ### T64: Regime Sharpe Decomposition — DONE ✔ (2026-05-05 09:20 UTC)
 **Results:** Production T=5 attribution = 114.19x / Sharpe 1.68 / MaxDD 51.2% / 154 trades. T=0 no-gate control = 206.95x / Sharpe 1.75 / MaxDD 45.9% / 189 trades.
 - Bull/bear Sharpe balanced: 1.80 / 1.80. Not purely bear-only.
 - Weak buckets are vol regimes: chop Q1 1.07, trend-vol Q4 1.16.
-- ATR_RANK=5 is mixed: slight bear Sharpe lift and trend-vol lift, but lower equity/trades and worse attribution DD. T=0 needs held-out validation before any production change.
+- ATR_RANK=5 is mixed: slight bear Sharpe lift and trend-vol lift, but lower equity/trades and worse attribution DD. T=0 needs held-out/live-path validation before any production change.
 - Files: `examples/regime_sharpe_decomposition.rs`, `snapshots/regime_sharpe_decomposition.{csv,md}`.
 
 ### T62 (AP=17 held-out validation): DONE ✔ (2026-05-04)
