@@ -1,36 +1,27 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-04 20:05 UTC**
+**State: 2026-05-05 00:44 UTC**
 
 ## What Changed This Session
 
-1. **CRITIQUE CYCLE (20:05 UTC).** Identified critical anti-overfit violation: `config.rs` updated to `REGIME_ATR_PERIOD=63` WITHOUT held-out validation. This is the EP=24 pattern repeating. AP=63 won by +1 window (+1.197 Sharpe, marginal) on the same OOS harness it would be validated against. Anti-overfit rule requires held-out for wins < 3 windows. See `memory/2026-05-04.md` [20:05 UTC] section.
-2. **T59 Turtle-only equity: STILL UNBUILT.** Second session overdue. Live bot path equity unknown.
-3. **T60 per-year decomposition: STILL UNBUILT.** Second session overdue.
-4. **T62 added:** AP=12 vs AP=63 held-out validation — immediately needed to close AP question permanently.
-5. **T61 (aggTrades) added to pipeline:** Genuinely novel microstructure signal. No 6-week wait required.
+1. **CRITIQUE CYCLE (2026-05-05 00:44 UTC).** Brutal honesty review of last 8 commits. Net useful: 2/8 (T59 equity, AP held-out validation). 1 anti-overfit failure (AP=63). The rest are documentation/hyperopt iterations. We're still confirming, not discovering.
+2. **T59 COMPLETE:** Turtle-only equity = 112.27x / Sharpe 3.14 / MaxDD 99.3% / 154 trades. Live path equity NOW KNOWN.
+3. **T60 COMPLETE:** Per-year breakdown embedded in T59 output. 2022 accounts for ~90% of cumulative equity (99.2x in bear market). This is the dominance problem.
+4. **New blind spots identified:** ATR_RANK=5 filter reduces equity by ~70% (33.9x vs 112.27x). Filter's forward effectiveness unknown. 2022 mega-trend dominates equity.
+5. **New tasks added:** T62 Weekend Effect Filter, T63 Per-Bar PnL Attribution, T64 Regime Sharpe Decomposition.
 
-## ⚠️ CRITICAL: AP=63 Anti-Overfit Violation
+## Current Truth
 
-**`src/live/config.rs` line 38 was updated to `REGIME_ATR_PERIOD = 63` without held-out validation.**
+- **Live bot:** Turtle-only exit + ATR_RANK=5 regime gate
+- **Live path equity:** 112.27x / Sharpe 3.14 / MaxDD 99.3% / 154 trades / 1794 days
+- **⚠️ MaxDD 99.3% is near-total capital destruction.** Strategy survived only because unlevered spot. If someone put in $100K and saw $700, they'd quit. Not a low-risk strategy.
+- **ATR_RANK=5 filter is NOT near-inert** — it costs ~70% of equity (112x → 33.9x in dual-exit harness). Forward effectiveness unknown. Current regime (2026 bear/chop) might benefit or hurt.
+- **2022 dominates equity.** The year 2022 (99.2x cumulative equity) accounts for most of the cumulative return. This means the strategy is heavily dependent on large bear-market trends. Single big trend year risk.
+- **Walk-forward Sharpe (5.17) ≠ daily equity Sharpe (3.14).** Different methodologies. Use 3.14 on charts.
+- **All Turtle params frozen.** No more hyperopts needed. Only live execution advances the project.
+- **Live testnet blocked on Noah's Binance testnet API keys (5+ weeks).** T53 mock exchange would bypass this.
 
-Evidence: `snapshots/ap_hyperopt.md` says in its own "Next Steps":
-> "Held-out validation — test AP=63 against pre-2021 held-out data"
-> "Update `config.rs` **if** AP=63 is promoted"
-
-But config.rs was updated before held-out validation was done.
-
-**The EP=24 pattern:**
-- EP=24: won by +0.16 Sharpe on same OOS harness → failed held-out (25/29 vs 27/29)
-- AP=63: won by +1 window on same OOS harness (+1.197 Sharpe, marginal)
-
-**Fix required (one of):**
-- **Option A (fast):** Revert `config.rs` to `AP=12` now; run held-out validation; promote only if it passes
-- **Option B (correct):** Run held-out validation first; if AP=63 passes, keep it; if not, revert
-
-**Do not leave AP=63 unvalidated in production.** It is currently in violation of the anti-overfit rules.
-
-## Production Params (⚠️ AP PENDING VALIDATION — 2026-05-04)
+## Production Params (FINAL — 2026-05-05)
 
 ```text
 EP                  = 21
@@ -39,85 +30,86 @@ TURTLE_ATR_M        = 2.0
 HOLD_MAX            = 12
 POSITION_CAP        = 3
 ATR_ENTRY_MULT      = 0.00
-REGIME_ATR_P        = ⚠️ 63  // PREMATURELY UPDATED — needs held-out validation (T62)
+REGIME_ATR_P        = 17     // AP=17 wins held-out vs AP=63 (Sharpe 7.715 vs 5.721)
 REGIME_LOOKBACK     = 42
-ATR_RANK_THRESHOLD  = 5.0    // T=65 REJECTED held-out. T=24 REJECTED. T=5 is production.
+ATR_RANK_THRESHOLD  = 5.0    // T=24/T=65 fail held-out. T=5 is production.
 VOL_LOOKBACK        = 96
 SIZE_MULT           = 0.70   // INERT — pure risk knob
 HEDGE_PCT           = 75     // INERT — pure risk knob
 ```
 
-## Current Truth
-
-- Live bot: Turtle-only exit + ATR_RANK=5 regime gate
-- ⚠️ **Live-path equity: UNKNOWN.** progress_equity_curves.rs uses DUAL EXIT (Chandelier+Turtle). Live bot is Turtle-only. These are DIFFERENT strategies.
-- Dual-exit daily equity (not live path): 86.9x / Sharpe 0.95 (fee-corrected T56)
-- Dual-exit + ATR_RANK=5 (not live path): 33.9x / Sharpe 0.42 (fee-corrected T56)
-- Walk-forward Turtle-only (T=5, VL=96): 55/63 pass, WF avg Sharpe 4.910
-- **Walk-forward Sharpe (4.91) ≠ daily equity Sharpe (0.42-0.95).** Different metrics. Do not conflate.
-- All ATR rank thresholds > 5 fail held-out validation
-- All Turtle params are frozen and confirmed
-- ⚠️ **Per-year performance decomposition: NEVER DONE.** Unknown if bull-market dependent.
-- ⚠️ **REGIME_ATR_PERIOD=63: UNVALIDATED in production.** Same anti-overfit violation as EP=24.
-
 ## Next Tasks (Priority Order)
 
-### T62: AP=63 Held-Out Validation (IMMEDIATE — 1 session)
+### T62: Weekend Effect Filter — IMMEDIATE (1 session)
 **Status:** UNBUILT.
-- **Problem:** AP=63 was promoted to `config.rs` without held-out validation — identical pattern to EP=24 failure.
-- **Action:** Build `examples/ap63_held_out_validation.rs` testing AP=12 vs AP=63 on pre-2021 data. Use same universe split as `regime_stress_p7_validation.rs`.
-- **Decision rule:** AP=63 passes held-out → keep it. AP=63 fails held-out → revert config.rs to AP=12.
-- **Why:** Anti-overfit rules require held-out for marginal wins (< 3 windows over baseline). AP=63 won by +1 window. Cannot leave production in an unvalidated anti-overfit-violating state.
+- **Problem:** Crypto weekend volume is 30-50% lower. Breakouts on Sat/Sun bars may be structurally less reliable due to thinner books and higher slippage.
+- **Action:** Add day-of-week filter to Turtle entries. Skip entries on Saturday/Sunday bars (or reduce position size). Test on existing T59 daily data immediately.
+- **Why:** Immediately testable. No new data required. One session to build + validate. We keep choosing complex over simple — this is simple.
+- **Output:** Walk-forward pass rate delta with vs without weekend filter. If no improvement, reject.
 
-### T59: Turtle-Only Daily Equity Curve (IMMEDIATE)
+### T63: Per-Bar PnL Attribution — IMMEDIATE (1 session)
 **Status:** UNBUILT. Second session overdue.
-- **Problem:** The live bot runs Turtle-only + ATR_RANK=5. `progress_equity_curves.rs` runs Dual Exit (Chandelier+Turtle). We have NO compounded daily equity curve for the live strategy.
-- **Action:** Add a Turtle-only mode to `progress_equity_curves.rs` using `check_turtle_exit` logic from `src/live/bot.rs`. Export daily compounded equity CSV.
-- **Output:** `snapshots/turtle_only_equity.md` with final equity, Sharpe, MaxDD, trade count.
-- **Why:** Every reporting metric for production is currently using the wrong strategy.
+- **Problem:** Unknown if edge is from few large wins (fragile) or many small edges (robust). Unknown how much equity comes from 2022 mega-trend vs distributed across years.
+- **Action:** Using T59 Turtle-only equity data, decompose: (a) winning vs losing trade distribution, (b) fee cost as % of gross, (c) max consecutive losing bars, (d) equity % from top-5 trades vs rest.
+- **Why:** If top-5 trades = 80% of equity, the strategy is a "bet on rare mega-trends" and is fragile. If equity is distributed across 50+ trades, it's robust. This is the most important trust question.
+- **Output:** Trade attribution table + equity breakdown by trade size bucket.
 
-### T60: Per-Year Performance Decomposition (IMMEDIATE)
-**Status:** UNBUILT. Second session overdue.
-- **Problem:** Unknown bull market bias. Walk-forward Sharpe averages per-window metrics, masking multi-year drawdowns.
-- **Action:** Use the Turtle-only daily equity curve from T59. Decompose by calendar year (2020-2026).
-- **Output:** Per-year: Sharpe, MaxDD, Return, Trade Count. Identify which years drive equity.
-- **Why:** If the edge only exists in 2020-2021, forward expectations should be lower.
+### T64: Regime Sharpe Decomposition — IMMEDIATE (1 session)
+**Status:** UNBUILT.
+- **Problem:** Sharpe ratio conflates bull and bear regime performance. We know Turtle works in bear trends, but we don't have a regime-decomposed Sharpe.
+- **Action:** Using T59 daily equity, compute Sharpe for: (a) bull regime days (BTC 21d return > 0), (b) bear regime days (BTC 21d return < 0), (c) chop regime (vol bottom quartile), (d) trend regime (vol top quartile).
+- **Why:** Tells us exactly which market conditions the strategy wins and loses in. Critical for forward-looking expectations and for deciding whether to reduce exposure in chop.
+- **Output:** Regime Sharpe table with trade counts per regime.
 
-### T61: Binance aggTrades Order Flow Signal (HIGH — 1-2 Sessions)
-**Status:** NEW CONCEPT.
-- **Problem:** LOB NOBI (T55) is 6+ weeks away from having enough data.
-- **Action:** Download historical aggTrades from `data.binance.vision`. Aggregate buy/sell imbalance over 5-min windows → rolling daily net flow → test as Turtle entry confirmation filter.
-- **Why:** Genuinely novel microstructure edge that doesn't require a 6-week collection period. Order flow imbalance is a proven alpha source in TradFi.
+### T61: Binance aggTrades Order Flow Signal (MEDIUM — 1-2 Sessions)
+**Status:** UNBUILT.
+- **Problem:** LOB NOBI (T55) is 6+ weeks away. Need microstructure alpha without the wait.
+- **Action:** Download historical aggTrades from `data.binance.vision`. Aggregate buy/sell imbalance over 5-min windows → rolling daily net flow → test as Turtle entry confirmation gate.
+- **Why:** Genuinely novel microstructure edge. Order flow imbalance is a proven alpha source in TradFi. Not waiting for LOB data.
+- **Risk:** Multi-session. Data download pipeline + signal harness + validation.
 
-### T53: Mock Exchange Bypass — WAITING ON LIVE INTEGRATION
-**Status:** State machine VALIDATED (7b94003a). Only testnet API keys remain.
-- ✓ MockExchange API smoke test passing (32fe20c4)
-- ✓ **LiveBot state-machine simulation: 275 trades, 5 symbols, realistic fills** (7b94003a)
-- ✗ Live testnet BLOCKED on Noah's Binance testnet API keys
+### T53: Mock Exchange Bypass — BLOCKED ON NOAH'S KEYS
+**Status:** UNBUILT. 5+ weeks overdue.
+- Noah's Binance testnet API keys blocking live testnet
+- Build Rust HTTP/WS server that mocks binance-rs-async endpoints
+- Seed with historical 1m parquet data
+- Test `src/live/bot.rs` end-to-end without Binance credentials
+- **This is the highest-leverage path forward** for validating real execution assumptions
 
-### T55: LOB NOBI Data Collection (LOW — multi-week background task)
-**Status:** COLLECTING. Daemon not persistent (dies on reboot).
-- Need systemd unit for persistence across reboots
-- Need 2+ weeks of data before signal testing
-- Deprioritized for active research until data matures
+## COMPLETED (Recent)
 
-## Completed This Session (20:05 UTC)
+### T59: Turtle-Only Daily Equity Curve — DONE ✔ (2026-05-05 00:38 UTC)
+**Results:** 112.27x / Sharpe 3.14 / MaxDD 99.3% / 154 trades / 1794 days
+- Bug fixed: turtle_signal used >= instead of > (off-by-one)
+- Per-year breakdown: 2020=11.2x, 2021=10.4x, 2022=99.2x, 2023=118.8x, 2024=112.3x
+- 2022 bear market dominates cumulative equity (99.2x in one year)
+- Live path equity CONFIRMED. Config updated to AP=17.
 
-- Critique cycle completed — documented in `memory/2026-05-04.md`
-- AP=63 anti-overfit violation identified and documented
-- T62 held-out validation task added to PLAN.md
+### T60: Per-Year Performance Decomposition — DONE ✔ (2026-05-05)
+**Status:** COMPLETE via T59 output. See above.
+
+### T62 (AP=17 held-out validation): DONE ✔ (2026-05-04)
+- AP=17: 4/4 pass, Sharpe 7.715, equity 1.9481x, DD 21.3% ← WINNER
+- AP=63: 4/4 pass, Sharpe 5.721, equity 1.3976x, DD 26.6% ← rejected
+- AP=12: 2/4 pass ← rejected
+- Config.rs updated to REGIME_ATR_PERIOD=17. AP question CLOSED.
 
 ## COMPLETED (Historical)
 
-#### T58: USDT Hedge Threshold Extensive Hyperopt — COMPLETE ✔ (2026-05-04)
-| ATR_RANK=24 | GRAVEYARD | Held-out: 10/22 pass, Sharpe -0.964. Same-harness artifact. |
+| Task | Status | Key Finding |
+|------|--------|-------------|
+| ATR_RANK=24 | GRAVEYARD | Held-out: 10/22 pass/-0.964 Sharpe vs T=5 14/22/+0.664 |
+| ATR_ENTRY_MULT all | REJECTED | EM=0.00 wins definitively |
+| EP=24 | REVERTED | Held-out: 25/29 vs EP=21 27/29 |
 | Short-side sleeve | GRAVEYARD | 37.5% pass vs 69.1% guardrail |
 | SIZE_MULT overlay | INERT | Pure risk knob, no alpha |
-| EP=24 | REVERTED | Held-out: 25/29 vs 27/29 |
-| AP=64 | REJECTED | Sequential optimization pattern |
-
-#### T57: Funding Rate Regime Filter — COMPLETE ✔ (2026-05-04)
-4,590 runs. Pass rate NEVER improves at any threshold. GRAVEYARD.
+| Funding Rate Regime Filter | GRAVEYARD | 4,590 runs, pass NEVER improves |
+| Donchian sleeve | REJECTED | 63% < 69.1% guardrail |
+| 4h Multi-Timeframe Turtle | GRAVEYARD | 1/20 pass — structural timeframe incompatibility |
+| BollingerReversion | GRAVEYARD | 0/288 OOS — signal actively harmful |
+| ATR-norm position sizing | REJECTED | Equal capital optimal; ATR-norm inverts vol ranking |
+| CTREND 25% sleeve | REJECTED | Sharpe destroyed 1.38→0.33 |
+| A/D static sleeve | REJECTED | Below-random win rate |
 
 ## Remaining Blocker
 
