@@ -1,10 +1,11 @@
-//! T58: USDT Hedge Activation Threshold — Extensive Hyperopt
+//! USDT Hedge Activation Threshold — Current Production Extensive Hyperopt
 //!
 //! Parameter: HEDGE_PCT — BTC 21d ATR percentile threshold for USDT hedge overlay.
 //! When BTC 21d ATR > HEDGE_PCT-th percentile of 252-bar history → size *= 0.70.
 //!
-//! Hardcoded magic number: `0.75` (75th percentile) in bot.rs line 286.
-//! Never systematically optimized — just assumed correct.
+//! Hardcoded magic number: `0.75` (75th percentile) in bot.rs.
+//! Re-swept under current production params (AP17/T5/VL92) because the older T58
+//! run used stale AP12/VL96 assumptions.
 //!
 //! Sweep: HEDGE_PCT ∈ [0..=99] step 1 (100 values) × 9 universes × 7 WF windows.
 //! Also HEDGE_PCT=100 as "disabled" baseline (never fires).
@@ -17,7 +18,6 @@
 
 use anyhow::Result;
 use krypto::data::loader::DataLoader;
-use polars::prelude::*;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
@@ -34,11 +34,11 @@ const TURTLE_ENTRY: usize = 21;
 const TURTLE_ATR_PERIOD: usize = 24;
 const TURTLE_ATR_MULT: f64 = 2.00;
 const ATR_ENTRY_MULT: f64 = 0.00;
-const VOL_LOOKBACK: usize = 96;
+const VOL_LOOKBACK: usize = 92;
 
 const HEDGE_SIZE_MULT: f64 = 0.70; // fixed — only sweep the threshold
 
-const REGIME_ATR_PERIOD: usize = 12;
+const REGIME_ATR_PERIOD: usize = 17;
 const REGIME_LOOKBACK: usize = 42;
 const ATR_RANK_T: f64 = 5.0;
 
@@ -295,7 +295,7 @@ struct SweepRow {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("=== T58: USDT Hedge Threshold Extensive Hyperopt ===");
+    println!("=== USDT Hedge Threshold Extensive Hyperopt (AP17/VL92) ===");
     println!("Sweep: HEDGE_PCT ∈ [0..=100] step 1 (101 values) × 9 universes × 7 WF windows");
     println!("Loading data...");
     
@@ -336,7 +336,7 @@ async fn main() -> Result<()> {
         let mut total_trades = 0usize;
         let mut positive_universes = 0usize;
 
-        for (u_name, u_syms) in UNIVERSES {
+        for (_u_name, u_syms) in UNIVERSES {
             let syms: Vec<String> = u_syms.iter().map(|&s| s.to_string()).collect();
             let mut u_sharpes = Vec::new();
             
@@ -528,11 +528,12 @@ async fn main() -> Result<()> {
     // =========================================================================
     {
         let mut f = File::create("snapshots/hedge_threshold_extensive_summary.md")?;
-        writeln!(f, "# T58: USDT Hedge Threshold Extensive Hyperopt")?;
+        writeln!(f, "# USDT Hedge Threshold Extensive Hyperopt — AP17/VL92 Current Production")?;
         writeln!(f, "")?;
         writeln!(f, "**Parameter:** HEDGE_PCT — BTC 21d ATR percentile threshold for position size reduction")?;
         writeln!(f, "**Range:** 0..=100 step 1 (101 values) × 9 universes × {} WF windows = {} simulations", windows, 101 * 9 * windows)?;
         writeln!(f, "**Size mult when active:** {}", HEDGE_SIZE_MULT)?;
+        writeln!(f, "**Fixed production params:** EP=21, ATR(24,2.0), HOLD_MAX=12, CAP=3, VL=92, AP=17, LB=42, T=5")?;
         writeln!(f, "")?;
         writeln!(f, "## Winner")?;
         writeln!(f, "HEDGE_PCT={}: {}/{} pass ({:.1}%), Sharpe {:.3}, Ret {:.1}%, DD {:.1}%, Base5 {:.2}x",

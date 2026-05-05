@@ -91,7 +91,7 @@ def plot_equity_curves(curves, winner, runners, baseline_pct=75, disabled_pct=10
     
     if baseline_key in curves:
         available['baseline'] = curves[baseline_key]
-        labels['baseline'] = f"Baseline (PCT={baseline_pct}, current prod)"
+        labels['baseline'] = f"Prior baseline (PCT={baseline_pct})"
         colors['baseline'] = '#888888'
         linewidths['baseline'] = 1.5
     
@@ -127,7 +127,7 @@ def plot_equity_curves(curves, winner, runners, baseline_pct=75, disabled_pct=10
                     linewidth=linewidths[tag], alpha=0.9 if tag == 'winner' else 0.7)
     
     ax1.set_yscale('log')
-    ax1.set_title('T58: USDT Hedge Threshold — Base5 Compounded Equity (Walk-Forward)', fontsize=14, fontweight='bold')
+    ax1.set_title('USDT Hedge Threshold — Base5 Compounded Equity (AP17/VL92 Walk-Forward)', fontsize=14, fontweight='bold')
     ax1.set_ylabel('Portfolio Value (log scale, start=1.0)', fontsize=11)
     ax1.legend(loc='upper left', fontsize=8, framealpha=0.9)
     ax1.grid(True, alpha=0.3)
@@ -167,8 +167,8 @@ def plot_sweep_heatmap(sweep):
     
     ax1.bar(pcts, pass_rates, color='#2196F3', alpha=0.7, width=1.0)
     ax1.set_ylabel('Pass Rate (%)', fontsize=11)
-    ax1.set_title('T58: Hedge Threshold Sweep — Pass Rate & Sharpe', fontsize=14, fontweight='bold')
-    ax1.axvline(x=75, color='red', linestyle='--', linewidth=1.5, label='Current prod (75)')
+    ax1.set_title('USDT Hedge Threshold Sweep — Pass Rate & Sharpe (AP17/VL92)', fontsize=14, fontweight='bold')
+    ax1.axvline(x=75, color='red', linestyle='--', linewidth=1.5, label='Prior baseline (75)')
     best_pct = max(sweep, key=lambda r: (r['pass_count'], r['avg_sharpe']))['hedge_pct']
     ax1.axvline(x=best_pct, color='green', linestyle='--', linewidth=1.5, label=f'Winner ({best_pct})')
     ax1.legend(fontsize=9)

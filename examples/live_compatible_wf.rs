@@ -3,7 +3,7 @@
 //! Matches `src/live/bot.rs` exactly:
 //! - Turtle breakout entry
 //! - ATR_RANK(17, 42, 5.0) entry gate
-//! - USDT high-vol size overlay (reduces size 30% if current 21d ATR > 75th percentile of 252d history)
+//! - USDT high-vol size overlay (reduces size 30% if current 21d ATR > 45th percentile of 252d history)
 //! - Turtle-only long exit: highest_high - ATR_MULT * ATR
 //! - ATR buffer seeded with TURTLE_ATR_PERIOD
 //! - HOLD_MAX enforced independent of ATR warmup
@@ -12,7 +12,6 @@
 
 use anyhow::Result;
 use krypto::data::loader::DataLoader;
-use polars::prelude::*;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
@@ -34,6 +33,8 @@ const VOL_LOOKBACK: usize = 92; // updated 2026-05-05: dense AP17 sweep VL=1..20
 const REGIME_ATR_PERIOD: usize = 17; // hyperopt 2026-05-04: AP=17 wins OOS on Sharpe/Return, AP=63 wins on pass rate. Held-out (4-period pre-2021): AP=17: 4/4 pass, Sharpe 7.715, equity 1.9481x. AP=63: 4/4 pass, Sharpe 5.721, equity 1.3976x. AP=17 dominates all held-out metrics. Updated from AP=63.
 const REGIME_LOOKBACK: usize = 42; // confirmed 2026-05-02: LB∈[5..=200] sweep → LB=42 optimal (Sharpe 6.188, 55/63 pass, 9/9 positive)
 const ATR_RANK_T: f64 = 5.0; // REVERTED 2026-05-04: T=24 was 3rd sequential optimization on this harness. T52 held-out on pre-2021 data: T=24 → 10/22 pass, Sharpe -0.964. T=5 → 14/22 pass, Sharpe +0.664. Same EP=24 pattern. ATR_RANK=24 is a same-harness artifact. T=5 is the correct production default.
+const HEDGE_ATR_PCT: f64 = 0.45; // hyperopt 2026-05-05: HEDGE_PCT∈[0..=100] step 1 under AP17/VL92. PCT=45 wins 58/63 pass, Sharpe 7.079, DD 21.2% vs PCT=75 57/63, Sharpe 6.874, DD 24.1%.
+const HEDGE_SIZE_MULT: f64 = 0.70;
 
 const UNIVERSES: &[(&str, &[&str])] = &[
     ("Base5",        &["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]),
@@ -188,9 +189,10 @@ fn run_sim(
                                     hist.push((h - l).max((h - c0).abs()).max((l - c0).abs()));
                                 }
                                 hist.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                                let pct_75 = hist[(0.75 * hist.len() as f64) as usize];
-                                if atr_21 > pct_75 {
-                                    size_mult = 0.70;
+                                let pct_idx = (HEDGE_ATR_PCT * hist.len() as f64) as usize;
+                                let pct_threshold = hist[pct_idx.min(hist.len().saturating_sub(1))];
+                                if atr_21 > pct_threshold {
+                                    size_mult = HEDGE_SIZE_MULT;
                                 }
                             }
                         }
@@ -349,7 +351,7 @@ async fn main() -> Result<()> {
     writeln!(f, "**Strategy:** Turtle-only exit (matching `src/live/bot.rs` after 2026-05-01 bug fix)")?;
     writeln!(f, "- Entry: Turtle breakout (EP=21) + ATR_RANK(AP=17, LB=42, T=5) gate")?;
     writeln!(f, "- Exit: Turtle ATR trailing stop (AP=24, M=2.0) + HOLD_MAX={}", HOLD_MAX)?;
-    writeln!(f, "- Risk overlay: USDT 30% size when BTC 21d ATR > 75th pct of 252d history")?;
+    writeln!(f, "- Risk overlay: USDT 30% size when BTC 21d ATR > 45th pct of 252d history")?;
     writeln!(f, "- Fee: 0.10% taker (both sides)")?;
     writeln!(f, "- VOL_LOOKBACK: {}", VOL_LOOKBACK)?;
     writeln!(f, "")?;

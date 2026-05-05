@@ -1,6 +1,6 @@
 # T59: Turtle-Only Daily Equity
 
-Generated: 2026-05-05 09:37 UTC
+Generated: 2026-05-05 14:12 UTC
 
 ## Production Params
 

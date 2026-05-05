@@ -11,7 +11,7 @@
 //!
 //! Production params (updated 2026-05-05):
 //!   EP=21, TurtleATR(24, 2.0), HM=12, CAP=3, ATR_RANK(AP=17, LB=42, T=5), VL=92
-//!   Live entries also apply a hardcoded USDT hedge: BTC ATR21 > 75th pct => size *= 0.70.
+//!   Live entries also apply USDT hedge: BTC ATR21 > 45th pct => size *= 0.70.
 
 const FRESHNESS_COOLDOWN: usize = 0; // bars to wait after exit before re-entry (0=disabled)
 
@@ -29,7 +29,7 @@ use std::collections::VecDeque;
 use tokio::sync::RwLock;
 use std::sync::Arc;
 
-use super::config::LiveConfig;
+use super::config::{LiveConfig, HEDGE_ATR_PCT, HEDGE_SIZE_MULT};
 use super::executor::{Executor, OrderSide};
 use std::path::PathBuf;
 use super::feed::{fetch_warmup_data, KlineEvent, LiveFeed};
@@ -256,9 +256,9 @@ impl LiveBot {
                 if current_positions < self.config.position_cap {
                     if self.check_turtle_entry(symbol, &bar) {
                         let mut size = 1.0 / self.config.position_cap as f64;
-                        // USDT hedge overlay: vol-regime position sizing
-                        // When BTC 21d ATR > 75th pct of 252-bar history → reduce size 30%
-                        // Validated 2026-04-11: ~30% DD reduction in bear windows. Non-breaking overlay.
+                        // USDT hedge overlay: vol-regime position sizing.
+                        // 2026-05-05 AP17/VL92 sweep: HEDGE_ATR_PCT=0.45 wins robustness-first
+                        // (58/63 pass, Sharpe 7.079, DD 21.2%) vs prior 0.75 (57/63, Sharpe 6.874, DD 24.1%).
                         {
                             let btc_bars = match self.bars.get("BTCUSDT") {
                                 Some(b) => b,
@@ -284,10 +284,10 @@ impl LiveBot {
                                     hist.push((bj.high - bj.low).max((bj.high - pcj).abs()).max((bj.low - pcj).abs()));
                                 }
                                 hist.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                                let pct_idx = (0.75 * hist.len() as f64) as usize;
-                                if let Some(&pct_75) = hist.get(pct_idx) {
-                                    if atr_21 > pct_75 {
-                                        size *= 0.70;
+                                let pct_idx = (HEDGE_ATR_PCT * hist.len() as f64) as usize;
+                                if let Some(&pct_threshold) = hist.get(pct_idx) {
+                                    if atr_21 > pct_threshold {
+                                        size *= HEDGE_SIZE_MULT;
                                     }
                                 }
                             }

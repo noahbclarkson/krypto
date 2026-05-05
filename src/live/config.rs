@@ -58,6 +58,16 @@ pub const ATR_RANK_THRESHOLD: f64 = 5.0;
 /// Evidence: examples/vl_dense_sweep.rs, snapshots/vl_dense_ap17_summary.csv, memory/hyperopt-2026-05-05.md.
 pub const VOL_LOOKBACK: usize = 92;
 
+/// USDT hedge overlay: reduce position size when BTC 21d ATR is above this percentile of its 252d history.
+/// Updated 2026-05-05: extensive AP17/VL92 sweep HEDGE_PCT∈[0..=100] step 1 × 9 universes × 7 WF windows.
+/// PCT=45 wins robustness-first: 58/63 pass, Sharpe 7.079, DD 21.2% vs prior PCT=75 at 57/63, Sharpe 6.874, DD 24.1%.
+/// Evidence: examples/usdt_hedge_threshold_extensive.rs, snapshots/hedge_threshold_extensive_summary.md.
+pub const HEDGE_ATR_PCT: f64 = 0.45;
+
+/// Position-size multiplier when the USDT hedge overlay is active.
+/// Kept at 0.70: this is a risk dial, while the 2026-05-05 sweep tuned only the activation threshold.
+pub const HEDGE_SIZE_MULT: f64 = 0.70;
+
 /// Configuration for live trading bot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LiveConfig {
