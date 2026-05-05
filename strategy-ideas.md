@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-04 20:05 UTC. Critique cycle complete. AP=63 anti-overfit violation identified — config.rs updated without held-out validation (same EP=24 pattern). T59 and T60 still unbuilt (second session overdue). New concepts added: weekend filter, per-bar PnL attribution, aggTrades order flow.*
+*Last updated: 2026-05-05 00:44 UTC. Critique cycle complete. T59/T60 complete (112.27x live path equity). New blind spots: MaxDD 99.3% is near-total destruction; ATR_RANK=5 costs ~70% equity; 2022 mega-trend dominates equity. New tasks: T62 weekend filter, T63 PnL attribution, T64 regime Sharpe decomposition. AP=17 is production.*
 
 ---
 
@@ -29,6 +29,8 @@
 
 ## Resolved
 
+- **AP=63 ANTI-OVERFIT VIOLATION: RESOLVED ✔** (2026-05-04). AP=17 promoted to production. AP=17 held-out: 4/4 pass, Sharpe 7.715. AP=63: 4/4 pass, Sharpe 5.721 (rejected). Config.rs now has REGIME_ATR_PERIOD=17.
+- **T59 Turtle-Only Equity: DONE ✔** (2026-05-05). Live path equity = 112.27x / Sharpe 3.14 / MaxDD 99.3% / 154 trades.
 - **VOL_LOOKBACK drift:** config.rs and live_compatible_wf.rs both now use VL=96 ✅
 - **Short-side sleeve:** GRAVEYARD'd (37.5% pass vs 69.1% guardrail) ✅
 - **SIZE_MULT:** INERT — cosmetic risk knob only ✅
@@ -56,11 +58,19 @@
 - **Action:** Download historical `aggTrades` from data.binance.vision. Build rolling 5-min buy/sell imbalance. Test as entry confirmation gate.
 - **Why:** Genuinely novel microstructure edge that doesn't require a 6-week collection period.
 
-### T62: Weekend Liquidity Filter (NEW — 1 session)
+### T63: Per-Bar PnL Attribution (IMMEDIATE — 1 session)
+**Status:** UNBUILT. Second session overdue.
+- **Problem:** Unknown if edge is from few large wins (fragile) or many small edges (robust). Unknown how much equity comes from 2022 mega-trend vs distributed.
+- **Action:** Using T59 Turtle-only equity data, decompose: (a) winning vs losing trade distribution, (b) fee cost as % of gross, (c) max consecutive losing bars, (d) equity % from top-5 trades vs rest.
+- **Why:** If top-5 trades = 80% of equity, the strategy is fragile. If distributed across 50+ trades, it's robust. **This is the most important trust question.**
+- **Output:** Trade attribution table + equity breakdown by trade size bucket.
+
+### T64: Regime Sharpe Decomposition (NEW — 1 session)
 **Status:** NEW CONCEPT.
-- **Hypothesis:** Crypto weekend volume is 30-50% lower. Breakout breakouts on Saturday/Sunday bars may be structurally less reliable due to thinner books and higher slippage.
-- **Action:** Add day-of-week filter to Turtle entries. Skip entries on Sat/Sun (or reduce position size). Test on existing daily data immediately.
-- **Why:** Immediately testable, no new data required, low implementation complexity.
+- **Hypothesis:** Turtle Sharpe is INVERSELY correlated with bull market strength. In bear/crisis (2022): highest Sharpe (trend-following shines). In strong bull (2020): medium Sharpe (everything wins). In chop (2021, 2026): lowest Sharpe (whipsaw).
+- **Action:** Using T59 daily equity, compute Sharpe for: (a) bull regime days (BTC 21d return > 0), (b) bear regime days (BTC 21d return < 0), (c) chop regime (vol bottom quartile), (d) trend regime (vol top quartile).
+- **Why:** Tells us exactly which conditions we win/lose in. Critical for forward-looking expectations and position sizing decisions.
+- **Output:** Regime Sharpe table with trade counts per regime. Immediately testable on existing T59 data.
 
 ### T63: Per-Bar PnL Attribution (NEW — 1 session)
 **Status:** NEW CONCEPT.
