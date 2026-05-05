@@ -774,3 +774,13 @@ Key attribution findings:
 - Volatility regimes are weaker: chop_vol_q1 Sharpe 1.07, trend_vol_q4 Sharpe 1.16.
 - T=0 no-gate control: 206.95x / Sharpe 1.75 / MaxDD 45.9% / 189 trades. ATR_RANK=5 improves bear Sharpe slightly (1.80 vs 1.74) and trend-vol Sharpe (1.16 vs 0.70), but reduces equity/trades and worsens attribution MaxDD.
 - Conclusion: ATR_RANK=5 is not clearly defensive on full-history attribution. Do not promote T=0 without held-out/live-path validation; high-threshold ATR_RANK variants already failed held-out.
+
+## 2026-05-05 — T65 Exact Live-Bot Source-of-Truth Harness
+
+Built `examples/live_bot_exact_equity.rs` to replay `src/live/bot.rs` as coded, over common timestamp-aligned Base5 daily bars, with economic mark-to-market account accounting. Outputs: `snapshots/live_bot_exact_equity.{md,csv}` and `snapshots/live_bot_exact_trades.csv`.
+
+**Exact as-coded live bot result:** 2.54x final equity, daily account Sharpe 0.94, MaxDD 28.8%, 301 trades, 47.8% win rate over 1,794 common Base5 days. This is the first canonical answer for the actual bot code path, but it is much lower than research harness headlines.
+
+**Critical drift discovered:** `VOL_LOOKBACK=92` is in config but is not used by `src/live/bot.rs`; live entries are processed per-symbol without volume ranking. The live Turtle entry also uses a current-inclusive max-close window and equality passes (`close < max_close` rejects; equality enters), unlike the strict previous-window research harness. Live `BotState` accounting also ignores trade size in `record_trade`, so T65 intentionally uses economic mark-to-market accounting instead of copying that UI/accounting bug.
+
+**Implication:** Do not regenerate HOF/reports from old live-compatible WF labels until live bot semantics are aligned or explicitly accepted. Next priority is live bot semantic alignment, then rerun T65 and regenerate production metrics from that single source.

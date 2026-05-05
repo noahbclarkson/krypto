@@ -98,6 +98,21 @@ Every report must label Sharpe as one of: daily compounded account, per-window w
 
 ### C5: Same-Family Hyperopt Quarantine
 Nearby tweaks to Turtle params, ATR_RANK, hedge pct, hedge size, or calendar filters require held-out/era stress and top-trade audit before promotion. One-window pass improvements are not enough.
+<<<<<<< HEAD
+=======
+
+### C6: Semantic Gap Trap
+The research harness and `src/live/bot.rs` are semantically different systems — different entry conditions, no VL ranking in the live bot, size-agnostic accounting, different hedge overlay. Every Turtle param validated on the research harness (EP, AP, LB, VL, CHAND, ATR, HOLD_MAX, hedge pct/size) may be irrelevant to the live bot.
+
+Before quoting any research harness equity as production truth, verify that the live bot actually implements the same signal path. T65 proved this was never done — gap is 176.79x (research) vs 2.54x (live bot).
+
+**Rule:** Any new parameter sweep must include a same-harness sanity check that the live bot actually uses the parameter. If VL=92 is in config.rs but not in bot.rs, the VL sweep was conducted on a system that doesn't match production.
+
+### C7: Two-Option T69 Decision Framework
+When source-of-truth gap is confirmed, there are only two valid paths:
+- **Option A (preferred):** Patch the live bot to match the validated research harness (strict prior-window Turtle, VL ranking, size-aware accounting). Rerun exact-live harness. If equity gap closes to within plausible range, the research equity becomes the production equity.
+- **Option B:** Explicitly accept the as-coded live bot equity as the honest production number (2.54x). Regenerate all reports from that single source. Never mix research-harness and live-bot numbers in the same headline.
+>>>>>>> b656acd (docs: critique and plan update — semantic drift crisis, T65/T69 findings)
 
 ---
 

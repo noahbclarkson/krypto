@@ -1,5 +1,6 @@
 # PLAN.md — Krypto Research and Execution Plan
 
+<<<<<<< HEAD
 **State: 2026-05-05 16:05 UTC — CRITIQUE COMPLETE / SOURCE-OF-TRUTH FIRST**
 
 ## Current Truth
@@ -62,40 +63,84 @@ Biggest blind spot: **production source-of-truth drift**, followed by **drawdown
 - NO_FILTER: 58/63 pass, Sharpe 7.079, Ret +114.6%, DD 21.2%.
 - NO_WEEKEND: 56/63 pass, Sharpe 6.489, Ret +108.9%, DD 23.0%.
 - Weekend entries are not structurally inferior; skipping them removes edge.
+=======
+**State: 2026-05-05 20:05 UTC — SEMANTIC DRIFT CRISIS. T65 built but gap UNCLOSED. Research ≠ Live bot.**
 
-## COMPLETED (Recent)
+## Current Truth
 
-### T63: Per-Trade PnL Attribution — DONE ✔ (2026-05-05 12:20 UTC)
-**Results:** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades (Turtle-only AP17/T5/VL92, no live-bot hedge overlay)
-- Fee drag: 32.6% additive, 4.7% of gross.
-- Win rate: 53.8%, avg win +13.76%, avg loss -6.81%, W/L 2.02x.
-- Top 5 trades explain 38.2% of log-return; equity without top 5 remains 24.51x.
-- Top 10 trades explain 60.9%; equity without top 10 is 7.58x.
-- Verdict: real convex trend-following edge, not single-trade mirage. But missing rare breakout winners can destroy performance.
-- Files: `examples/t63_trade_attribution.rs`, `snapshots/t63_trade_attribution.{md,csv}`.
+- **T65 exact live-bot result:** 2.54x / daily account Sharpe 0.94 / MaxDD 28.8% / 301 trades / 1,794 Base5 days.
+- **Research harness result (NOT the live bot):** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades — from `examples/turtle_only_equity.rs`, which uses different signal semantics.
+- **The 69x equity gap is semantic, not calibration.** Research harness uses strict prior-window Turtle, VL92 volume ranking, size-aware accounting, no hedge overlay. Live bot uses current-inclusive/equality-permissive entry, no VL ranking, size-agnostic accounting, USDT hedge overlay.
+- **Every Turtle param optimized on the research harness (EP, AP, LB, VL, CHAND, ATR, HOLD_MAX, hedge pct/size, weekend filter) may be irrelevant to the live bot** because the signal path differs.
+- **LB=45 (T69 result) = zero improvement over LB=42** — identical Sharpe 6.188 across all metrics. Confirmation only.
+- **Reports/HOF are stale** — mix Sharpe methodologies, cite T=24 live-bot row that doesn't match current config.
+- **Live testnet:** still blocked on Noah's Binance testnet keys (5+ weeks). T53 mock exchange remains the practical bypass.
 
-### T59: Turtle-Only Daily Equity Curve — DONE ✔ (2026-05-05, updated after VL92)
-**Results:** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades / 1794 days (AP17/T5/VL92)
-- Earlier T59 112.27x / Sharpe 3.14 used VL96 before the dense AP17 sweep promoted VL92.
-- Live path research equity confirmed for Turtle-only/AP17/T5/VL92, but exact `src/live/bot.rs` remains unconfirmed because of hardcoded hedge overlay.
+## Brutal Critique Summary (This Session)
 
-### T60: Per-Year Performance Decomposition — DONE ✔ (2026-05-05)
-**Status:** COMPLETE via Turtle-only equity output.
-- 2022 mega-trend remains the dominant contributor to compounded equity.
-- Use exact-live T65 harness before quoting final production yearly metrics.
+The last 5 commits are mixed quality. The two most important were: (1) T65 — genuinely useful, exposed the critical semantic drift; (2) T69 LB=45 hyperopt — zero improvement, confirmation only, another same-family plateau catch.
 
-### T64: Regime Sharpe Decomposition — DONE ✔ (2026-05-05 09:20 UTC)
-**Results:** Production T=5 attribution = 114.19x / Sharpe 1.68 / MaxDD 51.2% / 154 trades. T=0 no-gate control = 206.95x / Sharpe 1.75 / MaxDD 45.9% / 189 trades.
-- Bull/bear Sharpe balanced: 1.80 / 1.80. Not purely bear-only.
-- Weak buckets are vol regimes: chop Q1 1.07, trend-vol Q4 1.16.
-- ATR_RANK=5 is mixed: slight bear Sharpe lift and trend-vol lift, but lower equity/trades and worse attribution DD. T=0 needs held-out/live-path validation before any production change.
-- Files: `examples/regime_sharpe_decomposition.rs`, `snapshots/regime_sharpe_decomposition.{csv,md}`.
+**The biggest blind spot is not fees, not bull-market bias, not over-trading.** It is that we spent 2+ years optimizing a research harness that does not accurately represent `src/live/bot.rs`. Every parameter we validated may be irrelevant to the bot. The research equity of 176.79x is not production-ready because it is a different system.
 
-### T62 (AP=17 held-out validation): DONE ✔ (2026-05-04)
-- AP=17: 4/4 pass, Sharpe 7.715, equity 1.9481x, DD 21.3% ← WINNER
-- AP=63: 4/4 pass, Sharpe 5.721, equity 1.3976x, DD 26.6% ← rejected
-- AP=12: 2/4 pass ← rejected
-- Config.rs updated to REGIME_ATR_PERIOD=17. AP question CLOSED.
+Sharpe 5.0+ numbers are valid per-window diagnostics in their own harnesses but are NOT investor-real account Sharpe. The only honest live bot number is T65's 2.54x / Sharpe 0.94 / MaxDD 28.8%.
+
+## Next Tasks (Priority Order)
+
+### T69: Live Bot Semantic Alignment — IMMEDIATE
+**Status:** UNBUILT.
+- **Problem:** T65 proved research harness (176.79x) ≠ live bot (2.54x). Every Turtle param optimized on research harness may be irrelevant to live bot.
+- **Option A (preferred):** Patch `src/live/bot.rs` to use: (1) strict prior-window Turtle entry, (2) VL92 volume ranking, (3) size-aware accounting. Align bot to research harness → rerun T65 → see if equity gap closes.
+- **Option B:** Accept 2.54x as honest production number. Regenerate HOF/reports from T65 only. Stop quoting research equity as production truth.
+- **Output:** Audited code diff + rerun `snapshots/live_bot_exact_equity.md`, then regenerate HALL_OF_FAME.md and `reports/daily_progress.csv` from the single chosen source.
+
+### T68: Drawdown Abandonment / Risk-of-Ruin Stress Test — BEFORE NEW ALPHA
+**Status:** UNBUILT.
+- **Problem:** 99.5% MaxDD (research) vs 28.8% MaxDD (live bot). Both survivable in backtest, but what happens if a human cuts risk during drawdown?
+- **Action:** On T65 exact equity: test capital cut / halt / risk-reduction at 50%, 70%, 85% drawdowns. Report final equity, recovery time, missed top trades, deployability verdict.
+- **Output:** `snapshots/live_bot_abandonment_stress.md`.
+
+### T61: Binance aggTrades Order-Flow Signal — NEXT TRUE ALPHA
+**Status:** UNBUILT / WAIT UNTIL T69+T68.
+- **New information:** Download historical Binance `aggTrades`; aggregate buyer/seller-initiated imbalance into daily confirmation/size features.
+- **Must pass top-trade skip audit** (T63: top 10 trades = 91.8% of log-return; a filter that removes them destroys edge even if average Sharpe improves).
+- **Why:** all recent work is price-only threshold tuning of the same Turtle signal. New microstructure information is the only path to genuinely new edge.
+
+### T53: Mock Exchange Bypass — EXECUTION BLOCKER
+**Status:** UNBUILT. 5+ weeks overdue.
+- Build local HTTP/WS mock exchange seeded from historical 1m parquet; test `src/live/bot.rs` end-to-end without Binance credentials.
+- Promote above T61 if testnet keys remain blocked after T69/T68.
+>>>>>>> b656acd (docs: critique and plan update — semantic drift crisis, T65/T69 findings)
+
+## Recently Closed
+
+### T65: Exact Live-Bot Source-of-Truth Harness — DONE ✔ (2026-05-05 18:10 UTC)
+- `examples/live_bot_exact_equity.rs` built.
+- Exact as-coded result: **2.54x / Sharpe 0.94 / MaxDD 28.8% / 301 trades / 1,794 days**.
+- Critical drift found: VOL_LOOKBACK=92 unused by bot.rs; entry is current-inclusive/equality-permissive; BotState accounting ignores trade size.
+- Research equity (176.79x) is NOT the live bot — semantic gap confirmed.
+
+### T69: REGIME_LOOKBACK LB=42→41 Extensive Sweep — DONE ✔ (2026-05-05)
+- LB=45 = LB=42 = LB=44 on all metrics (Sharpe 6.188, identical). Zero improvement.
+- LB=45 plateau confirmed. No production change needed.
+
+### T66: Hedge Size Mult Sweep — DONE ✔ (2026-05-05)
+- `HEDGE_SIZE_MULT` 0.70 → 0.40 via 13-value × 9u × 7w sweep.
+- Risk overlay tuning, not alpha.
+
+### T62: Weekend Effect Filter — REJECTED ✔ (2026-05-05)
+- NO_FILTER: 58/63 pass, Sharpe 7.079. NO_WEEKEND: 56/63, Sharpe 6.489.
+- Weekend entries are valuable, not inferior. REJECTED.
+
+### T63: Per-Trade PnL Attribution — DONE ✔ (2026-05-05)
+- 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades.
+- Top 5 trades = 38.2% of log-return; top 10 = 60.9%. Real convex edge, not lottery.
+- Fee drag 4.7% of gross only. Win rate 53.8%, W/L 2.02x.
+- Research harness path only — does not include live bot's USDT hedge overlay.
+
+### T64: Regime Sharpe Decomposition — DONE ✔ (2026-05-05)
+- Bull/bear Sharpe balanced (1.80/1.80). Not bear-only.
+- Weak buckets: chop Q1 Sharpe 1.07, trend-vol Q4 Sharpe 1.16.
+- ATR_RANK=5 is mixed: improves bear/trend-vol but cuts equity and worsens attribution MaxDD.
 
 ## COMPLETED (Historical)
 
