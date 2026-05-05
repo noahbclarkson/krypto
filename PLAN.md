@@ -1,6 +1,15 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-05 13:33 UTC**
+**State: 2026-05-05 15:51 UTC — EQUITY TRACKING CYCLE**
+
+## Today: Equity Tracking
+- Progress harness: Turtle+Chandelier 619.9x / Sharpe 1.19 | Turtle ATR_RANK=24 56.1x / Sharpe 0.91
+- Live bot walk-forward: 44/54 pass (83%), Sharpe 6.12, Base5 6/6 (100%)
+- Charts regenerated: `charts/progress_equity_curves_daily.png`
+- daily_progress.csv updated
+- Progress: STABLE — no new edge, data refreshed correctly
+
+**Best Sharpe today:** Turtle-only walk-forward **6.12** (83% pass, Base5 100%)
 
 ## What Changed This Session
 

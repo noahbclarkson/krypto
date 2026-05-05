@@ -63,3 +63,9 @@ date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades
 2026-05-04,A/D Momentum,39.3x,3.58,fixed_hold_daily_equity,3829
 2026-05-04,FactorSmallByDV,15.5x,1.99,fixed_hold_daily_equity,1446
 2026-05-04,DDBudget 3-Sleeve,61.6x,7.17,milestone_aggregated_not_comparable,777
+2026-05-05,Turtle+Chandelier (dual exit),619.9x,1.19,daily_compounded_equity; NOT live bot path,2093
+2026-05-05,Turtle ATR_RANK=24 (live bot path),56.1x,0.91,daily_compounded_equity,2093
+2026-05-05,"Turtle-only (live bot, live_compatible_wf)",n/a,6.12,"walk-forward avg Sharpe; 44/54 global (83%), 6/6 Base5 (100%); 397 trades dry-run",397
+2026-05-05,A/D Momentum,39.3x,3.58,fixed_hold_daily_equity,3829
+2026-05-05,FactorSmallByDV,16.2x,2.01,fixed_hold_daily_equity,1516
+2026-05-05,DDBudget 3-Sleeve,60.6x,7.13,milestone_aggregated_not_comparable,776
