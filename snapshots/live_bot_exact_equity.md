@@ -1,6 +1,6 @@
 # T65: Exact Live-Bot Source-of-Truth Equity
 
-Generated: 2026-05-06 12:06 UTC
+Generated: 2026-05-06 18:09 UTC
 
 ## Scope
 
@@ -41,14 +41,14 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 | Metric | Value |
 |---|---:|
 | Days | 1795 |
-| Final equity | 2.81x |
-| Annualised return | 23.4% |
-| Daily account Sharpe | 1.01 |
+| Final equity | 2.78x |
+| Annualised return | 23.1% |
+| Daily account Sharpe | 1.00 |
 | Max drawdown | 28.2% |
 | Trades | 298 |
 | Win rate | 48.0% |
-| Entry candidates before ATR gate | 526 |
-| ATR gate skips | 228 |
+| Entry candidates before ATR gate | 525 |
+| ATR gate skips | 227 |
 | Hedged entries | 181 |
 | Open positions liquidated at end | 1 |
 
@@ -61,16 +61,16 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 | 2023 | 1.87x | 54.9% | 1.97 | 11.3% |
 | 2024 | 2.39x | 27.6% | 1.46 | 13.1% |
 | 2025 | 2.92x | 21.8% | 1.13 | 10.7% |
-| 2026 | 2.81x | -3.7% | -1.24 | 9.3% |
+| 2026 | 2.78x | -4.7% | -1.60 | 9.3% |
 
 ## Top-Trade Attribution
 
 | Metric | Value |
 |---|---:|
-| Equity without top 5 log contributors | 1.64x |
-| Equity without top 10 log contributors | 1.19x |
-| Top 5 share of log return | 52.4% |
-| Top 10 share of log return | 82.8% |
+| Equity without top 5 log contributors | 1.62x |
+| Equity without top 10 log contributors | 1.18x |
+| Top 5 share of log return | 52.9% |
+| Top 10 share of log return | 83.7% |
 
 ### Top 10 Trades
 

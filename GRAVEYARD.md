@@ -112,3 +112,15 @@ Everything else has failed OOS validation.
 **Result:** No robustness improvement. Baseline remained best: 38/54 pass, avg Sharpe 3.818. `asym_soft`: 38/54, Sharpe 3.680. `asym_hard`: 38/54, Sharpe 3.610. Asymmetric exits add complexity without improving pass rate or Sharpe.
 
 **Verdict:** REJECTED. Keep current exit architecture for this harness.
+
+## T61-ALT — Taker-Buy Pressure Live Entry Overlay (2026-05-06)
+
+**Hypothesis:** Binance daily kline `taker_buy_pressure` could improve Turtle live entries by requiring pressure above its historical median while preserving T73 convex top winners.
+
+**Test:** `examples/t61_taker_buy_pressure_live_candidate.rs` on exact `src/live/bot.rs` replay semantics. Gate: if pressure cache exists and entry is not one of the T73 protected top-winner pairs, require current pressure > prior 252-bar median (min 60 obs). ADA has no pressure cache and was left unchanged.
+
+**Result:** exact-live baseline **2.78x / Sharpe 1.00 / MaxDD 28.2% / 298 trades**; pressure candidate **2.76x / Sharpe 1.01 / MaxDD 25.3% / 275 trades**.
+
+**Why dead:** It failed the promotion gate. Equity did not improve, and only **6/10** T73 top winners survived. Even explicit top-winner bypass was insufficient because earlier filtered entries changed position-cap/path state and killed later convex winners.
+
+**Decision:** REJECTED. Do not promote taker-buy pressure as a Turtle entry filter. The feature cache remains useful infrastructure only.
