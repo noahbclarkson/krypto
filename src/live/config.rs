@@ -51,11 +51,12 @@ pub const REGIME_LOOKBACK: usize = 41; // hyperopt 2026-05-05: LB∈[5..=200 ste
 /// ATR_RANK=24 is the same artifact. Revert to T=5.0. See snapshots/t52_atr_rank_held_out.csv.
 pub const ATR_RANK_THRESHOLD: f64 = 5.0;
 
-/// Volume lookback window for dollar-volume ranking for top-N symbol selection.
-/// Updated 2026-05-05: dense AP17 live-compatible sweep VL∈[1..=200] step 1 × 9 universes × 7 WF windows.
-/// VL=92 is the robust winner by pass-rate-first ranking: 54/63 pass (85.7%), Sharpe 3.794, DD 27.9%.
-/// VL=96 remains in the same plateau (54/63 pass, Sharpe 3.550), but VL=92 is slightly stronger and no less robust.
-/// Evidence: examples/vl_dense_sweep.rs, snapshots/vl_dense_ap17_summary.csv, memory/hyperopt-2026-05-05.md.
+/// Volume lookback window for dollar-volume ranking in research/diagnostic harnesses.
+/// IMPORTANT: intentionally unused by `src/live/bot.rs` entry logic.
+/// T72 (2026-05-06) isolated a live-semantics top-3 dollar-volume gate with VL=92:
+/// it worsened Base5 exact replay from 2.56x / Sharpe 0.95 / 298 trades to
+/// 1.01x / Sharpe 0.09 / 207 trades. Do not wire this into the event-driven live
+/// bot without a new mechanism; FIFO/equal-slot live entries are the production truth.
 pub const VOL_LOOKBACK: usize = 92;
 
 /// USDT hedge overlay: reduce position size when BTC 21d ATR is above this percentile of its 252d history.
@@ -128,7 +129,8 @@ pub struct LiveConfig {
     /// Minimum BTC ATR percentile rank required for new entries (default: 24.0)
     #[serde(default = "default_atr_rank_threshold")]
     pub atr_rank_threshold: f64,
-    /// Volume lookback window for dollar-volume ranking (default: 8)
+    /// Volume lookback window for research/diagnostic dollar-volume ranking.
+    /// Currently unused by live `bot.rs` entry logic after T72 rejection.
     #[serde(default = "default_vol_lookback")]
     pub vol_lookback: usize,
     // --- Legacy fields (kept for backward compat, unused by signal logic) ---

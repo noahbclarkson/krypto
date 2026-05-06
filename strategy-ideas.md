@@ -152,4 +152,53 @@ When source-of-truth gap is confirmed, only two valid paths:
 
 ## Key Insight
 
-The edge is probably real. The production-readiness story is fragmented. The semantic gap between research (176.79x) and live (2.54x) is not a parameter problem — it is a structural difference we haven't explained. T70 is the highest-priority task to resolve this before any more parameter tuning.
+The edge is probably real. The production-readiness story is fragmented, but T72 resolved the obvious VOL_LOOKBACK hypothesis: adding the live rank gate made performance worse. The correct next move is not another semantic-gap document; it is T73 top-winner conditions audit, then execution readiness.
+---
+
+## Update: 2026-05-06 08:05 UTC — Critique Session
+
+### Critical Confirmed Fact
+**VOL_LOOKBACK=92 is documented as UNUSED by `src/live/bot.rs` entry logic** (HOF, 2026-05-06). This is not a hypothesis — it is stated in the production source-of-truth document. The research harness runs vol-adaptive ranking; the live bot does not. This is the primary candidate for explaining the 70x equity gap (176.79x vs 2.54x).
+
+T69 semantic patch (adding VL ranking to live bot) produced 1.02x — WORSE than the as-coded bot (2.54x). This means simply adding VL=92 is not a direct fix. The gap mechanism may involve interaction effects between ranking, sizing, and exit timing — not just a missing feature.
+
+### Documentation Loop Confirmed
+4 consecutive sessions (2026-05-02 through 2026-05-06) ended with a "critique and plan update" commit saying T70 is the next priority. T70 has not been executed. The loop is documented in C12 (strategy-ideas.md). Breaking it requires code, not documentation.
+
+### New Findings This Session
+
+**446 example files, no production map.** We cannot reliably distinguish "live production example" from "superseded sweep" without reading each file. This is a trust/integrity problem. A future AI session or human researcher could pick up any of 446 files and have no automated way to know if it's current.
+
+**Uncommitted sweep in working tree.** `turtle_atr_mult_live_extensive.rs` (and its output CSVs) are untracked. Not in PLAN.md history. May be stale. Requires run-or-kill decision.
+
+**Research harness equity (176.79x) inflated expectations.** The live bot 2.55x is actually a reasonable risk-managed trend-following result: 21% annualized, Sharpe 0.95, MaxDD 28.8% over 1795 days. Comparing this to 176.79x was misleading — they are different systems. The research harness also had MaxDD 99.5%, meaning near-total destruction at some point. A near-total-DD strategy and a 28.8%-DD strategy are not comparable equity figures.
+
+### Updated Top 3 Unbuilt Ideas
+
+1. **T72: Code audit `src/live/bot.rs` entry logic.** Not documentation. Open the file. Confirm exactly what ranking/sizing the live bot uses. Resolve whether VOL_LOOKBACK=92 should be wired in, or whether the live bot intentionally uses equal sizing. 30-minute file read.
+
+2. **T73: Top-winner conditions audit on `live_bot_exact_trades.csv`.** Document conditions for top-10 trades by log-return: entry date, symbol, ATR percentile, market regime. Guardrail against future filters that accidentally kill convex tail.
+
+3. **T74: Run-or-kill the uncommitted `turtle_atr_mult_live_extensive.rs`.** Commit results or delete the file and its outputs. No more stale trees.
+
+### New Concept: C13 — Equity Gap Legitimacy
+The 70x equity gap (176.79x vs 2.54x) may NOT be a gap at all. The research harness had MaxDD 99.5% (near-total loss at some point). The live bot has MaxDD 28.8%. A strategy that goes up 176x but has a 99.5% drawdown is not "better" than one that goes up 2.55x with 28.8% MaxDD — they're different risk profiles. The correct comparison is: which would you actually run with real money?
+
+The research harness used Turtle-only exit (156 trades, long holds, high compound) vs live bot's Turtle+some exit (298 trades, shorter holds). The 2.55x may be the more honest number for a strategy you'd actually deploy without fear of a 99.5% drawdown. This needs explicit acknowledgment in HOF.
+
+### New Concept: C14 — Documentation Loop Detector
+Rule: if the same task appears as "next priority" in PLAN.md for 3+ consecutive sessions without being executed, it is a loop. The fix is to either (a) execute it immediately in the current session, or (b) explicitly close it as "not doing this — reason" rather than carrying it forward as pending.
+
+### Removed Alerts
+- T70 (audit): Superseded by T72 (actual code read). T70 was always defined as an audit, not a fix. The fix requires opening `src/live/bot.rs`, not writing another document.
+- "165+ working tree files uncommitted": Rechecked — only a handful of untracked files remain. The 165 figure was stale.
+
+---
+
+## Update: 2026-05-06 09:20 UTC — T72/T74 Executed
+
+**T72 resolved:** `src/live/bot.rs` has no `VOL_LOOKBACK` rank gate. I isolated that candidate with exact live entry semantics in `examples/t72_vol_rank_live_candidate.rs`; adding only top-3 VL=92 dollar-volume gating worsened the replay to **1.01x / Sharpe 0.09 / MaxDD 30.1% / 207 trades** versus exact live **2.56x / Sharpe 0.95 / MaxDD 28.8% / 298 trades**. The missing VL gate is not the 70x gap fix. Do not wire it into production without a new mechanism.
+
+**T74 resolved:** stale `turtle_atr_mult_live_extensive.rs` sweep is now run and committed. `TURTLE_ATR_MULT=2.00` remains winner (47/60 pass, Sharpe 1.294). No config change.
+
+**Next best idea:** T73 top-winner conditions audit. Before testing any new filters, identify whether they would exclude the top-10 convex winners that drive 91% of exact-live log return.

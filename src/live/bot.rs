@@ -6,11 +6,14 @@
 //! T34 KNOWN GAP: Research walkforward (turtle_chandelier_walkforward.rs) uses
 //! dual Chandelier+Turtle ATR exit. Live bot uses Turtle ATR ONLY. The
 //! ATR_RANK=5 conditional entry is now wired into live entries and has been
-//! validated under Turtle-only logic. Current production config is AP=17/LB=42/T=5
-//! after AP=17 held-out validation; VL=92 after dense AP17 sweep.
+//! validated under Turtle-only logic. Current production config is AP=17/LB=41/T=5
+//! after AP=17/LB=41 validation. VOL_LOOKBACK=92 is deliberately NOT wired into
+//! this event-driven live path: T72 isolated a top-3 dollar-volume gate while
+//! keeping exact live entry semantics, and it worsened Base5 replay from 2.56x /
+//! Sharpe 0.95 to 1.01x / Sharpe 0.09.
 //!
 //! Production params (updated 2026-05-05):
-//!   EP=21, TurtleATR(24, 2.0), HM=12, CAP=3, ATR_RANK(AP=17, LB=42, T=5), VL=92
+//!   EP=21, TurtleATR(24, 2.0), HM=12, CAP=3, ATR_RANK(AP=17, LB=41, T=5), VL=92 unused/rejected for live gate
 //!   Live entries also apply USDT hedge: BTC ATR21 > 45th pct => size *= HEDGE_SIZE_MULT (0.40, T66).
 
 const FRESHNESS_COOLDOWN: usize = 0; // bars to wait after exit before re-entry (0=disabled)

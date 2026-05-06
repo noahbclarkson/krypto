@@ -15,14 +15,14 @@ _Do not hand-edit headline metrics. Production numbers come from `snapshots/live
 |---|---:|
 | Universe | Base5 aligned daily bars: BTC, ETH, SOL, XRP, DOGE, ADA |
 | Days | 1795 |
-| Final equity | 2.55x |
-| Annualised return | 21.0% |
+| Final equity | 2.56x |
+| Annualised return | 21.1% |
 | Daily account Sharpe | 0.95 |
 | Max drawdown | 28.8% |
 | Trades | 298 |
 | Win rate | 48.0% |
 
-**Deployability verdict:** viable for dry-run/testnet evaluation, not yet production capital. The current live-coded bot is modest but real-looking: 2.55x with Sharpe 0.95 and 28.8% MaxDD. It is not the old research headline.
+**Deployability verdict:** viable for dry-run/testnet evaluation, not yet production capital. The current live-coded bot is modest but real-looking: 2.56x with Sharpe 0.95 and 28.8% MaxDD. It is not the old research headline.
 
 ### Exact live parameters
 
@@ -36,7 +36,7 @@ POSITION_CAP      = 3
 REGIME_ATR_PERIOD = 17
 REGIME_LOOKBACK   = 41
 ATR_RANK_THRESHOLD= 5.0
-VOL_LOOKBACK      = 92   # configured, but unused by src/live/bot.rs entry logic
+VOL_LOOKBACK      = 92   # configured for diagnostics; intentionally unused by src/live/bot.rs entry logic after T72 rejection
 HEDGE_ATR_PCT     = 0.45
 HEDGE_SIZE_MULT   = 0.40
 fee_pct           = 0.000400
@@ -44,20 +44,21 @@ fee_pct           = 0.000400
 
 ### Critical reconciliation
 
-- **Exact live bot:** 2.55x / Sharpe 0.95 / MaxDD 28.8% / 298 trades — production-facing headline.
+- **Exact live bot:** 2.56x / Sharpe 0.95 / MaxDD 28.8% / 298 trades — production-facing headline.
 - **Research harness:** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades — diagnostic only, not live-coded production performance.
 - **T69 semantic-alignment candidate:** 1.02x / Sharpe 0.10 / MaxDD 30.8% — rejected; do not patch live semantics toward that candidate.
+- **T72 VOL_LOOKBACK-only live-semantics candidate:** 1.01x / Sharpe 0.09 / MaxDD 30.1% / 207 trades — rejected; do not add a top-3 dollar-volume gate to `src/live/bot.rs`.
 - Old `Turtle+Chandelier`, `ATR_RANK=24`, and walk-forward-Sharpe headlines are stale or non-production unless explicitly labelled as diagnostics.
 
 ### Fragility / top-trade dependence
 
 | Metric | Value |
 |---|---:|
-| Equity without top 10 log contributors | 1.08x |
-| Top 5 share of log return | 57.7% |
-| Top 10 share of log return | 91.3% |
+| Equity without top 10 log contributors | 1.09x |
+| Top 5 share of log return | 57.5% |
+| Top 10 share of log return | 91.0% |
 
-Trend-following convexity is material. T68 abandonment/risk-governance stress is the next required step before live deployment.
+Trend-following convexity is material. T73 top-winner conditions audit is the next required guardrail before any new filter work.
 
 ---
 
@@ -70,6 +71,7 @@ These may guide research, but must not be quoted as live-bot account performance
 | 176.79x research equity | Non-production harness; MaxDD 99.5%; semantic/accounting gap unresolved |
 | Walk-forward Sharpe 5+ / 7+ | Per-window comparison metric only; not daily account Sharpe |
 | Turtle+Chandelier dual-exit daily curves | Not the current exact `src/live/bot.rs` path |
+| VOL_LOOKBACK rank-gated live candidate | Rejected by T72; rank gate alone collapses exact-live equity to 1.01x |
 | ATR_RANK=24 / T=65 variants | Failed held-out or superseded; do not report as production |
 | HEDGE_ATR_PCT overlay | Inert/dead-code risk overlay in current tested path |
 
@@ -93,6 +95,7 @@ See `GRAVEYARD.md` for full list. Key invalidations:
 | ATR_ENTRY_MULT>0 | Entry-side ATR filtering degrades robustness |
 | Weekend entry filter | Rejected; weekend entries are valuable |
 | T69 semantic alignment patch | Worsened exact live replay to 1.02x |
+| VOL_LOOKBACK live top-3 rank gate | Worsened exact live replay to 1.01x |
 | Funding-rate regime filter | Rejected / no robust improvement |
 | High ATR_RANK thresholds | Non-stationary; held-out failure |
 

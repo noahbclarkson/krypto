@@ -1,6 +1,6 @@
 # T65: Exact Live-Bot Source-of-Truth Equity
 
-Generated: 2026-05-06 03:19 UTC
+Generated: 2026-05-06 09:09 UTC
 
 ## Scope
 
@@ -39,8 +39,8 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 | Metric | Value |
 |---|---:|
 | Days | 1795 |
-| Final equity | 2.55x |
-| Annualised return | 21.0% |
+| Final equity | 2.56x |
+| Annualised return | 21.1% |
 | Daily account Sharpe | 0.95 |
 | Max drawdown | 28.8% |
 | Trades | 298 |
@@ -59,16 +59,16 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 | 2023 | 1.75x | 43.8% | 1.79 | 11.9% |
 | 2024 | 2.06x | 17.5% | 1.09 | 13.0% |
 | 2025 | 2.75x | 33.2% | 1.58 | 7.9% |
-| 2026 | 2.55x | -7.0% | -2.01 | 12.6% |
+| 2026 | 2.56x | -6.7% | -1.90 | 12.6% |
 
 ## Top-Trade Attribution
 
 | Metric | Value |
 |---|---:|
 | Equity without top 5 log contributors | 1.49x |
-| Equity without top 10 log contributors | 1.08x |
-| Top 5 share of log return | 57.7% |
-| Top 10 share of log return | 91.3% |
+| Equity without top 10 log contributors | 1.09x |
+| Top 5 share of log return | 57.5% |
+| Top 10 share of log return | 91.0% |
 
 ### Top 10 Trades
 

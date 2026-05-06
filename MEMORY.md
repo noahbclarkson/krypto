@@ -1,5 +1,12 @@
 # MEMORY.md - Krypto Knowledge Base
 
+## 2026-05-06 — T72/T74 Live-Code Audit Results
+
+- **T72 VOL_LOOKBACK live gate REJECTED:** `src/live/bot.rs` does not implement dollar-volume ranking; entries are event-driven FIFO/equal-slot (`1 / POSITION_CAP`) after Turtle + ATR_RANK checks. Isolated candidate `examples/t72_vol_rank_live_candidate.rs` kept exact live current-inclusive/equality entry semantics and added only a top-3 `VOL_LOOKBACK=92` dollar-volume gate. Result: **1.01x / Sharpe 0.09 / MaxDD 30.1% / 207 trades**, versus exact live rerun **2.56x / Sharpe 0.95 / MaxDD 28.8% / 298 trades**. Do **not** wire VL ranking into live bot without a new mechanism; `VOL_LOOKBACK` is diagnostic-only for live production.
+- **T74 TURTLE_ATR_MULT stale sweep closed:** `examples/turtle_atr_mult_live_extensive.rs` now committed. Dense sweep M=0.50..=5.00 step 0.05 on current live-style Turtle-only path reconfirmed **M=2.00** as robustness winner: **47/60 pass (78.3%), Sharpe 1.294, avg return +20.54%, DD 11.87%, 3,118 trades**. No production config change; no more nearby ATR_MULT sweeps.
+- **Meta-lesson:** the 176.79x research harness is not a target for live-code patching. The exact live bot’s 2.56x/28.8% MaxDD profile is the honest deployability target; the research harness had 99.5% MaxDD and different portfolio/timing assumptions.
+
+
 ## Strategies
 - **DynamicTrend EMA Crossover (2026-04-16)**: Walk-forward validated on Base5. ema_fast=60: 6/7 pass (85.7%), Sharpe +2.01, +111.6% avg return, 310 trades. The momentum signal is GENUINE. **BUT uses fixed 21-bar hold** — same flaw class as BollingerReversion. 
 
