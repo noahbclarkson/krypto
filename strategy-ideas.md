@@ -1,88 +1,90 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-05 16:05 UTC. Critique cycle complete. Core Turtle edge is probably real, but production truth is still fragmented. Current code uses AP=17, ATR_RANK=5, VL=92, HEDGE_ATR_PCT=0.45, HEDGE_SIZE_MULT=0.40.*
+*Last updated: 2026-05-06 00:48 UTC. Critique cycle complete. T65/T67/T68 closed. T70 (semantic gap mechanism audit) is now the highest-priority unbuilt task. T61 next after T53/T70.*
 
 ---
 
 ## Critical Alerts
 
-### Source-of-Truth Drift Is Still the Main Risk
+### T70: Semantic Gap Mechanism Unknown — 70x Equity Difference Unexplained
 
-Current production evidence is split across incompatible artifacts:
-- `src/live/config.rs`: AP=17, T=5, VL=92, hedge pct=0.45, hedge size=0.40.
-- `src/live/bot.rs`: exact live decision path, but not yet the canonical daily-equity source.
-- `examples/turtle_only_equity.rs` / T63: AP17/T5/VL92 daily equity, but no current hedge overlay.
-- `examples/live_compatible_wf.rs`: includes live-compatible hedge behavior, but reports per-window WF Sharpe, not exact daily account Sharpe.
-- `reports/daily_progress.csv`: contains stale/misleading `ATR_RANK=24` live-bot row.
-- `HALL_OF_FAME.md`: stale AP=12 / dual-exit production evidence.
+Research harness = 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades.
+Live bot (exact) = 2.54x / Sharpe 0.94 / MaxDD 28.8% / 298 trades.
 
-**Action:** Build T65 exact live-bot source-of-truth harness before any new alpha work.
+T69 semantic patch (strict prior-window Turtle + VL ranking + size-aware accounting) made it WORSE → 1.02x. The gap is NOT a simple semantic difference. The mechanism must be diagnosed before any research-harness-validated parameters (EP=21, AP=17, LB=41, VL=92) can be trusted for the live path.
 
-### Sharpe 5+ Is Mostly Methodology, Not Magic
+Three hypotheses:
+- **(A) Exit difference:** dual Chandelier vs Turtle-only produces very different compounding (156 trades × long holds vs 298 trades × short holds)
+- **(B) Sizing difference:** equal-size vs dollar-volume ranking changes which symbols get capital
+- **(C) Accounting model:** economic mark-to-market vs realized-only equity
 
-Walk-forward average Sharpe values around 6–7 are useful diagnostics, but not investor-real account Sharpe. Every report must state whether Sharpe is daily compounded account Sharpe, per-window WF Sharpe, attribution Sharpe, or milestone-aggregated Sharpe.
+### Top-Trade Concentration Risk Is Underappreciated
 
-### MaxDD Is the Uncomfortable Truth
-
-Turtle-only research equity shows 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades. The edge may be real, but a strategy that requires surviving near-total drawdown is not production-safe without an abandonment/risk-reduction analysis.
+Top 10 trades = 91.5% of log return. Top 5 = 57.8%. A filter that accidentally excludes 2-3 winners reduces 2.55x to ~1.5x. Every new entry filter MUST pass a top-10 winner skip audit.
 
 ---
 
 ## Top 3 Most Promising Unbuilt Ideas
 
-### T65: Exact Live-Bot Source-of-Truth Harness (IMMEDIATE)
+### T70: Semantic Gap Mechanism Audit — CRITICAL (new 2026-05-06)
 **Status:** UNBUILT.
-- **Problem:** No single artifact answers what `src/live/bot.rs`, as currently coded, would have done historically.
-- **Action:** Build one canonical harness matching live bot behavior exactly: Turtle entry, AP17/LB42/T5 ATR_RANK, VL92 ranking, Turtle ATR exit, cap=3, fees, hedge pct=0.45, hedge size=0.40.
-- **Output:** `snapshots/live_bot_exact_equity.md` + CSV with daily equity, daily Sharpe, MaxDD, trades, yearly table, top-trade concentration, and parameter/methodology table.
-- **Why:** More important than new alpha. Without this, HOF/reports/Discord can keep quoting incompatible production numbers.
+- **Problem:** 70x equity gap between research harness (176.79x) and live bot (2.54x) is not explained.
+- **Action:** Systematic decomposition of three hypotheses (exit/sizing/accounting). Run pairwise comparisons on same data with single variable changed at a time.
+- **Output:** per-hypothesis equity delta, top-10 winner conditions document, param transferability verdict.
+- **Why:** Without understanding the gap mechanism, every research-harness-validated parameter is potentially irrelevant to the live path.
 
-### T68: MaxDD Abandonment / Risk-of-Ruin Stress Test (HIGH)
+### T53: Mock Exchange Bypass — EXECUTION BLOCKER (5+ weeks overdue)
 **Status:** UNBUILT.
-- **Problem:** 99.5% MaxDD is not survivable in real deployment psychology or risk governance.
-- **Action:** On exact-live T65 output, simulate: stop trading after 50/70/85/95% DD, halve size after those thresholds, resume after new equity highs, and permanent capital impairment cases.
-- **Output:** final equity, recovery time, missed top trades, and deployability verdict.
-- **Why:** This tells us whether the strategy only works if no human ever turns it off during pain.
+- `mock_live_bot.rs` (461 lines) and `mock_live_bot_v2.rs` (503 lines) exist as stubs — not yet end-to-end wire replacements.
+- **Problem:** Live testnet blocked on Noah's Binance testnet keys. No execution feedback without them.
+- **Action:** Build local HTTP/WS mock seeded from historical 1m parquet. Wire `src/live/bot.rs` → mock → verify against T65 harness signals.
+- **Output:** End-to-end test of `src/live/bot.rs` decision path, fills, slippage, order state, disconnect/reconnect.
+- **Why:** Unblocks real execution feedback without API credentials.
 
-### T61: Binance aggTrades Order-Flow Signal (BEST TRUE ALPHA)
-**Status:** UNBUILT, start after T65/T68.
-- **Problem:** Most recent work is price-only parameter/risk tuning. Need new information.
-- **Action:** Download public historical Binance `aggTrades`; aggregate taker buy/sell imbalance into daily confirmation or size-scalar features.
+### T61: Binance aggTrades Order-Flow Signal — TRUE ALPHA
+**Status:** UNBUILT / START AFTER T53 AND T70.
+- Download historical Binance `aggTrades`; aggregate taker buy/seller-initiated imbalance into daily confirmation/size features.
+- Genuinely new information dimension — all recent work is price-only parameter tuning.
 - **Guardrail:** Must pass top-trade skip audit. Reject if it filters out rare convex winners even when average Sharpe improves.
-- **Why:** Genuinely new public microstructure signal without waiting for LOB NOBI infrastructure.
 
 ---
 
 ## Infrastructure / Trust Tasks
 
-- [ ] **T65**: Exact live-bot source-of-truth harness.
-- [ ] **T67**: Regenerate HOF/reports from T65 only; renumbered because T66 was used for hedge-size sweep.
-- [ ] **T68**: Drawdown abandonment / risk-of-ruin stress.
-- [ ] **T53**: Local mock exchange bypass for missing Binance testnet keys.
-- [ ] **T55**: LOB NOBI collection/persistence; do not claim it is ready until data exists.
-
-### T53: Local Mock Exchange
-**Status:** UNBUILT. 5+ weeks overdue.
-- Build Rust HTTP/WS server that mocks Binance endpoints used by `binance-rs-async`.
-- Seed from historical 1m parquet.
-- Simulate fills, slippage, order state, account balance, disconnect/reconnect.
-- Test `src/live/bot.rs` end-to-end without Noah's Binance testnet credentials.
+- [x] **T65**: Exact live-bot source-of-truth harness — DONE (2026-05-05)
+- [x] **T67**: Regenerate HOF/reports from T65 only — DONE (2026-05-06)
+- [x] **T68**: Drawdown abandonment / risk-of-ruin stress — DONE (2026-05-06)
+- [ ] **T70**: Semantic gap mechanism audit — NEW (highest priority)
+- [ ] **T53**: Local mock exchange bypass — UNBUILT (5+ weeks overdue)
+- [ ] **T55**: LOB NOBI collection/persistence — not ready until data exists
 
 ---
 
 ## Resolved / Closed
 
+- **T65:** done; exact live bot 2.55x / Sharpe 0.94 / MaxDD 28.8% / 298 trades. VOL_LOOKBACK=92 unused by bot.rs — gap confirmed.
+- **T67:** done; HOF/reports regenerated from exact-live only. Old mixed rows at `reports/daily_progress_PRE_T67_STALE.csv`.
+- **T68:** done; 20% DD human review trigger only, 30%+ never breached in-sample. Hard abandonment leaves 1.27x and misses 3 top-10 winners.
+- **T69 semantic patch:** REJECTED; 1.02x (worse than live bot 2.54x). Gap is not a semantic patching problem.
+- **T67 HEDGE_ATR_PCT:** NULL result; all 101 values identical (56/63 pass, Sharpe 6.941). Inert dead code.
 - **AP=63 anti-overfit violation:** resolved; AP=17 promoted after held-out validation.
-- **T59 Turtle-only equity:** done; 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades, excluding hedge overlay.
-- **T63 per-trade attribution:** done; top 5 = 38.2% of log-return, top 10 = 60.9%; not a single-trade mirage, but convex winners matter.
-- **T64 regime decomposition:** done; bull/bear balanced; vol regimes weaker; ATR_RANK=5 mixed.
-- **T62 weekend filter:** rejected; weekend entries improve, not hurt, the strategy.
-- **T66 hedge-size sweep:** done; HEDGE_SIZE_MULT 0.70 → 0.40 as a risk dial.
-- **VOL_LOOKBACK drift:** current code uses VL=92.
+- **T59 Turtle-only equity:** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades — research diagnostic only.
+- **T63 per-trade attribution:** top 5 = 57.8%, top 10 = 91.5% of log return. Convex winners matter enormously.
+- **T66 hedge-size sweep:** HEDGE_SIZE_MULT 0.70 → 0.40 — pure risk dial, not alpha.
+- **T62 weekend filter:** REJECTED; weekend entries are valuable, not inferior.
 
 ---
 
-## New Concepts Added From Critique
+## New Concepts Added From Critique (2026-05-06)
+
+### C8: Semantic Gap Mechanism Audit
+Systematic decomposition of why research harness produces 176.79x vs live bot 2.54x. Test each hypothesis (exit, sizing, accounting) in isolation. The goal is not to close the gap but to understand it, so we know which research parameters are trustworthy for the live path.
+
+### C9: Top-Winner Conditions Audit
+For the top 10 trades by log-return in the exact-live replay, document: (a) entry date/symbol, (b) market regime, (c) ATR percentile at entry, (d) whether a plausible filter would have excluded them. Quantifies the risk of over-filtering.
+
+### C10: Inert Code Cleanup Rule
+A parameter that produces identical results across its full logical range (HEDGE_ATR_PCT = 101 values all identical) is dead code. Document it as experimental-only or remove it. Confusing documentation about non-contributing overlays is a long-term maintenance risk.
 
 ### C1: Production Equivalence Test
 Every production metric must trace to the same constants as `src/live/config.rs`. If a harness duplicates strategy logic, it must print the full param table and fail loudly if labels disagree with code.
@@ -98,21 +100,14 @@ Every report must label Sharpe as one of: daily compounded account, per-window w
 
 ### C5: Same-Family Hyperopt Quarantine
 Nearby tweaks to Turtle params, ATR_RANK, hedge pct, hedge size, or calendar filters require held-out/era stress and top-trade audit before promotion. One-window pass improvements are not enough.
-<<<<<<< HEAD
-=======
 
 ### C6: Semantic Gap Trap
-The research harness and `src/live/bot.rs` are semantically different systems — different entry conditions, no VL ranking in the live bot, size-agnostic accounting, different hedge overlay. Every Turtle param validated on the research harness (EP, AP, LB, VL, CHAND, ATR, HOLD_MAX, hedge pct/size) may be irrelevant to the live bot.
-
-Before quoting any research harness equity as production truth, verify that the live bot actually implements the same signal path. T65 proved this was never done — gap is 176.79x (research) vs 2.54x (live bot).
-
-**Rule:** Any new parameter sweep must include a same-harness sanity check that the live bot actually uses the parameter. If VL=92 is in config.rs but not in bot.rs, the VL sweep was conducted on a system that doesn't match production.
+The research harness and `src/live/bot.rs` are semantically different systems — different entry conditions, no VL ranking in the live bot, size-agnostic accounting, different hedge overlay. Every Turtle param validated on the research harness may be irrelevant to the live bot. T69 proved this: patching toward the research harness made results worse.
 
 ### C7: Two-Option T69 Decision Framework
-When source-of-truth gap is confirmed, there are only two valid paths:
-- **Option A (preferred):** Patch the live bot to match the validated research harness (strict prior-window Turtle, VL ranking, size-aware accounting). Rerun exact-live harness. If equity gap closes to within plausible range, the research equity becomes the production equity.
-- **Option B:** Explicitly accept the as-coded live bot equity as the honest production number (2.54x). Regenerate all reports from that single source. Never mix research-harness and live-bot numbers in the same headline.
->>>>>>> b656acd (docs: critique and plan update — semantic drift crisis, T65/T69 findings)
+When source-of-truth gap is confirmed, only two valid paths:
+- **Option A:** Patch the live bot to match the validated research harness, rerun exact-live harness. If equity gap closes, research equity becomes production equity.
+- **Option B:** Accept the as-coded live bot equity as the honest production number. Regenerate all reports from that single source. Never mix research-harness and live-bot numbers.
 
 ---
 
@@ -120,21 +115,20 @@ When source-of-truth gap is confirmed, there are only two valid paths:
 
 | Strategy | Result | Key Reason |
 |----------|--------|------------|
-| Weekend Entry Filter (T62) | **REJECTED** | 58/63 → 56/63 pass; Sharpe 7.079 → 6.489; weekend entries are valuable. |
-| ATR_RANK=24 | **GRAVEYARD** | Held-out: 10/22 pass/-0.964 Sharpe vs T=5 14/22/+0.664. |
-| ATR_ENTRY_MULT (all) | REJECTED | EM=0.00 wins definitively. |
-| Short-side sleeve | **GRAVEYARD** | 37.5% pass vs 69.1% guardrail. |
-| SIZE_MULT overlay | INERT | Return/DD scale linearly; pure risk knob. |
-| EP=24 | REVERTED | Held-out failed vs EP=21. |
-| Funding Rate Regime Filter | NULL/REJECTED | Pass rate never improves across 4,590 runs. |
-| Donchian sleeve | REJECTED | 63% < 69.1% guardrail despite Sharpe lift. |
-| Mid-caps | REJECTED | 60% < 70% threshold. |
-| 4h Multi-Timeframe Turtle | GRAVEYARD | 1/20 pass; timeframe incompatibility. |
-| BollingerReversion | GRAVEYARD | 0/288 OOS; signal actively harmful. |
-| BTC-ETH cointegration | GRAVEYARD | All configs negative Sharpe. |
-| ATR-norm position sizing | REJECTED | Equal capital optimal; ATR-norm inverts vol ranking. |
-| A/D Dual-Hat static sleeve | REJECTED | Below-random win rate. |
-| CTREND fixed 25% sleeve | REJECTED | Sharpe destroyed 1.38→0.33. |
+| T69 semantic alignment patch | REJECTED | Made live equity WORSE (1.02x vs 2.54x). Gap is structural. |
+| HEDGE_ATR_PCT (101 values) | NULL | All identical — inert parameter |
+| Weekend Entry Filter | REJECTED | 58/63 → 56/63 pass; weekend entries are valuable |
+| ATR_RANK=24 | GRAVEYARD | Held-out: 10/22 pass/-0.964 Sharpe vs T=5 14/22/+0.664 |
+| ATR_ENTRY_MULT (all) | REJECTED | EM=0.00 wins definitively |
+| Short-side sleeve | GRAVEYARD | 37.5% pass vs 69.1% guardrail |
+| EP=24 | REVERTED | Held-out failed vs EP=21 |
+| Funding Rate Regime Filter | REJECTED | Pass rate never improves across 4,590 runs |
+| Donchian sleeve | REJECTED | 63% < 69.1% guardrail |
+| BollingerReversion | GRAVEYARD | 0/288 OOS; signal actively harmful |
+| BTC-ETH cointegration | GRAVEYARD | All configs negative Sharpe |
+| CTREND fixed 25% sleeve | REJECTED | Sharpe destroyed 1.38→0.33 |
+| Vol-Contingent Chandelier (21-bar) | GRAVEYARD | All configs identical |
+| Vol-Contingent Chandelier (252-bar) | GRAVEYARD | Tied (+0.12 noise) — no adaptive benefit |
 
 ---
 
@@ -143,13 +137,13 @@ When source-of-truth gap is confirmed, there are only two valid paths:
 1. Minimum 3-window / 5.5pp improvement before accepting same-family param changes.
 2. Held-out validation required for marginal wins.
 3. Plateau + era robustness required before promotion.
-4. Top-trade skip audit required for filters.
-5. Exact live-path daily equity required before quoting production metrics.
+4. **Top-trade skip audit required for every filter.**
+5. **Exact live-path daily equity required before quoting production metrics.**
 6. Methodology labels required for every Sharpe.
-7. No more nearby Turtle filters until T65/T67/T68 are complete.
+7. No more nearby Turtle filters until T70/T53 are complete.
 
 ---
 
 ## Key Insight
 
-The edge is probably real. The production-readiness story is not. The next breakthrough is not another Turtle parameter; it is making live bot code, harnesses, HOF, reports, and risk controls all tell the same truth.
+The edge is probably real. The production-readiness story is fragmented. The semantic gap between research (176.79x) and live (2.54x) is not a parameter problem — it is a structural difference we haven't explained. T70 is the highest-priority task to resolve this before any more parameter tuning.
