@@ -1,10 +1,25 @@
 # MEMORY.md - Krypto Knowledge Base
 
+## 2026-05-06 — T76 Taker-Buy Pressure Feasibility
+
+- **Binance klines contain order-flow data we were discarding:** daily `/api/v3/klines` includes `taker_buy_quote_asset_volume`; `taker_buy_pressure = taker_buy_quote_vol / quote_vol` is a no-auth daily proxy for buyer-initiated flow. Raw aggTrades are public but impractical for multi-year daily features (1000-row cap covered only ~83 seconds of BTCUSDT on a busy 2023 day).
+- **Feature cache built:** `scripts/download_with_taker_buy.py` downloaded Base5 daily taker-buy pressure parquet files under `data/cache/taker_buy/` (BTC/ETH/XRP/DOGE 2200 bars; SOL 2095 bars).
+- **T76 result:** `examples/t76_taker_buy_pressure_overlay.rs` writes `snapshots/t76_taker_buy_pressure.md`. Cross-sectional Base5 long top-2 pressure / short bottom-2 pressure produced **+0.209%/day, Sharpe 0.70, win rate 50.2%, N=2094 days**. Signal is mixed by symbol: BTC/XRP/DOGE show high-pressure strength, while ETH/SOL are non-monotonic or weaker.
+- **Decision:** do **not** promote taker-buy pressure as a Turtle entry filter. It is useful Track C feature infrastructure, but not enough on its own and any future candidate must preserve the T73 convex top-winner set before promotion.
+
+
 ## 2026-05-06 — T72/T74 Live-Code Audit Results
 
 - **T72 VOL_LOOKBACK live gate REJECTED:** `src/live/bot.rs` does not implement dollar-volume ranking; entries are event-driven FIFO/equal-slot (`1 / POSITION_CAP`) after Turtle + ATR_RANK checks. Isolated candidate `examples/t72_vol_rank_live_candidate.rs` kept exact live current-inclusive/equality entry semantics and added only a top-3 `VOL_LOOKBACK=92` dollar-volume gate. Result: **1.01x / Sharpe 0.09 / MaxDD 30.1% / 207 trades**, versus exact live rerun **2.56x / Sharpe 0.95 / MaxDD 28.8% / 298 trades**. Do **not** wire VL ranking into live bot without a new mechanism; `VOL_LOOKBACK` is diagnostic-only for live production.
 - **T74 TURTLE_ATR_MULT stale sweep closed:** `examples/turtle_atr_mult_live_extensive.rs` now committed. Dense sweep M=0.50..=5.00 step 0.05 on current live-style Turtle-only path reconfirmed **M=2.00** as robustness winner: **47/60 pass (78.3%), Sharpe 1.294, avg return +20.54%, DD 11.87%, 3,118 trades**. No production config change; no more nearby ATR_MULT sweeps.
 - **Meta-lesson:** the 176.79x research harness is not a target for live-code patching. The exact live bot’s 2.56x/28.8% MaxDD profile is the honest deployability target; the research harness had 99.5% MaxDD and different portfolio/timing assumptions.
+
+## 2026-05-06 — T73 Convex Tail Guardrail
+
+- **T73 top-winner conditions audit complete:** `snapshots/t73_top_winner_conditions.{md,csv}` ranks exact-live trades by `ln(account_equity_mult)` after T75 (2.81x / Sharpe 1.01 / MaxDD 28.2%). Top-10 log contributors account for **82.8%** of total compounded log return.
+- **Convex winners are not clean bull-only entries:** BTC trend at entry was **5 bear / 3 chop / 2 bull**. Largest two winners were low-vol/Q1 BTC regimes (SOL 2023-01-11 and DOGE 2022-10-28), so naive low-vol/chop filters would delete the right tail.
+- **Filter-kill audit:** VL=92 top-3 dollar-volume gate would exclude **8/10** top winners; ATR_RANK>=24 would exclude **5/10**; ATR_RANK>=65 would exclude **8/10**. Weekend filter excluded 0/10 in this exact top set but remains rejected by full WF metrics.
+- **Meta-lesson:** future filters must prove they preserve the convex top-winner set before any promotion. The current right tail comes from ugly regimes and lower DV ranks, not from obvious high-volume bull breakouts.
 
 
 ## Strategies
@@ -808,3 +823,11 @@ Built `examples/live_bot_exact_equity.rs` to replay `src/live/bot.rs` as coded, 
 ## 2026-05-06 — FRESHNESS_COOLDOWN Extensive Sweep (T70)
 
 `FRESHNESS_COOLDOWN` in `src/live/bot.rs` was audited as an undocumented hardcoded live-path assumption. Full integer sweep `0..=100` daily bars across 9 universes / 60 OOS walk-forward windows found a robustness plateau around 53-58 bars. CD=58 won pass-rate-first: 58/60 pass (96.7%), Sharpe 1.409, avg DD 6.08% vs baseline CD=0 at 47/60 pass (78.3%), Sharpe 1.294, avg DD 11.87%. However, Base5 full-history equity in the sweep harness fell from 8.03x (CD=0) to 3.42x (CD=58), indicating the filter likely sacrifices trend-following convexity. **Do not promote yet.** Stable default remains CD=0 until exact HOF replay is parameterized and a top-10 winner skip audit confirms CD=53/55/58 do not delete convex winners. Files: `examples/t70_freshness_cooldown_extensive.rs`, `snapshots/t70_freshness_cooldown_summary.csv`, `snapshots/t70_freshness_cooldown_equity.csv`, chart `/home/ubuntu/.openclaw/workspace-krypto/charts/comparison_chart.png`, report `memory/hyperopt-2026-05-06.md`.
+
+## 2026-05-06 — T75 HEDGE_ATR_PERIOD Promoted
+
+- **Hardcoded assumption audited:** `src/live/bot.rs` used BTC ATR21 vs 252-day true-range history for the USDT hedge overlay. The `21` period was hardcoded in the live path and exact replay harness, not exposed in config and not independently justified.
+- **Extensive sweep:** `examples/t75_hedge_atr_period_extensive.rs` tested **HEDGE_ATR_PERIOD=5..=100 step 1** (96 integer values) across 9 universes / 60 walk-forward windows using exact-live Turtle-only semantics with fixed AP=17/LB=41/T=5 and HEDGE_PCT=0.45/HEDGE_SIZE=0.40.
+- **Winner promoted:** `HEDGE_ATR_PERIOD=38` — **50/60 pass (83.3%), Sharpe 1.432, avg return +22.12%, DD 11.51%, 3,118 trades** vs old P=21 baseline **47/60 pass (78.3%), Sharpe 1.294, +20.54%, DD 11.87%**. Robust plateau: P=37/38/39/40/45 all 50/60; choose P=38 as highest-Sharpe plateau member.
+- **Exact-live verification after source update:** Base5 exact replay improved to **2.81x / daily account Sharpe 1.01 / MaxDD 28.2% / 298 trades** vs previous 2.56x / 0.95 / 28.8% / 298 trades. No entry/exit semantic change; improvement is sizing timing only.
+- **Files:** `examples/t75_hedge_atr_period_extensive.rs`, `snapshots/t75_hedge_atr_period_{summary,windows,equity}.csv`, `charts/comparison_chart.png`, `memory/hyperopt-2026-05-06.md`. Source now has `HEDGE_ATR_PERIOD=38` and `HEDGE_LOOKBACK=252` constants.

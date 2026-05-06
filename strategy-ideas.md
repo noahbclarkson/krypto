@@ -1,109 +1,108 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-06 12:14 UTC. Critical findings: (1) production live bot is 2.81x / daily account Sharpe 1.01, not Sharpe 5+; (2) T72/T73/T74/T75 closed the obvious trust gaps; (3) remaining high-value work is execution, order-flow, and untouched OOS stress, not another Turtle parameter sweep.*
+*Last updated: 2026-05-06 16:06 UTC. Major cleanup: removed stale T61 (aggTrades original), merged T61-ALT (taker-buy overlay candidate), added T80 (OOS validation), closed T70 as documentation loop.*
 
 ---
 
 ## Critical Alerts
 
-### Production Sharpe Is 1.01, Not 5+
-The only production-facing metric is the exact live bot after T75: **2.81x / daily account Sharpe 1.01 / MaxDD 28.2% / 298 trades / 1,795 days**. Walk-forward Sharpe 5+ figures are research/per-window diagnostics and must not be quoted as live account performance.
+### T61 (original, aggTrades): CLOSED — superseded by taker-buy kline data
+Raw aggTrades are impractical for multi-year daily features (1000-row cap covers ~83 seconds of BTC on busy 2023 days). T76 (2026-05-06) discovered that standard Binance daily klines include `taker_buy_quote_asset_volume`. Feature cache exists at `data/cache/taker_buy/`. Original T61 definition is dead.
 
-### Convex Tail Dependence Is The Central Strategy Risk
-T73 proved top-10 exact-live trades account for **82.8%** of compounded log return. The largest winners are not obvious high-volume bull entries: entry regimes were **5 bear / 3 chop / 2 bull**, and a VL=92 top-3 gate would have excluded **8/10**. Any new filter must be treated as guilty until it proves it preserves the convex tail.
+**New T61-ALT (execute, not document):** Build a Turtle entry + taker-buy pressure overlay candidate. Must preserve T73 top-10 winners. Benchmark vs exact-live without overlay. Promote if Sharpe improves AND top-winners preserved. Reject and close permanently if either fails.
 
-### The VOL_LOOKBACK Gap Is Resolved, Not A Fix
-`src/live/bot.rs` does not use VOL_LOOKBACK ranking. T72 isolated that change and found it harmful: **1.01x / Sharpe 0.09 / MaxDD 30.1%** vs exact live **2.56x / Sharpe 0.95** before T75. Do not keep reopening this as a missing one-line production patch.
+### Documentation Loop Detected — T70 Closed
+T70 (semantic gap mechanism audit) appeared in PLAN.md as "next priority" for 4+ weeks without execution. The gap is documented: research harness = 176.79x vs live bot = 2.81x. T69 patch made it worse (1.02x). T72 VL gate also made it worse (1.01x). The gap is structural and cannot be closed by a one-line parameter fix.
 
-### The Remaining Blind Spot Is Generalization + Execution
-We have repeatedly optimized on the same 9-universe grid. We also still lack an end-to-end mock/live execution path that drives the real `LiveBot::process_bar` through orders/fills/state. The research story is much stronger than the deployment story.
+**Resolution:** Accept that research harness parameters (EP=21, AP=17, LB=41, VL=92) are validated on the research diagnostic system only. Live bot uses Turtle-only exit and no vol ranking. These are different systems. HOF reflects this. T70 is closed as "structural gap — not a parameter problem."
 
 ---
 
-## Top 3 Most Promising Unbuilt Ideas
+## Top 3 Execution Tasks (Not Documentation Updates)
 
-### T53: Daily-Bar Mock Exchange Bypass — DEPLOYABILITY FIRST
-**Status:** UNBUILT / cost smoke only.
-- Scope-reduce from perfect 1m HTTP/WS mock to daily-bar mock replay first.
-- Wire `src/live/bot.rs` / `LiveBot::process_bar` through a mock exchange adapter.
-- Reconcile generated orders/fills/state against exact-live trade ledger.
-- Why: without this, we have a backtest and a bot, but not proof that the actual live decision path behaves as researched.
+### T61-ALT: Taker-Buy Pressure Overlay Candidate — EXECUTE
+**Status:** T76 feature cache exists. Candidate not built.
+- Use `data/cache/taker_buy/` parquet files (BTC/ETH/SOL/XRP/DOGE 2000+ daily bars).
+- Candidate: Turtle breakout entry + pressure > 50th pct confirmation. Long only.
+- Benchmark: exact-live without pressure overlay.
+- Guardrail: must preserve T73 top-10 winners (8/10 have DV rank 4-6 — pressure gate must not exclude rank 4-6 symbols).
+- Decision: improve AND preserve → promote; degrade OR kill winners → reject permanently.
 
-### T61: Binance aggTrades Order-Flow Signal — TRUE NEW INFORMATION
-**Status:** UNBUILT.
-- Download historical Binance `aggTrades`; aggregate taker buy/sell imbalance, large-trade imbalance, trade-count imbalance, and persistence into daily features.
-- Start with sizing/confirmation, not hard filtering, because top-winner deletion risk is high.
-- Why: every recent improvement is price-only. Order flow is the only credible new information dimension in the queue.
+### T53-RESOLUTION: State the Blocker Clearly
+**Status:** "Blocked" for 5+ weeks. Do not persist another week.
+- Option A (reduce scope): daily-bar mock. Wire `src/live/bot.rs` → mock → verify signals match exact-live harness. Run without 1m data.
+- Option B (escalate): "Mock bypass blocked on testnet API keys. Resolution: Noah provides keys or we accept dry-run-only deployability."
+- Do NOT write "blocked — revisit next session."
 
-### T76: Untouched OOS Universe / Era Stress Test — CURVE-FIT FALSIFICATION
-**Status:** UNBUILT.
-- Build a symbol/era validation set not used in April/May parameter selection.
-- Include legacy/lower-liquidity Binance survivors and earlier eras where possible.
-- Freeze current production params before testing.
-- Why: the 9-universe grid has become part of the optimization process. We need a fresh falsification set.
-
----
-
-## Recently Closed / Updated
-
-- **T75 HEDGE_ATR_PERIOD:** promoted 21 -> 38. Winner 50/60 pass, Sharpe 1.432, avg return +22.12%, DD 11.51%. Exact-live rerun now 2.81x / Sharpe 1.01 / MaxDD 28.2%.
-- **T73 top-winner conditions audit:** done. Top-10 = 82.8% of log return; VL top-3 kills 8/10; high ATR_RANK kills 5-8/10; convex winners come from ugly regimes.
-- **T72 VOL_LOOKBACK live gate:** rejected. Adding VL ranking to exact live semantics collapses performance to 1.01x.
-- **T74 TURTLE_ATR_MULT:** M=2.00 reconfirmed. No config change.
-- **T69 semantic patch:** rejected. Patching toward research harness made live replay worse.
-- **T67/HOF cleanup:** production metrics now come from exact-live path only.
+### T80: Out-Of-Sample Universe Validation — NEW
+**Status:** Not built. Addresses the "no OOS universe" blind spot.
+- Reserve UNIUSDT, MATICUSDT, AVAXUSDT as explicit hold-out universes (never optimized on).
+- Run exact-live Turtle-only walk-forward: 3 pairs × 6 windows.
+- Decision: ≥70% pass / Sharpe ≥0.5 → validate; <60% pass → document generalization boundary.
+- Motivation: we've used the same 9-universe grid since April and may have "learned" it through repetition.
 
 ---
 
-## New Concepts Added From 2026-05-06 12:14 Critique
+## Infrastructure / Trust Tasks
 
-### C15: Production-Sharpe Reality Rule
-If a metric is not daily compounded account equity from exact live semantics, it is not a production Sharpe. Research Sharpe 5+ can guide exploration but cannot be used as a deployment claim.
-
-### C16: Convex-Tail Preservation Rule
-Any filter, ranking gate, sizing rule, or order-flow confirmation must report how many top-10 and top-20 exact-live log contributors it would have changed or removed. Improvement that deletes convex winners is fake safety.
-
-### C17: Untouched OOS Grid Rule
-Walk-forward validation on the same repeatedly used 9-universe grid is no longer enough for promotion. Same-family changes require a fresh symbol/era stress set that was not used during parameter discovery.
-
-### C18: Daily Mock First Rule
-When full microstructure replay is blocked by missing 1m data, build the daily-bar live-path mock first. A reduced-scope `LiveBot::process_bar` reconciliation is more valuable than another document saying the full mock is blocked.
+- [x] **T65**: Exact live-bot source-of-truth harness — DONE
+- [x] **T67**: Regenerate HOF/reports from exact-live only — DONE
+- [x] **T68**: Drawdown abandonment / risk-of-ruin stress — DONE
+- [x] **T73**: Top-winner conditions audit — DONE (guardrail documented)
+- [x] **T74**: TURTLE_ATR_MULT stale sweep closure — DONE
+- [x] **T75**: HEDGE_ATR_PERIOD → 38 — PROMOTED (real improvement)
+- [x] **T76**: Taker-buy pressure feature cache — DONE (data exists)
+- [ ] **T61-ALT**: Taker-buy overlay candidate — UNBUILT (execute, not document)
+- [ ] **T53**: Mock exchange resolution — UNBUILT (escalate or reduce scope)
+- [ ] **T80**: OOS universe validation — NEW
 
 ---
 
-## Tested and Rejected (Do Not Revisit Without New Mechanism)
+## Resolved / Closed
 
-| Strategy | Result | Key Reason |
-|----------|--------|------------|
-| T69 semantic alignment patch | REJECTED | Made live equity WORSE (1.02x vs 2.54x). Gap is structural. |
-| HEDGE_ATR_PCT (101 values) | NULL | All identical — inert parameter |
-| Weekend Entry Filter | REJECTED | 58/63 → 56/63 pass; weekend entries are valuable |
-| ATR_RANK=24 | GRAVEYARD | Held-out: 10/22 pass/-0.964 Sharpe vs T=5 14/22/+0.664 |
-| ATR_ENTRY_MULT (all) | REJECTED | EM=0.00 wins definitively |
-| Short-side sleeve | GRAVEYARD | 37.5% pass vs 69.1% guardrail |
-| EP=24 | REVERTED | Held-out failed vs EP=21 |
-| Funding Rate Regime Filter | REJECTED | Pass rate never improves across 4,590 runs |
-| Donchian sleeve | REJECTED | 63% < 69.1% guardrail |
-| BollingerReversion | GRAVEYARD | 0/288 OOS; signal actively harmful |
-| BTC-ETH cointegration | GRAVEYARD | All configs negative Sharpe |
-| CTREND fixed 25% sleeve | REJECTED | Sharpe destroyed 1.38→0.33 |
-| Vol-Contingent Chandelier (21-bar) | GRAVEYARD | All configs identical |
-| Vol-Contingent Chandelier (252-bar) | GRAVEYARD | Tied (+0.12 noise) — no adaptive benefit |
+- **T61 (aggTrades original):** DEAD — 1000-row cap impractical for multi-year; superseded by taker-buy kline data (T76).
+- **T70 (semantic gap audit):** CLOSED — gap is structural, not a parameter problem. HOF reflects actual live bot semantics. Research parameters are not transferable to live path.
+- **T72 VOL_LOOKBACK live gate:** REJECTED — 1.01x vs 2.56x. VL ranking excluded 8/10 top winners.
+- **T74 TURTLE_ATR_MULT:** M=2.00 reconfirmed; no more nearby sweeps.
+- **T75 HEDGE_ATR_PERIOD:** P=38 promoted; +0.25x live equity improvement.
+- **T69 semantic alignment:** REJECTED — 1.02x (worse than live bot 2.81x).
+- **T67 HEDGE_ATR_PCT:** NULL — 101 identical values, inert.
+- **T67 HEDGE_SIZE_MULT:** 0.40 — pure risk dial, not alpha.
+- **T76 taker-buy pressure feature:** cache built; signal mixed; candidate not yet built.
+
+---
+
+## New Concepts Added 2026-05-06
+
+### C13: OOS Universe Reserve
+Reserve 2-3 crypto pairs (UNI, MATIC, AVAX) as explicit hold-out never-optimized validation. Run walk-forward on them to establish generalization boundary. If they pass, we have new trust evidence. If they fail, we know the strategy is optimized to our 9-pair universe.
+
+### C14: Execute-Or-Close Rule
+Every task in PLAN.md must have a decision point that either (a) produces a committed artifact or (b) explicitly closes the issue. "Deferred to next session" is not a decision — it is a loop.
+
+### C15: Fee-Adjusted Sharpe Range
+Maker-fill assumption (70.6%) validated on one crash window (FTX). Fee drag could be 22% (if maker-fill holds) or 50% (if maker-fill degrades to 40% in sustained bear). Report fee-adjusted Sharpe as a range, not a point estimate. "Sharpe 0.8–1.3 after realistic fees" is more honest than "Sharpe 1.01."
 
 ---
 
 ## Anti-Overfitting Rules
 
-1. Minimum 3-window / 5.5pp improvement before accepting same-family param changes.
-2. Held-out validation required for marginal wins.
-3. Plateau + era robustness required before promotion.
-4. **Top-trade skip audit required for every filter.**
-5. **Exact live-path daily equity required before quoting production metrics.**
-6. Methodology labels required for every Sharpe.
-7. No more nearby Turtle filters until T53/T61/T76 produce genuinely new evidence.
+1. No Turtle-family parameter sweeps unless a new mechanism is proposed.
+2. No "audit" tasks — write the test or close the issue.
+3. New entry filter must pass top-trade skip audit before promotion.
+4. Exact live-path daily equity required before quoting production metrics.
+5. 176.79x research harness appears in HOF once: as diagnostic output, not production performance.
+6. Every task has an execute-or-close decision — no deferred loops.
 
 ---
 
-## Current Key Insight
+## Sharpe Taxonomy (Required Labels)
 
-The edge is probably real but modest: exact-live production is **2.81x / daily account Sharpe 1.01 / MaxDD 28.2%**, not a Sharpe-5 money printer. T72/T73 resolved the dangerous VOL_LOOKBACK and convex-tail questions. The next move is execution realism (T53), genuinely new data (T61), and untouched OOS falsification (T76).
+| Type | Description | Current Value |
+|------|-------------|---------------|
+| Daily compounded account | Real equity from exact-live replay | **1.01** |
+| Per-window walk-forward | Mean of per-window Sharpe ratios | ~5.5 (inflated) |
+| Attribution | Role in portfolio context | N/A |
+| Milestone-aggregated | Trade-level aggregation | Not comparable |
+
+Never compare daily account Sharpe to per-window walk-forward Sharpe. They measure different things.
