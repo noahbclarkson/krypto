@@ -219,3 +219,15 @@
 [krypto/sessions/eefd7ce9-9751-408a-9eb6-ced49c9aa32b.jsonl#L72] Assistant: Now commit and push:
 [krypto/sessions/eefd7ce9-9751-408a-9eb6-ced49c9aa32b.jsonl#L80] Assistant: Good. Let me verify the memory file was properly appended and do the workspace-level commit:
 [krypto/sessions/eefd7ce9-9751-408a-9eb6-ced49c9aa32b.jsonl#L114] Assistant: The workspace memory/PLAN update was in a separate commit. Let me re-apply it:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L102] Assistant: Let me add a targeted debug test:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L110] Assistant: Found it: `cancel_order(mock_BTC_3) = true` — the limit sell @ 99999 was NEVER filled (bar high=101 << 99999), so it's still `New` and cancellation succeeds. The test comment was misleading. Fix the test:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L116] Assistant: All 8 tests pass. Now build the full lib and create the example harness:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L120] Assistant: Now create the example harness:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L124] Assistant: Fix the typo:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L142] Assistant: Let me simplify the example significantly — the mock exchange is the star, not the full strategy:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L164] Assistant: Orienting — reading today's memory first:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L166] Assistant: Previous session was mid-build on T41 Mock Exchange. Let me check current state:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L170] Assistant: Good — T41 is built (uncommitted). Let me fix the compilation errors and get it running:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L178] Assistant: Now fix `SimResult` derive and the `for symbol` loop:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L190] Assistant: It compiles. Let me run it:
+[krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L192] Assistant: Zero trades — the strategy logic isn't firing. Let me add quick debug to find out why:
