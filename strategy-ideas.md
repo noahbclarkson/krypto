@@ -1,45 +1,66 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-06 16:06 UTC. Major cleanup: removed stale T61 (aggTrades original), merged T61-ALT (taker-buy overlay candidate), added T80 (OOS validation), closed T70 as documentation loop.*
+*Last updated: 2026-05-06 20:05 UTC. Added C16/C17/C18. T61-ALT CLOSED (REJECTED). T80 still unbuilt.*
 
 ---
 
 ## Critical Alerts
 
-### T61 (original, aggTrades): CLOSED — superseded by taker-buy kline data
-Raw aggTrades are impractical for multi-year daily features (1000-row cap covers ~83 seconds of BTC on busy 2023 days). T76 (2026-05-06) discovered that standard Binance daily klines include `taker_buy_quote_asset_volume`. Feature cache exists at `data/cache/taker_buy/`. Original T61 definition is dead.
+### T61-ALT: CLOSED — REJECTED (2026-05-06)
+Taker-buy pressure overlay candidate built and tested on exact live bot path:
+- Exact live: 2.78x / Sharpe 1.00 / MaxDD 28.2% / 298 trades
+- Pressure candidate: 2.76x / Sharpe 1.01 / MaxDD 25.3% / 275 trades
+- Equity did not improve. Only 6/10 T73 top winners preserved. REJECTED permanently.
+- Feature cache at `data/cache/taker_buy/` remains useful for Track C (feature infrastructure only, not entry filter).
 
-**New T61-ALT (execute, not document):** Build a Turtle entry + taker-buy pressure overlay candidate. Must preserve T73 top-10 winners. Benchmark vs exact-live without overlay. Promote if Sharpe improves AND top-winners preserved. Reject and close permanently if either fails.
-
-### Documentation Loop Detected — T70 Closed
-T70 (semantic gap mechanism audit) appeared in PLAN.md as "next priority" for 4+ weeks without execution. The gap is documented: research harness = 176.79x vs live bot = 2.81x. T69 patch made it worse (1.02x). T72 VL gate also made it worse (1.01x). The gap is structural and cannot be closed by a one-line parameter fix.
-
-**Resolution:** Accept that research harness parameters (EP=21, AP=17, LB=41, VL=92) are validated on the research diagnostic system only. Live bot uses Turtle-only exit and no vol ranking. These are different systems. HOF reflects this. T70 is closed as "structural gap — not a parameter problem."
+### T80: OOS Universe Validation — UNBUILT (critical)
+Reserve UNIUSDT, MATICUSDT, AVAXUSDT as explicit hold-out. 3 pairs × 6 windows. This is the most important test we could run — it validates whether our parameters generalize beyond the 9-pair learned grid. Listed as priority last session, not built. Must execute.
 
 ---
 
-## Top 3 Execution Tasks (Not Documentation Updates)
+## Top Execution Tasks (Priority Order)
 
-### T61-ALT: Taker-Buy Pressure Overlay Candidate — EXECUTE
-**Status:** T76 feature cache exists. Candidate not built.
-- Use `data/cache/taker_buy/` parquet files (BTC/ETH/SOL/XRP/DOGE 2000+ daily bars).
-- Candidate: Turtle breakout entry + pressure > 50th pct confirmation. Long only.
-- Benchmark: exact-live without pressure overlay.
-- Guardrail: must preserve T73 top-10 winners (8/10 have DV rank 4-6 — pressure gate must not exclude rank 4-6 symbols).
-- Decision: improve AND preserve → promote; degrade OR kill winners → reject permanently.
-
-### T53-RESOLUTION: State the Blocker Clearly
-**Status:** "Blocked" for 5+ weeks. Do not persist another week.
-- Option A (reduce scope): daily-bar mock. Wire `src/live/bot.rs` → mock → verify signals match exact-live harness. Run without 1m data.
-- Option B (escalate): "Mock bypass blocked on testnet API keys. Resolution: Noah provides keys or we accept dry-run-only deployability."
-- Do NOT write "blocked — revisit next session."
-
-### T80: Out-Of-Sample Universe Validation — NEW
-**Status:** Not built. Addresses the "no OOS universe" blind spot.
-- Reserve UNIUSDT, MATICUSDT, AVAXUSDT as explicit hold-out universes (never optimized on).
+### T80: OOS Universe Validation — BUILD, NOT DOCUMENT
+Status: Unbuilt for 2 sessions. Highest priority.
+- Reserve UNIUSDT, MATICUSDT, AVAXUSDT as explicit hold-out (never optimized on these pairs).
 - Run exact-live Turtle-only walk-forward: 3 pairs × 6 windows.
-- Decision: ≥70% pass / Sharpe ≥0.5 → validate; <60% pass → document generalization boundary.
-- Motivation: we've used the same 9-universe grid since April and may have "learned" it through repetition.
+- Decision: pass rate ≥ 70% AND Sharpe ≥ 0.5 → new trust evidence. Pass rate < 60% → generalization boundary documented.
+
+### T53-RESOLUTION: State the Blocker or Reduce Scope
+Status: "Blocked" 5+ weeks. Unacceptable to persist.
+- Option A: Reduce mock to daily-bar. Wire `src/live/bot.rs` → mock → verify signals match T65 harness. Compile and get green test.
+- Option B: "Mock bypass blocked on [X]. Resolution: [Y]." Send to Noah in Discord.
+- Do NOT write "blocked — revisit next session." Execute or close.
+
+### C18: Maker-Fill Rate Stress Test — BUILD
+Critical risk quantification missing before testnet deployment.
+- Maker fill: we have one crash window (FTX, 70.6%). Maker fill could be 40% in sustained bear.
+- Build: maker_fill_rate ∈ {0.30, 0.35, 0.40, ..., 0.80} (10 steps) → apply as post-hoc fee adjustment to exact live equity.
+- Output: table maker_fill_rate → equity_mult → fee_adj_sharpe.
+- Rationale: we know 2.81x at assumed 70% maker fill. We don't know equity at 40%. Must quantify range before testnet.
+
+---
+
+## New Concepts (2026-05-06 Session)
+
+### C16: Regime-Conditional Chandelier Multiplier
+**Mechanism:** Use regime classification (SMA21 vs SMA200 — binary, fast-moving, ~2-4x per year) to condition Chandelier multiplier:
+- High-trend regime → CHAND_MULT=2.0 (tighter exit, protect gains)
+- Low-trend regime → CHAND_MULT=2.50 (looser exit, let winners run)
+
+**Why this is different from the dead vol-contingent Chandelier:** Prior vol-contingent attempt failed because 21-bar realized vol rank barely crosses 0.75/0.25 thresholds — too slow-moving and continuous. Regime classification is binary and fast (regime changes 2-4x per year, not continuously). The mechanism is the same (condition exit multiplier on regime) but the trigger is mechanistically different.
+
+**Test:** 3 configs × 9 universes × 6 windows. Must beat static CHAND_MULT=2.0 AND CHAND_MULT=2.30 on both pass rate and Sharpe. Decision: both improve → promote; either degrades → reject and close.
+
+### C17: Consecutive-Bar Momentum Filter
+**Mechanism:** Require 2 consecutive closes above Turtle entry level (not just 1) before entering. Filters false breakouts that immediately reverse (common in chop). Time-confirmation vs ATR-based filtering.
+
+**Difference from ATR_ENTRY_MULT:** ATR_ENTRY_MULT filters based on volatility-adjusted proximity to entry level. Consecutive-bar filter is about time-confirmation — requiring the breakout to sustain, not just occur. ATR_ENTRY_MULT was definitively rejected (mult=0.0 optimal, any filter hurts). Consecutive-bar is a different mechanism.
+
+**Test:** Turtle baseline vs Turtle+consecutive-bar (2 consecutive closes above entry level). 9 universes × 6 windows. Must beat baseline on both pass rate and Sharpe.
+
+### C18: Maker-Fill Rate Stress Test
+**Already described in Top Execution Tasks above.**
 
 ---
 
@@ -51,37 +72,33 @@ T70 (semantic gap mechanism audit) appeared in PLAN.md as "next priority" for 4+
 - [x] **T73**: Top-winner conditions audit — DONE (guardrail documented)
 - [x] **T74**: TURTLE_ATR_MULT stale sweep closure — DONE
 - [x] **T75**: HEDGE_ATR_PERIOD → 38 — PROMOTED (real improvement)
-- [x] **T76**: Taker-buy pressure feature cache — DONE (data exists)
-- [ ] **T61-ALT**: Taker-buy overlay candidate — UNBUILT (execute, not document)
+- [x] **T76**: Taker-buy pressure feature cache — DONE
+- [x] **T61-ALT**: Taker-buy overlay candidate — REJECTED (equity no better, 6/10 top winners)
 - [ ] **T53**: Mock exchange resolution — UNBUILT (escalate or reduce scope)
-- [ ] **T80**: OOS universe validation — NEW
+- [ ] **T80**: OOS universe validation — UNBUILT (critical)
+- [ ] **C18**: Maker-fill rate stress test — UNBUILT (critical)
+- [ ] **C16**: Regime-conditional Chandelier multiplier — UNBUILT
+- [ ] **C17**: Consecutive-bar momentum filter — UNBUILT
 
 ---
 
 ## Resolved / Closed
 
-- **T61 (aggTrades original):** DEAD — 1000-row cap impractical for multi-year; superseded by taker-buy kline data (T76).
-- **T70 (semantic gap audit):** CLOSED — gap is structural, not a parameter problem. HOF reflects actual live bot semantics. Research parameters are not transferable to live path.
-- **T72 VOL_LOOKBACK live gate:** REJECTED — 1.01x vs 2.56x. VL ranking excluded 8/10 top winners.
-- **T74 TURTLE_ATR_MULT:** M=2.00 reconfirmed; no more nearby sweeps.
+- **T61 (aggTrades original):** DEAD — 1000-row cap impractical; superseded by taker-buy kline data.
+- **T61-ALT:** REJECTED — taker-buy pressure overlay destroyed equity and top winners.
+- **T70 (semantic gap):** CLOSED — gap is structural (research ≠ live bot path), not parameter problem.
+- **T72 VOL_LOOKBACK live gate:** REJECTED — 1.01x vs 2.56x; killed 8/10 top winners.
+- **T74 TURTLE_ATR_MULT:** M=2.00 confirmed; no more nearby sweeps.
 - **T75 HEDGE_ATR_PERIOD:** P=38 promoted; +0.25x live equity improvement.
-- **T69 semantic alignment:** REJECTED — 1.02x (worse than live bot 2.81x).
-- **T67 HEDGE_ATR_PCT:** NULL — 101 identical values, inert.
-- **T67 HEDGE_SIZE_MULT:** 0.40 — pure risk dial, not alpha.
-- **T76 taker-buy pressure feature:** cache built; signal mixed; candidate not yet built.
-
----
-
-## New Concepts Added 2026-05-06
-
-### C13: OOS Universe Reserve
-Reserve 2-3 crypto pairs (UNI, MATIC, AVAX) as explicit hold-out never-optimized validation. Run walk-forward on them to establish generalization boundary. If they pass, we have new trust evidence. If they fail, we know the strategy is optimized to our 9-pair universe.
-
-### C14: Execute-Or-Close Rule
-Every task in PLAN.md must have a decision point that either (a) produces a committed artifact or (b) explicitly closes the issue. "Deferred to next session" is not a decision — it is a loop.
-
-### C15: Fee-Adjusted Sharpe Range
-Maker-fill assumption (70.6%) validated on one crash window (FTX). Fee drag could be 22% (if maker-fill holds) or 50% (if maker-fill degrades to 40% in sustained bear). Report fee-adjusted Sharpe as a range, not a point estimate. "Sharpe 0.8–1.3 after realistic fees" is more honest than "Sharpe 1.01."
+- **T69 semantic alignment:** REJECTED — 1.02x (worse than live bot).
+- **T67 HEDGE_ATR_PCT:** 101 identical values — inert, dead code.
+- **T67 HEDGE_SIZE_MULT:** 0.40 — risk dial, not alpha.
+- **T76 taker-buy pressure feature:** cache built; signal mixed; not an entry filter.
+- **Vol-contingent Chandelier (realized vol rank):** DEAD — too slow-moving, all configs identical.
+- **ATR_ENTRY_MULT>0:** DEAD — mult=0.00 definitively optimal.
+- **EP=24:** Reverted — held-out failure.
+- **Weekend filter:** Rejected — weekend entries are valuable.
+- **ATR_RANK=24/65:** Failed held-out; T=5.0 is a risk dial, not alpha.
 
 ---
 
@@ -89,20 +106,20 @@ Maker-fill assumption (70.6%) validated on one crash window (FTX). Fee drag coul
 
 1. No Turtle-family parameter sweeps unless a new mechanism is proposed.
 2. No "audit" tasks — write the test or close the issue.
-3. New entry filter must pass top-trade skip audit before promotion.
+3. New entry filter must pass top-winner preservation test before promotion.
 4. Exact live-path daily equity required before quoting production metrics.
 5. 176.79x research harness appears in HOF once: as diagnostic output, not production performance.
 6. Every task has an execute-or-close decision — no deferred loops.
+7. Per-window walk-forward Sharpe is not comparable to daily account Sharpe — never mix them.
 
 ---
 
 ## Sharpe Taxonomy (Required Labels)
 
-| Type | Description | Current Value |
-|------|-------------|---------------|
+| Type | Description | Honest Value |
+|------|-------------|-------------|
 | Daily compounded account | Real equity from exact-live replay | **1.01** |
-| Per-window walk-forward | Mean of per-window Sharpe ratios | ~5.5 (inflated) |
-| Attribution | Role in portfolio context | N/A |
-| Milestone-aggregated | Trade-level aggregation | Not comparable |
+| Per-window walk-forward | Mean of per-window Sharpe ratios | ~5.5 (inflated ~5x, not comparable) |
+| Fee-adjusted (maker-fill range) | Realistic range at 30-80% maker fill | **0.6–1.3** (estimated) |
 
-Never compare daily account Sharpe to per-window walk-forward Sharpe. They measure different things.
+Report fee-adjusted Sharpe as a range, not a point estimate.
