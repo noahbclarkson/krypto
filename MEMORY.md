@@ -1,5 +1,12 @@
 # MEMORY.md - Krypto Knowledge Base
 
+## 2026-05-06 — T80 OOS Hold-Out Universe Validation Mixed
+
+- **T80 executed on explicit hold-outs:** `examples/t80_oos_universe_validation.rs` replays the exact-live daily Turtle-only path on `UNIUSDT`, `MATICUSDT`, and `AVAXUSDT` for 6 walk-forward windows each (252 train + 252 test bars). BTCUSDT is used only for ATR_RANK/hedge gates.
+- **Result:** global **11/18 pass (61.1%)**, avg Sharpe **0.149**, avg return **+2.3%/window**, avg MaxDD **6.1%**, **160 trades**. This fails the PLAN clean-validation guardrail (≥70% pass and Sharpe ≥0.5) but is not a catastrophic <60% failure.
+- **Per-symbol split matters:** MATIC **6/6 pass** (avg Sharpe 1.12), AVAX **4/6 pass** (avg Sharpe 0.13), UNI **1/6 pass** (avg Sharpe -0.81). MATIC cache/history ends 2024-09-10, so it does not cover the latest 2025-2026 regime.
+- **Decision:** do **not** cite the live Turtle path as cleanly cross-universe generalized. Honest statement: the edge remains universe-sensitive; it works best on selected trending high-beta crypto pairs and degrades on plausible hold-outs, especially UNI.
+
 ## 2026-05-06 — T61-ALT Taker-Buy Pressure Overlay Rejected
 
 - **Live-entry pressure overlay tested and closed:** `examples/t61_taker_buy_pressure_live_candidate.rs` adds one candidate gate to the exact live-bot replay: symbols with cache data require current `taker_buy_pressure` > prior 252-bar median (min 60 prior observations), with T73 top-winner entries protected from the gate.
