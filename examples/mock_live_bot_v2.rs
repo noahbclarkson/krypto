@@ -1,16 +1,19 @@
-//! Mock Live Bot — Full Execution Logic Validation
+//! Mock Live Bot V2 — Daily-Bar Execution Cost Smoke Test
 //!
 //! Validates the Turtle+ATR strategy using the seeded MockExchange.
 //! No API keys required — runs entirely offline on cached historical data.
 //!
-//! What this validates (the stuff that can ONLY be tested in simulation):
+//! What this validates:
 //! 1. Turtle breakout entry fires at the correct bar
 //! 2. ATR trailing stop fires at the correct price level
 //! 3. HOLD_MAX timeout fires at the correct bar count
 //! 4. Position cap enforces max N concurrent positions
-//! 5. Realized PnL, unrealized PnL, equity curve are all correct
-//! 6. Fee impact across 3 fee configurations
+//! 5. Cash/equity accounting consumes MockExchange fill prices, fees, and slippage
+//! 6. Fee/slippage impact differs across 3 execution-cost configurations
 //! 7. Regime filter (ATR percentile) correctly gates entries
+//!
+//! What this does NOT validate: end-to-end `LiveBot::process_bar` wiring,
+//! WebSocket/HTTP behavior, 1m microstructure, or real maker/limit fill rates.
 //!
 //! ```bash
 //! cargo run --example mock_live_bot_v2 --profile sweep
@@ -23,7 +26,7 @@
 
 use anyhow::Result;
 use krypto::data::loader::DataLoader;
-use krypto::live::mock_exchange::{Bar as MockBar, MockExchange, MockExchangeConfig, MockOrderType, MockSide};
+use krypto::live::mock_exchange::{Bar as MockBar, MockExchange, MockExchangeConfig, MockSide};
 use polars::prelude::DataFrame;
 use std::collections::VecDeque;
 
@@ -253,7 +256,8 @@ struct SimResult {
     max_dd_pct: f64,
     trades: usize,
     final_equity: f64,
-    maker_fill_pct: f64,
+    total_fees: f64,
+    total_slippage_cost: f64,
 }
 
 impl Clone for SimResult {
@@ -265,9 +269,44 @@ impl Clone for SimResult {
             max_dd_pct: self.max_dd_pct,
             trades: self.trades,
             final_equity: self.final_equity,
-            maker_fill_pct: self.maker_fill_pct,
+            total_fees: self.total_fees,
+            total_slippage_cost: self.total_slippage_cost,
         }
     }
+}
+
+fn process_new_fills(
+    exchange: &MockExchange,
+    cursor: &mut usize,
+    cash: &mut f64,
+    position: &mut Option<(f64, f64)>,
+    trades: &mut usize,
+    total_fees: &mut f64,
+    total_slippage_cost: &mut f64,
+) {
+    let fills = exchange.fills();
+    for fill in &fills[*cursor..] {
+        *total_fees += fill.fee_paid;
+
+        match fill.side.as_str() {
+            "BUY" => {
+                let mid_price = fill.price / (1.0 + fill.slippage_bp / 10_000.0);
+                *total_slippage_cost += (fill.price - mid_price).abs() * fill.quantity;
+                *cash -= fill.price * fill.quantity + fill.fee_paid;
+                *position = Some((fill.quantity, fill.price));
+            }
+            "SELL" => {
+                let mid_price = fill.price / (1.0 - fill.slippage_bp / 10_000.0);
+                *total_slippage_cost += (mid_price - fill.price).abs() * fill.quantity;
+                *cash += fill.price * fill.quantity - fill.fee_paid;
+                if position.take().is_some() {
+                    *trades += 1;
+                }
+            }
+            _ => {}
+        }
+    }
+    *cursor = fills.len();
 }
 
 
@@ -286,8 +325,9 @@ fn simulate_symbol(
     let mut position: Option<(f64, f64)> = None; // (qty, entry_price)
     let mut equity_curve = Vec::with_capacity(bars.len());
     let mut trades = 0usize;
-    let mut maker_fills = 0usize;
-    let mut taker_fills = 0usize;
+    let mut fill_cursor = 0usize;
+    let mut total_fees = 0.0_f64;
+    let mut total_slippage_cost = 0.0_f64;
 
     // Synchronize bars — use BTC's bar count as the timeline driver
     let n = bars.len().min(btc_bars.len());
@@ -297,30 +337,42 @@ fn simulate_symbol(
     for i in 0..n {
         let bar = &bars[i];
         let btc_bar = &btc_bars[i];
+
+        // First process the historical bar through the exchange. Market orders
+        // submitted later in this iteration fill against this just-closed bar,
+        // because MockExchange::place_market_order fills at bar_idx - 1.
+        exchange.advance_bar();
+        process_new_fills(
+            &exchange,
+            &mut fill_cursor,
+            &mut cash,
+            &mut position,
+            &mut trades,
+            &mut total_fees,
+            &mut total_slippage_cost,
+        );
+
         let prev_close = session.push_close(symbol, bar.close);
 
         // Update BTC ATR for regime filter
-    let btc_prev = session.push_close("BTC", btc_bar.close);
+        let btc_prev = session.push_close("BTC", btc_bar.close);
         session.update_btc_atr(btc_bar, btc_prev);
 
         // ── Exit check ──────────────────────────────────────────────────────
         if position.is_some() {
             if let Some(exit_price) = session.check_exit(bar, symbol) {
-                if let Some((qty, entry_px)) = position {
-                    let _pnl = (exit_price - entry_px) * qty;
-                    cash += qty * exit_price;
-                    position = None;
-                    trades += 1;
-                    // Record fill type before placing order
-                    let fill_type = exchange.orders().values()
-                        .find(|o| o.symbol == symbol && o.status == krypto::live::mock_exchange::MockOrderStatus::Filled)
-                        .map(|o| o.order_type);
-                    match fill_type {
-                        Some(MockOrderType::Limit) => maker_fills += 1,
-                        Some(MockOrderType::Market) | Some(MockOrderType::StopLoss) => taker_fills += 1,
-                        None => {}
-                    }
+                let _ = exit_price;
+                if let Some((qty, _entry_px)) = position {
                     let _ = exchange.place_market_order(symbol, MockSide::Sell, qty);
+                    process_new_fills(
+                        &exchange,
+                        &mut fill_cursor,
+                        &mut cash,
+                        &mut position,
+                        &mut trades,
+                        &mut total_fees,
+                        &mut total_slippage_cost,
+                    );
                     session.exit(symbol);
                 }
             }
@@ -334,15 +386,19 @@ fn simulate_symbol(
                         i, symbol, entry_price, session.btc_atr_percentile());
                 }
                 let qty = position_size / entry_price;
-                position = Some((qty, entry_price));
-                cash -= qty * entry_price;
+                let _ = exchange.place_market_order(symbol, MockSide::Buy, qty);
+                process_new_fills(
+                    &exchange,
+                    &mut fill_cursor,
+                    &mut cash,
+                    &mut position,
+                    &mut trades,
+                    &mut total_fees,
+                    &mut total_slippage_cost,
+                );
                 session.enter(bar, symbol, prev_close);
-                let _ = exchange.place_limit_order(symbol, MockSide::Buy, qty, entry_price);
             }
         }
-
-        // ── Advance mock exchange one bar ────────────────────────────────────
-        exchange.advance_bar();
 
         // ── Record equity ───────────────────────────────────────────────────
         let pos_value = position.map(|(q, _)| q * bar.close).unwrap_or(0.0);
@@ -369,9 +425,6 @@ fn simulate_symbol(
         max_dd = max_dd.max(dd);
     }
 
-    let total_fills = maker_fills + taker_fills;
-    let maker_pct = if total_fills > 0 { maker_fills as f64 / total_fills as f64 * 100.0 } else { 0.0 };
-
     SimResult {
         symbol: symbol.to_string(),
         return_pct: ret,
@@ -379,7 +432,8 @@ fn simulate_symbol(
         max_dd_pct: max_dd,
         trades,
         final_equity,
-        maker_fill_pct: maker_pct,
+        total_fees,
+        total_slippage_cost,
     }
 }
 
@@ -445,8 +499,8 @@ async fn main() -> Result<()> {
 
             let mark = if result.return_pct >= 0.0 { "✅" } else { "❌" };
             println!(
-                "  {} {:<10} | Ret: {:+8.1}% | Sharpe: {:6.2} | DD: {:5.1}% | {} trades | Maker: {:4.0}%",
-                mark, sym, result.return_pct, result.sharpe, result.max_dd_pct, result.trades, result.maker_fill_pct
+                "  {} {:<10} | Ret: {:+8.1}% | Sharpe: {:6.2} | DD: {:5.1}% | {} trades | Fees: ${:7.2} | Slip: ${:7.2}",
+                mark, sym, result.return_pct, result.sharpe, result.max_dd_pct, result.trades, result.total_fees, result.total_slippage_cost
             );
         }
 
@@ -456,10 +510,11 @@ async fn main() -> Result<()> {
         let avg_sharpe = cfg_results.iter().map(|r| r.sharpe).sum::<f64>() / n;
         let avg_dd = cfg_results.iter().map(|r| r.max_dd_pct).sum::<f64>() / n;
         let total_trades: usize = cfg_results.iter().map(|r| r.trades).sum();
-        let avg_maker = cfg_results.iter().map(|r| r.maker_fill_pct).sum::<f64>() / n;
+        let total_fees: f64 = cfg_results.iter().map(|r| r.total_fees).sum();
+        let total_slip: f64 = cfg_results.iter().map(|r| r.total_slippage_cost).sum();
         println!(
-            "  {:<10} | Ret: {:+8.1}% | Sharpe: {:6.2} | DD: {:5.1}% | {} trades | Maker: {:4.0}%",
-            "AVG".bold(), avg_ret, avg_sharpe, avg_dd, total_trades, avg_maker
+            "  {:<10} | Ret: {:+8.1}% | Sharpe: {:6.2} | DD: {:5.1}% | {} trades | Fees: ${:7.2} | Slip: ${:7.2}",
+            "AVG".bold(), avg_ret, avg_sharpe, avg_dd, total_trades, total_fees, total_slip
         );
         println!();
         all_results.insert(cfg_label, cfg_results);
@@ -469,20 +524,21 @@ async fn main() -> Result<()> {
     println!("{}", "═".repeat(60).bold());
     println!("  {}", "SUMMARY: Execution Cost Impact on Turtle+ATR Strategy".bold());
     println!("{}", "═".repeat(60).bold());
-    println!("  {:<22} {:>9} {:>7} {:>7} {:>7} {:>7}",
-             "Config", "Return%", "Sharpe", "MaxDD%", "Trades", "Maker%");
+    println!("  {:<22} {:>9} {:>7} {:>7} {:>7} {:>10} {:>10}",
+             "Config", "Return%", "Sharpe", "MaxDD%", "Trades", "Fees$", "Slip$");
     println!("  {}", "-".repeat(60));
 
-    for (cfg_label, cfg) in &configs {
+    for (cfg_label, _cfg) in &configs {
         let results = all_results.get(*cfg_label).unwrap();
         let n = results.len() as f64;
         let avg_ret = results.iter().map(|r| r.return_pct).sum::<f64>() / n;
         let avg_sharpe = results.iter().map(|r| r.sharpe).sum::<f64>() / n;
         let avg_dd = results.iter().map(|r| r.max_dd_pct).sum::<f64>() / n;
         let total_trades: usize = results.iter().map(|r| r.trades).sum();
-        let avg_maker = results.iter().map(|r| r.maker_fill_pct).sum::<f64>() / n;
-        println!("  {:<22} {:>+9.1}% {:>7.2} {:>7.1}% {:>7} {:>7.0}%",
-                 *cfg_label, avg_ret, avg_sharpe, avg_dd, total_trades, avg_maker);
+        let total_fees: f64 = results.iter().map(|r| r.total_fees).sum();
+        let total_slip: f64 = results.iter().map(|r| r.total_slippage_cost).sum();
+        println!("  {:<22} {:>+9.1}% {:>7.2} {:>7.1}% {:>7} {:>10.2} {:>10.2}",
+                 *cfg_label, avg_ret, avg_sharpe, avg_dd, total_trades, total_fees, total_slip);
     }
     println!();
 
@@ -491,13 +547,13 @@ async fn main() -> Result<()> {
     println!("  {}", "Honest Assessment".bold());
     println!("{}", "═".repeat(60).bold());
     println!();
-    println!("  • All results are SIMULATION UPPER BOUNDS — actual execution will differ");
-    println!("  • Maker-fill % shows what the model assumes; real fill rates unknown");
+    println!("  • Results now use MockExchange fill prices, fees, and slippage in cash/equity accounting");
+    println!("  • Orders are modeled as market-at-close on daily bars; this is a cost smoke test, not final live microstructure evidence");
     println!("  • ATR trailing stop is the real risk manager — Turtle entry is signal only");
     println!("  • The mock exchange tests execution LOGIC, not edge (edge is validated in walk-forward)");
     println!();
-    println!("  ✅ Mock exchange harness: BUILT. Execution logic: VALIDATED.");
-    println!("  📋 Next: Run on Binance testnet with real API keys for true feedback.");
+    println!("  ✅ Mock exchange cost smoke: FIXED — fee/slippage configs now affect equity.");
+    println!("  📋 Next: Wire src/live/bot.rs to a mock feed/executor for true end-to-end validation.");
 
     Ok(())
 }
