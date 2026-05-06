@@ -1,174 +1,143 @@
 #!/usr/bin/env python3
-"""
-HOF Generator — parses production code and validated snapshots to generate HALL_OF_FAME.md.
+"""Generate HALL_OF_FAME.md from the exact live-bot source-of-truth report.
 
-Usage:
-    python3 scripts/gen_hof.py
-
-Parses:
-  - src/live/config.rs                       → production params
-  - examples/live_turtle_chandelier.rs       → pre-2021 / live-bot evidence text
-  - snapshots/turtle_chandelier_9way_wf_latest.md → current walk-forward pass rate
-  - snapshots/progress_equity_curves.md      → current honest daily-equity metrics
+T67 rule: production-facing headline metrics must come from
+`snapshots/live_bot_exact_equity.md` only. Research harness and walk-forward
+Sharpe numbers are diagnostics, not production account performance.
 """
 
 from pathlib import Path
-import datetime
+import datetime as dt
 import re
 
-ROOT = Path(__file__).parent.parent
+ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / "src/live/config.rs"
-LIVE = ROOT / "examples/live_turtle_chandelier.rs"
-WF_LATEST = ROOT / "snapshots/turtle_chandelier_9way_wf_latest.md"
-PROGRESS = ROOT / "snapshots/progress_equity_curves.md"
+EXACT = ROOT / "snapshots/live_bot_exact_equity.md"
 HOF = ROOT / "HALL_OF_FAME.md"
 
 
-def extract_const_value(text: str, name: str) -> str:
-    patterns = [
-        rf"pub const {name}:\s*usize\s*=\s*([0-9.]+);",
-        rf"pub const {name}:\s*f64\s*=\s*([0-9.]+);",
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, text)
-        if match:
-            return match.group(1)
-    return "???"
+def const(text: str, name: str) -> str:
+    m = re.search(rf"pub const {name}:\s*(?:usize|f64)\s*=\s*([0-9.]+);", text)
+    return m.group(1) if m else "???"
 
 
-def pct(pass_count: str, total: str) -> str:
-    return f"{(int(pass_count) / int(total) * 100):.1f}%"
-
-
-def parse_params(config_text: str) -> dict:
-    const_map = {
-        "EP": "TURTLE_EP",
-        "CHAND_P": "CHAND_PERIOD",
-        "CHAND_M": "CHAND_MULT",
-        "ATR_P": "TURTLE_ATR_PERIOD",
-        "ATR_M": "TURTLE_ATR_MULT",
-        "ATR_EM": "ATR_ENTRY_MULT",
-        "HM": "HOLD_MAX",
-        "POS_CAP": "POSITION_CAP",
-        "REGIME_ATR_P": "REGIME_ATR_PERIOD",
-        "REGIME_LOOKBACK": "REGIME_LOOKBACK",
-        "ATR_RANK_T": "ATR_RANK_THRESHOLD",
-    }
-    return {display: extract_const_value(config_text, const) for display, const in const_map.items()}
-
-
-def parse_progress(progress_text: str) -> dict:
-    metrics = {}
-    pattern = re.compile(r"^- (?P<name>.*?): (?P<eq>[0-9.]+x) .*?, Sharpe (?P<sharpe>[0-9.]+)", re.M)
-    for match in pattern.finditer(progress_text):
-        metrics[match.group("name").strip()] = {
-            "equity": match.group("eq"),
-            "sharpe": match.group("sharpe"),
-        }
-    turtle = metrics.get("Turtle+Chandelier")
-    if not turtle:
-        raise SystemExit("Could not parse Turtle+Chandelier from snapshots/progress_equity_curves.md")
-    multiplier = float(turtle["equity"].rstrip("x"))
-    turtle["capital"] = f"${10_000 * multiplier:,.0f}"
-    return turtle
-
-
-def parse_wf(wf_text: str) -> dict:
-    out = {}
-    base = re.search(r"\| Base5 \| (\d+)/(\d+) \|", wf_text)
-    if base:
-        out["base5_pass"] = f"{base.group(1)}/{base.group(2)} ({pct(base.group(1), base.group(2))})"
-    glob = re.search(r"GLOBAL:\s*(\d+)/(\d+) pass.*?avg Sharpe ([0-9.]+).*?(\d+) trades", wf_text)
-    if glob:
-        out["global_pass"] = f"{glob.group(1)}/{glob.group(2)} ({pct(glob.group(1), glob.group(2))})"
-        out["wf_sharpe"] = f"{float(glob.group(3)):.3f}"
-        out["wf_trades"] = glob.group(4)
-    return out
-
-
-def parse_pre2021(live_text: str) -> str:
-    match = re.search(r"Pre-2021 stress[:\s]+(\d+\.\d+)%.*?\((\d+)/(\d+)\)", live_text, re.DOTALL)
-    if match:
-        return f"{match.group(2)}/{match.group(3)} ({match.group(1)}%)"
-    return "19/28 (67.9%)"
+def metric(md: str, label: str) -> str:
+    m = re.search(rf"\| {re.escape(label)} \| ([^|]+)\|", md)
+    if not m:
+        raise SystemExit(f"missing metric: {label}")
+    return m.group(1).strip()
 
 
 def main() -> None:
-    config_text = CONFIG.read_text()
-    live_text = LIVE.read_text()
-    wf_text = WF_LATEST.read_text() if WF_LATEST.exists() else ""
-    progress_text = PROGRESS.read_text() if PROGRESS.exists() else ""
-
-    params = parse_params(config_text)
-    progress = parse_progress(progress_text)
-    wf = parse_wf(wf_text)
-    pre2021 = parse_pre2021(live_text)
-
-    base5_pass = wf.get("base5_pass", "6/6 (100.0%)")
-    global_pass = wf.get("global_pass", "40/54 (74.1%)")
-    wf_sharpe = wf.get("wf_sharpe", "3.147")
-    wf_trades = wf.get("wf_trades", "721")
+    cfg = CONFIG.read_text()
+    md = EXACT.read_text()
+    params = {
+        "TURTLE_EP": const(cfg, "TURTLE_EP"),
+        "TURTLE_ATR_PERIOD": const(cfg, "TURTLE_ATR_PERIOD"),
+        "TURTLE_ATR_MULT": const(cfg, "TURTLE_ATR_MULT"),
+        "ATR_ENTRY_MULT": const(cfg, "ATR_ENTRY_MULT"),
+        "HOLD_MAX": const(cfg, "HOLD_MAX"),
+        "POSITION_CAP": const(cfg, "POSITION_CAP"),
+        "REGIME_ATR_PERIOD": const(cfg, "REGIME_ATR_PERIOD"),
+        "REGIME_LOOKBACK": const(cfg, "REGIME_LOOKBACK"),
+        "ATR_RANK_THRESHOLD": const(cfg, "ATR_RANK_THRESHOLD"),
+        "VOL_LOOKBACK": const(cfg, "VOL_LOOKBACK"),
+        "HEDGE_ATR_PCT": const(cfg, "HEDGE_ATR_PCT"),
+        "HEDGE_SIZE_MULT": const(cfg, "HEDGE_SIZE_MULT"),
+    }
+    days = metric(md, "Days")
+    final_eq = metric(md, "Final equity")
+    ann = metric(md, "Annualised return")
+    sharpe = metric(md, "Daily account Sharpe")
+    maxdd = metric(md, "Max drawdown")
+    trades = metric(md, "Trades")
+    win = metric(md, "Win rate")
+    top5 = metric(md, "Top 5 share of log return")
+    top10 = metric(md, "Top 10 share of log return")
+    no_top10 = metric(md, "Equity without top 10 log contributors")
 
     content = f"""# HALL_OF_FAME.md — Proven Strategies
 
-_Auto-generated from production config + validated snapshots on {datetime.date.today().isoformat()}._
-_Run `python3 scripts/gen_hof.py` to regenerate. Do not hand-edit headline metrics._
+_Auto-generated by `python3 scripts/gen_hof.py` on {dt.date.today().isoformat()}._
+_Do not hand-edit headline metrics. Production numbers come from `snapshots/live_bot_exact_equity.md` only._
 
 ---
 
-## PRODUCTION — DEPLOYABLE AFTER TESTNET
+## PRODUCTION CANDIDATE — EXACT LIVE BOT
 
-### Turtle+Chandelier / Turtle ATR live variant
-- **Equity harness universe:** Base5 — BTC, ETH, SOL, XRP, DOGE, ADA
-- **Live bot universe:** BTC, ETH, SOL, XRP, DOGE
-- **Base5 walk-forward pass rate:** {base5_pass}
-- **Global walk-forward pass rate:** {global_pass} (9-universe, current validated harness)
-- **Walk-forward avg Sharpe:** {wf_sharpe} ({wf_trades} trades, per-window metric)
-- **Daily equity Sharpe:** {progress['sharpe']} (honest compounded-equity metric)
-- **Validated daily equity:** $10K → {progress['capital']} ({progress['equity']})
+### Turtle ATR live bot, as coded in `src/live/bot.rs`
 
-**Important reconciliation:** The old `$10K → $67M` headline was a stale/full-sample artifact and is no longer cited. The authoritative current daily-equity number is `snapshots/progress_equity_curves.md`: {progress['equity']} / Sharpe {progress['sharpe']}.
+**Production source of truth:** `examples/live_bot_exact_equity.rs` replaying the exact live daily event logic with economic mark-to-market account accounting.
 
-**Frozen production params (from `src/live/config.rs`):**
+| Metric | Value |
+|---|---:|
+| Universe | Base5 aligned daily bars: BTC, ETH, SOL, XRP, DOGE, ADA |
+| Days | {days} |
+| Final equity | {final_eq} |
+| Annualised return | {ann} |
+| Daily account Sharpe | {sharpe} |
+| Max drawdown | {maxdd} |
+| Trades | {trades} |
+| Win rate | {win} |
+
+**Deployability verdict:** viable for dry-run/testnet evaluation, not yet production capital. The current live-coded bot is modest but real-looking: {final_eq} with Sharpe {sharpe} and {maxdd} MaxDD. It is not the old research headline.
+
+### Exact live parameters
+
 ```text
-EP              = {params['EP']}     // Turtle entry lookback
-CHAND_PERIOD    = {params['CHAND_P']}      // Stored in config; secondary validation layer
-CHAND_MULT      = {params['CHAND_M']}   // Stored in config; secondary validation layer
-TURTLE_ATR_P    = {params['ATR_P']}     // Turtle ATR stop period
-TURTLE_ATR_M    = {params['ATR_M']}    // Turtle ATR stop multiplier
-ATR_ENTRY_MULT  = {params['ATR_EM']}   // Entry filter — any non-zero degrades pass rate
-HOLD_MAX        = {params['HM']}     // Max hold bars
-POSITION_CAP    = {params['POS_CAP']}      // Max concurrent positions
-REGIME_ATR_P    = {params['REGIME_ATR_P']}     // BTC ATR period for regime filter
-REGIME_LOOKBACK = {params['REGIME_LOOKBACK']}     // BTC ATR percentile lookback
-ATR_RANK_THRESH = {params['ATR_RANK_T']}    // Minimum BTC ATR percentile rank for entries
+TURTLE_EP         = {params['TURTLE_EP']}
+TURTLE_ATR_PERIOD = {params['TURTLE_ATR_PERIOD']}
+TURTLE_ATR_MULT   = {params['TURTLE_ATR_MULT']}
+ATR_ENTRY_MULT    = {params['ATR_ENTRY_MULT']}
+HOLD_MAX          = {params['HOLD_MAX']}
+POSITION_CAP      = {params['POSITION_CAP']}
+REGIME_ATR_PERIOD = {params['REGIME_ATR_PERIOD']}
+REGIME_LOOKBACK   = {params['REGIME_LOOKBACK']}
+ATR_RANK_THRESHOLD= {params['ATR_RANK_THRESHOLD']}
+VOL_LOOKBACK      = {params['VOL_LOOKBACK']}   # configured, but unused by src/live/bot.rs entry logic
+HEDGE_ATR_PCT     = {params['HEDGE_ATR_PCT']}
+HEDGE_SIZE_MULT   = {params['HEDGE_SIZE_MULT']}
+fee_pct           = 0.000400
 ```
 
-**Validation evidence:**
-- Progress equity harness: {progress['equity']}, daily Sharpe {progress['sharpe']}
-- Walk-forward (Base5): {base5_pass}
-- Walk-forward (global 9-universe): {global_pass}
-- Pre-2021 held-out stress: {pre2021}
-- T22 exit attribution: Chandelier adds secondary robustness; live bot currently uses Turtle ATR as sole live exit
-- ATR_RANK=5: validated under both dual-exit and Turtle-only live logic; AP=12/LB=42/T=5 joint regime sweep wins vs old AP=21/LB=252 baseline
-- Cross-market: SPY✓ GLD✓ QQQ✓ (Sharpe 0.76–0.87)
+### Critical reconciliation
 
-**Fee model:** 0.04% taker fee in live dry-run; prior execution realism suggested ~22–33% Sharpe degradation under realistic costs.
+- **Exact live bot:** {final_eq} / Sharpe {sharpe} / MaxDD {maxdd} / {trades} trades — production-facing headline.
+- **Research harness:** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades — diagnostic only, not live-coded production performance.
+- **T69 semantic-alignment candidate:** 1.02x / Sharpe 0.10 / MaxDD 30.8% — rejected; do not patch live semantics toward that candidate.
+- Old `Turtle+Chandelier`, `ATR_RANK=24`, and walk-forward-Sharpe headlines are stale or non-production unless explicitly labelled as diagnostics.
 
-**Critical blocker:** Binance testnet API key + secret. All metrics remain simulation upper bounds until 30-day testnet paper trading runs.
+### Fragility / top-trade dependence
+
+| Metric | Value |
+|---|---:|
+| Equity without top 10 log contributors | {no_top10} |
+| Top 5 share of log return | {top5} |
+| Top 10 share of log return | {top10} |
+
+Trend-following convexity is material. T68 abandonment/risk-governance stress is the next required step before live deployment.
 
 ---
 
-## BORDERLINE — NOT PRODUCTION
+## RESEARCH DIAGNOSTICS — NOT PRODUCTION HEADLINES
 
-### Turtle+Chandelier (Base5 — with ADA)
-- ADA has been a portfolio drag in bull years (+whipsaw, no benefit). Live bot excludes ADA.
+These may guide research, but must not be quoted as live-bot account performance:
 
-### A/D Dual-Hat (standalone)
-- 52% walk-forward pass — too weak alone. Potential as a 20% sleeve.
+| Diagnostic | Status |
+|---|---|
+| 176.79x research equity | Non-production harness; MaxDD 99.5%; semantic/accounting gap unresolved |
+| Walk-forward Sharpe 5+ / 7+ | Per-window comparison metric only; not daily account Sharpe |
+| Turtle+Chandelier dual-exit daily curves | Not the current exact `src/live/bot.rs` path |
+| ATR_RANK=24 / T=65 variants | Failed held-out or superseded; do not report as production |
+| HEDGE_ATR_PCT overlay | Inert/dead-code risk overlay in current tested path |
 
-### DDBudget 3-Sleeve
-- 72% walk-forward pass. Milestone-aggregated equity (not daily compounded).
+---
+
+## BORDERLINE / PARKED
+
+- **A/D Dual-Hat:** signal exists but standalone pass rate too weak for production.
+- **DDBudget 3-Sleeve:** milestone-aggregated metrics are not comparable to daily account Sharpe.
+- **Cross-market Turtle variants:** useful robustness evidence, not crypto live-bot deployment candidates.
 
 ---
 
@@ -176,42 +145,31 @@ ATR_RANK_THRESH = {params['ATR_RANK_T']}    // Minimum BTC ATR percentile rank f
 
 See `GRAVEYARD.md` for full list. Key invalidations:
 
-| Strategy | Why Invalid |
-|----------|-------------|
-| EP=24 | In-sample inflation — held-out confirmed EP=21 wins |
-| ATR_ENTRY_MULT=0.85 | In-sample inflation — held-out confirmed EM=0.00 wins |
-| CP=42 | Backward search artifact |
-| CTREND 25% fixed sleeve | Sharpe destroyed 1.38→0.33 |
-| MACD+Regime | Stale cache, OOS 2/7 pass |
-| BollingerReversion | Full-sample look-ahead contamination, 0/288 OOS |
-| Regime switching | All configs fail |
-| Position scaling overlays | All failed — equal capital wins |
+| Strategy / claim | Why invalid |
+|---|---|
+| EP=24 | In-sample inflation; held-out confirmed EP=21 |
+| ATR_ENTRY_MULT>0 | Entry-side ATR filtering degrades robustness |
+| Weekend entry filter | Rejected; weekend entries are valuable |
+| T69 semantic alignment patch | Worsened exact live replay to 1.02x |
+| Funding-rate regime filter | Rejected / no robust improvement |
+| High ATR_RANK thresholds | Non-stationary; held-out failure |
 
 ---
 
-## CROSS-MARKET EDGE (Non-Crypto)
-
-- SPY: valid (Sharpe ~0.76)
-- GLD: valid (Sharpe ~0.81)
-- QQQ: valid (Sharpe ~0.87)
-
----
-
-## Source Files (Authoritative)
+## Authoritative files
 
 | File | Contents |
-|------|----------|
-| `src/live/config.rs` | Production constants — frozen params |
-| `examples/live_turtle_chandelier.rs` | Live dry-run / testnet entrypoint |
-| `examples/progress_equity_curves.rs` | Honest daily-equity progress harness |
-| `snapshots/progress_equity_curves.md` | Current daily equity + Sharpe source of truth |
-| `snapshots/turtle_chandelier_9way_wf_latest.md` | Current walk-forward validation source |
+|---|---|
+| `examples/live_bot_exact_equity.rs` | Exact live-bot account replay harness |
+| `snapshots/live_bot_exact_equity.md` | Production headline metrics |
+| `snapshots/live_bot_exact_equity.csv` | Daily equity curve |
+| `snapshots/live_bot_exact_trades.csv` | Trade ledger |
+| `reports/daily_progress.csv` | Production-only daily tracking after T67 cleanup |
+| `charts/live_bot_exact_equity.png` | Log-equity + linear drawdown chart |
 """
-
     HOF.write_text(content)
-    print(f"✓ Wrote {len(content)} bytes to {HOF}")
-    print(f"  Turtle equity: {progress['equity']} ({progress['capital']}), Sharpe {progress['sharpe']}")
-    print(f"  Base5: {base5_pass}, Global: {global_pass}")
+    print(f"✓ wrote {HOF}")
+    print(f"  exact live: {final_eq} / Sharpe {sharpe} / MaxDD {maxdd} / {trades} trades")
 
 
 if __name__ == "__main__":

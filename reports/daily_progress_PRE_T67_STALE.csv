@@ -1,0 +1,71 @@
+# DAILY PROGRESS TRACKING — Krypto Strategies
+# NOTE: sharpe_methodology is required. DDBudget's reported Sharpe is milestone-aggregated and not comparable to Turtle's daily compounded equity Sharpe.
+date,strategy,equity_x,reported_sharpe,sharpe_methodology,trades
+2026-05-02,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-05-02,FactorSmallByDV,15.5x,1.99,fixed_hold_daily_equity,1257
+2026-05-02,DDBudget 3-Sleeve,62.2x,7.20,milestone_aggregated_not_comparable,776
+2026-05-02,Turtle+Chandelier,110.1x,0.98,daily_compounded_equity,397
+2026-05-02,Turtle+ATR_RANK=24[GRAVEYARD],76.5x,0.96,[GRAVEYARD] T=24 held-out rejected 2026-05-04: 10/22 pass/-0.964 Sharpe. T=5 is production. DO NOT USE.
+2026-04-30,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-30,FactorSmallByDV,15.0x,1.97,fixed_hold_daily_equity,1257
+2026-04-30,DDBudget 3-Sleeve,62.5x,7.22,milestone_aggregated_not_comparable,776
+2026-04-30,Turtle+Chandelier,124.1x,1.00,daily_compounded_equity,397
+2026-04-29,Turtle+Chandelier,221.5x,1.04,daily_equity_compounded,397
+2026-04-29,DDBudget 3-Sleeve,61.3x,7.24,milestone_aggregated_inflated,776
+2026-04-29,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-29,FactorSmallByDV,14.8x,1.97,fixed_hold_daily_equity,1257
+2026-04-29,Turtle+Chandelier,221.5x,1.04,daily_equity_compounded,397
+2026-04-28,Turtle+Chandelier,BROKEN (harness bug),1.91,unknown,310
+2026-04-28,DDBudget 3-Sleeve,61.3x,7.25,milestone_aggregated_inflated,776
+2026-04-28,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-28,FactorSmallByDV,14.8x,1.97,fixed_hold_daily_equity,1257
+2026-04-27,Turtle+Chandelier,223.3x,1.91,fixed_hold_equity,310
+2026-04-27,DDBudget 3-Sleeve,64.0x,7.32,milestone_aggregated_inflated,776
+2026-04-27,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-27,FactorSmallByDV,14.8x,1.97,fixed_hold_daily_equity,1257
+2026-04-26,Turtle+Chandelier,229.1x,1.91,fixed_hold_equity,310
+2026-04-26,DDBudget 3-Sleeve,64.0x,7.32,milestone_aggregated_inflated,776
+2026-04-26,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-26,FactorSmallByDV,14.8x,1.97,fixed_hold_daily_equity,1257
+2026-04-25,Turtle+Chandelier,246.4x,1.68,fixed_hold_equity,310
+2026-04-25,DDBudget 3-Sleeve,60.5x,7.24,milestone_aggregated_inflated,776
+2026-04-25,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-25,FactorSmallByDV,13.1x,1.89,fixed_hold_daily_equity,1257
+2026-04-25-16:00,Turtle+Chandelier,246.4x,1.68,fixed_hold_equity,310
+2026-04-25-16:00,DDBudget 3-Sleeve,60.5x,7.24,milestone_aggregated_inflated,776
+2026-04-25-16:00,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-04-25-16:00,FactorSmallByDV,13.1x,1.89,fixed_hold_daily_equity,1257
+2026-04-21,Turtle+Chandelier,248.0x,1.68,fixed_hold_equity,310
+2026-04-21,DDBudget 3-Sleeve,59.3x,7.21,milestone_aggregated_inflated,776
+2026-04-21,A/D Momentum,40.3x,3.62,fixed_hold_daily_equity,3933
+2026-04-21,FactorSmallByDV,13.1x,1.89,fixed_hold_daily_equity,1257
+2026-04-19,Turtle+Chandelier,668.5x,2.52,fixed_hold_equity,310
+2026-04-19,DDBudget 3-Sleeve,56.5x,7.09,milestone_aggregated_inflated,776
+2026-04-19,A/D Momentum,40.3x,3.62,fixed_hold_daily_equity,3933
+2026-04-19,FactorSmallByDV,13.6x,1.92,fixed_hold_daily_equity,1257
+2026-04-20,Turtle+Chandelier,734.2x,1.29,fixed_hold_equity,310
+2026-04-20,DDBudget 3-Sleeve,56.5x,7.09,milestone_aggregated_inflated,776
+2026-04-20,A/D Momentum,40.3x,3.62,fixed_hold_daily_equity,3933
+2026-04-20,FactorSmallByDV,13.6x,1.92,fixed_hold_daily_equity,1257
+2026-05-01,Turtle+Chandelier,108.1x,0.98,daily_compounded_equity,310
+2026-05-01,Turtle ATR_RANK=5,41.0x,0.87,daily_compounded_equity,live_bot_only
+2026-05-01,DDBudget 3-Sleeve,63.1x,7.23,milestone_aggregated_not_comparable,776
+2026-05-01,A/D Momentum,40.3x,3.61,fixed_hold_daily_equity,3933
+2026-05-01,FactorSmallByDV,16.9x,2.05,fixed_hold_daily_equity,1257
+2026-05-03,Turtle+Chandelier,111.4x,0.98,daily_compounded_equity,397
+2026-05-03,A/D Momentum,40.3x,3.60,fixed_hold_daily_equity,3933
+2026-05-03,FactorSmallByDV,15.5x,1.99,fixed_hold_daily_equity,1257
+2026-05-03,DDBudget 3-Sleeve,62.1x,7.20,milestone_aggregated_not_comparable,776
+2026-05-04,Turtle+ATR_RANK=5 (T56-fixed),33.9x,0.42,dual_exit_daily_equity (progress_equity_curves.rs). T=65 REJECTED held-out (10/22 pass -1.900 Sharpe). T=5 is production.,2092
+2026-05-04,Turtle-only (live_compatible_wf),n/a,5.17,walk-forward: 56/63 pass (88.9%) Sharpe 5.171 +112.4% avg ret. Base5: 458.8x aggregate. T=5 VL=96.,556
+2026-05-04,Turtle+ATR_RANK=5 (live bot path),33.9x,0.42,daily_compounded_equity; live_compatible_wf: 55/63 pass (87.3%), Sharpe 4.91, Base5 623x aggregate. ATR_RANK=5 near-inert (T=65 REJECTED held-out 10/22).,2092
+2026-05-04,Turtle+Chandelier (dual exit,not live),86.9x,0.95,daily_compounded_equity; NOT the live bot path. Live bot is Turtle-only.,397
+2026-05-04,A/D Momentum,39.3x,3.58,fixed_hold_daily_equity,3829
+2026-05-04,FactorSmallByDV,15.5x,1.99,fixed_hold_daily_equity,1446
+2026-05-04,DDBudget 3-Sleeve,61.6x,7.17,milestone_aggregated_not_comparable,777
+2026-05-05,Turtle+Chandelier (dual exit),619.9x,1.19,daily_compounded_equity; NOT live bot path,2093
+2026-05-05,Turtle ATR_RANK=24 (live bot path),56.1x,0.91,daily_compounded_equity,2093
+2026-05-05,"Turtle-only (live bot, live_compatible_wf)",n/a,6.12,"walk-forward avg Sharpe; 44/54 global (83%), 6/6 Base5 (100%); 397 trades dry-run",397
+2026-05-05,A/D Momentum,39.3x,3.58,fixed_hold_daily_equity,3829
+2026-05-05,FactorSmallByDV,16.2x,2.01,fixed_hold_daily_equity,1516
+2026-05-05,DDBudget 3-Sleeve,60.6x,7.13,milestone_aggregated_not_comparable,776
