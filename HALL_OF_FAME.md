@@ -16,13 +16,13 @@ _Do not hand-edit headline metrics. Production numbers come from `snapshots/live
 | Universe | Base5 aligned daily bars: BTC, ETH, SOL, XRP, DOGE, ADA |
 | Days | 1795 |
 | Final equity | 2.55x |
-| Annualised return | 20.9% |
-| Daily account Sharpe | 0.94 |
+| Annualised return | 21.0% |
+| Daily account Sharpe | 0.95 |
 | Max drawdown | 28.8% |
 | Trades | 298 |
 | Win rate | 48.0% |
 
-**Deployability verdict:** viable for dry-run/testnet evaluation, not yet production capital. The current live-coded bot is modest but real-looking: 2.55x with Sharpe 0.94 and 28.8% MaxDD. It is not the old research headline.
+**Deployability verdict:** viable for dry-run/testnet evaluation, not yet production capital. The current live-coded bot is modest but real-looking: 2.55x with Sharpe 0.95 and 28.8% MaxDD. It is not the old research headline.
 
 ### Exact live parameters
 
@@ -44,7 +44,7 @@ fee_pct           = 0.000400
 
 ### Critical reconciliation
 
-- **Exact live bot:** 2.55x / Sharpe 0.94 / MaxDD 28.8% / 298 trades — production-facing headline.
+- **Exact live bot:** 2.55x / Sharpe 0.95 / MaxDD 28.8% / 298 trades — production-facing headline.
 - **Research harness:** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades — diagnostic only, not live-coded production performance.
 - **T69 semantic-alignment candidate:** 1.02x / Sharpe 0.10 / MaxDD 30.8% — rejected; do not patch live semantics toward that candidate.
 - Old `Turtle+Chandelier`, `ATR_RANK=24`, and walk-forward-Sharpe headlines are stale or non-production unless explicitly labelled as diagnostics.
@@ -54,8 +54,8 @@ fee_pct           = 0.000400
 | Metric | Value |
 |---|---:|
 | Equity without top 10 log contributors | 1.08x |
-| Top 5 share of log return | 57.8% |
-| Top 10 share of log return | 91.5% |
+| Top 5 share of log return | 57.7% |
+| Top 10 share of log return | 91.3% |
 
 Trend-following convexity is material. T68 abandonment/risk-governance stress is the next required step before live deployment.
 
