@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-06 00:48 UTC. Critique cycle complete. T65/T67/T68 closed. T70 (semantic gap mechanism audit) is now the highest-priority unbuilt task. T61 next after T53/T70.*
+*Last updated: 2026-05-06 04:05 UTC. Critical findings: (1) T70 still unbuilt after 3 consecutive doc-commits about it; (2) VOL_LOOKBACK=92 unused by bot.rs — primary semantic gap candidate; (3) 165+ working tree files uncommitted.*
 
 ---
 
@@ -85,6 +85,12 @@ For the top 10 trades by log-return in the exact-live replay, document: (a) entr
 
 ### C10: Inert Code Cleanup Rule
 A parameter that produces identical results across its full logical range (HEDGE_ATR_PCT = 101 values all identical) is dead code. Document it as experimental-only or remove it. Confusing documentation about non-contributing overlays is a long-term maintenance risk.
+
+### C11: VOL_LOOKBACK Usage Gap (Critical New Finding)
+`src/live/bot.rs` does not use VOL_LOOKBACK=92 in its entry logic. The research harness's vol-adaptive ranking (which drives trade selection and sizing in the research path) is completely absent from the live bot's execution path. This is the strongest candidate for explaining the 70x equity gap (research 176.79x vs live 2.54x). Before running another Turtle family parameter sweep, confirm whether the uncommitted bot.rs changes address this gap.
+
+### C12: Documentation-Reset Loop Detection
+Three consecutive critique sessions ended with a documentation commit (saying "T70 is the next priority") followed by a parameter sweep in the same Turtle family. This is a loop. The plan has been updated 3 times without T70 being executed. T71 is an audit task to detect and break this pattern by checking what was actually committed before starting work.
 
 ### C1: Production Equivalence Test
 Every production metric must trace to the same constants as `src/live/config.rs`. If a harness duplicates strategy logic, it must print the full param table and fail loudly if labels disagree with code.
