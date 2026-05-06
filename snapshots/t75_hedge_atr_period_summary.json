@@ -1,0 +1,7 @@
+{
+  "parameter": "HEDGE_ATR_PERIOD",
+  "baseline": 21,
+  "winner": 38,
+  "selection_rule": "pass_rate_desc_then_avg_sharpe_desc_then_avg_max_dd_asc",
+  "values_tested": 96
+}

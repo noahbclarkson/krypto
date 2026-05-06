@@ -8,7 +8,7 @@
 //! - no dollar-volume ranking before entry (VOL_LOOKBACK is currently unused by bot.rs)
 //! - Turtle entry check uses the current-inclusive max-close window and allows equality
 //! - ATR_RANK gate uses `LiveBot::btc_atr_percentile` semantics
-//! - USDT hedge overlay uses BTC 21d ATR vs daily-TR percentile history exactly as bot.rs
+//! - USDT hedge overlay uses BTC hedge ATR vs daily-TR percentile history exactly as bot.rs
 //! - Turtle-only exit with highest-high ATR trail and HOLD_MAX before ATR readiness
 //!
 //! Outputs:
@@ -20,9 +20,9 @@ use anyhow::Result;
 use chrono::Utc;
 use krypto::data::loader::DataLoader;
 use krypto::live::config::{
-    LiveConfig, ATR_ENTRY_MULT, ATR_RANK_THRESHOLD, HEDGE_ATR_PCT, HEDGE_SIZE_MULT,
-    HOLD_MAX, POSITION_CAP, REGIME_ATR_PERIOD, REGIME_LOOKBACK, TURTLE_ATR_MULT,
-    TURTLE_ATR_PERIOD, TURTLE_EP, VOL_LOOKBACK,
+    LiveConfig, ATR_ENTRY_MULT, ATR_RANK_THRESHOLD, HEDGE_ATR_PCT, HEDGE_ATR_PERIOD,
+    HEDGE_LOOKBACK, HEDGE_SIZE_MULT, HOLD_MAX, POSITION_CAP, REGIME_ATR_PERIOD,
+    REGIME_LOOKBACK, TURTLE_ATR_MULT, TURTLE_ATR_PERIOD, TURTLE_EP, VOL_LOOKBACK,
 };
 use std::collections::{HashMap, VecDeque};
 use std::fs::File;
@@ -117,26 +117,26 @@ fn btc_atr_percentile(btc: &SymData, atr_period: usize, lookback: usize, idx: us
     if total == 0 { 50.0 } else { (below as f64 / total as f64) * 100.0 }
 }
 
-/// Mirrors bot.rs high-vol hedge block: current 21-bar ATR vs 252 daily TR percentile.
+/// Mirrors bot.rs high-vol hedge block: current hedge ATR vs daily TR percentile.
 fn hedge_active(btc: &SymData, idx: usize) -> bool {
     let n = idx + 1;
-    if n < 252 + 21 { return false; }
+    if n < HEDGE_LOOKBACK + HEDGE_ATR_PERIOD { return false; }
 
-    let mut trs21 = Vec::with_capacity(21);
-    for i in (n - 21)..n {
-        trs21.push(tr_at(btc, i));
+    let mut trs = Vec::with_capacity(HEDGE_ATR_PERIOD);
+    for i in (n - HEDGE_ATR_PERIOD)..n {
+        trs.push(tr_at(btc, i));
     }
-    let atr_21 = trs21.iter().sum::<f64>() / 21.0;
+    let hedge_atr = trs.iter().sum::<f64>() / HEDGE_ATR_PERIOD as f64;
 
-    let mut hist = Vec::with_capacity(252);
-    for j in 1..=252 {
+    let mut hist = Vec::with_capacity(HEDGE_LOOKBACK);
+    for j in 1..=HEDGE_LOOKBACK {
         let hist_idx = n.saturating_sub(j);
         if hist_idx == 0 { break; }
         hist.push(tr_at(btc, hist_idx));
     }
     hist.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let pct_idx = (HEDGE_ATR_PCT * hist.len() as f64) as usize;
-    hist.get(pct_idx).is_some_and(|&threshold| atr_21 > threshold)
+    hist.get(pct_idx).is_some_and(|&threshold| hedge_atr > threshold)
 }
 
 /// Mirrors check_turtle_entry() in bot.rs as coded: current-inclusive max window,
@@ -227,7 +227,7 @@ async fn main() -> Result<()> {
     let fee = config.fee_pct;
     println!("Params from src/live/config.rs:");
     println!("  EP={}, ATR({}, {:.2}), HM={}, CAP={}, fee={:.2} bps/side", TURTLE_EP, TURTLE_ATR_PERIOD, TURTLE_ATR_MULT, HOLD_MAX, POSITION_CAP, fee * 10_000.0);
-    println!("  ATR_RANK(AP={}, LB={}, T={:.1}), HEDGE_PCT={:.2}, HEDGE_SIZE={:.2}", REGIME_ATR_PERIOD, REGIME_LOOKBACK, ATR_RANK_THRESHOLD, HEDGE_ATR_PCT, HEDGE_SIZE_MULT);
+    println!("  ATR_RANK(AP={}, LB={}, T={:.1}), HEDGE_ATR_P={}, HEDGE_LB={}, HEDGE_PCT={:.2}, HEDGE_SIZE={:.2}", REGIME_ATR_PERIOD, REGIME_LOOKBACK, ATR_RANK_THRESHOLD, HEDGE_ATR_PERIOD, HEDGE_LOOKBACK, HEDGE_ATR_PCT, HEDGE_SIZE_MULT);
     println!("  VOL_LOOKBACK={} is documented in config but unused by src/live/bot.rs entry logic\n", VOL_LOOKBACK);
 
     let loader = DataLoader::new(None, None);
@@ -503,7 +503,7 @@ async fn main() -> Result<()> {
     writeln!(md, "- Entry: current `bot.rs` Turtle condition as coded: current-inclusive EP window and equality allowed (`close < max_close` is rejected, equality passes).")?;
     writeln!(md, "- Entry gate: ATR_RANK(AP={}, LB={}, T={:.1}) using `bot.rs` normalized ATR percentile semantics.", REGIME_ATR_PERIOD, REGIME_LOOKBACK, ATR_RANK_THRESHOLD)?;
     writeln!(md, "- Volume ranking: `VOL_LOOKBACK={}` is in config but **not used** by `src/live/bot.rs`; this exact harness therefore does not apply VL ranking.", VOL_LOOKBACK)?;
-    writeln!(md, "- Hedge: BTC ATR21 > {:.0}th percentile of 252 daily TR history => position size × {:.2}.", HEDGE_ATR_PCT * 100.0, HEDGE_SIZE_MULT)?;
+    writeln!(md, "- Hedge: BTC ATR{} > {:.0}th percentile of {} daily TR history => position size × {:.2}.", HEDGE_ATR_PERIOD, HEDGE_ATR_PCT * 100.0, HEDGE_LOOKBACK, HEDGE_SIZE_MULT)?;
     writeln!(md, "- Exit: Turtle ATR-only stop (`highest_high - ATR_MULT * ATR`) with HOLD_MAX checked before ATR readiness.")?;
     writeln!(md, "- Fees: `LiveConfig::default().fee_pct = {:.2} bps/side`, applied to entry and exit execution prices.", fee * 10_000.0)?;
     writeln!(md, "- Accounting: economic mark-to-market account equity. This intentionally does **not** copy the live UI `BotState` accounting bug that ignores trade size in `record_trade`.\n")?;
@@ -521,6 +521,8 @@ async fn main() -> Result<()> {
     writeln!(md, "| REGIME_LOOKBACK | {} |", REGIME_LOOKBACK)?;
     writeln!(md, "| ATR_RANK_THRESHOLD | {:.1} |", ATR_RANK_THRESHOLD)?;
     writeln!(md, "| VOL_LOOKBACK | {} (unused by bot.rs) |", VOL_LOOKBACK)?;
+    writeln!(md, "| HEDGE_ATR_PERIOD | {} |", HEDGE_ATR_PERIOD)?;
+    writeln!(md, "| HEDGE_LOOKBACK | {} |", HEDGE_LOOKBACK)?;
     writeln!(md, "| HEDGE_ATR_PCT | {:.2} |", HEDGE_ATR_PCT)?;
     writeln!(md, "| HEDGE_SIZE_MULT | {:.2} |", HEDGE_SIZE_MULT)?;
     writeln!(md, "| fee_pct | {:.6} |\n", fee)?;

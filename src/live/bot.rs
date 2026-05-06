@@ -12,9 +12,9 @@
 //! keeping exact live entry semantics, and it worsened Base5 replay from 2.56x /
 //! Sharpe 0.95 to 1.01x / Sharpe 0.09.
 //!
-//! Production params (updated 2026-05-05):
+//! Production params (updated 2026-05-06):
 //!   EP=21, TurtleATR(24, 2.0), HM=12, CAP=3, ATR_RANK(AP=17, LB=41, T=5), VL=92 unused/rejected for live gate
-//!   Live entries also apply USDT hedge: BTC ATR21 > 45th pct => size *= HEDGE_SIZE_MULT (0.40, T66).
+//!   Live entries also apply USDT hedge: BTC ATR38 > 45th pct of 252d TR history => size *= HEDGE_SIZE_MULT (0.40, T75).
 
 const FRESHNESS_COOLDOWN: usize = 0; // bars to wait after exit before re-entry (0=disabled)
 
@@ -32,7 +32,7 @@ use std::collections::VecDeque;
 use tokio::sync::RwLock;
 use std::sync::Arc;
 
-use super::config::{LiveConfig, HEDGE_ATR_PCT, HEDGE_SIZE_MULT};
+use super::config::{LiveConfig, HEDGE_ATR_PCT, HEDGE_ATR_PERIOD, HEDGE_LOOKBACK, HEDGE_SIZE_MULT};
 use super::executor::{Executor, OrderSide};
 use std::path::PathBuf;
 use super::feed::{fetch_warmup_data, KlineEvent, LiveFeed};
@@ -174,9 +174,9 @@ impl LiveBot {
         }
 
         // Fetch warmup data — need enough BTC history for ATR-rank entries and
-        // the existing high-vol USDT hedge overlay (21d ATR vs 252-bar history).
+        // the high-vol USDT hedge overlay.
         let regime_warmup = self.config.regime_atr_period + self.config.regime_lookback + 2;
-        let hedge_warmup = 252 + 21 + 2;
+        let hedge_warmup = HEDGE_LOOKBACK + HEDGE_ATR_PERIOD + 2;
         let warmup_bars = (self.config.ep + self.config.chand_period + 10)
             .max(regime_warmup)
             .max(hedge_warmup)
@@ -235,7 +235,7 @@ impl LiveBot {
         if let Some(bars) = self.bars.get_mut(symbol) {
             bars.push(bar.clone());
             let retention = (self.config.regime_atr_period + self.config.regime_lookback + 2)
-                .max(252 + 21 + 2)
+                .max(HEDGE_LOOKBACK + HEDGE_ATR_PERIOD + 2)
                 .max(200);
             if bars.len() > retention {
                 bars.remove(0);
@@ -260,26 +260,26 @@ impl LiveBot {
                     if self.check_turtle_entry(symbol, &bar) {
                         let mut size = 1.0 / self.config.position_cap as f64;
                         // USDT hedge overlay: vol-regime position sizing.
-                        // 2026-05-05 AP17/VL92 sweep: HEDGE_ATR_PCT=0.45 wins robustness-first
-                        // (58/63 pass, Sharpe 7.079, DD 21.2%) vs prior 0.75 (57/63, Sharpe 6.874, DD 24.1%).
+                        // T75 2026-05-06: HEDGE_ATR_PERIOD=38 wins full P∈[5..=100] sweep
+                        // (50/60 pass, Sharpe 1.432) vs old hardcoded 21 (47/60, Sharpe 1.294).
                         {
                             let btc_bars = match self.bars.get("BTCUSDT") {
                                 Some(b) => b,
                                 None => { return self.open_long(symbol, &bar, size).await; }
                             };
                             let n = btc_bars.len();
-                            if n >= 252 + 21 {
-                                // Current 21-bar ATR
-                                let mut trs21 = Vec::with_capacity(21);
-                                for i in (n - 21)..n {
+                            if n >= HEDGE_LOOKBACK + HEDGE_ATR_PERIOD {
+                                // Current hedge ATR
+                                let mut trs = Vec::with_capacity(HEDGE_ATR_PERIOD);
+                                for i in (n - HEDGE_ATR_PERIOD)..n {
                                     let b = &btc_bars[i];
                                     let pc = if i == 0 { b.close } else { btc_bars[i - 1].close };
-                                    trs21.push((b.high - b.low).max((b.high - pc).abs()).max((b.low - pc).abs()));
+                                    trs.push((b.high - b.low).max((b.high - pc).abs()).max((b.low - pc).abs()));
                                 }
-                                let atr_21 = trs21.iter().sum::<f64>() / 21.0_f64;
-                                // 252-bar history for percentile rank
-                                let mut hist = Vec::with_capacity(252);
-                                for j in 1..=252 {
+                                let hedge_atr = trs.iter().sum::<f64>() / HEDGE_ATR_PERIOD as f64;
+                                // True-range history for percentile rank
+                                let mut hist = Vec::with_capacity(HEDGE_LOOKBACK);
+                                for j in 1..=HEDGE_LOOKBACK {
                                     let idx = n.saturating_sub(j);
                                     if idx == 0 { break; }
                                     let bj = &btc_bars[idx];
@@ -289,7 +289,7 @@ impl LiveBot {
                                 hist.sort_by(|a, b| a.partial_cmp(b).unwrap());
                                 let pct_idx = (HEDGE_ATR_PCT * hist.len() as f64) as usize;
                                 if let Some(&pct_threshold) = hist.get(pct_idx) {
-                                    if atr_21 > pct_threshold {
+                                    if hedge_atr > pct_threshold {
                                         size *= HEDGE_SIZE_MULT;
                                     }
                                 }

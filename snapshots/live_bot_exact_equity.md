@@ -1,6 +1,6 @@
 # T65: Exact Live-Bot Source-of-Truth Equity
 
-Generated: 2026-05-06 09:09 UTC
+Generated: 2026-05-06 12:06 UTC
 
 ## Scope
 
@@ -11,7 +11,7 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 - Entry: current `bot.rs` Turtle condition as coded: current-inclusive EP window and equality allowed (`close < max_close` is rejected, equality passes).
 - Entry gate: ATR_RANK(AP=17, LB=41, T=5.0) using `bot.rs` normalized ATR percentile semantics.
 - Volume ranking: `VOL_LOOKBACK=92` is in config but **not used** by `src/live/bot.rs`; this exact harness therefore does not apply VL ranking.
-- Hedge: BTC ATR21 > 45th percentile of 252 daily TR history => position size × 0.40.
+- Hedge: BTC ATR38 > 45th percentile of 252 daily TR history => position size × 0.40.
 - Exit: Turtle ATR-only stop (`highest_high - ATR_MULT * ATR`) with HOLD_MAX checked before ATR readiness.
 - Fees: `LiveConfig::default().fee_pct = 4.00 bps/side`, applied to entry and exit execution prices.
 - Accounting: economic mark-to-market account equity. This intentionally does **not** copy the live UI `BotState` accounting bug that ignores trade size in `record_trade`.
@@ -30,6 +30,8 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 | REGIME_LOOKBACK | 41 |
 | ATR_RANK_THRESHOLD | 5.0 |
 | VOL_LOOKBACK | 92 (unused by bot.rs) |
+| HEDGE_ATR_PERIOD | 38 |
+| HEDGE_LOOKBACK | 252 |
 | HEDGE_ATR_PCT | 0.45 |
 | HEDGE_SIZE_MULT | 0.40 |
 | fee_pct | 0.000400 |
@@ -39,36 +41,36 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 | Metric | Value |
 |---|---:|
 | Days | 1795 |
-| Final equity | 2.56x |
-| Annualised return | 21.1% |
-| Daily account Sharpe | 0.95 |
-| Max drawdown | 28.8% |
+| Final equity | 2.81x |
+| Annualised return | 23.4% |
+| Daily account Sharpe | 1.01 |
+| Max drawdown | 28.2% |
 | Trades | 298 |
 | Win rate | 48.0% |
-| Entry candidates before ATR gate | 525 |
-| ATR gate skips | 227 |
-| Hedged entries | 187 |
+| Entry candidates before ATR gate | 526 |
+| ATR gate skips | 228 |
+| Hedged entries | 181 |
 | Open positions liquidated at end | 1 |
 
 ## Yearly Table
 
 | Year | End Equity | Return | Sharpe | MaxDD |
 |---:|---:|---:|---:|---:|
-| 2021 | 1.60x | 60.2% | 2.89 | 5.8% |
-| 2022 | 1.21x | -24.2% | -0.77 | 28.7% |
-| 2023 | 1.75x | 43.8% | 1.79 | 11.9% |
-| 2024 | 2.06x | 17.5% | 1.09 | 13.0% |
-| 2025 | 2.75x | 33.2% | 1.58 | 7.9% |
-| 2026 | 2.56x | -6.7% | -1.90 | 12.6% |
+| 2021 | 1.58x | 57.7% | 2.77 | 7.0% |
+| 2022 | 1.21x | -23.5% | -0.76 | 27.2% |
+| 2023 | 1.87x | 54.9% | 1.97 | 11.3% |
+| 2024 | 2.39x | 27.6% | 1.46 | 13.1% |
+| 2025 | 2.92x | 21.8% | 1.13 | 10.7% |
+| 2026 | 2.81x | -3.7% | -1.24 | 9.3% |
 
 ## Top-Trade Attribution
 
 | Metric | Value |
 |---|---:|
-| Equity without top 5 log contributors | 1.49x |
-| Equity without top 10 log contributors | 1.09x |
-| Top 5 share of log return | 57.5% |
-| Top 10 share of log return | 91.0% |
+| Equity without top 5 log contributors | 1.64x |
+| Equity without top 10 log contributors | 1.19x |
+| Top 5 share of log return | 52.4% |
+| Top 10 share of log return | 82.8% |
 
 ### Top 10 Trades
 

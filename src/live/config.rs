@@ -59,12 +59,22 @@ pub const ATR_RANK_THRESHOLD: f64 = 5.0;
 /// bot without a new mechanism; FIFO/equal-slot live entries are the production truth.
 pub const VOL_LOOKBACK: usize = 92;
 
-/// USDT hedge overlay: reduce position size when BTC 21d ATR is above this percentile of its 252d history.
+/// USDT hedge overlay: reduce position size when BTC hedge ATR is above this percentile of its TR history.
 /// T67 hyperopt 2026-05-05: INERT — full 101-value sweep (PCT∈[0..100] step 1) × 9 universes × 7 WF windows.
 /// ALL values produce IDENTICAL pass (56/63, 88.9%), Sharpe (6.941), and trades (689).
-/// The mechanism never fires regardless of threshold. ATR_RANK already provides regime filtering.
-/// This parameter is dead code; HEDGE_ATR_PCT=0.45 maintained for historical compatibility.
+/// T75 later tuned the ATR averaging period to 38 while keeping this threshold fixed.
 pub const HEDGE_ATR_PCT: f64 = 0.45;
+
+/// BTC ATR period for the USDT hedge overlay.
+/// T75 hyperopt 2026-05-06: full integer sweep P∈[5..=100] step 1 × 9 universes × 252d WF windows.
+/// P=38 wins robustness-first: 50/60 pass (83.3%), Sharpe 1.432, avg return +22.12%, DD 11.51%
+/// versus old hardcoded P=21 at 47/60 pass (78.3%), Sharpe 1.294, avg return +20.54%, DD 11.87%.
+/// Robust plateau P=37..45 all achieved 50/60 pass; select P=38 as the highest-Sharpe plateau member.
+pub const HEDGE_ATR_PERIOD: usize = 38;
+
+/// BTC true-range history used as the hedge percentile reference.
+/// Kept fixed during T75; only the current ATR averaging period was audited.
+pub const HEDGE_LOOKBACK: usize = 252;
 
 /// Position-size multiplier when the USDT hedge overlay is active.
 /// Updated 2026-05-05 (T66 hyperopt): extensive SM sweep {0.30..=1.00 step 0.05} × 9 universes × 7 WF windows.

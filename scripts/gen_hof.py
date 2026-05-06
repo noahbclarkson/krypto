@@ -42,6 +42,8 @@ def main() -> None:
         "REGIME_LOOKBACK": const(cfg, "REGIME_LOOKBACK"),
         "ATR_RANK_THRESHOLD": const(cfg, "ATR_RANK_THRESHOLD"),
         "VOL_LOOKBACK": const(cfg, "VOL_LOOKBACK"),
+        "HEDGE_ATR_PERIOD": const(cfg, "HEDGE_ATR_PERIOD"),
+        "HEDGE_LOOKBACK": const(cfg, "HEDGE_LOOKBACK"),
         "HEDGE_ATR_PCT": const(cfg, "HEDGE_ATR_PCT"),
         "HEDGE_SIZE_MULT": const(cfg, "HEDGE_SIZE_MULT"),
     }
@@ -95,6 +97,8 @@ REGIME_ATR_PERIOD = {params['REGIME_ATR_PERIOD']}
 REGIME_LOOKBACK   = {params['REGIME_LOOKBACK']}
 ATR_RANK_THRESHOLD= {params['ATR_RANK_THRESHOLD']}
 VOL_LOOKBACK      = {params['VOL_LOOKBACK']}   # configured for diagnostics; intentionally unused by src/live/bot.rs entry logic after T72 rejection
+HEDGE_ATR_PERIOD  = {params['HEDGE_ATR_PERIOD']}
+HEDGE_LOOKBACK    = {params['HEDGE_LOOKBACK']}
 HEDGE_ATR_PCT     = {params['HEDGE_ATR_PCT']}
 HEDGE_SIZE_MULT   = {params['HEDGE_SIZE_MULT']}
 fee_pct           = 0.000400
@@ -116,7 +120,7 @@ fee_pct           = 0.000400
 | Top 5 share of log return | {top5} |
 | Top 10 share of log return | {top10} |
 
-Trend-following convexity is material. T73 top-winner conditions audit is the next required guardrail before any new filter work.
+Trend-following convexity is material. T73 top-winner audit is complete: VL=92 top-3 would have killed 8/10 top winners; ATR_RANK>=24 would have killed 5/10; ATR_RANK>=65 would have killed 8/10. Do not add new entry filters unless they explicitly preserve the convex tail.
 
 ---
 
@@ -131,7 +135,7 @@ These may guide research, but must not be quoted as live-bot account performance
 | Turtle+Chandelier dual-exit daily curves | Not the current exact `src/live/bot.rs` path |
 | VOL_LOOKBACK rank-gated live candidate | Rejected by T72; rank gate alone collapses exact-live equity to 1.01x |
 | ATR_RANK=24 / T=65 variants | Failed held-out or superseded; do not report as production |
-| HEDGE_ATR_PCT overlay | Inert/dead-code risk overlay in current tested path |
+| HEDGE overlay threshold | PCT threshold itself is not alpha; T75 tuned the hardcoded ATR period from 21 to 38 as a risk-sizing default |
 
 ---
 
