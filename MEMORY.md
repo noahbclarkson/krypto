@@ -785,3 +785,13 @@ Built `examples/live_bot_exact_equity.rs` to replay `src/live/bot.rs` as coded, 
 **Critical drift discovered:** `VOL_LOOKBACK=92` is in config but is not used by `src/live/bot.rs`; live entries are processed per-symbol without volume ranking. The live Turtle entry also uses a current-inclusive max-close window and equality passes (`close < max_close` rejects; equality enters), unlike the strict previous-window research harness. Live `BotState` accounting also ignores trade size in `record_trade`, so T65 intentionally uses economic mark-to-market accounting instead of copying that UI/accounting bug.
 
 **Implication:** Do not regenerate HOF/reports from old live-compatible WF labels until live bot semantics are aligned or explicitly accepted. Next priority is live bot semantic alignment, then rerun T65 and regenerate production metrics from that single source.
+
+## 2026-05-06 — T67/T68 Source-of-Truth Reporting and Abandonment Stress
+
+**T67 production reporting cleanup complete.** `HALL_OF_FAME.md`, `reports/daily_progress.csv`, `scripts/gen_hof.py`, `scripts/run_daily_progress.sh`, and `charts/live_bot_exact_equity.png` now use `snapshots/live_bot_exact_equity.md` as the only production headline source. Old mixed-methodology progress rows were archived to `reports/daily_progress_PRE_T67_STALE.csv` and removed from active production tracking.
+
+**Exact live-bot headline (T65/T67 rerun):** 2.55x final equity, daily account Sharpe 0.94, MaxDD 28.8%, 298 trades, 1,795 Base5 days. This supersedes stale Turtle+Chandelier, ATR_RANK=24, and walk-forward-Sharpe production claims. Research harness 176.79x / Sharpe 3.29 remains diagnostic only, not production performance.
+
+**T68 abandonment stress complete.** `examples/t68_abandonment_stress.rs` and `snapshots/live_bot_abandonment_stress.md` test 20/30/40/50/70/85% drawdown rules on exact-live equity/trades. Only 20% breaches, on 2022-09-13; baseline recovery wait is 451 days. A hard 20% abandonment rule leaves final equity at 1.27x and misses 3 of the top-10 winners (1.42x combined multiplier). 30%+ thresholds never trigger in-sample. Operational verdict: 20% DD should be a review trigger, not an auto-abandon rule; do not auto-abandon below 30% without live/testnet evidence.
+
+**Meta-lesson:** The project was spending too much time on settled edge comparisons. After T67/T68, the highest-value work is execution readiness: T53 mock exchange bypass, because Binance testnet credentials remain blocked.
