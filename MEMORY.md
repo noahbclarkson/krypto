@@ -1,5 +1,12 @@
 # MEMORY.md - Krypto Knowledge Base
 
+## 2026-05-06 — T61-ALT Taker-Buy Pressure Overlay Rejected
+
+- **Live-entry pressure overlay tested and closed:** `examples/t61_taker_buy_pressure_live_candidate.rs` adds one candidate gate to the exact live-bot replay: symbols with cache data require current `taker_buy_pressure` > prior 252-bar median (min 60 prior observations), with T73 top-winner entries protected from the gate.
+- **Result vs same-session exact-live:** exact-live **2.78x / Sharpe 1.00 / MaxDD 28.2% / 298 trades**; pressure candidate **2.76x / Sharpe 1.01 / MaxDD 25.3% / 275 trades**. It reduced drawdown but did not improve equity.
+- **Guardrail failure:** despite explicit per-entry T73 bypass, only **6/10** protected top winners survived because earlier pressure skips changed position-cap/path state. Missing: SOL 2021-07-30, ADA 2021-08-04, SOL 2021-08-13, XRP 2021-08-10.
+- **Decision:** do **not** promote taker-buy pressure as a Turtle entry filter. T61/T76 pressure is closed for the current live Turtle path; any future order-flow work must be a materially different mechanism, not another median-pressure gate.
+
 ## 2026-05-06 — T76 Taker-Buy Pressure Feasibility
 
 - **Binance klines contain order-flow data we were discarding:** daily `/api/v3/klines` includes `taker_buy_quote_asset_volume`; `taker_buy_pressure = taker_buy_quote_vol / quote_vol` is a no-auth daily proxy for buyer-initiated flow. Raw aggTrades are public but impractical for multi-year daily features (1000-row cap covered only ~83 seconds of BTCUSDT on a busy 2023 day).

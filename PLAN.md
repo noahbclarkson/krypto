@@ -25,15 +25,6 @@ Every session produces a critique commit updating PLAN.md, and the next session 
 
 ## Next Tasks (Priority Order)
 
-### T61-ALT: Taker-Buy Pressure Overlay Candidate — EXECUTE (not document)
-**Status:** T76 built the feature cache and confirmed mixed signal. This is the unfinished part.
-- Do NOT just document "mixed signal" — build the Turtle entry + taker-buy pressure overlay candidate that specifically preserves T73 top-10 winners.
-- Use `data/cache/taker_buy/` parquet files (already downloaded).
-- Gate: long only if pressure > 50th pct AND symbol not in T73 skip-list.
-- Benchmark against exact-live without pressure overlay.
-- If candidate improves Sharpe AND preserves top-10 winners → promote.
-- If candidate degrades Sharpe OR kills top winners → reject and close T61 permanently.
-
 ### T53-RESOLUTION: State The Blocker Or Reduce Scope
 **Status:** "Blocked" for 5+ weeks without resolution.
 - Option A: Reduce mock scope to daily-bar. Run end-to-end decision-path test using existing daily parquet. Wire `src/live/bot.rs` → mock → verify signals match T65 harness output.
@@ -53,7 +44,7 @@ Every session produces a critique commit updating PLAN.md, and the next session 
 - T75 HEDGE_ATR_PERIOD: 38 promoted (real improvement)
 - T69 semantic alignment: rejected (worse than live bot)
 - T67 HEDGE_ATR_PCT: inert, all 101 values identical
-- T76 taker-buy pressure: feature cache built, signal mixed, candidate not yet built
+- T61/T76 taker-buy pressure: REJECTED/CLOSED. Feature cache built; live-entry overlay tested with pressure > prior 252-bar median and T73 top-winner bypass. Candidate: 2.76x / Sharpe 1.01 / MaxDD 25.3% / 275 trades vs exact-live 2.78x / Sharpe 1.00 / MaxDD 28.2% / 298 trades; failed guardrail by preserving only 6/10 T73 top winners due path/cap interactions. Do not promote pressure as Turtle entry filter.
 - T73 top-winner audit: guardrail documented (do not add filters that kill convex winners)
 
 ## Resolved Concepts (Do Not Revisit)
