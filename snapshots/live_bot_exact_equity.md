@@ -1,6 +1,6 @@
 # T65: Exact Live-Bot Source-of-Truth Equity
 
-Generated: 2026-05-07 06:05 UTC
+Generated: 2026-05-07 06:30 UTC
 
 ## Scope
 
@@ -24,7 +24,7 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 | TURTLE_ATR_PERIOD | 24 |
 | TURTLE_ATR_MULT | 2.00 |
 | ATR_ENTRY_MULT | 0.00 |
-| HOLD_MAX | 12 |
+| HOLD_MAX | 15 |
 | POSITION_CAP | 3 |
 | REGIME_ATR_PERIOD | 17 |
 | REGIME_LOOKBACK | 41 |
@@ -41,36 +41,36 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 | Metric | Value |
 |---|---:|
 | Days | 1796 |
-| Final equity | 2.89x |
-| Annualised return | 24.1% |
-| Daily account Sharpe | 0.98 |
-| Max drawdown | 29.0% |
-| Trades | 298 |
-| Win rate | 48.0% |
-| Entry candidates before ATR gate | 526 |
-| ATR gate skips | 228 |
-| Hedged entries | 181 |
+| Final equity | 3.12x |
+| Annualised return | 26.0% |
+| Daily account Sharpe | 1.03 |
+| Max drawdown | 23.7% |
+| Trades | 286 |
+| Win rate | 46.9% |
+| Entry candidates before ATR gate | 510 |
+| ATR gate skips | 224 |
+| Hedged entries | 175 |
 | Open positions liquidated at end | 1 |
 
 ## Yearly Table
 
 | Year | End Equity | Return | Sharpe | MaxDD |
 |---:|---:|---:|---:|---:|
-| 2021 | 1.55x | 54.7% | 2.61 | 7.0% |
-| 2022 | 1.19x | -23.0% | -0.73 | 27.6% |
-| 2023 | 1.98x | 66.0% | 2.08 | 12.9% |
-| 2024 | 2.64x | 32.6% | 1.39 | 17.3% |
-| 2025 | 3.15x | 19.6% | 0.96 | 10.7% |
-| 2026 | 2.89x | -8.3% | -2.27 | 12.2% |
+| 2021 | 1.61x | 60.8% | 2.80 | 8.2% |
+| 2022 | 1.30x | -18.9% | -0.52 | 22.4% |
+| 2023 | 2.07x | 59.0% | 1.87 | 17.7% |
+| 2024 | 2.77x | 33.1% | 1.40 | 19.2% |
+| 2025 | 3.39x | 22.1% | 1.06 | 10.7% |
+| 2026 | 3.12x | -7.7% | -2.08 | 12.2% |
 
 ## Top-Trade Attribution
 
 | Metric | Value |
 |---|---:|
-| Equity without top 5 log contributors | 1.68x |
-| Equity without top 10 log contributors | 1.20x |
-| Top 5 share of log return | 51.3% |
-| Top 10 share of log return | 82.6% |
+| Equity without top 5 log contributors | 1.70x |
+| Equity without top 10 log contributors | 1.18x |
+| Top 5 share of log return | 53.3% |
+| Top 10 share of log return | 85.1% |
 
 ### Top 10 Trades
 
@@ -78,13 +78,13 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 |---:|---|---|---|---:|---:|---:|---:|---|---|
 | 1 | SOLUSDT | 2023-01-11 00:00:00 | 2023-01-14 00:00:00 | 3 | 0.333 | 48.0% | 1.1602 | TURTLE_ATR | false |
 | 2 | DOGEUSDT | 2022-10-28 00:00:00 | 2022-10-29 00:00:00 | 1 | 0.333 | 45.1% | 1.1502 | TURTLE_ATR | false |
-| 3 | SOLUSDT | 2021-07-30 00:00:00 | 2021-08-11 00:00:00 | 12 | 0.333 | 28.5% | 1.0951 | HOLD_MAX | false |
-| 4 | XRPUSDT | 2024-11-28 00:00:00 | 2024-12-01 00:00:00 | 3 | 0.183 | 48.6% | 1.0891 | TURTLE_ATR | true |
-| 5 | SOLUSDT | 2021-08-27 00:00:00 | 2021-08-30 00:00:00 | 3 | 0.333 | 25.2% | 1.0840 | TURTLE_ATR | false |
-| 6 | BTCUSDT | 2021-10-04 00:00:00 | 2021-10-15 00:00:00 | 11 | 0.333 | 25.2% | 1.0840 | TURTLE_ATR | false |
-| 7 | ADAUSDT | 2021-08-04 00:00:00 | 2021-08-10 00:00:00 | 6 | 0.333 | 21.8% | 1.0727 | TURTLE_ATR | false |
-| 8 | SOLUSDT | 2021-08-13 00:00:00 | 2021-08-15 00:00:00 | 2 | 0.333 | 19.3% | 1.0644 | TURTLE_ATR | false |
-| 9 | XRPUSDT | 2021-08-10 00:00:00 | 2021-08-11 00:00:00 | 1 | 0.333 | 18.6% | 1.0621 | TURTLE_ATR | false |
+| 3 | XRPUSDT | 2021-07-28 00:00:00 | 2021-08-11 00:00:00 | 14 | 0.333 | 37.8% | 1.1260 | TURTLE_ATR | false |
+| 4 | SOLUSDT | 2021-07-30 00:00:00 | 2021-08-14 00:00:00 | 15 | 0.333 | 36.3% | 1.1211 | HOLD_MAX | false |
+| 5 | XRPUSDT | 2024-11-28 00:00:00 | 2024-12-01 00:00:00 | 3 | 0.183 | 48.6% | 1.0891 | TURTLE_ATR | true |
+| 6 | SOLUSDT | 2021-08-27 00:00:00 | 2021-08-30 00:00:00 | 3 | 0.333 | 25.2% | 1.0840 | TURTLE_ATR | false |
+| 7 | BTCUSDT | 2021-10-04 00:00:00 | 2021-10-15 00:00:00 | 11 | 0.333 | 25.2% | 1.0840 | TURTLE_ATR | false |
+| 8 | ADAUSDT | 2023-11-23 00:00:00 | 2023-12-08 00:00:00 | 15 | 0.183 | 40.7% | 1.0746 | HOLD_MAX | true |
+| 9 | ADAUSDT | 2021-08-04 00:00:00 | 2021-08-10 00:00:00 | 6 | 0.333 | 21.8% | 1.0727 | TURTLE_ATR | false |
 | 10 | ETHUSDT | 2021-07-28 00:00:00 | 2021-08-04 00:00:00 | 7 | 0.333 | 18.3% | 1.0611 | TURTLE_ATR | false |
 
 ## Files

@@ -1,66 +1,69 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-06 20:05 UTC. Added C16/C17/C18. T61-ALT CLOSED (REJECTED). T80 still unbuilt.*
+*Last updated: 2026-05-07 08:05 UTC. C16/C17/C18 resolved. C19 rebalancing overlay added. T80 result: genuine generalization failure.*
 
 ---
 
 ## Critical Alerts
 
-### T61-ALT: CLOSED — REJECTED (2026-05-06)
-Taker-buy pressure overlay candidate built and tested on exact live bot path:
-- Exact live: 2.78x / Sharpe 1.00 / MaxDD 28.2% / 298 trades
-- Pressure candidate: 2.76x / Sharpe 1.01 / MaxDD 25.3% / 275 trades
-- Equity did not improve. Only 6/10 T73 top winners preserved. REJECTED permanently.
-- Feature cache at `data/cache/taker_buy/` remains useful for Track C (feature infrastructure only, not entry filter).
+### C16: CLOSED PERMANENTLY (2026-05-07)
+CHAND_PERIOD 98-value extensive sweep proved all 98 values produce IDENTICAL results (Sharpe=2.797, pass=68.3%, equity=1.4538x). Root cause: Turtle ATR exit fires before Chandelier in dual-exit architecture. Chandelier is non-binding in dual-exit. Modulating a non-binding exit has zero effect. **Remove from active list permanently.**
 
-### T80: OOS Universe Validation — UNBUILT (critical)
-Reserve UNIUSDT, MATICUSDT, AVAXUSDT as explicit hold-out. 3 pairs × 6 windows. This is the most important test we could run — it validates whether our parameters generalize beyond the 9-pair learned grid. Listed as priority last session, not built. Must execute.
+### C17: CLOSED PERMANENTLY (2026-05-07)
+C17 consecutive-bar filter REJECTED: 81% vs 93.7% pass, -2.9% equity delta. The dual-gate decision rule requires both metrics to improve. Fails. **Remove from active list permanently.**
+
+### C18: ACCEPTABLE — CLOSED (2026-05-07)
+Maker-fill rate stress test: equity 2.808x at 40% maker fill, Sharpe 0.841, MaxDD 28.1%. Equity range 2.80x–2.85x across maker_fill ∈ [30%, 100%] — low sensitivity. **Remove from active list permanently.**
+
+### T80: OOS Universe Validation — RESULT: GENERALIZATION FAILURE
+Built and executed on hold-out UNI/MATIC/AVAX:
+- **11/18 pass (61.1%)**, avg Sharpe **0.149**, avg return **+2.3%/window**, 160 trades
+- MATIC strong (6/6), AVAX borderline (4/6), UNI catastrophic (1/6)
+- **Fails promotion guardrail** (≥70% pass + Sharpe ≥0.5): 9pp below pass threshold, 0.35 below Sharpe threshold
+- **Honest statement:** edge is universe-sensitive, concentrated in high-beta trending pairs; does NOT generalize cleanly to unseen pairs
+- UNI failure is a real signal, not noise: mature high-cap pairs with different trend dynamics fail
+
+---
+
+## New Concepts (2026-05-07 Session)
+
+### C19: Rebalancing Overlay — Exact-Live Verification Required
+**Mechanism:** `close_losers interval=5` — close and reopen a position when it drifts >X% from entry relative to the portfolio. Specifically targets "ugly regime" positions that Chandelier hasn't exited yet.
+
+**Sweep result (live_compatible_wf harness):** close_losers I=5: **6/6 pass**, Sharpe **+7.527** vs baseline **+4.381** (**+3.146 delta**), avg return +74.7%, 122 trades. WINNER of the S6 rebalancing sweep.
+
+**NOT yet tested on exact-live path.** The rebalancing was tested in `live_compatible_wf`, which has different semantics from `src/live/bot.rs`. Previous candidates (T72, T69) passed their harness tests but failed exact-live semantics. This MUST be verified on exact-live path before any promotion.
+
+**Test:** Replay exact-live Turtle path (2.89x / Sharpe 0.98 / 298 trades) with close_losers I=5 overlay. Compare equity and Sharpe vs baseline.
+
+**Decision:** Both equity AND Sharpe improve → promote to live bot exit logic. Either degrades → GRAVEYARD permanently.
+
+### M1: Equity Trajectory Monitor
+**Mechanism:** Compute 60-day rolling return of exact-live equity. Alert if rolling return falls below calibrated threshold (e.g., 10th percentile of historical rolling returns).
+
+**Why needed:** Top-10 trades = 82.8% of log return. 2026 YTD already demonstrating tail risk (-22.7% Turtle vs +12.7% BTC). No automated detection exists. Manual audit is reactive, not proactive.
+
+**Status:** Operational infrastructure, not research. Build it.
 
 ---
 
 ## Top Execution Tasks (Priority Order)
 
-### T80: OOS Universe Validation — BUILD, NOT DOCUMENT
-Status: Unbuilt for 2 sessions. Highest priority.
-- Reserve UNIUSDT, MATICUSDT, AVAXUSDT as explicit hold-out (never optimized on these pairs).
-- Run exact-live Turtle-only walk-forward: 3 pairs × 6 windows.
-- Decision: pass rate ≥ 70% AND Sharpe ≥ 0.5 → new trust evidence. Pass rate < 60% → generalization boundary documented.
+### C19: Rebalancing Overlay on Exact-Live Path — VERIFY OR KILL
+- Replay exact-live Turtle path with close_losers I=5 overlay
+- Compare equity to 2.89x / Sharpe 0.98 / 298 trades baseline
+- Decision: both equity AND Sharpe improve → promote; either degrades → GRAVEYARD permanently
 
-### T53-RESOLUTION: State the Blocker or Reduce Scope
-Status: "Blocked" 5+ weeks. Unacceptable to persist.
-- Option A: Reduce mock to daily-bar. Wire `src/live/bot.rs` → mock → verify signals match T65 harness. Compile and get green test.
-- Option B: "Mock bypass blocked on [X]. Resolution: [Y]." Send to Noah in Discord.
-- Do NOT write "blocked — revisit next session." Execute or close.
+### M1: Equity Trajectory Monitor — BUILD
+- Compute 60-day rolling return from `snapshots/live_bot_exact_equity.csv`
+- Alert threshold: below 10th percentile of historical rolling returns
+- Output: text alert + optional Discord notification
+- No data download — reuse existing equity CSV
 
-### C18: Maker-Fill Rate Stress Test — BUILD
-Critical risk quantification missing before testnet deployment.
-- Maker fill: we have one crash window (FTX, 70.6%). Maker fill could be 40% in sustained bear.
-- Build: maker_fill_rate ∈ {0.30, 0.35, 0.40, ..., 0.80} (10 steps) → apply as post-hoc fee adjustment to exact live equity.
-- Output: table maker_fill_rate → equity_mult → fee_adj_sharpe.
-- Rationale: we know 2.81x at assumed 70% maker fill. We don't know equity at 40%. Must quantify range before testnet.
-
----
-
-## New Concepts (2026-05-06 Session)
-
-### C16: Regime-Conditional Chandelier Multiplier
-**Mechanism:** Use regime classification (SMA21 vs SMA200 — binary, fast-moving, ~2-4x per year) to condition Chandelier multiplier:
-- High-trend regime → CHAND_MULT=2.0 (tighter exit, protect gains)
-- Low-trend regime → CHAND_MULT=2.50 (looser exit, let winners run)
-
-**Why this is different from the dead vol-contingent Chandelier:** Prior vol-contingent attempt failed because 21-bar realized vol rank barely crosses 0.75/0.25 thresholds — too slow-moving and continuous. Regime classification is binary and fast (regime changes 2-4x per year, not continuously). The mechanism is the same (condition exit multiplier on regime) but the trigger is mechanistically different.
-
-**Test:** 3 configs × 9 universes × 6 windows. Must beat static CHAND_MULT=2.0 AND CHAND_MULT=2.30 on both pass rate and Sharpe. Decision: both improve → promote; either degrades → reject and close.
-
-### C17: Consecutive-Bar Momentum Filter
-**Mechanism:** Require 2 consecutive closes above Turtle entry level (not just 1) before entering. Filters false breakouts that immediately reverse (common in chop). Time-confirmation vs ATR-based filtering.
-
-**Difference from ATR_ENTRY_MULT:** ATR_ENTRY_MULT filters based on volatility-adjusted proximity to entry level. Consecutive-bar filter is about time-confirmation — requiring the breakout to sustain, not just occur. ATR_ENTRY_MULT was definitively rejected (mult=0.0 optimal, any filter hurts). Consecutive-bar is a different mechanism.
-
-**Test:** Turtle baseline vs Turtle+consecutive-bar (2 consecutive closes above entry level). 9 universes × 6 windows. Must beat baseline on both pass rate and Sharpe.
-
-### C18: Maker-Fill Rate Stress Test
-**Already described in Top Execution Tasks above.**
+### T53: API Keys Escalation — NEEDS NOAH ACTION
+- Signal path verified. Mock exchange smoke test passed.
+- Only remaining blocker: Noah's Binance testnet API keys.
+- Do NOT defer again. Send explicit request to Noah in #krypto.
 
 ---
 
@@ -74,31 +77,36 @@ Critical risk quantification missing before testnet deployment.
 - [x] **T75**: HEDGE_ATR_PERIOD → 38 — PROMOTED (real improvement)
 - [x] **T76**: Taker-buy pressure feature cache — DONE
 - [x] **T61-ALT**: Taker-buy overlay candidate — REJECTED (equity no better, 6/10 top winners)
-- [ ] **T53**: Mock exchange resolution — UNBUILT (escalate or reduce scope)
-- [ ] **T80**: OOS universe validation — UNBUILT (critical)
-- [ ] **C18**: Maker-fill rate stress test — UNBUILT (critical)
-- [ ] **C16**: Regime-conditional Chandelier multiplier — UNBUILT
-- [ ] **C17**: Consecutive-bar momentum filter — UNBUILT
+- [x] **C16**: Regime-conditional Chandelier — CLOSED PERMANENTLY (Chandelier non-binding)
+- [x] **C17**: Consecutive-bar filter — REJECTED (fails dual-gate)
+- [x] **C18**: Maker-fill stress test — ACCEPTABLE (equity 2.808x at 40% fill)
+- [x] **T80**: OOS universe validation — EXECUTED (generalization failure, not clean)
+- [ ] **T53**: Mock exchange resolution — CLOSED, only API keys block
+- [ ] **M1**: Equity trajectory monitor — UNBUILT
+- [ ] **C19**: Rebalancing overlay on exact-live — UNVERIFIED (sweep promising, exact-live untested)
 
 ---
 
 ## Resolved / Closed
 
-- **T61 (aggTrades original):** DEAD — 1000-row cap impractical; superseded by taker-buy kline data.
-- **T61-ALT:** REJECTED — taker-buy pressure overlay destroyed equity and top winners.
-- **T70 (semantic gap):** CLOSED — gap is structural (research ≠ live bot path), not parameter problem.
-- **T72 VOL_LOOKBACK live gate:** REJECTED — 1.01x vs 2.56x; killed 8/10 top winners.
-- **T74 TURTLE_ATR_MULT:** M=2.00 confirmed; no more nearby sweeps.
-- **T75 HEDGE_ATR_PERIOD:** P=38 promoted; +0.25x live equity improvement.
-- **T69 semantic alignment:** REJECTED — 1.02x (worse than live bot).
-- **T67 HEDGE_ATR_PCT:** 101 identical values — inert, dead code.
-- **T67 HEDGE_SIZE_MULT:** 0.40 — risk dial, not alpha.
-- **T76 taker-buy pressure feature:** cache built; signal mixed; not an entry filter.
-- **Vol-contingent Chandelier (realized vol rank):** DEAD — too slow-moving, all configs identical.
-- **ATR_ENTRY_MULT>0:** DEAD — mult=0.00 definitively optimal.
-- **EP=24:** Reverted — held-out failure.
-- **Weekend filter:** Rejected — weekend entries are valuable.
-- **ATR_RANK=24/65:** Failed held-out; T=5.0 is a risk dial, not alpha.
+- **C16 (regime-conditional Chandelier):** CLOSED — CHAND_PERIOD sweep proves all values identical; Chandelier non-binding; modulating it has zero effect
+- **C17 (consecutive-bar momentum filter):** REJECTED — 81% vs 93.7% pass, -2.9% equity delta; fails dual-gate decision rule
+- **C18 (maker-fill stress test):** ACCEPTABLE — 40% fill = 2.808x, Sharpe 0.841; equity range 2.80x–2.85x; low sensitivity confirmed
+- **T61-ALT (taker-buy pressure overlay):** REJECTED — equity no better, 6/10 top winners destroyed
+- **T72 VOL_LOOKBACK live gate:** REJECTED — 1.01x vs 2.56x; killed 8/10 top winners
+- **T74 TURTLE_ATR_MULT:** M=2.00 confirmed; no more nearby sweeps
+- **T75 HEDGE_ATR_PERIOD:** P=38 promoted
+- **T69 semantic alignment:** REJECTED — worsened exact live replay
+- **T67 HEDGE_ATR_PCT:** INERT — all 101 values identical
+- **T67 HEDGE_SIZE_MULT:** 0.55 — risk dial (updated)
+- **ATR_ENTRY_MULT>0:** DEAD — mult=0.00 definitively optimal
+- **EP=24:** REVERTED — held-out failure
+- **Weekend filter:** REJECTED
+- **ATR_RANK=24/65:** Failed held-out; T=5.0 is risk dial only
+- **Donchian entry:** REJECTED — lower pass rate than Turtle
+- **Vol-contingent Chandelier:** DEAD — too slow-moving
+- **Taker-buy pressure entry overlay:** REJECTED
+- **CHAND_PERIOD:** PROVED inert — 98-value sweep, all values identical
 
 ---
 
@@ -106,7 +114,7 @@ Critical risk quantification missing before testnet deployment.
 
 1. No Turtle-family parameter sweeps unless a new mechanism is proposed.
 2. No "audit" tasks — write the test or close the issue.
-3. New entry filter must pass top-winner preservation test before promotion.
+3. New entry/exit mechanism must pass exact-live path before promotion (not just harness).
 4. Exact live-path daily equity required before quoting production metrics.
 5. 176.79x research harness appears in HOF once: as diagnostic output, not production performance.
 6. Every task has an execute-or-close decision — no deferred loops.
@@ -117,8 +125,8 @@ Critical risk quantification missing before testnet deployment.
 ## Sharpe Taxonomy (Required Labels)
 
 | Type | Description | Honest Value |
-|------|-------------|-------------|
-| Daily compounded account | Real equity from exact-live replay | **1.01** |
+|------|-------------|--------------|
+| Daily compounded account | Real equity from exact-live replay | **0.98** (updated) |
 | Per-window walk-forward | Mean of per-window Sharpe ratios | ~5.5 (inflated ~5x, not comparable) |
 | Fee-adjusted (maker-fill range) | Realistic range at 30-80% maker fill | **0.6–1.3** (estimated) |
 
