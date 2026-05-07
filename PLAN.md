@@ -1,6 +1,13 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-07 12:10 UTC — Research TRULY CLOSED. All candidates tested or killed. Only API keys block deployment.**
+## State: 2026-05-07 16:05 UTC — CRITIQUE SESSION: Operational Maintenance Phase
+
+**Research genuinely closed.** All testable candidates exhausted. Three structural concerns identified:
+1. Top-10 = 90.9% of log return (equity without top-10 = 1.10x) — structural fragility, not a bug
+2. Harness-pass ≠ production-valid (T72/T69/C19 pattern confirmed, ~60% gap for rank-gate candidates)
+3. 176.79x still in HOF as "diagnostic" — source of metric confusion
+
+**Execution priorities:** (1) M1 Discord integration, (2) Remove 176.79x from HOF, (3) Vol-scaled position sizing pilot
 
 ## Current Truth
 
@@ -117,6 +124,7 @@ fee_pct=0.000400
 
 | Priority | Task | Blocker |
 |----------|------|---------|
-| 1 | Integrate M1 equity monitor into Discord cron reporting | None — operational |
-| 2 | Pre-deployment safety checklist | None — docs task |
-| 3 | Noah: provide Binance testnet API key + secret | Noah action required |
+| 1 | Integrate M1 equity monitor into Discord cron reporting | None — operational, highest ROI |
+| 2 | Remove 176.79x from HOF, add harness warnings | None — hygiene |
+| 3 | Vol-scaled position sizing pilot (Kelly or risk-parity per symbol) | Small Base5 walk-forward test |
+| 4 | Noah: provide Binance testnet API key + secret | Noah action required |
