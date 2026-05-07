@@ -15,7 +15,13 @@
 
 T70 (4+ weeks), T61 (6+ weeks), and T53 (5+ weeks) show the loop pattern. T80 was finally executed this session after being listed but not built; T53 must not get another defer. Every documentation-only cycle compounds the problem.
 
-**Execute-or-close rule is being violated. Every session.**
+**Research is CLOSED.** Only API keys (Noah's Binance testnet keys) remain as the blocker. All remaining work is monitoring infrastructure or closing remaining ideas.
+
+## C16: CLOSED PERMANENTLY — Mechanistically Invalidated (2026-05-07)
+
+CHAND_PERIOD 98-value extensive sweep (e6f4ed05) proved all 98 values produce IDENTICAL results: Sharpe=2.797, pass=68.3%, equity=1.4538x. Root cause: Turtle ATR exit fires before Chandelier in dual-exit architecture. Chandelier is non-binding in most trades.
+
+C16 (regime-conditional Chandelier multiplier) attempted to modulate CHAND_MULT by regime. But modulating the multiplier of a non-binding exit has zero effect on outcomes that are already decided by Turtle ATR. **Close permanently. Remove from strategy-ideas.md.**
 
 ## Biggest Blind Spots (Honest Assessment)
 
@@ -31,28 +37,32 @@ T70 (4+ weeks), T61 (6+ weeks), and T53 (5+ weeks) show the loop pattern. T80 wa
 
 ## Next Tasks (Priority Order) — Execute, Not Document
 
-### C17: Consecutive-Bar Momentum Filter — BUILD OR KILL
-**Status:** Critical. Mechanistically different from ATR_ENTRY_MULT (rejected). Two consecutive closes above entry level — gentler than ATR filter, only removes immediately-reversing false breakouts.
-- Build: `examples/c17_consecutive_bar_filter.rs` — Turtle baseline vs Turtle+2-consecutive-close filter
-- 9 universes × 6 windows
-- Decision: both pass rate AND Sharpe improve → promote. Either degrades → close permanently, remove from strategy-ideas.md.
+### C18: Maker-Fill Rate Stress Test — ACCEPTABLE ✅
+**Status:** Completed (2026-05-07, 03:25 UTC). Post-hoc fee sensitivity on exact-live equity.
+- Equity range: 2.80x–2.85x across maker_fill ∈ [30%, 100%] — very low sensitivity
+- Fee-adjusted Sharpe: ~0.839–0.852
+- At 40% maker fill: equity=2.808x, Sharpe=0.841, MaxDD=28.1%
+- **Decision:** C18 ACCEPTABLE. Equity above 1.5x threshold at 40% maker fill. No Arc escalation needed.
+- C16 may proceed only if live-path relevant. `src/live/bot.rs` is Turtle ATR-only; Chandelier logic is diagnostic/research-harness unless explicitly reintroduced.
 
-### C18: Maker-Fill Rate Stress Test — CRITICAL RISK QUANTIFICATION
-**Status:** Critical. We have 1 crash window (FTX, 70.6% maker fill). Maker fill could be 40% in sustained bear. We do not know equity at 40% or 30% maker fill.
-- No new data needed — apply post-hoc fee adjustment to exact-live equity CSV
-- Sweep: maker_fill ∈ {0.30, 0.35, 0.40, ..., 0.80} (10 steps)
-- Output: table maker_fill_rate → equity_mult → fee_adj_sharpe
-- Decision: if equity < 1.5x at 40% maker fill → escalate to Arc before C16
+### M1: Equity Trajectory Monitor — BUILD
+**Status:** Priority. No automated monitoring exists for strategy degradation.
+- Compute 60-day rolling return of exact-live equity
+- Alert if rolling return falls below calibrated threshold (based on W04/W05 historical range)
+- This is operational infrastructure for testnet deployment, not research.
 
-### C16: Regime-Conditional Chandelier — BUILD OR KILL
-**Status:** Conditional on C18 results. If C18 shows acceptable equity range, build C16.
-- Mechanism: SMA21 vs SMA200 binary regime (~2-4 flips/year) → CHAND_MULT=2.0 (high-trend) or 2.50 (low-trend)
-- Prior vol-contingent attempt failed (too slow-moving); regime is binary and fast — mechanistically different
-- Test: 3 configs × 9 universes × 6 windows. Must beat BOTH static baselines (2.0 and 2.30) on pass rate AND Sharpe
-- If either baseline is not beaten → reject and close permanently
+### M2: Maker-Fill Rate Tracker (Definitive) — BUILD
+**Status:** Priority. C18 was applied to T65 harness path, not the current exact-live path with T75 hedge parameters.
+- Replay `snapshots/live_bot_exact_trades.csv` with maker_fill ∈ {0.30, 0.35, ..., 1.00}
+- Compute fee-adjusted equity per step using correct live-style fee model
+- Document equity range for definitive testnet risk assessment.
+- No new data download — uses existing exact-live trade CSV.
 
 ## Resolved / Closed
 
+- **C17 (consecutive-bar filter):** CLOSED PERMANENTLY — 81% vs 93.7% pass, -2.9% equity delta, fails dual-gate
+- **C16 (regime-conditional Chandelier):** CLOSED PERMANENTLY — CHAND_PERIOD 98-value sweep proved Chandelier non-binding; modulating multiplier of non-binding exit has zero effect
+- **CHAND_PERIOD inertness:** PROVED — 98-value sweep (e6f4ed05) confirmed all values identical; prior "CP=7 winner" was sparse-grid artifact
 - T72 VOL_LOOKBACK live gate: rejected (1.01x vs 2.56x)
 - T74 TURTLE_ATR_MULT: 2.00 confirmed (no more nearby sweeps)
 - T75 HEDGE_ATR_PERIOD: 38 promoted (real improvement)

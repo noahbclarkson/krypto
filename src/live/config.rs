@@ -77,12 +77,12 @@ pub const HEDGE_ATR_PERIOD: usize = 38;
 pub const HEDGE_LOOKBACK: usize = 252;
 
 /// Position-size multiplier when the USDT hedge overlay is active.
-/// Updated 2026-05-05 (T66 hyperopt): extensive SM sweep {0.30..=1.00 step 0.05} × 9 universes × 7 WF windows.
-/// SM=0.40 wins robustness-first: 59/63 pass (93.7%) vs SM=0.70 at 58/63 (92.1%),
-/// Sharpe 7.577 vs 7.079 (+0.498), DD 16.0% vs 21.2% (-5.2pp).
-/// Raw equity lower (46.9x vs 114.6x) — risk dial, not alpha.
-/// Confirmed live_compatible_wf with SM=0.70: 58/63 pass, Sharpe 7.079, Base5 114.63x.
-pub const HEDGE_SIZE_MULT: f64 = 0.40;
+/// Updated 2026-05-07 (T81 hyperopt): extensive SM sweep {0.30..=1.00 step 0.05} × 9 universes × 7 WF windows.
+/// Confirmed plateau 0.40-0.55 at 93.7% pass (59/63). M=0.55 selected (robustness + equity).
+/// M=0.55: 59/63 pass (93.7%), Sharpe 7.346, +92.2% return, DD 18.6%, Base5 equity 75.93x.
+/// M=0.40 (prior): 59/63 pass (93.7%), Sharpe 7.578, +72.4% return, DD 16.0%, Base5 equity 46.95x.
+/// Delta: +19.7pp return at cost of +2.6pp DD — acceptable within robustness plateau.
+pub const HEDGE_SIZE_MULT: f64 = 0.55;
 
 /// Configuration for live trading bot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
