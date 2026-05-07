@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-06T04:05:24.546Z",
+  "updatedAt": "2026-05-06T21:04:39.046Z",
   "entries": {
     "memory:memory/2026-04-13.md:5:7": {
       "key": "memory:memory/2026-04-13.md:5:7",
@@ -219141,6 +219141,130 @@
         "turtle-atr-mult",
         "strategy",
         "research"
+      ]
+    },
+    "memory:memory/2026-03-24.md:63:76": {
+      "key": "memory:memory/2026-03-24.md:63:76",
+      "path": "memory/2026-03-24.md",
+      "startLine": 63,
+      "endLine": 76,
+      "source": "memory",
+      "snippet": "- Downgraded lingering \"ready for paper trading / fully validated\" language in `PLAN.md`; current leaders are benchmark candidates only. - Need to update the krypto cron prompt next so the autonomous loop re-reads recent work, notices over-focus, and balances strategy discovery against benchmark refinement. ## 11:31 UTC — Cron summary - Oriented on `PLAN.md`, `MEMORY.md`, today + yesterday memory, current git history, and the latest #krypto Discord session context before choosing work. - Explicit top-down check: the last several sessions were heavily concentrated on MACD-family benchmark refinement (resampling, attribution, universe stress, snapshots). Useful, but over-focused. Chose **Tra",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.3909914880990982,
+      "maxScore": 0.3909914880990982,
+      "firstRecalledAt": "2026-05-06T21:04:39.046Z",
+      "lastRecalledAt": "2026-05-06T21:04:39.046Z",
+      "queryHashes": [
+        "cb5c8bfd7177"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "re-reads",
+        "over-focus",
+        "memory.md",
+        "top-down",
+        "macd-family",
+        "over-focused",
+        "downgraded"
+      ]
+    },
+    "memory:memory/2026-03-26.md:1:17": {
+      "key": "memory:memory/2026-03-26.md:1:17",
+      "path": "memory/2026-03-26.md",
+      "startLine": 1,
+      "endLine": 17,
+      "source": "memory",
+      "snippet": "# 2026-03-26 ## 01:xx UTC — Cron summary - Oriented on `PLAN.md`, `MEMORY.md`, yesterday’s memory, latest git history, and recent #krypto Discord context before choosing work. - Explicit top-down check: - The last 3-5 sessions spent most of their time on **Track A trust audits** plus **Track C orthogonal breadth probes**. - That was still a reasonable use of time; we were **not** over-refining one benchmark leader this cycle. - The highest-value under-served item from `PLAN.md` was the richer follow-up to the funding/carry work: test whether the weak funding spread result was mostly an accounting issue. - Chose **Track C — Broaden edge discovery**, but in a stricter way: improve the",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.37169162631034847,
+      "maxScore": 0.37169162631034847,
+      "firstRecalledAt": "2026-05-06T21:04:39.046Z",
+      "lastRecalledAt": "2026-05-06T21:04:39.046Z",
+      "queryHashes": [
+        "cb5c8bfd7177"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "memory.md",
+        "top-down",
+        "3-5",
+        "over-refining",
+        "highest-value",
+        "under-served",
+        "follow-up"
+      ]
+    },
+    "memory:memory/2026-03-26.md:196:210": {
+      "key": "memory:memory/2026-03-26.md:196:210",
+      "path": "memory/2026-03-26.md",
+      "startLine": 196,
+      "endLine": 210,
+      "source": "memory",
+      "snippet": "- Overfitting / trust risk: the integrated summary reduces the risk of cherry-picking whichever audit table flatters the current favorite, but it also makes the main trust problem clearer — there is still **no single trust-clean trend winner**. - What’s next: - Rebalance toward **Track C breadth** next cycle unless a new audit hole appears. - Best next breadth targets are genuinely orthogonal families: **ticker-interaction / cross-impact**, **exogenous context features**, **ensemble methods**, or a richer **basis / carry** construction rather than another nearby trend refinement. ## 16:27 UTC — Cron summary - Oriented on `PLAN.md`, `MEMORY.md`, today + yesterday memory, latest git hist",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.35593815743923185,
+      "maxScore": 0.35593815743923185,
+      "firstRecalledAt": "2026-05-06T21:04:39.046Z",
+      "lastRecalledAt": "2026-05-06T21:04:39.046Z",
+      "queryHashes": [
+        "cb5c8bfd7177"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "cherry-picking",
+        "trust-clean",
+        "ticker-interaction",
+        "cross-impact",
+        "plan.md",
+        "memory.md",
+        "overfitting",
+        "trust"
+      ]
+    },
+    "memory:memory/2026-03-24.md:1:16": {
+      "key": "memory:memory/2026-03-24.md:1:16",
+      "path": "memory/2026-03-24.md",
+      "startLine": 1,
+      "endLine": 16,
+      "source": "memory",
+      "snippet": "# 2026-03-24 ## 02:29 UTC — Cron summary - Read `PLAN.md`, pulled latest `v2-rewrite`, and checked the #krypto Discord session context before starting. - Built the repo successfully with `cargo build`. - Reran `cargo run --example head_to_head_comparison --profile sweep` to execute the current top priority: explain the reported `MACD+Regime` chronology weak pair. - Important finding: on the **current live 3000-bar cache**, the earlier `MACD+Regime` weak-pair note is now stale. The fair harness prints: - `MACD+Regime`: score **0.756**, **+3960.6%**, **469 trades**, **4/4** quarter windows, **15/15** positive chronological resamples, **4/8** stress universes - `MACD`: score **0.599**, **",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.3556479513645172,
+      "maxScore": 0.3556479513645172,
+      "firstRecalledAt": "2026-05-06T21:04:39.046Z",
+      "lastRecalledAt": "2026-05-06T21:04:39.046Z",
+      "queryHashes": [
+        "cb5c8bfd7177"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "plan.md",
+        "v2-rewrite",
+        "head-to-head-comparison",
+        "3000-bar",
+        "weak-pair",
+        "0.756",
+        "3960.6",
+        "4/4"
       ]
     }
   }

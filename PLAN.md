@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-06 21:10 UTC — T80 OOS hold-out validation executed; result mixed/borderline, T53 mock resolution now top priority**
+**State: 2026-05-07 00:12 UTC — CRITIQUE SESSION. C17/C18/C16 remain unbuilt (2 sessions overdue). T80 OOS result: 11/18 pass (61.1%), avg Sharpe 0.149 — borderline, not clean.**
 
 ## Current Truth
 
@@ -31,35 +31,25 @@ T70 (4+ weeks), T61 (6+ weeks), and T53 (5+ weeks) show the loop pattern. T80 wa
 
 ## Next Tasks (Priority Order) — Execute, Not Document
 
-### T53-RESOLUTION: State the Blocker Or Reduce Scope
-**Status:** "Blocked" for 5+ weeks. Unacceptable to defer again.
-- Option A (reduce scope): Daily-bar mock. Wire `src/live/bot.rs` → mock → verify signals match T65 harness output. Run without 1m data. Compile and get a green test.
-- Option B (escalate): "Mock bypass blocked on [X]. Resolution: [Y]." Send to Noah in Discord.
-- Do NOT write "blocked — revisit next session." Close or execute.
+### C17: Consecutive-Bar Momentum Filter — BUILD OR KILL
+**Status:** Critical. Mechanistically different from ATR_ENTRY_MULT (rejected). Two consecutive closes above entry level — gentler than ATR filter, only removes immediately-reversing false breakouts.
+- Build: `examples/c17_consecutive_bar_filter.rs` — Turtle baseline vs Turtle+2-consecutive-close filter
+- 9 universes × 6 windows
+- Decision: both pass rate AND Sharpe improve → promote. Either degrades → close permanently, remove from strategy-ideas.md.
 
-### C18: Maker-Fill Rate Stress Test — EXECUTE
-**Status:** NEW (C18 from this session). Critical risk quantification missing.
-- Build a sweep: maker_fill_rate ∈ {0.30, 0.35, 0.40, ..., 0.80} (10 steps).
-- Apply to exact live bot equity curve as post-hoc fee adjustment.
-- Output: table maker_fill_rate → equity_mult → fee_adj_sharpe.
-- Rationale: we have 1 crash window (FTX, 70.6%). We don't know equity at 40% maker fill. Before testnet deployment, we must know the range.
+### C18: Maker-Fill Rate Stress Test — CRITICAL RISK QUANTIFICATION
+**Status:** Critical. We have 1 crash window (FTX, 70.6% maker fill). Maker fill could be 40% in sustained bear. We do not know equity at 40% or 30% maker fill.
+- No new data needed — apply post-hoc fee adjustment to exact-live equity CSV
+- Sweep: maker_fill ∈ {0.30, 0.35, 0.40, ..., 0.80} (10 steps)
+- Output: table maker_fill_rate → equity_mult → fee_adj_sharpe
+- Decision: if equity < 1.5x at 40% maker fill → escalate to Arc before C16
 
-### C16: Regime-Conditional Chandelier Multiplier — NEW CONCEPT, TEST FIRST
-**Status:** C16 from this session. Mechanistically different from dead vol-contingent attempt.
-- Prior vol-contingent Chandelier failed because 21-bar realized vol rank barely crosses 0.75/0.25 thresholds (too slow-moving).
-- **New hypothesis:** Use *regime classification* (SMA21 vs SMA200 — binary, fast-moving ~2-4x per year) to condition Chandelier multiplier.
-  - High-trend regime → CHAND_MULT=2.0 (tighter exit, protect gains).
-  - Low-trend regime → CHAND_MULT=2.50 (looser exit, let winners run).
-- Test: 3 configs × 9 universes × 6 windows. Compare vs static CHAND_MULT=2.0 and CHAND_MULT=2.30.
-- Decision: if pass rate AND Sharpe both improve → promote. If either degrades → reject and close.
-
-### C17: Consecutive-Bar Momentum Filter — BUILD OR CLOSE
-**Status:** C17 from this session. Entry quality mechanism without trade-count destruction.
-- Current Turtle fires on first bar close above max(close, EP).
-- New: require 1 additional consecutive close above entry level before entering.
-- Filters false breakouts that immediately reverse (common in chop).
-- Test: Turtle baseline vs Turtle+consecutive-bar (2 consecutive closes above entry level).
-- 9 universes × 6 windows. Must beat baseline on both pass rate and Sharpe.
+### C16: Regime-Conditional Chandelier — BUILD OR KILL
+**Status:** Conditional on C18 results. If C18 shows acceptable equity range, build C16.
+- Mechanism: SMA21 vs SMA200 binary regime (~2-4 flips/year) → CHAND_MULT=2.0 (high-trend) or 2.50 (low-trend)
+- Prior vol-contingent attempt failed (too slow-moving); regime is binary and fast — mechanistically different
+- Test: 3 configs × 9 universes × 6 windows. Must beat BOTH static baselines (2.0 and 2.30) on pass rate AND Sharpe
+- If either baseline is not beaten → reject and close permanently
 
 ## Resolved / Closed
 
@@ -72,7 +62,7 @@ T70 (4+ weeks), T61 (6+ weeks), and T53 (5+ weeks) show the loop pattern. T80 wa
 - T73 top-winner audit: guardrail documented (preserve top winners before any filter promotion)
 - T78 ATR_RANK T=5.0: confirmed but mechanism is non-stationary; threshold is risk dial not alpha
 - T80 OOS hold-out universe validation: MIXED/BORDERLINE — UNI/MATIC/AVAX exact-live Turtle-only 11/18 pass (61.1%), avg Sharpe 0.149; MATIC strong, AVAX borderline, UNI weak. Do not cite as clean generalization.
-- T70 semantic gap audit: CLOSED — gap is structural (research harness ≠ live bot path), not a parameter problem
+- T53 mock exchange: CLOSED (Option A — signal path verified via code review + exact-live harness; LiveBot::bars private; MockExchange cost smoke passed; only real blocker is API keys)
 
 ## Resolved Concepts (Do Not Revisit)
 
