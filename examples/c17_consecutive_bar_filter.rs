@@ -401,17 +401,19 @@ async fn main() -> Result<()> {
         global_base_agg *= agg_base;
         global_cons_agg *= agg_cons;
 
-        writeln!(csv_f, "{},{:.6},{:.6},{:+.2f},{:.4},{:.4},{:+.4f},{:.1},{:.1},{},{},{},{},{}",
-            u_name, agg_base, agg_cons, (agg_cons/agg_base - 1.0)*100.0,
-            sh_base, sh_cons, sh_cons - sh_base,
+        let eq_delta = (agg_cons/agg_base - 1.0)*100.0;
+        let sh_delta = sh_cons - sh_base;
+        writeln!(csv_f, "{},{:.6},{:.6},{:.2},{:.4},{:.4},{:.4},{:.1},{:.1},{},{},{},{},{}",
+            u_name, agg_base, agg_cons, eq_delta,
+            sh_base, sh_cons, sh_delta,
             last_dd_base, last_dd_cons,
             base_pass * 5, cons_pass * 5,
             base_pass, cons_pass, windows)?;
 
-        println!("  [{} AGG] base: {:.4}x sh={:.3} {}/{} | cons: {:.4}x sh={:.3} {}/{} | Δ={:+.1}%",
+        println!("  [{} AGG] base: {:.4}x sh={:.3} {}/{} | cons: {:.4}x sh={:.3} {}/{} | delta={:.1}%",
             u_name, agg_base, sh_base, base_pass, windows,
             agg_cons, sh_cons, cons_pass, windows,
-            (agg_cons/agg_base - 1.0)*100.0);
+            ((agg_cons/agg_base - 1.0)*100.0));
     }
 
     let n_u = UNIVERSES.len() as f64;
@@ -425,7 +427,9 @@ async fn main() -> Result<()> {
         global_base_pass, total_windows, base_pct, global_base_agg, avg_sh_base);
     println!("Consecutive:{}/{} pass ({:.1}%), agg_eq={:.4}x, avg_sharpe={:.4}",
         global_cons_pass, total_windows, cons_pct, global_cons_agg, avg_sh_cons);
-    println!("Δ equity: {:+.1}% | Δ sharpe: {:+.4f}", (global_cons_agg/global_base_agg - 1.0)*100.0, avg_sh_cons - avg_sh_base);
+    let eq_delta = (global_cons_agg/global_base_agg - 1.0)*100.0;
+    let sh_delta = avg_sh_cons - avg_sh_base;
+    println!("delta equity: {:.1}% | delta sharpe: {:.4}", eq_delta, sh_delta);
 
     // Equity time-series
     let base5_syms: Vec<String> = UNIVERSES[0].1.iter().map(|s| s.to_string()).collect();
