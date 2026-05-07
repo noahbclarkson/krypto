@@ -1,57 +1,50 @@
 # C18: Maker-Fill Rate Stress Test
-Generated: 2026-05-07 03:20 UTC
+Generated: 2026-05-07 03:31 UTC
 
 ## Context
 
-- **Exact-live baseline (T65/T75):** 2.81x, Sharpe 1.01, MaxDD 28.2%, 298 trades
-- **Backtest fee model:** 4bps/side taker entry + taker exit
-- **Observed maker fill rate:** ~70.6% during FTX crash window
-- **Stress question:** What if maker fill degrades to 30-50% in a sustained bear market?
-- **Decision trigger:** If equity < 1.5x at 40% maker fill → escalate to Arc
+- **Exact-live baseline:** 2.78x final equity, 28.2% MaxDD, 298 trades.
+- **Baseline fee model:** taker entry + taker exit at 4bps/side.
+- **Stress question:** if entry maker-fill degrades to 30-50%, does equity fall below deployable range?
+- **Decision trigger:** if equity < 1.5x at 40% maker fill → escalate to Arc before C16.
 
-## Mechanism
+## Correct Fee Math
 
-- Turtle entry fires at bar close → place limit order at close price
-- Trending market: price continues up → limit order filled as maker (0% fee)
-- Choppy market: price reverses → miss limit, fill as taker next bar (4bps)
-- Exit (Turtle ATR / Chandelier stop): always taker — stop triggers below market → market sell
-- **Key insight:** Maker fill only benefits entry. Exit is always taker.
-  Improving maker fill from 0%→100% saves ~4bps on entry only, while exit always pays 4bps.
+For a long trade:
+
+```text
+entry_exec = raw_entry * (1 + entry_fee)
+exit_exec  = raw_exit  * (1 - exit_fee)
+net_return = raw_exit/raw_entry * (1 - exit_fee)/(1 + entry_fee) - 1
+```
+
+The exact-live trade CSV already contains taker/taker net returns. C18 backs out the raw price ratio, then reapplies entry fee as maker/taker blend. Exit remains taker because Turtle ATR stop exits must be marketable.
 
 ## Results
 
-| maker_fill | equity_mult | sharpe | max_dd | vs_baseline |
+| maker_fill | equity_mult | fee_adj_sharpe* | max_dd | vs taker/taker baseline |
 |---|---|---|---|---|
-| 30% | 1.592x | 0.441 | 22.8% | -0.8% |
-| 35% | 1.593x | 0.441 | 22.8% | -0.8% |
-| 40% | 1.594x | 0.442 | 22.8% | -0.7% |
-| 45% | 1.594x | 0.442 | 22.8% | -0.6% |
-| 50% | 1.595x | 0.442 | 22.8% | -0.6% |
-| 60% | 1.597x | 0.443 | 22.8% | -0.5% |
-| 70% | 1.599x | 0.444 | 22.8% | -0.4% ← FTX observed |
-| 80% | 1.601x | 0.445 | 22.8% | -0.2% |
-| 100% | 1.605x | 0.447 | 22.8% | +0.0% ← all-maker |
+| 30% | 2.801x | 0.839 | 28.1% | +0.8% |
+| 35% | 2.804x | 0.840 | 28.1% | +0.9% |
+| 40% | 2.808x | 0.841 | 28.1% | +1.0% ← stress threshold |
+| 45% | 2.812x | 0.842 | 28.0% | +1.2% |
+| 50% | 2.815x | 0.843 | 28.0% | +1.3% |
+| 60% | 2.822x | 0.845 | 28.0% | +1.5% |
+| 70% | 2.830x | 0.847 | 28.0% | +1.8% ← FTX observed |
+| 80% | 2.837x | 0.848 | 27.9% | +2.1% |
+| 100% | 2.851x | 0.852 | 27.9% | +2.6% ← all-maker entry |
+
+*Sharpe is computed from the exact-live daily equity curve after applying cumulative per-trade fee-adjustment ratios; baseline differs slightly from the Rust report's internal Sharpe implementation, so use the **relative** change.
 
 ## Key Findings
 
-- **At 40% maker fill:** equity **1.59x**, Sharpe **0.44**
-  → ✅ above 1.5x threshold
-- **At 30% maker fill:** equity **1.59x**, Sharpe **0.44**
-- **Fee sensitivity:** equity changes only **-0.7%** from 100%→40% maker fill
-- **Sharpe is robust:** 1.22-1.24 across all maker-fill scenarios (only ~1% variation)
-- **MaxDD stable at ~22.8%** across all scenarios — this is the T65 live-bot drawdown, not fee-sensitive
-
-## Interpretation
-
-The maker-fill rate has minimal impact on equity because:
-1. Exit is always taker (stop triggers below market → market sell)
-2. Saving 4bps on entry (maker vs taker) is a small fraction of typical trade returns
-3. The equity curve is dominated by the directional Turtle entry/exit logic, not fee microstructure
-
-**Baseline 2.81x** reflects the current coded bot with 4bps taker on entry and exit.
-Even in the worst case (30% maker fill), equity is **1.59x** — viable.
+- **At 40% maker fill:** equity **2.81x**, fee-adjusted Sharpe **0.841**, MaxDD **28.1%**.
+  → ✅ Above the 1.5x escalation threshold.
+- **At 30% maker fill:** equity **2.80x** — still viable.
+- **At 70% maker fill (FTX-observed proxy):** equity **2.83x**.
+- **Full sensitivity range:** 30%→100% maker fill moves equity only **+1.8%** (2.80x → 2.85x).
+- Maker-fill is not the dominant risk. Directional edge, universe sensitivity, and top-winner concentration matter more.
 
 ## Decision
 
-✅ **C18: Acceptable range.** Equity remains above 1.5x at 40% maker fill.
-Maker-fill sensitivity is low. **C16 may proceed.**
+✅ **C18: ACCEPTABLE.** Equity remains well above 1.5x at 40% maker fill. No Arc escalation needed. C16 may proceed if it is still mechanistically relevant.
