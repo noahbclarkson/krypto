@@ -15,14 +15,14 @@ _Do not hand-edit headline metrics. Production numbers come from `snapshots/live
 |---|---:|
 | Universe | Base5 aligned daily bars: BTC, ETH, SOL, XRP, DOGE, ADA |
 | Days | 1796 |
-| Final equity | 2.80x |
-| Annualised return | 23.3% |
-| Daily account Sharpe | 1.04 |
+| Final equity | 2.77x |
+| Annualised return | 23.0% |
+| Daily account Sharpe | 1.03 |
 | Max drawdown | 22.3% |
 | Trades | 286 |
 | Win rate | 46.9% |
 
-**Deployability verdict:** viable for dry-run/testnet evaluation, not yet production capital. The current live-coded bot is modest but real-looking: 2.80x with Sharpe 1.04 and 22.3% MaxDD. It is not the old research headline.
+**Deployability verdict:** viable for dry-run/testnet evaluation, not yet production capital. The current live-coded bot is modest but real-looking: 2.77x with Sharpe 1.03 and 22.3% MaxDD. It is not the old research headline.
 
 ### Exact live parameters
 
@@ -46,7 +46,7 @@ fee_pct           = 0.000400
 
 ### Critical reconciliation
 
-- **Exact live bot:** 2.80x / Sharpe 1.04 / MaxDD 22.3% / 286 trades — production-facing headline.
+- **Exact live bot:** 2.77x / Sharpe 1.03 / MaxDD 22.3% / 286 trades — production-facing headline.
 - **Research harness:** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades — diagnostic only, not live-coded production performance.
 - **T69 semantic-alignment candidate:** 1.02x / Sharpe 0.10 / MaxDD 30.8% — rejected; do not patch live semantics toward that candidate.
 - **T72 VOL_LOOKBACK-only live-semantics candidate:** 1.01x / Sharpe 0.09 / MaxDD 30.1% / 207 trades — rejected; do not add a top-3 dollar-volume gate to `src/live/bot.rs`.
@@ -56,9 +56,9 @@ fee_pct           = 0.000400
 
 | Metric | Value |
 |---|---:|
-| Equity without top 10 log contributors | 1.11x |
-| Top 5 share of log return | 58.5% |
-| Top 10 share of log return | 90.0% |
+| Equity without top 10 log contributors | 1.10x |
+| Top 5 share of log return | 59.1% |
+| Top 10 share of log return | 90.9% |
 
 Trend-following convexity is material. T73 top-winner audit is complete: VL=92 top-3 would have killed 8/10 top winners; ATR_RANK>=24 would have killed 5/10; ATR_RANK>=65 would have killed 8/10. Do not add new entry filters unless they explicitly preserve the convex tail.
 
