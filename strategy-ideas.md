@@ -27,12 +27,51 @@
 
 ## Operational Infrastructure (Not Research)
 
+## Operational Infrastructure (Not Research)
+
 ### M1: Equity Trajectory Monitor — Integrate into Discord
 **Status:** Built (`examples/m1_equity_trajectory_monitor.rs`) but idle — not integrated into Discord alerting.
 
 **What it does:** Computes 60d rolling return + Sharpe, per-year distribution, alert thresholds, tail concentration.
 
 **What needs to happen:** Run M1 in cron sessions, post rolling return + alert status to #krypto. If rolling return < 10th percentile: explicit alert. This turns a research artifact into operational infrastructure.
+
+**Priority: HIGH.** This is the highest-ROI operational task available. No research value but essential for live deployment readiness.
+
+---
+
+## New Concept: Vol-Scaled Position Sizing (Untested)
+
+**Idea:** Replace fixed `HEDGE_SIZE_MULT=0.25` with vol-scaled position size per symbol — Kelly-based or risk-parity scaling based on realized vol.
+
+**Mechanism:** For each active position, size = `base_size / realized_vol(symbol, lookback=21)` — high-vol symbols get smaller positions, low-vol get larger. Different from:
+- ATR_ENTRY_MULT (entry gate, not position size)
+- Vol-contingent Chandelier (exit multiplier, not size)
+- BTC trend scalar (regime overlay, not per-symbol size)
+
+**Hypothesis:** Vol-scaled sizing improves risk-adjusted returns by dynamically allocating capital to lower-vol, more predictable moves. The fixed HSM is a blunt instrument — it applies the same haircut to all positions regardless of their risk profile.
+
+**Test:** Base5 × 6 walk-forward windows, compare vol-scaled vs fixed HSM=0.25 on Sharpe, MaxDD, pass rate.
+
+**Risk:** Could reduce convexity in trending windows if it systematically undersizes the highest-vol winners.
+
+---
+
+## New Concept: Cross-Exchange Spread Surveillance (Untested)
+
+**Idea:** Monitor Binance vs other CEXs (Kraken, Coinbase, Gemini) for slow price divergence on the same pair. Not basis carry (killed) — legal-arbitrage from exchange microstructure differences.
+
+**Mechanism:** If BTCUSDT on Binance is >0.5% above BTCUSD on Kraken for >4h, capture the mean-reversion spread via triangular or cross-exchange execution. The divergence is typically caused by liquidity imbalances, not fundamental mispricing.
+
+**Why it's different from killed items:** Basis carry trades the spread between BTCUSD and BTCUSDT perpetuals — that's a funding/roll spread trade. Cross-exchange surveillance trades price discovery lag between exchanges — different mechanism entirely.
+
+**Requirements:** Multi-exchange data feeds, sub-1% fee, execution infrastructure for cross-exchange execution.
+
+**Status:** Untested. Requires Binance + at least one other CEX price feed. Not actionable until multi-exchange data layer is built.
+
+---
+
+## Honest Deployment Statement
 
 ### Pre-Deployment Safety Checklist
 **Status:** Not written. Docs exist (DEPLOYMENT_RUNBOOK.md) but no safety checklist.
