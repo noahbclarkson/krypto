@@ -73,7 +73,11 @@ pub const HEDGE_ATR_PCT: f64 = 0.45;
 pub const HEDGE_ATR_PERIOD: usize = 38;
 
 /// BTC true-range history used as the hedge percentile reference.
-/// Kept fixed during T75; only the current ATR averaging period was audited.
+/// T84 2026-05-07: LB sweep under production params found LB=147 winner in
+/// walk-forward harness (9/9 pass, Sharpe 1.243 vs LB=252 at 8/9 pass, 1.135).
+/// EXACT-LIVE REVERTED: live_bot_exact_equity.rs with LB=147 produced 2.10x vs
+/// LB=252 at 2.77x — harness gap confirmed again. Walk-forward robustness
+/// winner ≠ exact-live winner. HEDGE_LOOKBACK = 252 remains the production default.
 pub const HEDGE_LOOKBACK: usize = 252;
 
 /// Position-size multiplier when the USDT hedge overlay is active.
