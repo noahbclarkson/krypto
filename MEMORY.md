@@ -1,5 +1,18 @@
 # MEMORY.md - Krypto Knowledge Base
 
+## 2026-05-07 — Exact-Live Source Refreshed; No Work Beyond API Keys
+
+- **15:05 UTC source-of-truth rerun:** `examples/live_bot_exact_equity.rs` on current `src/live/config.rs` reports **2.77x / daily account Sharpe 1.03 / MaxDD 22.3% / 286 trades / 1,796 days**. The small drift from the 12:45 UTC T83 value (2.80x / 1.04) is a normal latest-data refresh; HOF and daily progress now use 2.77x.
+- **Decision:** no further backtest/research work is justified. Recent sessions closed C19, built M1, confirmed HOLD_MAX=15, and retuned HEDGE_SIZE_MULT=0.25. The remaining blocker is still Noah's Binance testnet API key + secret.
+
+## 2026-05-07 — T83 HEDGE_SIZE_MULT Promoted to 0.25
+
+- **Hardcoded assumption audited:** `HEDGE_SIZE_MULT=0.55` was production-live but inconsistently documented; older T66 docs preferred 0.40 on a different harness and `src/live/bot.rs` still had a stale 0.40 comment.
+- **Extensive sweep:** `examples/t83_hedge_size_mult_extensive.rs` tested **HSM=0.10..=1.00 step 0.05** (19 values) across 9 universes / 60 walk-forward windows under current exact-live semantics: EP=21, ATR(24,2.0), HOLD_MAX=15, AP=17/LB=41/T=5, HEDGE_ATR_PERIOD=38, HEDGE_LOOKBACK=252, HEDGE_ATR_PCT=0.45.
+- **Winner promoted:** `HEDGE_SIZE_MULT=0.25` — **52/60 pass (86.7%)**, Sharpe **1.481**, avg DD **9.82%** vs old 0.55 at **46/60 pass (76.7%)**, Sharpe **1.439**, DD **12.85%**. HSM is a risk dial, not alpha; choose robustness over raw return.
+- **Exact-live verification after source update:** Base5 exact replay after latest-data refresh is **2.77x / daily account Sharpe 1.03 / MaxDD 22.3% / 286 trades**, vs old HSM=0.55 **3.13x / 1.03 / 23.7% / 286 trades**. Lower return, similar/better risk-adjusted profile and lower drawdown.
+- **Files:** `snapshots/t83_hedge_size_mult_{summary,windows,equity}.csv`, chart `/home/ubuntu/.openclaw/workspace-krypto/charts/comparison_chart.png`, report `memory/hyperopt-2026-05-07.md`. Source updated: `src/live/config.rs`, `src/live/bot.rs`.
+
 ## 2026-05-06 — T80 OOS Hold-Out Universe Validation Mixed
 
 - **T80 executed on explicit hold-outs:** `examples/t80_oos_universe_validation.rs` replays the exact-live daily Turtle-only path on `UNIUSDT`, `MATICUSDT`, and `AVAXUSDT` for 6 walk-forward windows each (252 train + 252 test bars). BTCUSDT is used only for ATR_RANK/hedge gates.

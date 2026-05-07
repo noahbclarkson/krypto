@@ -4,11 +4,12 @@
 
 ## Current Truth
 
-- **Exact as-coded live bot (T65+T81):** 3.13x / daily account Sharpe 1.03 / MaxDD 23.7% / 286 trades / 1,796 days. HOLD_MAX=15 confirmed. **This is the authoritative production number.**
-- **Top-10 trade concentration: 85.0%** of compounded log return (worsened from 82.8% with HM=15). Equity without top-10 = 1.19x. Structural risk.
+- **Exact as-coded live bot:** 2.77x / daily account Sharpe 1.03 / MaxDD 22.3% / 286 trades / 1,796 days. Production source of truth after T83 defensive hedge-size retune and 15:05 UTC rerun.
+- **Top-10 trade concentration:** 90.9% of compounded log return after latest exact-live refresh. Equity without top-10 = 1.10x. Structural risk.
 - **Research harness (diagnostic only):** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades — different system, not comparable.
+- **Per-window walk-forward Sharpe (~5.5):** INFLATED ~5x vs daily account Sharpe. Not comparable.
 - **T80 OOS hold-out: generalization failure.** UNI/MATIC/AVAX: 11/18 pass (61.1%), avg Sharpe 0.149. Edge is universe-sensitive, NOT cleanly cross-universal.
-- **HEDGE_SIZE_MULT = 0.55. HOLD_MAX = 15.** All params frozen.
+- **HEDGE_SIZE_MULT = 0.25. HOLD_MAX = 15.** All params frozen.
 
 ## Research is CLOSED
 
@@ -23,7 +24,7 @@ C16 (regime-conditional Chandelier multiplier) attempted to modulate CHAND_MULT 
 ## Biggest Blind Spots (Honest Assessment)
 
 1. **We only test in a "learned" universe.** T80 confirmed: UNI fails 5/6. Edge concentrated in high-beta trending crypto pairs. Do NOT claim cross-universe generalization.
-2. **Equity dangerously concentrated.** Top-10 = 85.0% of log return (worsened with HM=15). Equity without top-10 = 1.19x. One bad filter silently destroys the tail.
+2. **Equity dangerously concentrated.** Top-10 = 90.9% of log return after T83/latest refresh. Equity without top-10 = 1.10x. One bad filter silently destroys the tail.
 3. **Harness-pass ≠ production-valid.** T72, T69, C19 all passed harness tests and FAILED exact-live replay. Pattern established.
 4. **2021/2022 chop regimes underweighted.** Full-history pass rates inflated by mega-bull windows.
 5. **Maker-fill risk is quantified (C18).** Low sensitivity confirmed. Fee microstructure is NOT the dominant deployment risk.
@@ -42,7 +43,7 @@ C16 (regime-conditional Chandelier multiplier) attempted to modulate CHAND_MULT 
 
 | Component | Status |
 |-----------|--------|
-| Backtested strategy | **READY** — 3.13x / Sharpe 1.03 / DD 23.7% / 286 trades |
+| Backtested strategy | **READY** — 2.77x / Sharpe 1.03 / DD 22.3% / 286 trades |
 | Live bot code | **READY** — `src/live/bot.rs` exact path verified |
 | Dry-run harness | **READY** — `live_bot_exact_equity.rs` |
 | Mock exchange | **READY** — smoke test passed |
@@ -83,7 +84,7 @@ TURTLE_EP=21, TURTLE_ATR_PERIOD=24, TURTLE_ATR_MULT=2.00, ATR_ENTRY_MULT=0.00,
 HOLD_MAX=15, POSITION_CAP=3, FRESHNESS_COOLDOWN=0,
 REGIME_ATR_PERIOD=17, REGIME_LOOKBACK=41, ATR_RANK_THRESHOLD=5.0,
 VOL_LOOKBACK=92 (diagnostic-only; not used by bot.rs entry logic),
-HEDGE_ATR_PERIOD=38, HEDGE_LOOKBACK=252, HEDGE_ATR_PCT=0.45, HEDGE_SIZE_MULT=0.55,
+HEDGE_ATR_PERIOD=38, HEDGE_LOOKBACK=252, HEDGE_ATR_PCT=0.45, HEDGE_SIZE_MULT=0.25,
 fee_pct=0.000400
 ```
 
