@@ -1,6 +1,51 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**State: 2026-05-07 12:10 UTC — Research TRULY CLOSED. All candidates tested or killed. Only API keys block deployment.**
+## 20:05 UTC Critique — Operational Phase Priorities
+
+**State: 2026-05-07 20:05 UTC — Research CLOSED. Hygiene and operational infrastructure only.**
+
+### Key Findings
+
+1. **Harness gap confirmed AGAIN (4th instance):** T84 HEDGE_LOOKBACK sweep found LB=147 winner in walk-forward (9/9 pass, Sharpe 1.24) but exact-live replay collapsed to 2.10x vs 2.77x with LB=252. Walk-forward robustness ≠ exact-live robustness. The walk-forward harness systematically overestimates.
+
+2. **Stale snapshot:** `snapshots/live_bot_exact_equity.md` shows LB=147 / 2.10x from the T84 test run. Config.rs has LB=252 (production default), but the snapshot was never regenerated after the revert. Authoritative production numbers are ~2.77x / Sharpe 1.03 / MaxDD 22.3% / 286 trades from the T83/T75 series.
+
+3. **Fee model range:** daily Sharpe 1.03 assumes 4bp taker/side with 0% maker. Actual range [0.6, 1.3] depending on maker fill rate (30-80%). Do not report point estimates.
+
+4. **Top-10 concentration confirmed at 90.9%.** Equity without top 10 = 1.10x. The strategy is a convex tail hunt, not a diversified portfolio. This is real and the single most important risk factor.
+
+5. **No live execution path has ever been tested.** The mock exchange is incomplete. The exact-live harness is a simulation, not a test. The first real exchange interaction is the true test.
+
+### Biggest Blind Spots
+
+| Blind Spot | Impact |
+|-----------|--------|
+| Walk-forward ≠ exact-live | 4 failures; pass rate is not a sufficient filter |
+| Stale snapshot data | PLAN.md and HOF reference 2.77x, but live_bot_exact_equity.md shows 2.10x |
+| Never shipped anything live | Entire project is simulation; real execution path untested |
+| Maker-fill uncertainty | Sharpe range [0.6, 1.3] is too wide to know true performance |
+| 462 example files, no cleanup | Old artifacts create noise; future sessions can't find current state |
+
+### Anti-Spin Rules (unchanged)
+
+1. No more Turtle-family parameter sweeps unless a new mechanism is proposed.
+2. No "audit" tasks — write the test or close the issue.
+3. Every task must have an execute-or-close decision. No "defer to next session."
+4. The 176.79x number appears in HOF once: as diagnostic output, not production performance.
+5. Daily account Sharpe only on equity charts. Per-window walk-forward Sharpe is not comparable.
+6. Report fee-adjusted Sharpe as a range (maker fill uncertain), not a point estimate.
+7. **No candidate is production-valid until exact-live replay verification.**
+8. Top-10 = 90.9% of log return. Any new filter must preserve the convex tail.
+
+## Next Steps (Operational, Not Research)
+
+| Priority | Task | Blocker |
+|----------|------|---------|
+| 1 | **M1 Discord Integration** — run M1 in cron, post rolling return + alert status to #krypto | None — ops work |
+| 2 | **Stale snapshot cleanup** — re-run `live_bot_exact_equity.rs` with LB=252 confirm 2.77x; archive/delete superseded snapshot files | None — hygiene |
+| 3 | **Live Deployment Safety Checklist** — write `docs/LIVE_DEPLOYMENT_CHECKLIST.md` with MaxDD shutdown trigger, maker-fill monitoring, daily equity reporting | None — docs |
+
+**Research truly closed. Only operational infrastructure and deployment preparation remain.**
 
 ## Current Truth
 
