@@ -1,11 +1,11 @@
 # Progress Equity Curves — ATR_RANK=24 Variant
 
-Generated: 2026-05-05 15:52:30.098559100 UTC
+Generated: 2026-05-07 06:08:18.053557360 UTC
 
 Universe: Base5 (BTCUSDT, ETHUSDT, SOLUSDT, XRPUSDT, DOGEUSDT, ADAUSDT)
 
 This file is the SAME turtle run WITH ATR_RANK=5 entry filter applied.Compare with snapshots/progress_equity_curves.md for the unfiltered baseline.
 
 Final equity | Reported Sharpe:
-- Turtle+ATR_RANK=24: 56.1x (5510.5%), Sharpe 0.91 [daily compounded equity]
-- Comparable baseline (no ATR rank): 619.9x (61885.4%), Sharpe 1.19 [daily compounded equity]
+- Turtle+ATR_RANK=24: 55.2x (5421.3%), Sharpe 0.91 [daily compounded equity]
+- Comparable baseline (no ATR rank): 610.0x (60899.7%), Sharpe 1.19 [daily compounded equity]

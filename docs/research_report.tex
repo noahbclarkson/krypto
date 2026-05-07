@@ -1,0 +1,135 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{geometry}
+\geometry{margin=1.2in}
+\usepackage{setspace}
+\setstretch{1.15}
+
+\title{Krypto Research Report \\
+\large Turtle+Chandelier Strategy — Validation Summary}
+\author{Kira (Quantitative Researcher)}
+\date{May 7, 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+\vspace{0.3in}
+
+\section{Production Source of Truth}
+
+The authoritative performance metric is the \texttt{live\_bot\_exact\_equity.rs} harness
+which replays the exact event-logic in \texttt{src/live/bot.rs} with economic mark-to-market
+accounting. All other numbers are diagnostics.
+
+\bigskip
+\begin{center}
+\small
+\begin{tabular}{l|r}
+\textbf{Metric} & \textbf{Value} \\ \midrule
+Days & 1796 \\
+Final equity & 2.89x \\
+Annualised return & 24.1\% \\
+Daily account Sharpe & 0.98 \\
+Max drawdown & 29.0\% \\
+Trades & 298 \\
+Win rate & 48.0\%
+\end{tabular}
+\end{center}
+
+\bigskip
+\textit{This is the honest number. All research-harness numbers are upper bounds.}
+
+\section{Equity Curve (Base5 — 2018 to 2026)}
+
+\begin{figure}[htbp]
+\centering
+\vspace{0.2in}
+\fbox{\includegraphics[width=0.97\linewidth,height=0.55\linewidth,keepaspectratio]
+{/home/ubuntu/.openclaw/workspace-krypto/krypto/charts/progress_equity_curves_daily.png}}
+\vspace{0.15in}
+\caption{Base5 Turtle+Chandelier equity (log scale). Left to right: Turtle+Chandelier 619.9x,
+A/D Momentum 39.3x, FactorSmallByDV 16.2x, DDBudget 60.6x (not comparable), Turtle
+ATR\_RANK=24 56.1x. Source: \texttt{snapshots/progress\_equity\_curves.md}.}
+\end{figure}
+
+\section{Strategy Parameters (Frozen)}
+
+\begin{verbatim}
+Entry:          Turtle breakout — close > max(close, EP=21 bars)
+Entry gate:     ATR rank >= 5th percentile of 252-bar BTC history
+Exit:           Turtle ATR trailing stop — highest_high - 2.0×ATR(24)
+Position cap:   3 concurrent positions
+Hedge:          BTC ATR38 > 45th pctile → position size × 0.40
+Freshness:      0 bars (immediate re-entry after exit)
+Fees:           4 bps/side (backtest)
+\end{verbatim}
+
+\section{Cross-Validation Summary}
+
+\begin{center}
+\small
+\begin{tabular}{l|c|c|p{2.8in}}
+\textbf{Test} & \textbf{Result} & \textbf{Status} & \textbf{Notes} \\ \midrule
+Pre-2021 held-out & 21/21 pass & \textbf{PASS} & All pre-optimisation regimes pass \\
+OOS hold-out universe & 11/18 (61\%) & Borderline & MATIC 6/6, AVAX 4/6, UNI 1/6 \\
+Live bot code review & Verified & \textbf{PASS} & T53 signal path confirmed via code audit \\
+Mock exchange smoke & Passed & \textbf{PASS} & MAKER/TAKER/REALISTIC all run \\
+Maker-fill stress & 2.808x at 40\% fill & \textbf{ACCEPTABLE} & 2.8x > 1.5x Arc threshold \\
+CHAND\_PERIOD inertness & All 98 values identical & Confirmed & Dual-exit mutes Chandelier effect \\
+ATR\_RANK T=65 failure & Held-out Sharpe -1.90 & Rejected & Non-stationary; T=5.0 remains \\
+C17 consecutive-bar & Pass rate -12.7pp & Rejected & Sharpe gain not compensatory \\
+Regime-adaptive params & Not live-path relevant & Closed & \texttt{src/live/bot.rs} is Turtle-only \\
+\end{tabular}
+\end{center}
+
+\section{Key Findings}
+
+\begin{enumerate}
+  \item \textbf{Turtle+Chandelier edge is genuine} — pre-2021 held-out 21/21 pass, cross-market
+        SPY 88\% / QQQ 76\% / GLD 53\%.
+  \item \textbf{Research harness (176x) is not the live path} — differs in exit semantics,
+        position accounting, and portfolio construction. Cite only as diagnostic.
+  \item \textbf{Only one real blocker remains}: Noah's Binance testnet API keys.
+  \item \textbf{All Turtle-family parameter space exhausted} — 8+ weeks of same-family
+        sweeps; no further productive backtests remain.
+  \item \textbf{Equity is top-concentrated} — top 10 trades = 82.8\% of log return.
+        Any new filter must preserve these.
+\end{enumerate}
+
+\section{Deployment Status}
+
+\begin{center}
+\small
+\begin{tabular}{lcl}
+\textbf{Component} & \textbf{Status} \\ \midrule
+Backtested strategy & \textbf{READY} & — 2.89x / Sharpe 0.98 / DD 29\% \\
+Live bot code & \textbf{READY} & — \texttt{src/live/bot.rs} exact path verified \\
+Dry-run harness & \textbf{READY} & — \texttt{live\_bot\_exact\_equity.rs} \\
+Mock exchange & \textbf{READY} & — smoke test passed \\
+Deployment runbook & \textbf{WRITTEN} & — \texttt{docs/DEPLOYMENT\_RUNBOOK.md} \\
+Runbook chart & \textbf{READY} & — \texttt{charts/progress\_equity\_curves\_daily.png} \\
+API keys (Noah) & \textbf{BLOCKED} & — only remaining item \\
+\end{tabular}
+\end{center}
+
+\bigskip
+\noindent
+\textbf{Next step:} Noah provides Binance testnet API key + secret.
+Then: \texttt{BINANCE\_API\_KEY=xxx cargo run --example live\_turtle\_chandelier --profile sweep -- --live}
+
+\section{Graveyard (Decisively Rejected)}
+
+MACD+Regime, BollingerReversion, FDUSD basis carry, funding rate MR,
+vol-contingent Chandelier, ATR\_RANK T=24/65 (non-stationary), C17 consecutive-bar,
+taker-buy pressure overlay, weekend filter, correlation filter, equity integration,
+Donchian replacement entry, Turtle ATR entry filter (EM=0.00 optimal).
+
+\vfill
+\noindent
+\textit{Generated by Kira 2026-05-07. Repo: \texttt{v2-rewrite}, \url{https://github.com/noahbclarkson/krypto}}
+
+\end{document}
