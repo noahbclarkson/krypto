@@ -12,9 +12,9 @@
 //! keeping exact live entry semantics, and it worsened Base5 replay from 2.56x /
 //! Sharpe 0.95 to 1.01x / Sharpe 0.09.
 //!
-//! Production params (updated 2026-05-06):
-//!   EP=21, TurtleATR(24, 2.0), HM=12, CAP=3, ATR_RANK(AP=17, LB=41, T=5), VL=92 unused/rejected for live gate
-//!   Live entries also apply USDT hedge: BTC ATR38 > 45th pct of 252d TR history => size *= HEDGE_SIZE_MULT (0.40, T75).
+//! Production params (updated 2026-05-07):
+//!   EP=21, TurtleATR(24, 2.0), HM=15, CAP=3, ATR_RANK(AP=17, LB=41, T=5), VL=92 unused/rejected for live gate
+//!   Live entries also apply USDT hedge: BTC ATR38 > 45th pct of 252d TR history => size *= HEDGE_SIZE_MULT (0.25, T83).
 
 const FRESHNESS_COOLDOWN: usize = 0; // bars to wait after exit before re-entry (0=disabled)
 
