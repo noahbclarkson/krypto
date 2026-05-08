@@ -42,7 +42,7 @@ pub const POSITION_CAP: usize = 3; // CONFIRMED 2026-04-27 under current Turtle-
 // AP=12 is confirmed by T44 fine sweep (54/63 pass, Sharpe 7.65, Base5 9.34).
 // See memory/2026-05-04.md [20:05 UTC] for anti-overfit violation details.
 pub const REGIME_ATR_PERIOD: usize = 17; // hyperopt 2026-05-04: AP=17 wins OOS on Sharpe/Return, AP=63 wins on pass rate. Held-out (4-period pre-2021): AP=17: 4/4 pass, Sharpe 7.715, equity 1.9481x, DD 21.3%. AP=63: 4/4 pass, Sharpe 5.721, equity 1.3976x, DD 26.6%. AP=12: 2/4 pass. AP=17 dominates on all held-out metrics. Promoted from AP=12. See memory/hyperopt-2026-05-04-ap-holdout.md.
-pub const REGIME_LOOKBACK: usize = 41; // hyperopt 2026-05-05: LB∈[5..=200 step 1] × 9 universes × 7 WF windows under live Turtle-only path (AP=17, T=5). LB=41: 59/63 pass (93.7%), Sharpe 8.107 (+7.0% vs LB=42: 7.577), Return +79.9%, DD 1.62% unchanged. LB=41 isolated maximum Sharpe across full integer range. Robustness plateau LB=40-45. See memory/hyperopt-2026-05-05-regime-lookback.md.
+pub const REGIME_LOOKBACK: usize = 41; // REVERTED T86: LB=140 failed exact-live verification (2.58x vs 2.76x). Prior LB=41 restored. Exact-live equity path is NOT comparable to sweep aggregator. See memory/hyperopt-2026-05-08.md.
 /// ATR rank threshold for entry gate — percent rank of 21-bar ATR relative to 252-bar history.
 /// REVERTED TO T=5.0 (2026-05-04): T=24 failed held-out validation (same-harness artifact, EP=24 pattern).
 /// T=24 passed 54/63 (86%) on post-2021 OOS windows but only 10/22 on pre-2021 held-out data.
