@@ -279,3 +279,10 @@
 [krypto/sessions/krypto/b7000dce-2185-44ee-baa4-526b16948c4a.jsonl#L59] Assistant: [assistant turn failed before producing content]
 [krypto/sessions/krypto/b7000dce-2185-44ee-baa4-526b16948c4a.jsonl#L60] Assistant: [assistant turn failed before producing content]
 [krypto/sessions/krypto/b7000dce-2185-44ee-baa4-526b16948c4a.jsonl#L61] Assistant: [assistant turn failed before producing content]
+[krypto/sessions/krypto/f0436ccb-0494-405a-98bf-89bc480ce294.jsonl#L17] Assistant: Now running the equity tracking cycles.
+[krypto/sessions/krypto/f0436ccb-0494-405a-98bf-89bc480ce294.jsonl#L31] Assistant: Now let me check the daily progress CSV and update it with fresh numbers:
+[krypto/sessions/krypto/f0436ccb-0494-405a-98bf-89bc480ce294.jsonl#L34] Assistant: Good — data collected. Now update the tracking CSV and report.
+[krypto/sessions/krypto/f0436ccb-0494-405a-98bf-89bc480ce294.jsonl#L36] Assistant: Now let me generate the equity chart:
+[krypto/sessions/krypto/f0436ccb-0494-405a-98bf-89bc480ce294.jsonl#L40] Assistant: Now let me write the memory file and commit.
+[krypto/sessions/krypto/f0436ccb-0494-405a-98bf-89bc480ce294.jsonl#L48] Assistant: **Daily progress report — 2026-05-04** 📊 **Best walk-forward Sharpe: Turtle+ATR_RANK=5 — 4.91** (55/63 pass, +129.7% avg ret, Base5 623x aggregate equity) 📊 **Best daily equity Sharpe: Turtle+Chandelier — 0.95** (86.9x over 2092 days) **Progress: STAGNATING**
+[krypto/sessions/krypto/f0436ccb-0494-405a-98bf-89bc480ce294.jsonl#L48] Assistant: v2-rewrite: `22884561` - Discord relay will post the report to #krypto **Key insight:** No improvement — this is correct. ATR_RANK filter is settled, Turtle params are frozen, T55 LOB NOBI data is collecting but not persistent yet. The only path forward is live

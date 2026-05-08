@@ -231,3 +231,7 @@
 [krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L178] Assistant: Now fix `SimResult` derive and the `for symbol` loop:
 [krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L190] Assistant: It compiles. Let me run it:
 [krypto/sessions/krypto/a379f091-7f5a-48b5-b7eb-10a9ec68803b.jsonl#L192] Assistant: Zero trades — the strategy logic isn't firing. Let me add quick debug to find out why:
+[krypto/sessions/krypto/eefd7ce9-9751-408a-9eb6-ced49c9aa32b.jsonl#L122] Assistant: Now update PLAN.md with current state:
+[krypto/sessions/krypto/eefd7ce9-9751-408a-9eb6-ced49c9aa32b.jsonl#L148] Assistant: Both repos are synced. Now let me verify the final state:
+[krypto/sessions/krypto/eefd7ce9-9751-408a-9eb6-ced49c9aa32b.jsonl#L156] Assistant: All synced. Here's the final summary for cron delivery: --- **T40: Regime-Adaptive Exit — REJECTED** Built `examples/regime_adaptive_exit_walkforward.rs`: 4 configs × Base5 × 7 windows. **Result: baseline (M=2.30 fixed) wins outright.** | Config | Pass | Sharp
+[krypto/sessions/krypto/eefd7ce9-9751-408a-9eb6-ced49c9aa32b.jsonl#L156] Assistant: exhausted. **Commit:** `89a7a0ea` — pushed to v2-rewrite ✅ **Blocker unchanged:** Live testnet BLOCKED on Noah's Binance testnet API keys (5+ weeks). No further backtests advance the project.

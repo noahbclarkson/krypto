@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-07 20:05 UTC. Research CLOSED. Operational infrastructure phase.*
+*Last updated: 2026-05-08 04:15 UTC.* Research CLOSED. Operational infrastructure phase.*
 
 ---
 
@@ -24,8 +24,6 @@
 | C19 | GRAVEYARD | harness passed (6/6), exact-live failed (2.74x vs 2.89x); pattern confirmed: harness-pass ≠ production-valid |
 
 ---
-
-## Operational Infrastructure (Not Research)
 
 ## Operational Infrastructure (Not Research)
 
@@ -130,7 +128,7 @@ TURTLE_EP=21, TURTLE_ATR_PERIOD=24, TURTLE_ATR_MULT=2.00, ATR_ENTRY_MULT=0.00,
 HOLD_MAX=15, POSITION_CAP=3, FRESHNESS_COOLDOWN=0,
 REGIME_ATR_PERIOD=17, REGIME_LOOKBACK=41, ATR_RANK_THRESHOLD=5.0,
 VOL_LOOKBACK=92 (diagnostic-only; not used by bot.rs entry logic),
-HEDGE_ATR_PERIOD=38, HEDGE_LOOKBACK=252, HEDGE_ATR_PCT=0.45, HEDGE_SIZE_MULT=0.55,
+HEDGE_ATR_PERIOD=38, HEDGE_LOOKBACK=252, HEDGE_ATR_PCT=0.45, HEDGE_SIZE_MULT=0.25,
 fee_pct=0.000400
 ```
 
