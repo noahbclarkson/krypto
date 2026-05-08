@@ -1,0 +1,14 @@
+metric,value
+final_equity,2.2822
+sharpe,0.87
+max_drawdown,33.3
+days,1797
+trades,286
+win_rate,46.9
+annual_ret,18.2
+vol_entries,286
+vol_skips,0
+top10_pct,91.7
+equity_without_top10,1.6446
+baseline_equity,2.76
+decision,CONCEPT_CLOSED
