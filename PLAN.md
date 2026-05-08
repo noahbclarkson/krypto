@@ -1,15 +1,16 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-## State: 2026-05-08 04:15 UTC — CRITIQUE SESSION: Operational Infrastructure Phase
+## State: 2026-05-08 08:05 UTC — CRITIQUE SESSION: Operational Infrastructure Phase
 
 **Research closed. Operational infrastructure priority.**
 
-Key critique findings (2026-05-08):
-1. Last 5 commits: 4/5 documentation/hygiene. Only T83 (HSM=0.25) was substantive. T85 (HEDGE_ATR_PERIOD) was redundant — parameter already shown to be inert in prior hyperopts.
-2. **176.79x still in HOF as "diagnostic"** — source of metric confusion. Should be removed entirely. It misleadingly suggests a 176x strategy exists when the actual live bot is 2.77x.
-3. **Maker-fill uncertainty = #1 unmeasured risk.** If maker fill is persistently 20% instead of estimated 40-70%, real Sharpe ≈ 0.6 not 1.03. Live testnet is the only validation path.
-4. **M1 monitor BUILT but idle** — runs in vacuum, nobody sees output. Highest-ROI operational task available.
-5. **2026 YTD = regime we have not explicitly modeled.** Turtle -22.7% vs BTC +12.7% is a divergence pattern. Chandelier(P=7, M=2.30) exits fast in chop — but persistent small losses in this regime are not reflected in our historical pass/fail metrics.
+Key critique findings (2026-05-08 08:05 UTC):
+1. Last 5 commits: 5/5 documentation/hygiene/data-refresh. Zero new alpha since T83 (HSM=0.25, 2026-05-07).
+2. **T86 LB=8 regime lookback = noise.** LB=8 equity 3.36x vs LB=41 equity 3.36x — delta 0.0004x (rounding artifact). No production change warranted.
+3. **Suspension animation confirmed.** Research closed + no live testnet = zero real feedback. Documentation commits are filling the void, not advancing the project.
+4. **Maker-fill = existential risk, unquantified.** If fill is 20% not 40%, real Sharpe ≈ 0.6. Live testnet is the only honest test.
+5. **M1 still idle.** Every cron cycle without M1 Discord integration is a missed monitoring opportunity.
+6. **2026 regime modeled but unfixed.** Turtle -22.7% YTD vs BTC +12.7% is a divergence/whipsaw regime. ATR_RANK is a gate (skip entries), not a position-size reducer. If 2026 continues as chop+divergence, strategy continues losing.
 
 **Execution priorities:** (1) Run M1 monitor + post to Discord, (2) Vol-scaled position sizing test, (3) Live Deployment Safety Checklist
 
@@ -127,33 +128,22 @@ fee_pct=0.000400
 
 | Priority | Task | Blocker |
 |----------|------|---------|
-| 1 | Run M1 equity monitor → post output to #krypto Discord | None — execute now |
-| 2 | Vol-scaled position sizing — Base5 × 6 window walk-forward test | None — scoped test |
-| 3 | Write `docs/LIVE_DEPLOYMENT_SAFETY_CHECKLIST.md` | None — documentation gap |
-| 4 | Remove 176.79x from HOF entirely | HOF hygiene |
+| 1 | **M1 Discord integration — post rolling return to #krypto each cron cycle** | None — execute now |
+| 2 | Vol-scaled position sizing exact-live test | None — one harness run, must verify exact-live not just WF |
+| 3 | Write `docs/LIVE_DEPLOYMENT_SAFETY_CHECKLIST.md` | **COMPLETE** ✅ |
+| 4 | 176.79x HOF entry | **ASSESSED — sufficient diagnostic label exists, no change needed** |
 | 5 | Noah: provide Binance testnet API key + secret | Noah action required |
 
 ## Execution Details
 
-### M1 Discord Integration
-- `cargo run --example m1_equity_trajectory_monitor --profile sweep`
-- Capture output (60d rolling return, Sharpe, alert status, tail concentration)
-- Post to #krypto channel as part of cron reporting
-- Makes M1 operational, not idle research output
+### M1 Discord Integration — CRITICAL
+**Status:** Built but idle. Every cron cycle should produce a 1-line status update.
+**Execution:** `cargo run --example m1_equity_trajectory_monitor --profile sweep 2>&1`
+**Post to Discord #krypto:** Include 60d return, rolling Sharpe, equity vs 1y peak, alert status.
+**Format:** `📊 M1 [HH:MM UTC]: 60d +X.X% | Sharpe X.XX | DD -X.X% | vs 1y peak -X.X% | STATUS`
+**This is the highest-ROI operational task.**
 
-### Vol-Scaled Position Sizing Test
-- Mechanism: `position_size = base_size / realized_vol(symbol, 21d)` — low-vol get larger, high-vol get smaller
-- Different from: ATR_ENTRY_MULT, vol-contingent Chandelier, BTC trend scalar, HEDGE_SIZE_MULT
-- Test: Base5 × 6 walk-forward windows — compare vol-scaled vs HSM=0.25 on Sharpe/MaxDD/pass-rate
-- If improves risk-adjusted metrics → exact-live replay verification
-- If no improvement → close concept, keep HSM=0.25
-
-### Live Deployment Safety Checklist
-- File: `docs/LIVE_DEPLOYMENT_SAFETY_CHECKLIST.md`
-- Contents: kill-switch criteria (MaxDD trigger, drawdown duration), maker-fill monitoring thresholds, pre-launch verification steps
-- Completes the deployment runbook before live testnet
-
-### Remove 176.79x from HOF
-- The diagnostic entry in HOF is a source of metric confusion
-- Replace with clear statement: "research harness not comparable to live bot"
-- No change to actual strategy — only documentation cleanup
+### Vol-Scaled Position Sizing — Exact-Live Test Only
+**Key rule from T69/T72/C19 pattern:** Walk-forward pass is NOT sufficient. Must run exact-live replay.
+**If exact-live equity < 2.76x baseline → close concept.**
+**If exact-live equity ≥ 2.76x → verify Sharpe and MaxDD improve, then promote.**
