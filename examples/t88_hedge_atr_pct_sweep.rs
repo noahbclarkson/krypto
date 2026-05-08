@@ -508,7 +508,7 @@ fn main() -> Result<()> {
         let avg_dd = total_dd / total_windows as f64;
         let avg_ret = total_ret / total_windows as f64;
 
-        results.push((*pct, total_pass, avg_sharpe, avg_dd, avg_ret));
+        results.push((*pct, total_pass, total_windows, avg_sharpe, avg_dd, avg_ret));
 
         println!("  {}: {}/{} pass, Sharpe {:.3}, DD {:.1}%",
             pct, total_pass, total_windows, avg_sharpe, avg_dd);
@@ -521,7 +521,7 @@ fn main() -> Result<()> {
     let mut f = File::create(SUMMARY_OUT)?;
     writeln!(f, "pct,pass,total,sharpe,dd,ret")?;
     for (pct, pass, total, sharpe, dd, ret) in &results {
-        writeln!(f, "{},{},63,{:.4},{:.2},{:.2}", pct, pass, sharpe, dd, ret)?;
+        writeln!(f, "{},{},{},{:.4},{:.2},{:.2}", pct, pass, total, sharpe, dd, ret)?;
     }
 
     let mut f = File::create(WINDOWS_OUT)?;
