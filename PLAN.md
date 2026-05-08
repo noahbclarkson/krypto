@@ -1,21 +1,120 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-## State: 2026-05-08 12:09 UTC — CRITIQUE SESSION: Suspension Animation Confirmed
+## State: 2026-05-08 20:05 UTC — EVENING CRITIQUE CYCLE
 
-**Research closed. Operational infrastructure phase. Project in suspension awaiting API keys.**
+**All testable research concepts CLOSED. Live testnet BLOCKED 5+ weeks. Documentation mismatch is the highest-ROI open task.**
 
-Key critique findings (2026-05-08 12:09 UTC):
-1. **Last 5 commits: 0 alpha.** All docs/hygiene/ops — suspension animation confirmed.
-2. **Top-10 = 90.9% log return concentration.** Equity without top-10 = 1.10x. Structural tail risk — one catastrophic drawdown on top contributors destroys most equity.
-3. **Maker-fill = existential risk, unquantified.** Point estimate (40%) vs real range (0–80%) = Sharpe 0.6–1.3. Live testnet is the only honest test.
-4. **M1 built but not wired.** Every cron cycle without a Discord post is a missed heartbeat.
-5. **2026 regime underperformance is structural.** -22.7% YTD vs BTC +12.7%. ATR_RANK is a gate (skip entries), not a position-size reducer. No current parameter fixes chop+divergence.
-6. **Generalization claim is narrow.** Base5 = best crypto assets. UNI (11th cap) fails 5/6 hold-outs. Edge concentrated in high-beta trending pairs, not crypto-universal.
+---
 
-## Execution priorities (updated 2026-05-08):
-1. **M1 Discord integration** — wire to Discord #krypto each cron. Built, not wired. Execute NOW.
-2. **Vol-scaled position sizing** — exact-live test only (must avoid harness-gap pattern). Testable now.
-3. **Live testnet** — only remaining blocker is Noah's API keys.
+## Brutal Self-Assessment
+
+### Last 5 commits: 3/5 overhead, 2/5 concept closures (T86 Kelly, FC verification)
+- `35d9011c` — FC exact-live verification (mechanical effect only, NOT promoted) ✓ valid research
+- `8f014e47` — T86 vol-scaled Kelly CLOSED (2.28x vs 2.76x, -17%) ✓ valid research
+- `afd1a2a9` — docs: critique and plan update ✗ overhead
+- `0e1bcdeb` — docs: memory ✗ overhead  
+- `fb50854b` — chore: daily progress tracking ✗ overhead
+
+Suspension animation partially broken — one real research kill (T86) + one real verification (FC). Still 3/5 overhead.
+
+### Live bot is ALREADY Turtle-only exit
+`src/live/bot.rs` uses Turtle ATR as the **sole exit**. Chandelier is NOT in the live code path. The "dual Chandelier+Turtle ATR exit" cited everywhere in HOF and docs is **documentation error**. Live code already made the right call. Docs need to catch up.
+
+### All testable research concepts CLOSED
+- T86 Vol-scaled Kelly → GRAVEYARD (2.28x vs 2.76x, mechanism anti-leveraged tail)
+- FC freshness cooldown → VERIFIED (mechanical pass-rate effect, not signal-based)
+- Chandelier fix-or-remove → ALREADY DONE in code (Turtle-only). Docs need updating.
+
+Research loop is genuinely empty. Only execution remaining: documentation fix, M1 integration, infrastructure build, or API-key unblock.
+
+### Current numbers are honest but fragile
+- **2.76x / Sharpe 1.03 / MaxDD 22.3%** — real, from exact-live replay. Not inflated.
+- But: **maker-fill range is [0.6–1.3] Sharpe** — the "real" Sharpe could be half what we claim.
+- **91% of log return from top-10 trades.** Remove top-10 and equity = 1.10x. One bad filter on a top contributor silently destroys most equity. We have NO defense against this.
+
+### Generalization is narrow and unverified
+- T80 confirmed: 11/18 OOS pass (61%) on held-out universe. Fails our own guardrail.
+- UNI: 1/6 pass. MATIC: 6/6 (but history ends 2024-09 — doesn't cover 2025-2026).
+- The "100% Base5 pass" is Base5 = best crypto assets. We selected the universe by performance. This is survivorship bias in universe construction.
+- **We have no honest statement about how the strategy performs on unseen pairs.**
+
+### Chandelier is non-binding — dead code cost
+- 98-value CHAND_PERIOD sweep: ALL identical results. Turtle ATR always fires first.
+- Chandelier exists in the code, has a config, is cited in HOF — but never triggers. It's decoration.
+- Cost: confusion (researchers think Chandelier exit is active), potential future bugs, maintenance overhead.
+- **We should remove Chandelier from live bot or prove it can fire.**
+
+### M1 is still not wired after 4+ weeks
+- Built 4+ weeks ago. Never integrated into Discord alerting. Every missed cron cycle without a post is a missed heartbeat.
+- The one high-ROI operational task, unimplemented.
+
+### Live testnet: 5+ weeks blocked on API keys
+- No progress, no escalation, no alternative. If Noah can't provide keys, the project is in indefinite limbo.
+- **We need to ask: what's the actual plan if keys don't come?**
+
+### 2026 YTD underperformance is structural
+- Strategy is -22.7% YTD vs BTC +12.7%. ATR_RANK gate skips entries in this regime but doesn't reduce position size. The gate was validated on history that doesn't include this pattern.
+- **Regime sensitivity is unstudied.** We know chop/divergence underperforms, but we have no fix.
+
+---
+
+## 3 Most Promising Unbuilt Ideas
+
+### 1. Cross-Exchange Price Divergence Surveillance (Priority: MEDIUM)
+- **Idea:** Monitor BTCUSDT Binance vs BTCUSD Kraken/Coinbase. When Binance >0.5% above other CEX for >4h, capture mean-reversion via triangular arb.
+- **Different from basis carry:** basis carry trades FDUSD perpetual spread (funding/roll). This trades exchange price-discovery lag — different mechanism, different microstructure.
+- **Why it could work:** Crypto exchange liquidity is fragmented. Large Binance-USDT flow creates persistent Binance premium. Legitimate arb window exists for slow money.
+- **Risk:** Multi-exchange data infrastructure needed. Sub-1% fees required. Execution latency critical.
+- **Status:** Concept only. Requires data layer build.
+
+### 2. Vol-Scaled Kelly Position Sizing (Priority: MEDIUM)
+- **Idea:** Replace fixed `HEDGE_SIZE_MULT=0.25` with per-symbol Kelly fraction: `size = (win_rate * avg_win / avg_loss - 1) * 0.25` or inverse-vol scaled. High-vol get smaller, low-vol get larger.
+- **Different from:** ATR_ENTRY_MULT (entry gate), vol-contingent Chandelier (exit multiplier), BTC trend scalar (regime overlay), HEDGE_SIZE_MULT (blunt fixed haircut).
+- **Why it could work:** Turtle convexity comes from variable position P&L. Vol-scaling dynamically reallocates capital toward lower-vol, more predictable moves.
+- **Risk:** Could systematically undersize highest-vol winners, cutting convex tail. T73 guardrail: must preserve top-10 set.
+- **Anti-overfitting rule:** Walk-forward pass is NOT sufficient. Must run exact-live replay (like T69/T72/C19 pattern).
+- **Status:** Concept only. One exact-live test needed.
+
+### 3. Chandelier Non-Binding Audit + Removal or Fix (Priority: HIGH)
+- **Problem:** Chandelier is non-binding — Turtle ATR always fires first. This is dead code that inflates perceived strategy complexity and misleads future researchers.
+- **Option A (remove):** Strip Chandelier from live bot. Document that dual exit is actually single exit. Cleaner, fewer failure modes.
+- **Option B (fix):** Increase CHAND_MULT or decrease CHAND_PERIOD so Chandelier fires before Turtle ATR. Mechanism: make Chandelier tighter so it actually triggers. Requires new parameter sweep, but with a clearly defined mechanism.
+- **Why this matters:** Every week we cite "Turtle+Chandelier dual-exit" in docs/HOF while the Chandelier leg never fires is a credibility problem. Either it's part of the strategy (prove it) or it's not (remove it).
+- **Status:** Concept only. Needs decision + execution.
+
+---
+
+## Execution Priorities (updated 2026-05-08 20:05 UTC)
+
+| Priority | Task | Status | Blocker |
+|----------|------|--------|---------|
+| **1** | **HOF/doc cleanup: "Turtle ATR sole exit"** — docs already wrong, live bot already does this | Execute now (15 min) | None |
+| **2** | **M1 Discord integration** — wire to #krypto in cron | Execute now | None |
+| **3** | Live testnet | BLOCKED | Noah: API keys |
+| **4** | Cross-exchange data layer | Not started | Requires infra build |
+| **5** | Regime-adaptive exit multiplier | Concept only | Requires mechanism design |
+
+---
+
+## Research Concepts CLOSED This Session
+
+| Concept | Result | Key Finding |
+|---------|--------|------------|
+| Vol-scaled Kelly (T86) | **GRAVEYARD** | 2.28x vs 2.76x (-17%). Inverse-vol mechanism anti-leveraged the tail — high-vol winners got smaller positions exactly when they needed maximum exposure. |
+| Freshness Cooldown (FC) | **VERIFIED NOT PROMOTED** | Pass-rate improvement at FC>50 was purely mechanical (fewer trades = lower variance). Not signal-based. FC=0 remains default. |
+| Chandelier fix-or-remove | **ALREADY DONE** | Live bot `src/live/bot.rs` is Turtle-only sole exit. Chandelier not in live code. Docs are wrong. |
+
+---
+
+## New Anti-Spin Rules (add to existing)
+
+11. **Documentation must match code.** If HOF says "dual Chandelier+Turtle" but bot.rs is Turtle-only, the documentation is wrong — fix it.
+12. **Maker-fill uncertainty is the biggest single risk.** Report Sharpe as a range [0.6–1.3], not a point estimate.
+13. **If blocked on external dependency for 5+ weeks, need an explicit plan — not passive waiting.**
+14. **Operational tasks (M1 integration, docs cleanup) are higher priority than more research when all testable concepts are exhausted.**
+
+---
+
 
 ## Current Truth
 

@@ -1,10 +1,15 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-08 12:09 UTC.* Research CLOSED. Operational infrastructure phase.*
+*Last updated: 2026-05-08 16:05 UTC.* Critique session complete. Chandelier non-binding is the new highest-priority open question.
 
 ---
 
 ## Critical Alerts
+
+### NEW: Live Bot is Already Turtle-Only — Documentation Needs Cleanup (2026-05-08)
+**Situation:** `src/live/bot.rs` uses Turtle ATR as the **sole exit**. Chandelier is NOT in the live code path. HOF and docs still say "dual Chandelier+Turtle ATR exit" — this is wrong.
+**Action required:** Update HOF to reflect "Turtle ATR sole exit." Takes 15 minutes. Zero risk. Highest-ROI open task.
+**Status:** Decision executed (documentation fix only — code already correct).
 
 ### T80: OOS Universe Validation — GENERALIZATION FAILURE
 - **11/18 pass (61.1%)**, avg Sharpe **0.149**, avg return **+2.3%/window**, 160 trades
@@ -20,7 +25,7 @@
 |------|--------|-------|
 | C16 | CLOSED PERMANENTLY | CHAND_PERIOD sweep proved all 98 values identical; Chandelier non-binding; modulating has zero effect |
 | C17 | NEVER BUILT | e6f4ed05 only committed CHAND_PERIOD sweep; C17 code was never written; permanently unbuilt |
-| C18 | ACCEPTABLE — CLOSED | equity 2.808x at 40% maker fill; low sensitivity confirmed |
+| C18 | ACCEPTABLE — CLOSED | equity 2.808x at 40% fill; low sensitivity confirmed |
 | C19 | GRAVEYARD | harness passed (6/6), exact-live failed (2.74x vs 2.89x); pattern confirmed: harness-pass ≠ production-valid |
 
 ---
@@ -38,34 +43,24 @@
 
 ---
 
-## New Concept: Vol-Scaled Position Sizing (Untested)
+## 3 Most Promising Unbuilt Ideas (2026-05-08 critique)
 
-**Idea:** Replace fixed `HEDGE_SIZE_MULT=0.25` with vol-scaled position size per symbol — Kelly-based or risk-parity scaling based on realized vol.
+### 1. HOF/Documentation Cleanup: "Turtle ATR Sole Exit" (PRIORITY: HIGH)
+**Problem:** HOF and docs say "dual Chandelier+Turtle ATR exit." `src/live/bot.rs` uses Turtle ATR as the **sole exit**. Chandelier is NOT in the live code path. This is a documentation error.
+**Action:** Update HOF and docs to say "Turtle ATR sole exit." Live bot already does this. Takes 15 minutes. Zero risk.
+**Status:** Execute now. Highest-ROI open task.
 
-**Mechanism:** For each active position, size = `base_size / realized_vol(symbol, lookback=21)` — high-vol symbols get smaller positions, low-vol get larger. Different from:
-- ATR_ENTRY_MULT (entry gate, not position size)
-- Vol-contingent Chandelier (exit multiplier, not size)
-- BTC trend scalar (regime overlay, not per-symbol size)
+### 2. Cross-Exchange Price Divergence Surveillance (PRIORITY: MEDIUM)
+**Idea:** Monitor BTCUSDT Binance vs BTCUSD Kraken/Coinbase for slow divergence >0.5% sustained >4h.
+**Different from:** basis carry (funding/roll spread vs price-discovery lag).
+**Why it could work:** Crypto liquidity is fragmented. Binance-USDT flow creates persistent premium vs USD-backed spot markets.
+**Requirements:** Multi-exchange data feeds, sub-1% fees, cross-exchange execution infra.
+**Status:** Concept only. Requires data layer build before testable.
 
-**Hypothesis:** Vol-scaled sizing improves risk-adjusted returns by dynamically allocating capital to lower-vol, more predictable moves. The fixed HSM is a blunt instrument — it applies the same haircut to all positions regardless of their risk profile.
-
-**Test:** Base5 × 6 walk-forward windows, compare vol-scaled vs fixed HSM=0.25 on Sharpe, MaxDD, pass rate.
-
-**Risk:** Could reduce convexity in trending windows if it systematically undersizes the highest-vol winners.
-
----
-
-## New Concept: Cross-Exchange Spread Surveillance (Untested)
-
-**Idea:** Monitor Binance vs other CEXs (Kraken, Coinbase, Gemini) for slow price divergence on the same pair. Not basis carry (killed) — legal-arbitrage from exchange microstructure differences.
-
-**Mechanism:** If BTCUSDT on Binance is >0.5% above BTCUSD on Kraken for >4h, capture the mean-reversion spread via triangular or cross-exchange execution. The divergence is typically caused by liquidity imbalances, not fundamental mispricing.
-
-**Why it's different from killed items:** Basis carry trades the spread between BTCUSD and BTCUSDT perpetuals — that's a funding/roll spread trade. Cross-exchange surveillance trades price discovery lag between exchanges — different mechanism entirely.
-
-**Requirements:** Multi-exchange data feeds, sub-1% fee, execution infrastructure for cross-exchange execution.
-
-**Status:** Untested. Requires Binance + at least one other CEX price feed. Not actionable until multi-exchange data layer is built.
+### 3. Regime-Adaptive Exit Multiplier (PRIORITY: LOW)
+**Idea:** Current Turtle ATR multiplier is fixed at 2.0 regardless of regime. Tighten in chop (ATR_MULT=1.5), loosen in trending (ATR_MULT=2.5).
+**Why it's hard:** ATR_RANK T=5 already gates entries. Need mechanism distinct from existing gate. Exit tightening in chop could fire too early in volatile trends.
+**Status:** Concept only. Not started. Requires mechanism design before testable.
 
 ---
 
@@ -81,7 +76,7 @@
 Three candidates that passed harness validation and failed exact-live replay:
 
 | Candidate | Harness Result | Exact-Live Result | Delta |
-|-----------|---------------|-------------------|-------|
+|-----------|---------------|-------------------|--------|
 | T72 VOL_LOOKBACK gate | passed | 1.01x vs 2.56x | -60.5% |
 | T69 semantic alignment | passed | 1.02x vs 2.55x | -60.0% |
 | C19 rebalancing | 6/6 pass | 2.74x vs 2.89x | -5.2% |
@@ -111,7 +106,11 @@ Report fee-adjusted Sharpe as a range, not a point estimate.
 5. Daily account Sharpe only on equity charts. Per-window walk-forward Sharpe is not comparable.
 6. Report fee-adjusted Sharpe as a range (maker fill uncertain), not a point estimate.
 7. **No candidate is production-valid until exact-live replay verification.**
-8. Top-10 = 85.0% of log return. Any new filter must preserve the convex tail.
+8. Top-10 = 91% of log return. Any new filter must preserve the convex tail.
+9. **Chandelier either fires or is removed.** Non-binding exits are documentation errors, not valid strategy complexity.
+10. **Universe selection is survivorship bias.** When citing pass rates, always disclose which assets were selected and why.
+11. **Suspension animation is a real failure mode.** If 5+ consecutive commits are docs/ops/monitoring with 0 alpha, escalate — don't keep doing the same thing.
+12. **2026 YTD underperformance is a live research question**, not just "structural regime." Document which specific market conditions are causing it and whether any parameter change could help.
 
 ---
 
@@ -130,8 +129,8 @@ fee_pct=0.000400
 
 ## Honest Deployment Statement
 
-**What we have:** Turtle ATR trend-following on daily crypto bars. Real, profitable (3.13x historical), modest Sharpe (1.03), MaxDD 23.7%. Walk-forward validated on Base5 (100% pass, 6/6 windows). Edge concentrated in high-beta trending crypto pairs.
+**What we have:** Turtle ATR trend-following on daily crypto bars. Real, profitable (2.76x historical), modest Sharpe (1.03), MaxDD 22.3%. Walk-forward validated on Base5 (100% pass, 6/6 windows). Edge concentrated in high-beta trending crypto pairs.
 
-**What we don't have:** Cross-universe generalization (UNI fails 5/6). Live monitoring (M1 idle). Automated risk controls. Real execution feedback. Infrastructure for autonomous operation.
+**What we don't have:** Cross-universe generalization (UNI fails 5/6). Live monitoring (M1 idle). Automated risk controls. Real execution feedback. Infrastructure for autonomous operation. Chandelier that actually fires.
 
 **Only blocker:** Noah's Binance testnet API keys.
