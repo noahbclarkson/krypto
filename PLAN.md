@@ -1,26 +1,29 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-## State: 2026-05-08 08:05 UTC — CRITIQUE SESSION: Operational Infrastructure Phase
+## State: 2026-05-08 12:09 UTC — CRITIQUE SESSION: Suspension Animation Confirmed
 
-**Research closed. Operational infrastructure priority.**
+**Research closed. Operational infrastructure phase. Project in suspension awaiting API keys.**
 
-Key critique findings (2026-05-08 08:05 UTC):
-1. Last 5 commits: 5/5 documentation/hygiene/data-refresh. Zero new alpha since T83 (HSM=0.25, 2026-05-07).
-2. **T86 LB=8 regime lookback = noise.** LB=8 equity 3.36x vs LB=41 equity 3.36x — delta 0.0004x (rounding artifact). No production change warranted.
-3. **Suspension animation confirmed.** Research closed + no live testnet = zero real feedback. Documentation commits are filling the void, not advancing the project.
-4. **Maker-fill = existential risk, unquantified.** If fill is 20% not 40%, real Sharpe ≈ 0.6. Live testnet is the only honest test.
-5. **M1 still idle.** Every cron cycle without M1 Discord integration is a missed monitoring opportunity.
-6. **2026 regime modeled but unfixed.** Turtle -22.7% YTD vs BTC +12.7% is a divergence/whipsaw regime. ATR_RANK is a gate (skip entries), not a position-size reducer. If 2026 continues as chop+divergence, strategy continues losing.
+Key critique findings (2026-05-08 12:09 UTC):
+1. **Last 5 commits: 0 alpha.** All docs/hygiene/ops — suspension animation confirmed.
+2. **Top-10 = 90.9% log return concentration.** Equity without top-10 = 1.10x. Structural tail risk — one catastrophic drawdown on top contributors destroys most equity.
+3. **Maker-fill = existential risk, unquantified.** Point estimate (40%) vs real range (0–80%) = Sharpe 0.6–1.3. Live testnet is the only honest test.
+4. **M1 built but not wired.** Every cron cycle without a Discord post is a missed heartbeat.
+5. **2026 regime underperformance is structural.** -22.7% YTD vs BTC +12.7%. ATR_RANK is a gate (skip entries), not a position-size reducer. No current parameter fixes chop+divergence.
+6. **Generalization claim is narrow.** Base5 = best crypto assets. UNI (11th cap) fails 5/6 hold-outs. Edge concentrated in high-beta trending pairs, not crypto-universal.
 
-**Execution priorities:** (1) Run M1 monitor + post to Discord, (2) Vol-scaled position sizing test, (3) Live Deployment Safety Checklist
+## Execution priorities (updated 2026-05-08):
+1. **M1 Discord integration** — wire to Discord #krypto each cron. Built, not wired. Execute NOW.
+2. **Vol-scaled position sizing** — exact-live test only (must avoid harness-gap pattern). Testable now.
+3. **Live testnet** — only remaining blocker is Noah's API keys.
 
 ## Current Truth
 
-- **Exact as-coded live bot:** 2.77x / daily account Sharpe 1.03 / MaxDD 22.3% / 286 trades / 1,796 days. Production source of truth after T83 defensive hedge-size retune and 15:05 UTC rerun.
-- **Top-10 trade concentration:** 90.9% of compounded log return after latest exact-live refresh. Equity without top-10 = 1.10x. Structural risk.
+- **Exact as-coded live bot:** 2.77x / daily account Sharpe 1.03 / MaxDD 22.3% / 286 trades / 1,796 days. Production source of truth.
+- **Top-10 trade concentration:** 90.9% of compounded log return. Equity without top-10 = 1.10x. Structural risk.
 - **Research harness (diagnostic only):** 176.79x / Sharpe 3.29 / MaxDD 99.5% / 156 trades — different system, not comparable.
 - **Per-window walk-forward Sharpe (~5.5):** INFLATED ~5x vs daily account Sharpe. Not comparable.
-- **T80 OOS hold-out: generalization failure.** UNI/MATIC/AVAX: 11/18 pass (61.1%), avg Sharpe 0.149. Edge is universe-sensitive, NOT cleanly cross-universal.
+- **T80 OOS hold-out: generalization failure.** UNI/MATIC/AVAX: 11/18 pass (61.1%), avg Sharpe 0.149. Edge is universe-sensitive.
 - **HEDGE_SIZE_MULT = 0.25. HOLD_MAX = 15.** All params frozen.
 
 ## Research is CLOSED
@@ -36,10 +39,10 @@ C16 (regime-conditional Chandelier multiplier) attempted to modulate CHAND_MULT 
 ## Biggest Blind Spots (Honest Assessment)
 
 1. **We only test in a "learned" universe.** T80 confirmed: UNI fails 5/6. Edge concentrated in high-beta trending crypto pairs. Do NOT claim cross-universe generalization.
-2. **Equity dangerously concentrated.** Top-10 = 90.9% of log return after T83/latest refresh. Equity without top-10 = 1.10x. One bad filter silently destroys the tail.
+2. **Equity dangerously concentrated.** Top-10 = 90.9% of log return. Equity without top-10 = 1.10x. One bad filter silently destroys the tail.
 3. **Harness-pass ≠ production-valid.** T72, T69, C19 all passed harness tests and FAILED exact-live replay. Pattern established.
 4. **2021/2022 chop regimes underweighted.** Full-history pass rates inflated by mega-bull windows.
-5. **Maker-fill risk is quantified (C18).** Low sensitivity confirmed. Fee microstructure is NOT the dominant deployment risk.
+5. **Maker-fill risk is unquantified.** Fee microstructure is NOT the dominant deployment risk, but the maker-fill assumption is the biggest single source of uncertainty.
 6. **M1 equity monitor is built but idle.** Not integrated into Discord alerting.
 
 ## Anti-Spin Rules
@@ -60,7 +63,8 @@ C16 (regime-conditional Chandelier multiplier) attempted to modulate CHAND_MULT 
 | Dry-run harness | **READY** — `live_bot_exact_equity.rs` |
 | Mock exchange | **READY** — smoke test passed |
 | Deployment runbook | **WRITTEN** — `docs/DEPLOYMENT_RUNBOOK.md` |
-| Equity monitor (M1) | **BUILT** — idle, needs Discord integration |
+| Deployment safety checklist | **WRITTEN** — `docs/LIVE_DEPLOYMENT_CHECKLIST.md` |
+| Equity monitor (M1) | **BUILT** — needs Discord integration |
 | API keys (Noah) | **BLOCKED** — only remaining item |
 
 **Next step:** Noah provides Binance testnet API key + secret.
@@ -72,7 +76,7 @@ Then: `BINANCE_API_KEY=xxx cargo run --example live_turtle_chandelier --profile 
 |------|--------|
 | C17 consecutive-bar filter | NEVER BUILT — e6f4ed05 only committed CHAND_PERIOD sweep; permanently unbuilt |
 | C18 maker-fill stress | ACCEPTABLE — equity 2.808x at 40% fill; low sensitivity confirmed |
-| C16 regime-conditional Chandelier | CLOSED — Chandelier non-binding; modulating it has zero effect |
+| C16 regime-conditional Chandelier | CLOSED — Chandelier non-binding; modulating has zero effect |
 | C19 rebalancing close_losers | GRAVEYARD — harness passed 6/6, exact-live failed (2.74x vs 2.89x) |
 | CHAND_PERIOD inertness | PROVED — 98-value sweep, all identical |
 | ATR_RANK T=24/65 | REJECTED — non-stationary, held-out failure |
@@ -126,24 +130,38 @@ fee_pct=0.000400
 
 ## Next Steps (Operational, Not Research)
 
-| Priority | Task | Blocker |
-|----------|------|---------|
-| 1 | **M1 Discord integration — post rolling return to #krypto each cron cycle** | None — execute now |
-| 2 | Vol-scaled position sizing exact-live test | None — one harness run, must verify exact-live not just WF |
-| 3 | Write `docs/LIVE_DEPLOYMENT_SAFETY_CHECKLIST.md` | **COMPLETE** ✅ |
-| 4 | 176.79x HOF entry | **ASSESSED — sufficient diagnostic label exists, no change needed** |
-| 5 | Noah: provide Binance testnet API key + secret | Noah action required |
+| Priority | Task | Status | Blocker |
+|----------|------|--------|---------|
+| 1 | **M1 Discord integration** — wire to Discord #krypto each cron | Execute now — built, not wired | None |
+| 2 | Vol-scaled position sizing — exact-live test | One harness run required | None |
+| 3 | Live testnet deployment | BLOCKED | Noah: API keys required |
 
-## Execution Details
+### M1 Discord Integration — Execute NOW
 
-### M1 Discord Integration — CRITICAL
 **Status:** Built but idle. Every cron cycle should produce a 1-line status update.
 **Execution:** `cargo run --example m1_equity_trajectory_monitor --profile sweep 2>&1`
-**Post to Discord #krypto:** Include 60d return, rolling Sharpe, equity vs 1y peak, alert status.
-**Format:** `📊 M1 [HH:MM UTC]: 60d +X.X% | Sharpe X.XX | DD -X.X% | vs 1y peak -X.X% | STATUS`
-**This is the highest-ROI operational task.**
+**Post to Discord #krypto:** One-line status with 60d return, rolling Sharpe, equity vs 1y peak, alert status.
+**Today's output (2026-05-08 12:09 UTC):** `📊 M1 12:09 UTC: 60d +0.9% | Sharpe 0.57 | DD -2.5% | vs 1y peak -7.5% | 🟢 GREEN`
+**Priority: HIGHEST.** This is the only currently executable task that advances operational readiness.
 
 ### Vol-Scaled Position Sizing — Exact-Live Test Only
-**Key rule from T69/T72/C19 pattern:** Walk-forward pass is NOT sufficient. Must run exact-live replay.
+
+**Concept:** Replace fixed HSM=0.25 with per-symbol sizing: `size = base / realized_vol(symbol, 21-bar)`. High-vol get smaller, low-vol get larger.
+**Different from rejected items:** Not an entry gate (ATR_ENTRY_MULT), not an exit multiplier (vol-contingent Chandelier), not a regime overlay (BTC trend scalar).
+**Anti-overfitting rule from T69/T72/C19 pattern:** Walk-forward pass is NOT sufficient. Must run exact-live replay.
 **If exact-live equity < 2.76x baseline → close concept.**
 **If exact-live equity ≥ 2.76x → verify Sharpe and MaxDD improve, then promote.**
+
+### Live Testnet — Only Remaining Blocker
+
+**Only step:** Noah provides Binance testnet API key + secret.
+**Then:** `BINANCE_API_KEY=xxx cargo run --example live_turtle_chandelier --profile sweep -- --live`
+
+## Pattern: Harness-Pass ≠ Production-Valid (Established, Not New)
+
+Three candidates that passed harness validation and failed exact-live replay:
+- T72 VOL_LOOKBACK gate: 1.01x vs 2.56x (-60.5%)
+- T69 semantic alignment: 1.02x vs 2.55x (-60.0%)
+- C19 rebalancing: 2.74x vs 2.89x (-5.2%)
+
+**Rule:** No candidate is deployment-ready until exact-live replay verification.

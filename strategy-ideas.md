@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-08 04:15 UTC.* Research CLOSED. Operational infrastructure phase.*
+*Last updated: 2026-05-08 12:09 UTC.* Research CLOSED. Operational infrastructure phase.*
 
 ---
 
@@ -72,13 +72,7 @@
 ## Honest Deployment Statement
 
 ### Pre-Deployment Safety Checklist
-**Status:** Not written. Docs exist (DEPLOYMENT_RUNBOOK.md) but no safety checklist.
-
-**What needs to happen:** Write `docs/LIVE_DEPLOYMENT_CHECKLIST.md` covering:
-- Pre-launch: verify config, verify API keys, verify data feed connectivity, verify maker/taker fee tiers
-- Kill-switch criteria: what MaxDD or drawdown duration triggers manual shutdown
-- Maker-fill monitoring: track actual vs assumed (0–40% range) and alert on persistent taker-dominant execution
-- Daily equity reporting: M1 output to Discord each cron cycle
+**Status:** WRITTEN ✅ — `docs/LIVE_DEPLOYMENT_CHECKLIST.md` covers pre-launch verification, kill-switch criteria, maker-fill monitoring, and daily equity reporting.
 
 ---
 
