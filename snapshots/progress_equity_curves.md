@@ -1,13 +1,13 @@
 # Progress Equity Curves
 
-Generated: 2026-05-08 15:39:09.728034548 UTC
+Generated: 2026-05-09 06:12:15.769073239 UTC
 
 Universe: Base5 (BTCUSDT, ETHUSDT, SOLUSDT, XRPUSDT, DOGEUSDT, ADAUSDT)
 
 Final equity | Reported Sharpe:
 - A/D Momentum: 39.3x (3829.4%), Sharpe 3.57 [fixed-hold daily equity]
 - FactorSmallByDV: 16.2x (1516.3%), Sharpe 2.01 [fixed-hold daily equity]
-- DDBudget 3-Sleeve: 60.8x (5977.4%), Sharpe 7.13 [milestone-aggregated; not comparable to Turtle daily equity]
-- Turtle+Chandelier: 610.0x (60899.7%), Sharpe 1.19 [daily compounded equity; PRODUCTION CANDIDATE]
-- Turtle+ATR_RANK=24: 55.2x (5421.3%), Sharpe 0.91 [regime filter T=24; walk-forward: 52/63 pass, Sharpe 5.59, +132% ret. See snapshots/progress_equity_curves_atrrank24.md]
+- DDBudget 3-Sleeve: 60.8x (5977.8%), Sharpe 7.13 [milestone-aggregated; not comparable to Turtle daily equity]
+- Turtle+Chandelier: 621.3x (62028.4%), Sharpe 1.19 [daily compounded equity; PRODUCTION CANDIDATE]
+- Turtle+ATR_RANK=24: 56.2x (5523.4%), Sharpe 0.91 [regime filter T=24; walk-forward: 52/63 pass, Sharpe 5.59, +132% ret. See snapshots/progress_equity_curves_atrrank24.md]
 [MACD+Regime & Blend excluded: 2/7 OOS pass — GRAVEYARD]

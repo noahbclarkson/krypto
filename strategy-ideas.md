@@ -1,15 +1,15 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-09 00:07 UTC.* Critique session complete. Project is in operational readiness mode — research closed, live testnet blocked on API keys.
+*Last updated: 2026-05-09 05:09 UTC.* Critique session: suspension animation identified (3/5 commits overhead). M1 Discord integration is highest-ROI task. Cross-exchange divergence surveillance is new research direction.
 
 ---
 
 ## Critical Alerts
 
-### NEW: Live Bot is Already Turtle-Only — Documentation Needs Cleanup (2026-05-08)
-**Situation:** `src/live/bot.rs` uses Turtle ATR as the **sole exit**. Chandelier is NOT in the live code path. HOF and docs still say "dual Chandelier+Turtle ATR exit" — this is wrong.
-**Action required:** Update HOF to reflect "Turtle ATR sole exit." Takes 15 minutes. Zero risk. Highest-ROI open task.
-**Status:** Decision executed (documentation fix only — code already correct).
+### ⚠️ Suspension Animation Identified (2026-05-09)
+**Situation:** Last 5 commits: 3 docs/ops, 2 research kills. Zero new alpha generated. Anti-spin rule #11 triggered.
+**Action required:** Next session must produce: (a) live testnet integration progress, OR (b) new research candidate with exact-live test run.
+**Status:** Chandelier docs fix (`e3bf3209`) already done. Stop doing documentation. Execute or research.
 
 ### T80: OOS Universe Validation — GENERALIZATION FAILURE
 - **11/18 pass (61.1%)**, avg Sharpe **0.149**, avg return **+2.3%/window**, 160 trades
