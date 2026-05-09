@@ -1,7 +1,11 @@
 //! Live trading bot — Turtle breakout strategy.
 //!
 //! Signal: Turtle breakout — close > max_close (EP bars lookback)
-//! Exit: Turtle ATR trailing stop ONLY (sole exit)
+//! Exit: Turtle ATR trailing stop ONLY (sole exit).
+//!
+//! NOTE: Chandelier parameters (CHAND_PERIOD, CHAND_MULT) are stored in config
+//! for compatibility but play no role in the live exit path. VOL_LOOKBACK is also
+//! not wired into live entries (T72 rejection: VL=92 gate collapsed equity 1.01x).
 //!
 //! T34 KNOWN GAP: Research walkforward (turtle_chandelier_walkforward.rs) uses
 //! dual Chandelier+Turtle ATR exit. Live bot uses Turtle ATR ONLY. The
@@ -154,13 +158,12 @@ impl LiveBot {
     /// Start the bot: fetch warmup, connect WebSocket, process bars.
     pub async fn start(&mut self) -> Result<()> {
         tracing::info!(
-            "Starting Turtle+Chandelier live bot for {} symbols",
+            "Starting Turtle-only live bot for {} symbols",
             self.config.symbols.len()
         );
         tracing::info!(
-            "Params: EP={}, Chand({},{}), ATR({},{}), HM={}, CAP={}, ATR_RANK(AP={},LB={},T={})",
+            "Params: EP={}, TurtleATR({},{}), HM={}, CAP={}, ATR_RANK(AP={},LB={},T={})",
             self.config.ep,
-            self.config.chand_period, self.config.chand_mult,
             self.config.atr_period, self.config.atr_mult,
             self.config.hold_max, self.config.position_cap,
             self.config.regime_atr_period, self.config.regime_lookback,
