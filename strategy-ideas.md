@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-08 16:05 UTC.* Critique session complete. Chandelier non-binding is the new highest-priority open question.
+*Last updated: 2026-05-09 00:07 UTC.* Critique session complete. Project is in operational readiness mode — research closed, live testnet blocked on API keys.
 
 ---
 
