@@ -1,6 +1,6 @@
 # T65: Exact Live-Bot Source-of-Truth Equity
 
-Generated: 2026-05-09 06:12 UTC
+Generated: 2026-05-10 03:04 UTC
 
 ## Scope
 
@@ -40,7 +40,7 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 
 | Metric | Value |
 |---|---:|
-| Days | 1798 |
+| Days | 1799 |
 | Final equity | 2.76x |
 | Annualised return | 22.9% |
 | Daily account Sharpe | 1.02 |
