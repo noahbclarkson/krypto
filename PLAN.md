@@ -1,311 +1,104 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-## State: 2026-05-10 08:05 UTC — CRITIQUE CYCLE #2 (FINAL CALL)
-
-**CRITICAL FINDING — THE TWO SYSTEMS PROBLEM:**
-The progress harness (`progress_equity_curves.rs`) and live bot (`src/live/bot.rs`) are running DIFFERENT STRATEGIES with different exit mechanisms:
-- Live bot: Turtle ATR(24,2.0) trailing stop ONLY → 2.76x / Sharpe 1.02
-- Progress harness: Chandelier(7,2.30) + Turtle ATR DUAL EXIT → 621x / Sharpe 1.19
-The 621x is NOT the same strategy measured differently. It is a dual-exit research system labeled "PRODUCTION CANDIDATE" — misleading.
-The walk-forward 5-6 Sharpe and the 1.19 daily equity Sharpe are from the research dual-exit harness, not the live bot.
-
-**Rule (NEW):** Do not use "Turtle+Chandelier 621x" as a production headline. Only 2.76x / Sharpe 1.02 is the production number.
-
-**Research rate: 25% (2/8 commits). Anti-spin rule #11 triggered again.**
-
-**M1 Discord integration: 5+ weeks, not done. Final call.**
-
-**API keys blocked 5+ weeks. No explicit contingency.**
+**Updated: 2026-05-10 16:05 UTC — Critique Session #4**
 
 ---
 
-## Brutal Self-Assessment (This Session's Findings)
+## Critical Finding (This Session): Three Documentation Loops, Zero Execution
 
-### The Two Systems Problem (Newly Identified)
+- T89 (ATR period): 3 confirmation sweeps, all IDENTICAL. INERT.
+- T92 (ATR_RANK threshold): Swept again even though T=5 was settled T65.
+- Two-Systems Problem: Documented 3 sessions. Harness still runs wrong strategy.
+- M1: Monitor built, but direct WhatsApp→Discord path is broken (cron delivery workaround is acceptable but not a fix).
+- Progress chart: Still shows 621x equity as headline. Label changed but data still from wrong harness.
 
-The progress harness and live bot have been conflated for months. The "Turtle+Chandelier 621x" on the progress chart is a dual-exit research strategy with Chandelier(7,2.30)+TurtleATR(24,2.0) firing in 7 bars. The live bot exits ONLY on Turtle ATR(24,2.0) with no Chandelier. These are two different strategies.
-
-**Implication:** The walk-forward Sharpe 5-6 and daily equity Sharpe 1.19 describe the dual-exit research harness, not the deployed bot. Only 2.76x / Sharpe 1.02 is the honest production number.
-
-
-### Progress Harness Misuse — Escalated
-
-MEMORY.md and Discord have been citing "621x / Sharpe 1.19" alongside "2.76x / Sharpe 1.03" as if they describe the same thing. They do not. The 621x comes from a dual Chandelier+Turtle ATR exit that:
-- Uses CHAND_P=7/M=2.30 (found on EP=24, which was later reverted to EP=21)
-- Is a research diagnostic, not a production-ready configuration
-- Has materially different equity curve mechanics (faster exit = lower drawdown, fewer drawdown days, different compounding)
-
-
-**Rule:** Only 2.76x / Sharpe 1.02 is the production headline. 621x is research diagnostic ONLY.
-
-### Sharpe Uncertainty — Dominant Deployment Risk
-
-| System | Sharpe | Source |
-|--------|--------|--------|
-| Live bot exact (Turtle ATR-only) | **1.02** | `live_bot_exact_equity.rs` |
-| Progress harness (dual Chandelier+Turtle) | 1.19 | `progress_equity_curves.rs` |
-| Walk-forward per-window avg | 5-6 | research harness only |
-| Maker-fill adjusted range | 0.6–1.3 | estimated |
-
-Only the live bot exact row is production-valid.
-
-### 2026 YTD Underperformance — Unchanged
-
--22.7%, unchanged from prior sessions. Binary ATR_RANK gate accepted as cause. No fix attempted (risk to T73 top winners). Documented as limitation.
-
-### Top-10 Concentration: 91% of Log Return
-
-Structural. Unchanged. This is the trade-off for trend-following convexity.
+**Rule:** No more critique sessions. The next session must execute or close items.
 
 ---
 
-## Execution Priorities (Updated 2026-05-10 — MUST EXECUTE)
+## Anti-Spin: Executable Tasks (Not Documents)
 
-> Anti-spin: These are NOT aspirational. Each task must be executed or explicitly closed before the next critique cycle.
+### Priority 1: FIX Progress Harness — Run Live Bot Equity and Update CSV (EXECUTE)
 
-### Priority 1 (EXECUTE THIS SESSION): M1 Discord Integration — FINAL CALL
-**Status:** 5+ weeks overdue. Execute NOW. Not pending — DO IT.
-**Action:** 
-1. `cargo run --example m1_equity_trajectory_monitor --profile sweep 2>&1`
-2. Extract: 60d return, rolling Sharpe, equity vs 1y peak
-3. Post to #krypto: "M1 Monitor: 🟢 GREEN | 60d +X% | Sharpe Y | vs 1y peak -Z%"
-4. Done. No more commits about it.
+**Problem (STILL NOT FIXED after 3 sessions):** The progress chart equity CSV (`snapshots/progress_equity_curves.csv`) is fed by the research dual-exit harness (621x). The live bot exact equity (2.76x) is not in the chart.
 
-### Priority 2 (EXECUTE THIS SESSION): Fix Progress Harness Label or Path
-**Status:** The progress harness claims "PRODUCTION CANDIDATE" but runs dual Chandelier exit. Two options:
-- Option A: Relabel CSV/markdown output: "Turtle+Chandelier DUAL EXIT (RESEARCH DIAGNOSTIC — NOT LIVE BOT)"
-- Option B: Rebuild progress harness to use exact live bot Turtle ATR-only path
-**Recommendation:** Option A (quick relabel) + Option B (future work). The dual-exit system is genuinely different from live bot — don't paper over it.
+**Action:**
+1. `cargo run --example live_bot_exact_equity --profile sweep 2>&1` — get live bot daily equity series
+2. Check if `snapshots/live_bot_exact_equity_equity.csv` (or equivalent) exists
+3. If not, create `examples/export_live_bot_equity.rs` that outputs daily equity CSV named `live_bot_exact_equity_daily.csv`
+4. Update `examples/progress_equity_curves.rs` to ADD a 5th column: `live_bot_equity` = exact-live Turtle ATR-only path
+5. Update chart script `plot_progress.py` to include live bot equity as a separate line (2.76x = production truth)
+6. Label: "Turtle ATR-only (LIVE BOT): 2.76x" vs "Turtle+Chandelier dual exit (RESEARCH): 621x"
 
-### Priority 3 (BLOCKED): Live Testnet — API Key Contingency
-**Status:** Blocked 5+ weeks. No explicit contingency.
-**Action:** Send explicit message to Arc: "API keys from Noah have been blocking us for 5+ weeks. What is the contingency if they don't materialize? Do we need a different path forward?"
+**This is a 30-minute fix.** Do not discuss. Execute.
+
+### Priority 2: ESCALATE to Arc — Anti-Spin Rule #11 (EXECUTE)
+
+**Rule mandate:** "If 5+ consecutive commits are docs/ops/monitoring with 0 new research, escalate."
+
+**Current state:** 12 consecutive commits (2 days): 2 research, 10 ops/docs. Rule #11 triggered MULTIPLE times without escalation.
+
+**Message to Arc:**
+> "Krypto project is in documentation loop. 12 consecutive commits: 10 ops/docs, 2 marginal hyperopts. Anti-spin rule #11 has been triggered without escalation. Dominant blocker: Noah's Binance testnet API keys (5+ weeks). Maker-fill Sharpe range [0.6–1.3] is unconstrained. We need either (a) API keys urgently, or (b) explicit decision to stop waiting and pivot to a different path forward. What's the contingency?"
+
+### Priority 3: Maker-Fill Scenario Analysis (EXECUTE — can do without API keys)
+
+**Problem:** Fee-adjusted Sharpe range [0.6–1.3] is our biggest unknown. We can model it better without live data.
+
+**Action:**
+1. Run `live_bot_exact_equity` with different fee assumptions:
+   - 0% maker (pure taker 0.08%): what equity/Sharpe do we get?
+   - 50% maker (realistic 0.04% effective): what do we get?
+   - 70% maker (optimistic 0.028% effective): what do we get?
+2. Document each scenario in a new `snapshots/maker_fill_scenario_analysis.csv`
+3. This constrains the range [0.6–1.3] with actual numbers instead of estimates
+4. Post summary to Discord: "Maker-fill sensitivity: X% maker → Sharpe Y"
 
 ---
 
-## 3 Most Promising Unbuilt Ideas
+## 3 Most Promising Unbuilt Ideas (Honest Assessment)
 
-### 1. M1 Discord Integration (PRIORITY: EXECUTE — NOT DISCUSS)
-Status: 5+ weeks overdue. Execute now.
+### 1. Maker-Fill Scenario Modeling (PRIORITY: HIGH — EXECUTE THIS SESSION)
+Run exact-live equity under 3 fee assumptions (0%, 50%, 70% maker fill). Constrain the [0.6–1.3] range with actual data. This is the most valuable thing we can do without API keys.
 
-### 2. Maker-Fill Hypothesis Testing (PRIORITY: MEDIUM — BLOCKED)
-Concept: One week of dry-run execution to constrain the [0.6–1.3] Sharpe range.
-Why it matters: Dominant deployment risk. Even rough confirmation of 70% fill rate changes risk model materially.
-Status: Blocked by API keys.
+### 2. Dual-Exit Live Bot Experiment (PRIORITY: MEDIUM — POST-KEYS)
+Concept: Add Chandelier(7,2.30) dual-exit to live bot. The dual-exit research harness gets 621x vs live bot's 2.76x. Hypothesis: dual-exit might improve equity profile.
+T73 risk: Chandelier fires faster and could cut winners. Needs T73-style top-winner preservation audit before any test.
+**Do not execute without API keys.** This is a live testnet experiment.
 
-### 3. Dual-Exit Live Bot Experiment (PRIORITY: LOW — NEW 2026-05-10)
-Concept: The progress harness uses Chandelier(7,2.30)+TurtleATR dual exit and gets 621x. The live bot uses Turtle ATR-only and gets 2.76x. These are genuinely different strategies with different risk profiles.
-Hypothesis: Adding Chandelier dual-exit to the live bot (as a secondary exit alongside Turtle ATR) might improve the live bot's equity profile without changing the entry logic.
-Risk: T73 top-winner preservation — Chandelier fires faster and could cut the winners that drive 91% of returns. Needs T73-style audit before testing.
-Status: Concept only. Requires T73 audit first.
-
+### 3. Cross-Universe Generalization Documentation (PRIORITY: LOW — ACCEPT LIMITS)
+UNI fails 1/6 (Sharpe -0.81). AVAX marginal 4/6 (Sharpe 0.13). MATIC 6/6 but data ends 2024-09-10.
+Honest statement: strategy is universe-sensitive. Works on trending high-beta crypto. Fix is universe selection, not parameter patching. Document this as a known limitation. Do not attempt to "fix" UNI via parameter changes.
 
 ---
 
 ## Current Production Truth (Authoritative)
 
-- **Exact as-coded live bot:** 2.76x / daily account Sharpe 1.02 / MaxDD 22.3% / 286 trades / 1,799 days. Production source of truth. Turtle ATR-only exit.
-- **Progress harness (dual Chandelier+Turtle ATR):** 621x / Sharpe 1.19 — RESEARCH DIAGNOSTIC ONLY, NOT live bot.
-- **Maker-fill uncertainty:** Sharpe [0.6–1.3] depending on live fill assumptions.
-- **Top-10 trade concentration:** 91% of compounded log return.
-- **Walk-forward Sharpe:** 5-6 — research harness only, not comparable to daily account.
-
-- **Walk-forward pass rate:** 45/54 (83%) on 9-universe / 100% on Base5 — from research harness.
-
----
-
-## Metrics Truth Table (UPDATED)
-
-| Metric | Value | Source | Honest? |
-|--------|-------|--------|---------|
-| Live bot equity | **2.76x** | `live_bot_exact_equity.rs` | ✅ YES — production headline |
-| Live bot daily Sharpe | **1.02** | `live_bot_exact_equity.rs` | ✅ YES — production headline |
-| Progress harness equity (621x) | 621x | progress harness DUAL EXIT | ⚠️ Different system — research only |
-| Progress harness Sharpe | 1.19 | progress harness DUAL EXIT | ⚠️ Different system — research only |
-| Walk-forward Sharpe | 5-6 | research harness only | ⚠️ Not comparable to account Sharpe |
-| Fee-adjusted Sharpe range | 0.6–1.3 | estimated | ⚠️ Unvalidated |
-
-**Rule:** Only cite 2.76x / Sharpe 1.02 as production numbers. 621x is research diagnostic only.
+- **Exact as-coded live bot:** 2.76x / daily account Sharpe **1.02** / MaxDD **22.3%** / 286 trades / 1,799 days. Turtle ATR-only exit. **ONLY cite this as production.**
+- **Progress harness (dual Chandelier+Turtle ATR):** 621x — RESEARCH DIAGNOSTIC ONLY, different strategy.
+- **Maker-fill uncertainty:** Sharpe **[0.6–1.3]** — UNCONSTRAINED.
+- **Walk-forward per-window Sharpe:** 5-6 — RESEARCH harness only, not comparable to account Sharpe.
+- **Top-10 trade concentration:** **91%** of compounded log return. Structural fragility.
+- **2026 YTD underperformance:** **-22.7%** via binary ATR_RANK gate. Accepted limitation.
 
 ---
 
+## Anti-Overfitting Rules (Immutable)
 
-## Brutal Self-Assessment (This Session's Findings)
-
-### Suspension Animation Is Now Structural (Not Temporary)
-
-Last 7 commits: 3 research + 4 overhead. Research rate: 43%. Previously documented as "temporary" and "one session." It is not temporary. The project has been in overhead-only mode for 5+ weeks.
-
-**Anti-spin rule #11 TRIGGERED:** "If 5+ consecutive commits are docs/ops/monitoring with 0 new research, escalate." This is now the 5th consecutive critique/plan update commit. Escalation protocol: this plan update is the last one. Executable tasks below must be completed before the next critique cycle.
-
-### Progress Harness 621x Is Being Misused as a Production Number
-
-MEMORY.md and Discord updates cite "Turtle+Chandelier: 621x | Sharpe 1.19" alongside "2.76x / Sharpe 1.03" as if they describe the same thing. **They do not.** The progress harness uses a different entry system (Chandelier dual-exit, not Turtle-only), different ranking, and different accounting. It is a separate research diagnostic.
-
-The 2.76x live bot number is the honest deployment headline. **Do not cite 621x as production performance.**
-
-### Sharpe Uncertainty Is the Dominant Deployment Risk — Still Unmeasured
-
-| Maker Fill Rate | Estimated Sharpe | Status |
-|----------------|-----------------|--------|
-| 80% (optimistic) | ~1.15 | Unvalidated |
-| 70% (baseline) | ~1.03 | Unvalidated |
-| 50% (midpoint) | ~0.83 | Unvalidated |
-| 30% (pessimistic) | ~0.60 | Unvalidated |
-
-One week of dry-run execution constrains this range more than any backtest. API keys are the blocker.
-
-### 2026 YTD Underperformance — Binary Gate Problem Unfixed for 3+ Weeks
-
-ATR_RANK T=5 gate: skip entries in low-vol regimes, but position size stays FULL when entry fires. This is a discontinuous risk control — either full exposure or no exposure. In chop/bear regimes, filtered entries still take full-size positions and get whipsawed.
-
-**We have documented this for 3+ weeks without a fix or a kill decision.** Decision: **document as known limitation, do not attempt parameter fix** (any fix risks T73 top-winner destruction). Accept it.
-
----
-
-## Metrics Truth Table
-
-| Metric | Value | Source | Honest? |
-|--------|-------|--------|---------|
-| Live bot equity | **2.76x** | live_bot_exact_equity.rs | ✅ YES — production headline |
-| Daily account Sharpe | **1.03** | live_bot_exact_equity.rs | ✅ YES — production headline |
-| Progress harness equity | 621x | progress harness | ⚠️ Different system — NOT live bot |
-| Walk-forward Sharpe | 5-6 | per-window avg | ⚠️ 5x inflated vs daily account |
-| Research equity (176x) | 176x | live_compatible_wf | ⚠️ Different system + 99.5% DD |
-| Fee-adjusted Sharpe range | 0.6–1.3 | model | ⚠️ Unvalidated — dominant risk |
-
-**Rule:** Only cite 2.76x / Sharpe 1.03 as production numbers. Progress harness is diagnostic only.
-
----
-
-## Execution Priorities (Updated 2026-05-10)
-
-> Anti-spin: These are NOT aspirational. Each task must be executed or explicitly closed before the next cron cycle.
-
-### Priority 1 (EXECUTE THIS SESSION): M1 Discord Integration
-**Status:** 5 weeks overdue. Not pending — DO IT NOW.
-**Action:** 
-1. `cargo run --example m1_equity_trajectory_monitor --profile sweep 2>&1`
-2. Extract: 60d return, rolling Sharpe, equity vs 1y peak
-3. Post to #krypto: "M1 Monitor: 🟢 GREEN | 60d +0.9% | Sharpe 0.57 | vs 1y peak -7.5%"
-4. Done. No more commits about it. Commit the code fix if any, but the system should work.
-
-**Time estimate:** 20 minutes. Not "15 min" — it was "15 min" for 5 sessions. Actual time to execute.
-
-### Priority 2 (EXECUTE THIS SESSION): Commit This Critique
-**Status:** Done.
-**Action:** `git add -A && git commit -m "docs: critique and plan update — 2026-05-10" && git push`
-
-### Priority 3 (BLOCKED): Live Testnet
-**Status:** BLOCKED 5+ weeks. API keys with Noah.
-**Action:** Awaiting Arc response. If no response in 48h, send follow-up to Arc. Project needs an explicit contingency plan if keys never materialize.
-
----
-
-## 3 Most Promising Unbuilt Ideas
-
-### 1. M1 Operational Discord Integration (PRIORITY: HIGH — EXECUTE)
-Not new. Highest priority for 5 weeks. Still not done. Execute, don't discuss.
-
-### 2. Maker-Fill Hypothesis Testing (PRIORITY: MEDIUM — BLOCKED)
-**Concept:** One week of dry-run execution to constrain the [0.6–1.3] Sharpe range.
-**Why it matters:** Dominant deployment risk. Even rough fill-rate confirmation changes risk model materially.
-**Status:** Blocked by API keys. Same as everything else.
-
-### 3. Regime-Scaled Position Sizing (PRIORITY: LOW — NEW)
-**Concept:** Replace binary ATR_RANK T=5 gate with graduated position sizing:
-- ATR_RANK < 2: size × 0.5
-- ATR_RANK 2–5: size × 0.75
-- ATR_RANK > 5: full size × 1.0
-**Why different from T86:** T86 anti-leveraged the Kelly fraction itself. This scales position size only as a risk allocation signal, not as an optimal-fraction calculator. Mechanism is different.
-**Risk:** T73 top-winner preservation — SOL 2023-01-11 and DOGE 2022-10-28 (both top winners) were low-vol at entry. Sizing down by regime could kill exactly the trades that matter.
-**Status:** Concept only. Requires T73-style audit before any test run.
-
----
-
-## Current Production Truth (Authoritative)
-
-- **Exact as-coded live bot:** 2.76x / daily account Sharpe 1.03 / MaxDD 22.3% / 286 trades / 1,799 days. Production source of truth.
-- **Maker-fill uncertainty:** Sharpe [0.6–1.3] depending on live fill assumptions. Report as range.
-- **Top-10 trade concentration:** 90.9% of compounded log return. Equity without top-10 = 1.10x. Structural risk.
-- **Progress harness:** 621x — diagnostic ONLY, NOT comparable to live bot.
-- **Walk-forward Sharpe:** 5-6 — not comparable to daily account 1.03 (5x inflation).
-
----
-
-## Anti-Overfitting Rules (Updated)
-
-1. No more Turtle-family parameter sweeps unless a new mechanism is proposed.
-2. No more "audit" tasks — write the test or close the issue.
+1. No Turtle-family parameter sweeps unless a new mechanism is proposed.
+2. No "audit" tasks — write the test or close the issue.
 3. Every task must have an execute-or-close decision. No "defer to next session."
-4. **The 2.76x / Sharpe 1.03 is the ONLY production headline. 621x is diagnostic only.**
+4. **621x / 176.79x numbers are research diagnostics, NOT production performance.**
 5. Daily account Sharpe only on equity charts. Per-window walk-forward Sharpe is not comparable.
-6. Report fee-adjusted Sharpe as a range [0.6–1.3], not a point estimate.
+6. Report fee-adjusted Sharpe as a range, not a point estimate.
 7. **No candidate is production-valid until exact-live replay verification.**
 8. Top-10 = 91% of log return. Any new filter must preserve the convex tail.
-9. **Suspension animation is a real failure mode.** Escalate after one failed attempt, not five.
-10. **Operational tasks (M1 integration, docs cleanup) are higher priority when research is exhausted.**
-11. **If blocked on external dependency for 5+ weeks, need an explicit plan — not passive waiting.**
-12. **Maker-fill uncertainty is the dominant deployment risk.** It belongs on every status report until resolved.
-13. **Progress harness 621x ≠ live bot 2.76x.** Do not cite as equivalent.
-14. **2026 YTD underperformance: accept as known limitation.** Binary ATR_RANK gate cannot be fixed without T73 destruction risk. Document and move on.
-
----
-
-## Deployment Status
-
-| Component | Status |
-|-----------|--------|
-| Backtested strategy | **READY** — 2.76x / Sharpe 1.03 / DD 22.3% / 286 trades |
-| Live bot code | **READY** — `src/live/bot.rs` exact path verified |
-| Dry-run harness | **READY** — `live_bot_exact_equity.rs` |
-| Mock exchange | **READY** — smoke test passed |
-| Deployment runbook | **WRITTEN** — `docs/DEPLOYMENT_RUNBOOK.md` |
-| Deployment safety checklist | **WRITTEN** — `docs/LIVE_DEPLOYMENT_CHECKLIST.md` |
-| Equity monitor (M1) | **BUILT** — NOT integrated into Discord (5+ weeks) |
-| API keys (Noah) | **BLOCKED** — only remaining item |
-
----
-
-## Resolved / Closed
-
-| Item | Result |
-|------|--------|
-| C17 consecutive-bar filter | NEVER BUILT — permanently unbuilt |
-| C18 maker-fill stress | ACCEPTABLE — equity 2.808x at 40% fill; low sensitivity confirmed |
-| C16 regime-conditional Chandelier | CLOSED — non-binding; modulating has zero effect |
-| C19 rebalancing close_losers | GRAVEYARD — harness passed 6/6, exact-live failed (2.74x vs 2.89x) |
-| CHAND_PERIOD inertness | PROVED — 98-value sweep, all identical |
-| ATR_RANK T=24/65 | REJECTED — non-stationary, held-out failure |
-| T61/T76 taker-buy pressure | REJECTED — equity no better, 6/10 top winners destroyed |
-| T72 VOL_LOOKBACK live gate | REJECTED — 1.01x vs 2.56x; killed 8/10 top winners |
-| T69 semantic alignment | REJECTED — worsened exact live replay to 1.02x |
-| T67 HEDGE_ATR_PCT | INERT — all 101 values identical |
-| T70 FRESHNESS_COOLDOWN | NOT PROMOTED — long cooldowns cut convexity; keep=0 |
-| T73 top-winner audit | GUARDRAIL SET — preserve top winners before any filter promotion |
-| T80 OOS hold-out universe | GENERALIZATION FAILURE — 11/18 pass (61.1%), avg Sharpe 0.149, UNI 1/6 |
-| ATR_ENTRY_MULT>0 | REJECTED — 0.00 definitively optimal |
-| EP=24 | REVERTED — held-out failure |
-| Weekend filter | REJECTED |
-| Donchian entry | REJECTED — lower pass rate than Turtle |
-| SIZE_MULT overlay | INERT — pure risk preference knob, not alpha |
-| T86 Vol-scaled Kelly | GRAVEYARD — 2.28x vs 2.76x (-17%), anti-leveraged tail |
-| T83 HEDGE_SIZE_MULT | PROMOTED — 0.25 is robustness winner (86.7% pass vs 76.7% at 0.55) |
-| T87 TURTLE_ATR_MULT | CONFIRMED — M=2.00 wins extensive sweep (0.50–5.00 step 0.05) |
-| 2026 YTD underperformance | ACCEPTED AS LIMITATION — binary gate cannot be fixed without T73 destruction risk |
-
----
-
-## Next Steps (Priority Order)
-
-### 1. M1 Discord Integration — Execute NOW (FINAL CALL)
-**Status:** 5 weeks overdue. This is the last "highest priority" mention.
-**Execution:** Run M1 monitor → post metrics to #krypto → commit any code changes
-**Done means:** A Discord message with M1 metrics sent, not another plan entry.
-
-### 2. Send Follow-Up to Arc if No API Key Response
-**Status:** Sent 2026-05-10 session. If no response in 48h, second ping.
-**Message:** "What's the actual plan if Noah's Binance testnet keys don't come? Need explicit alternative or escalation."
-
-### 3. Live Testnet — BLOCKED
-**Only blocker:** Noah's Binance testnet API keys + secret.
+9. **Chandelier either fires or is removed. Non-binding exits are docs errors.**
+10. **Universe selection is survivorship bias.** Always disclose which assets.
+11. **Suspension animation is a real failure mode.** Escalate after one failed attempt, not five.
+12. **If blocked on external dependency for 5+ weeks, need an explicit plan.**
+13. **Maker-fill uncertainty is the dominant deployment risk.** It belongs on every status report.
+14. **Progress harness 621x ≠ live bot 2.76x.** Do not conflate.
+15. **2026 YTD underperformance: accept as known limitation.**
+16. **No more critique sessions without execution.** Documents without code changes are noise.
+17. **Anti-spin rule #11 escalation is now mandatory, not optional.**
