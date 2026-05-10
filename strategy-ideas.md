@@ -1,21 +1,34 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-09 05:09 UTC.* Critique session: suspension animation identified (3/5 commits overhead). M1 Discord integration is highest-ROI task. Cross-exchange divergence surveillance is new research direction.
+*Last updated: 2026-05-10 02:03 UTC.* Critique session: suspension animation CONFIRMED. 91% of returns from top-10 trades. Sharpe 5.0+ confirmed INFLATED. M1 Discord NOT EXECUTED — 3 sessions and counting.*
 
 ---
 
 ## Critical Alerts
 
-### ⚠️ Suspension Animation Identified (2026-05-09)
-**Situation:** Last 5 commits: 3 docs/ops, 2 research kills. Zero new alpha generated. Anti-spin rule #11 triggered.
-**Action required:** Next session must produce: (a) live testnet integration progress, OR (b) new research candidate with exact-live test run.
-**Status:** Chandelier docs fix (`e3bf3209`) already done. Stop doing documentation. Execute or research.
+### ⚠️ SUSPENSION ANIMATION CONFIRMED (2026-05-10)
+**Situation:** Last 5 commits: 4 docs/ops, 1 research verification. Zero new alpha generated. Anti-spin rule #11 triggered.
+**M1 Discord status:** NOT EXECUTED — was "highest-ROI task" 2 sessions ago. This session also did NOT execute it. The plan updating itself has become the activity.**
+**Action required:** Next session MUST execute M1 Discord integration. Documentation is a blocker, not progress.
 
 ### T80: OOS Universe Validation — GENERALIZATION FAILURE
 - **11/18 pass (61.1%)**, avg Sharpe **0.149**, avg return **+2.3%/window**, 160 trades
 - MATIC strong (6/6), AVAX borderline (4/6), UNI catastrophic (1/6)
 - **Fails promotion guardrail** (≥70% pass + Sharpe ≥0.5): 9pp below pass, 0.35 below Sharpe
 - **Honest statement:** edge is universe-sensitive, concentrated in high-beta trending pairs; does NOT generalize cleanly to unseen pairs
+
+### ⚠️ Sharpe 5.0+ is INFLATED (2026-05-10)
+**Finding:** Walk-forward per-window Sharpe (~5.0-7.0) is NOT comparable to daily account Sharpe (1.03). The per-window metric inflates by ~5x because:
+- It averages Sharpe across windows, not compounding
+- Uses different return calculation (window vs daily account)
+- 176.79x research harness uses different accounting (MaxDD 99.5%)
+**Production truth:** 2.76x equity / Sharpe 1.03 / MaxDD 22.3% from `live_bot_exact_equity.rs`
+
+### ⚠️ Top-10 Trade Concentration = 91% (2026-05-10)
+**Finding:** 91% of compounded log return comes from just 10 trades.
+- Equity without top-10: 1.10x (vs full 2.76x)
+- The strategy is essentially a bet on catching big trends
+- Any new filter MUST preserve the top-10 set before promotion
 
 ---
 

@@ -1,8 +1,10 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-## State: 2026-05-09 05:09 UTC — CRITIQUE CYCLE
+## State: 2026-05-10 02:03 UTC — CRITIQUE CYCLE
 
-**Research CLOSED. Live testnet BLOCKED 5+ weeks. Suspension animation identified — 3/5 commits overhead. New research direction: cross-exchange divergence surveillance.**
+**Suspension animation CONFIRMED. Last 5 commits: 4 docs/ops, 1 research verification. M1 Discord integration still not executed. 5+ weeks BLOCKED on API keys.**
+
+**This session's finding: 91% of returns from top-10 trades. Sharpe 5.0+ is INFLATED (per-window, not daily account). 176.79x research harness is NOT production.**
 
 **Research loop genuinely closed. Live testnet BLOCKED 5+ weeks. Operational readiness is now the only productive path forward.**
 
@@ -57,13 +59,13 @@ Every production number is a simulation upper bound. We don't know if the fee mo
 
 ---
 
-## Execution Priorities (updated 2026-05-09)
+## Execution Priorities (updated 2026-05-10)
 
 | Priority | Task | Status | Blocker |
 |----------|------|--------|---------|
-| **1** | **M1 Discord integration** — wire M1 to #krypto in cron | Execute now (15 min) | None |
-| **2** | Chandelier removal from all docs/HOF — confirm bot.rs is sole source of truth | Execute now (15 min) | None |
-| **3** | **Ask Arc about API key escalation** — what's the actual plan if Noah's keys don't come? | Execute now | None |
+| **1** | **M1 Discord integration** — run M1, post to #krypto | NOT EXECUTED — was "priority" 2 sessions ago | None |
+| **2** | **Escalate to Arc** — API key issue 5+ weeks | BLOCKED | Noah: API keys |
+| **3** | **Stop documentation churn** — execute or escalate | In progress | Self-deception |
 | **4** | Live testnet | BLOCKED | Noah: API keys |
 | **5** | Cross-exchange data layer | Not started | Requires infra build |
 
