@@ -1,5 +1,72 @@
 # MEMORY.md - Krypto Knowledge Base
 
+## 2026-05-10 08:05 — TWO SYSTEMS PROBLEM: CRITICAL FINDING
+
+**The progress harness and live bot are different strategies, not the same strategy measured differently.**
+
+- **Progress harness** (`progress_equity_curves.rs`): Chandelier(7,2.30)+TurtleATR DUAL EXIT → **621x / Sharpe 1.19**
+- **Live bot** (`src/live/bot.rs`): Turtle ATR(24,2.0) ONLY → **2.76x / Sharpe 1.02**
+
+The dual Chandelier exit fires faster (typically ~7 bars), producing a mechanically different equity curve. The 621x vs 2.76x gap (220x) is not measurement error — it is the difference between two strategies.
+
+**Walk-forward Sharpe 5-6 and equity Sharpe 1.19 describe the dual-exit research harness, NOT the deployed bot.**
+
+
+**Rule established:** Only 2.76x / Sharpe 1.02 is the production headline. 621x is research diagnostic ONLY.
+
+
+**Research rate: 25% (2/8). Anti-spin rule #11 triggered again.**
+
+**M1 Discord integration: 5+ weeks, not done. Final call next session.**
+
+## 2026-05-07 — Exact-Live Source Refreshed; No Work Beyond API Keys
+
+- **15:05 UTC source-of-truth rerun:** `examples/live_bot_exact_equity.rs` on current `src/live/config.rs` reports **2.77x / daily account Sharpe 1.03 / MaxDD 22.3% / 286 trades / 1,796 days**. The small drift from the 12:45 UTC T83 value (2.80x / 1.04) is a normal latest-data refresh; HOF and daily progress now use 2.77x.
+- **Decision:** no further backtest/research work is justified. Recent sessions closed C19, built M1, confirmed HOLD_MAX=15, and retuned HEDGE_SIZE_MULT=0.25. The remaining blocker is still Noah's Binance testnet API key + secret.
+
+## 2026-05-07 — T83 HEDGE_SIZE_MULT Promoted to 0.25
+
+- **Hardcoded assumption audited:** `HEDGE_SIZE_MULT=0.55` was production-live but inconsistently documented; older T66 docs preferred 0.40 on a different harness and `src/live/bot.rs` still had a stale 0.40 comment.
+- **Extensive sweep:** `examples/t83_hedge_size_mult_extensive.rs` tested **HSM=0.10..=1.00 step 0.05** (19 values) across 9 universes / 60 walk-forward windows under current exact-live semantics: EP=21, ATR(24,2.0), HOLD_MAX=15, AP=17/LB=41/T=5, HEDGE_ATR_PERIOD=38, HEDGE_LOOKBACK=252, HEDGE_ATR_PCT=0.45.
+- **Winner promoted:** `HEDGE_SIZE_MULT=0.25` — **52/60 pass (86.7%)**, Sharpe **1.481**, avg DD **9.82%** vs old 0.55 at **46/60 pass (76.7%)**, Sharpe **1.439**, DD **12.85%**. HSM is a risk dial, not alpha; choose robustness over raw return.
+- **Exact-live verification after source update:** Base5 exact replay after latest-data refresh is **2.77x / daily account Sharpe 1.03 / MaxDD 22.3% / 286 trades**, vs old HSM=0.55 **3.13x / 1.03 / 23.7% / 286 trades**. Lower return, similar/better risk-adjusted profile and lower drawdown.
+- **Files:** `snapshots/t83_hedge_size_mult_{summary,windows,equity}.csv`, chart `/home/ubuntu/.openclaw/workspace-krypto/charts/comparison_chart.png`, report `memory/hyperopt-2026-05-07.md`. Source updated: `src/live/config.rs`, `src/live/bot.rs`.
+
+## 2026-05-06 — T80 OOS Hold-Out Universe Validation Mixed
+
+- **T80 executed on explicit hold-outs:** `examples/t80_oos_universe_validation.rs` replays the exact-live daily Turtle-only path on `UNIUSDT`, `MATICUSDT`, and `AVAXUSDT` for 6 walk-forward windows each (252 train + 252 test bars). BTCUSDT is used only for ATR_RANK/hedge gates.
+- **Result:** global **11/18 pass (61.1%)**, avg Sharpe **0.149**, avg return **+2.3%/window**, avg MaxDD **6.1%**, **160 trades**. This fails the PLAN clean-validation guardrail (≥70% pass and Sharpe ≥0.5) but is not a catastrophic <60% failure.
+- **Per-symbol split matters:** MATIC **6/6 pass** (avg Sharpe 1.12), AVAX **4/6 pass** (avg Sharpe 0.13), UNI **1/6 pass** (avg Sharpe -0.81). MATIC cache/history ends 2024-09-10, so it does not cover the latest 2025-2026 regime.
+- **Decision:** do **not** cite the live Turtle path as cleanly cross-universe generalized. Honest statement: the edge remains universe-sensitive; it works best on selected trending high-beta crypto pairs and degrades on plausible hold-outs, especially UNI.
+
+## 2026-05-06 — T61-ALT Taker-Buy Pressure Overlay Rejected
+
+- **Live-entry pressure overlay tested and closed:** `examples/t61_taker_buy_pressure_live_candidate.rs` adds one candidate gate to the exact live-bot replay: symbols with cache data require current `taker_buy_pressure` > prior 252-bar median (min 60 prior observations), with T73 top-winner entries protected from the gate.
+- **Result vs same-session exact-live:** exact-live **2.78x / Sharpe 1.00 / MaxDD 28.2% / 298 trades**; pressure candidate **2.76x / Sharpe 1.01 / MaxDD 25.3% / 275 trades**. It reduced drawdown but did not improve equity.
+- **Guardrail failure:** despite explicit per-entry T73 bypass, only **6/10** protected top winners survived because earlier pressure skips changed position-cap/path state. Missing: SOL 2021-07-30, ADA 2021-08-04, SOL 2021-08-13, XRP 2021-08-10.
+- **Decision:** do **not** promote taker-buy pressure as a Turtle entry filter. T61/T76 pressure is closed for the current live Turtle path; any future order-flow work must be a materially different mechanism, not another median-pressure gate.
+
+## 2026-05-06 — T76 Taker-Buy Pressure Feasibility
+
+- **Binance klines contain order-flow data we were discarding:** daily `/api/v3/klines` includes `taker_buy_quote_asset_volume`; `taker_buy_pressure = taker_buy_quote_vol / quote_vol` is a no-auth daily proxy for buyer-initiated flow. Raw aggTrades are public but impractical for multi-year daily features (1000-row cap covered only ~83 seconds of BTCUSDT on a busy 2023 day).
+- **Feature cache built:** `scripts/download_with_taker_buy.py` downloaded Base5 daily taker-buy pressure parquet files under `data/cache/taker_buy/` (BTC/ETH/XRP/DOGE 2200 bars; SOL 2095 bars).
+- **T76 result:** `examples/t76_taker_buy_pressure_overlay.rs` writes `snapshots/t76_taker_buy_pressure.md`. Cross-sectional Base5 long top-2 pressure / short bottom-2 pressure produced **+0.209%/day, Sharpe 0.70, win rate 50.2%, N=2094 days**. Signal is mixed by symbol: BTC/XRP/DOGE show high-pressure strength, while ETH/SOL are non-monotonic or weaker.
+- **Decision:** do **not** promote taker-buy pressure as a Turtle entry filter. It is useful Track C feature infrastructure, but not enough on its own and any future candidate must preserve the T73 convex top-winner set before promotion.
+
+
+## 2026-05-06 — T72/T74 Live-Code Audit Results
+
+- **T72 VOL_LOOKBACK live gate REJECTED:** `src/live/bot.rs` does not implement dollar-volume ranking; entries are event-driven FIFO/equal-slot (`1 / POSITION_CAP`) after Turtle + ATR_RANK checks. Isolated candidate `examples/t72_vol_rank_live_candidate.rs` kept exact live current-inclusive/equality entry semantics and added only a top-3 `VOL_LOOKBACK=92` dollar-volume gate. Result: **1.01x / Sharpe 0.09 / MaxDD 30.1% / 207 trades**, versus exact live rerun **2.56x / Sharpe 0.95 / MaxDD 28.8% / 298 trades**. Do **not** wire VL ranking into live bot without a new mechanism; `VOL_LOOKBACK` is diagnostic-only for live production.
+- **T74 TURTLE_ATR_MULT stale sweep closed:** `examples/turtle_atr_mult_live_extensive.rs` now committed. Dense sweep M=0.50..=5.00 step 0.05 on current live-style Turtle-only path reconfirmed **M=2.00** as robustness winner: **47/60 pass (78.3%), Sharpe 1.294, avg return +20.54%, DD 11.87%, 3,118 trades**. No production config change; no more nearby ATR_MULT sweeps.
+- **Meta-lesson:** the 176.79x research harness is not a target for live-code patching. The exact live bot's 2.56x/28.8% MaxDD profile is the honest deployability target; the research harness had 99.5% MaxDD and different portfolio/timing assumptions.
+
+## 2026-05-06 — T73 Convex Tail Guardrail
+
+- **T73 top-winner conditions audit complete:** `snapshots/t73_top_winner_conditions.{md,csv}` ranks exact-live trades by `ln(account_equity_mult)` after T75 (2.81x / Sharpe 1.01 / MaxDD 28.2%). Top-10 log contributors account for **82.8%** of total compounded log return.
+- **Convex winners are not clean bull-only entries:** BTC trend at entry was **5 bear / 3 chop / 2 bull**. Largest two winners were low-vol/Q1 BTC regimes (SOL 2023-01-11 and DOGE 2022-10-28), so naive low-vol/chop filters would delete the right tail.
+- **Filter-kill audit:** VL=92 top-3 dollar-volume gate would exclude **8/10** top winners; ATR_RANK>=24 would exclude **5/10**; ATR_RANK>=65 would exclude **8/10**. Weekend filter excluded 0/10 in this exact top set but remains rejected by full WF metrics.
+- **Meta-lesson:** future filters must prove they preserve the convex top-winner set before any promotion. The current right tail comes from ugly regimes and lower DV ranks, not from obvious high-volume bull breakouts.
+
 ## 2026-05-07 — Exact-Live Source Refreshed; No Work Beyond API Keys
 
 - **15:05 UTC source-of-truth rerun:** `examples/live_bot_exact_equity.rs` on current `src/live/config.rs` reports **2.77x / daily account Sharpe 1.03 / MaxDD 22.3% / 286 trades / 1,796 days**. The small drift from the 12:45 UTC T83 value (2.80x / 1.04) is a normal latest-data refresh; HOF and daily progress now use 2.77x.
