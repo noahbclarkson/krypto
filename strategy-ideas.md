@@ -1,15 +1,29 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-09 05:09 UTC.* Critique session: suspension animation identified (3/5 commits overhead). M1 Discord integration is highest-ROI task. Cross-exchange divergence surveillance is new research direction.
+*Last updated: 2026-05-10 04:14 UTC.* Critique cycle #2. M1 Discord integration still 5 weeks overdue — execute this session. Progress harness 621x vs live bot 2.76x: separate systems, not comparable. 2026 YTD underperformance accepted as known limitation (binary gate cannot be fixed without T73 destruction risk).
 
 ---
 
 ## Critical Alerts
 
-### ⚠️ Suspension Animation Identified (2026-05-09)
-**Situation:** Last 5 commits: 3 docs/ops, 2 research kills. Zero new alpha generated. Anti-spin rule #11 triggered.
-**Action required:** Next session must produce: (a) live testnet integration progress, OR (b) new research candidate with exact-live test run.
-**Status:** Chandelier docs fix (`e3bf3209`) already done. Stop doing documentation. Execute or research.
+### 🚨 M1 Discord Integration: 5 Weeks Overdue
+Status: STILL NOT DONE. Not "highest priority" anymore — it is an embarrassment.
+This session: execute or close explicitly. No more plan entries about it.
+
+### ⚠️ Progress Harness Misuse (NEW 2026-05-10)
+MEMORY.md cites "Turtle+Chandelier: 621x | Sharpe 1.19" as if it describes the live bot.
+It does not. The progress harness uses Chandelier dual-exit, different ranking, different accounting.
+Rule: only 2.76x / Sharpe 1.03 is the production headline. 621x is diagnostic only.
+
+### ⚠️ 2026 YTD Underperformance: Accepted as Known Limitation (2026-05-10)
+ATR_RANK T=5 gate is binary — skips entries in low-vol regimes but positions stay FULL size.
+No fix attempted: any fix risks T73 top-winner destruction (SOL 2023-01-11 was low-vol at entry).
+Decision: document and accept. Stop trying to fix it.
+
+### ⚠️ Suspension Animation: Structural, Not Temporary (2026-05-10)
+Last 7 commits: 3 research + 4 overhead. Research rate: 43% and falling.
+Anti-spin rule #11 TRIGGERED. Escalation: this is the last critique-only plan update.
+Next cron must execute OR explicitly close tasks, not write about them.
 
 ### T80: OOS Universe Validation — GENERALIZATION FAILURE
 - **11/18 pass (61.1%)**, avg Sharpe **0.149**, avg return **+2.3%/window**, 160 trades
@@ -43,24 +57,25 @@
 
 ---
 
-## 3 Most Promising Unbuilt Ideas (2026-05-08 critique)
+## 3 Most Promising Unbuilt Ideas (2026-05-10 revision)
 
-### 1. HOF/Documentation Cleanup: "Turtle ATR Sole Exit" (PRIORITY: HIGH)
-**Problem:** HOF and docs say "dual Chandelier+Turtle ATR exit." `src/live/bot.rs` uses Turtle ATR as the **sole exit**. Chandelier is NOT in the live code path. This is a documentation error.
-**Action:** Update HOF and docs to say "Turtle ATR sole exit." Live bot already does this. Takes 15 minutes. Zero risk.
-**Status:** Execute now. Highest-ROI open task.
+### 1. M1 Discord Integration (PRIORITY: EXECUTE — NOT DISCUSS)
+**Status:** 5 weeks overdue. Execute now.
+**Action:** Run `m1_equity_trajectory_monitor`, post to #krypto, commit code changes if any.
 
-### 2. Cross-Exchange Price Divergence Surveillance (PRIORITY: MEDIUM)
-**Idea:** Monitor BTCUSDT Binance vs BTCUSD Kraken/Coinbase for slow divergence >0.5% sustained >4h.
-**Different from:** basis carry (funding/roll spread vs price-discovery lag).
-**Why it could work:** Crypto liquidity is fragmented. Binance-USDT flow creates persistent premium vs USD-backed spot markets.
-**Requirements:** Multi-exchange data feeds, sub-1% fees, cross-exchange execution infra.
-**Status:** Concept only. Requires data layer build before testable.
+### 2. Maker-Fill Hypothesis Testing (PRIORITY: MEDIUM — BLOCKED)
+**Concept:** One week of dry-run execution to constrain the [0.6–1.3] Sharpe range.
+**Why it matters:** Dominant deployment risk. Even rough confirmation of 70% fill rate changes the risk model materially.
+**Status:** Blocked by API keys (same as everything else).
 
-### 3. Regime-Adaptive Exit Multiplier (PRIORITY: LOW)
-**Idea:** Current Turtle ATR multiplier is fixed at 2.0 regardless of regime. Tighten in chop (ATR_MULT=1.5), loosen in trending (ATR_MULT=2.5).
-**Why it's hard:** ATR_RANK T=5 already gates entries. Need mechanism distinct from existing gate. Exit tightening in chop could fire too early in volatile trends.
-**Status:** Concept only. Not started. Requires mechanism design before testable.
+### 3. Regime-Scaled Position Sizing (PRIORITY: LOW — NEW 2026-05-10)
+**Concept:** Replace binary ATR_RANK T=5 gate with graduated position sizing:
+- ATR_RANK < 2 (very low vol, chop): size × 0.5
+- ATR_RANK 2–5 (medium vol): size × 0.75
+- ATR_RANK > 5 (high vol, trending): full size × 1.0
+**Why different from T86:** T86 anti-leveraged the Kelly fraction itself. This scales position size only as a risk allocation signal, not as an optimal-fraction calculator.
+**Risk (T73):** SOL 2023-01-11 and DOGE 2022-10-28 (both top-10 winners) were low-vol at entry. Sizing down by regime could kill exactly the trades that matter.
+**Status:** Concept only. Requires T73-style audit before any test run. Do not test without top-winner preservation audit.
 
 ---
 
