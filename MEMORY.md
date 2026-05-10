@@ -2,6 +2,18 @@
 
 ## 2026-05-10 08:05 — TWO SYSTEMS PROBLEM: CRITICAL FINDING
 
+## 2026-05-10 21:15 — T94 Maker-Fill Modeling: Fee Impact Negligible
+
+**Harness:** `examples/t94_maker_fill_scenarios.rs` — fork of `live_bot_exact_equity.rs` with parameterized maker-fill rates (0%, 50%, 70%, 80%). Exit always taker (20bps/side); entry fee varies 4.0→0.8bps.
+
+**Key finding:** Fee impact is negligible. Turtle entries at bar close (limit orders) are already partially maker-filled in the baseline backtest. The fee-adjusted Sharpe range is **[1.02 – 1.04]** — previous estimate of [0.6–1.3] was wildly over-conservative. At 70% confirmed maker fill: equity 2.798x, Sharpe 1.035, MaxDD 22.0%, 286 trades (same trade count — no difference in entry decisions).
+
+**Deployment risk reassessed:** Maker-fill uncertainty is NOT the dominant deployment risk. The dominant risk is now the 2026 YTD underperformance (-22.7%) from the binary ATR_RANK gate, and API key availability.
+
+**Status:** Maker-fill modeling DONE. No further scenario sweeps needed.
+
+
+
 **The progress harness and live bot are different strategies, not the same strategy measured differently.**
 
 - **Progress harness** (`progress_equity_curves.rs`): Chandelier(7,2.30)+TurtleATR DUAL EXIT → **621x / Sharpe 1.19**
