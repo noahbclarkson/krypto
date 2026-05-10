@@ -406,7 +406,7 @@ async fn main() -> Result<()> {
          - A/D Momentum: {:.1}x ({:.1}%), Sharpe {:.2} [fixed-hold daily equity]\n\
          - FactorSmallByDV: {:.1}x ({:.1}%), Sharpe {:.2} [fixed-hold daily equity]\n\
          - DDBudget 3-Sleeve: {:.1}x ({:.1}%), Sharpe {:.2} [milestone-aggregated; not comparable to Turtle daily equity]\n\
-         - Turtle+Chandelier: {:.1}x ({:.1}%), Sharpe {:.2} [daily compounded equity; PRODUCTION CANDIDATE]\n\
+         - Turtle+Chandelier: {:.1}x ({:.1}%), Sharpe {:.2} [daily compounded equity; RESEARCH DIAGNOSTIC — DUAL EXIT (CHAND_P=7/CHAND_M=2.30 + Turtle ATR); NOT live bot; live bot = 2.76x Turtle ATR-only]\n\
          - Turtle+ATR_RANK=24: {:.1}x ({:.1}%), Sharpe {:.2} [regime filter T=24; walk-forward: 52/63 pass, Sharpe 5.59, +132% ret. See snapshots/progress_equity_curves_atrrank24.md]\n\
          [MACD+Regime & Blend excluded: 2/7 OOS pass — GRAVEYARD]\n",
         chrono::Utc::now(),

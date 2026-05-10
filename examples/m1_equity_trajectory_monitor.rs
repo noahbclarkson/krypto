@@ -15,7 +15,7 @@
 //! - Tail concentration check (top-10 log contributors)
 
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader};
 
 fn percentile(vals: &[f64], p: f64) -> f64 {
     if vals.is_empty() { return 0.0; }
