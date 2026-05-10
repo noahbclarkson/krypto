@@ -1,10 +1,134 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-## State: 2026-05-10 04:14 UTC — CRITIQUE CYCLE (2nd consecutive)
+## State: 2026-05-10 08:05 UTC — CRITIQUE CYCLE #2 (FINAL CALL)
 
-**Suspension animation ESCALATED. M1 Discord integration: 5 weeks, not done. Research rate 43% and falling. Progress harness (621x) being used as production number — it is not. Live bot: 2.76x / Sharpe 1.03 is the honest headline.**
+**CRITICAL FINDING — THE TWO SYSTEMS PROBLEM:**
+The progress harness (`progress_equity_curves.rs`) and live bot (`src/live/bot.rs`) are running DIFFERENT STRATEGIES with different exit mechanisms:
+- Live bot: Turtle ATR(24,2.0) trailing stop ONLY → 2.76x / Sharpe 1.02
+- Progress harness: Chandelier(7,2.30) + Turtle ATR DUAL EXIT → 621x / Sharpe 1.19
+The 621x is NOT the same strategy measured differently. It is a dual-exit research system labeled "PRODUCTION CANDIDATE" — misleading.
+The walk-forward 5-6 Sharpe and the 1.19 daily equity Sharpe are from the research dual-exit harness, not the live bot.
+
+**Rule (NEW):** Do not use "Turtle+Chandelier 621x" as a production headline. Only 2.76x / Sharpe 1.02 is the production number.
+
+**Research rate: 25% (2/8 commits). Anti-spin rule #11 triggered again.**
+
+**M1 Discord integration: 5+ weeks, not done. Final call.**
+
+**API keys blocked 5+ weeks. No explicit contingency.**
 
 ---
+
+## Brutal Self-Assessment (This Session's Findings)
+
+### The Two Systems Problem (Newly Identified)
+
+The progress harness and live bot have been conflated for months. The "Turtle+Chandelier 621x" on the progress chart is a dual-exit research strategy with Chandelier(7,2.30)+TurtleATR(24,2.0) firing in 7 bars. The live bot exits ONLY on Turtle ATR(24,2.0) with no Chandelier. These are two different strategies.
+
+**Implication:** The walk-forward Sharpe 5-6 and daily equity Sharpe 1.19 describe the dual-exit research harness, not the deployed bot. Only 2.76x / Sharpe 1.02 is the honest production number.
+
+
+### Progress Harness Misuse — Escalated
+
+MEMORY.md and Discord have been citing "621x / Sharpe 1.19" alongside "2.76x / Sharpe 1.03" as if they describe the same thing. They do not. The 621x comes from a dual Chandelier+Turtle ATR exit that:
+- Uses CHAND_P=7/M=2.30 (found on EP=24, which was later reverted to EP=21)
+- Is a research diagnostic, not a production-ready configuration
+- Has materially different equity curve mechanics (faster exit = lower drawdown, fewer drawdown days, different compounding)
+
+
+**Rule:** Only 2.76x / Sharpe 1.02 is the production headline. 621x is research diagnostic ONLY.
+
+### Sharpe Uncertainty — Dominant Deployment Risk
+
+| System | Sharpe | Source |
+|--------|--------|--------|
+| Live bot exact (Turtle ATR-only) | **1.02** | `live_bot_exact_equity.rs` |
+| Progress harness (dual Chandelier+Turtle) | 1.19 | `progress_equity_curves.rs` |
+| Walk-forward per-window avg | 5-6 | research harness only |
+| Maker-fill adjusted range | 0.6–1.3 | estimated |
+
+Only the live bot exact row is production-valid.
+
+### 2026 YTD Underperformance — Unchanged
+
+-22.7%, unchanged from prior sessions. Binary ATR_RANK gate accepted as cause. No fix attempted (risk to T73 top winners). Documented as limitation.
+
+### Top-10 Concentration: 91% of Log Return
+
+Structural. Unchanged. This is the trade-off for trend-following convexity.
+
+---
+
+## Execution Priorities (Updated 2026-05-10 — MUST EXECUTE)
+
+> Anti-spin: These are NOT aspirational. Each task must be executed or explicitly closed before the next critique cycle.
+
+### Priority 1 (EXECUTE THIS SESSION): M1 Discord Integration — FINAL CALL
+**Status:** 5+ weeks overdue. Execute NOW. Not pending — DO IT.
+**Action:** 
+1. `cargo run --example m1_equity_trajectory_monitor --profile sweep 2>&1`
+2. Extract: 60d return, rolling Sharpe, equity vs 1y peak
+3. Post to #krypto: "M1 Monitor: 🟢 GREEN | 60d +X% | Sharpe Y | vs 1y peak -Z%"
+4. Done. No more commits about it.
+
+### Priority 2 (EXECUTE THIS SESSION): Fix Progress Harness Label or Path
+**Status:** The progress harness claims "PRODUCTION CANDIDATE" but runs dual Chandelier exit. Two options:
+- Option A: Relabel CSV/markdown output: "Turtle+Chandelier DUAL EXIT (RESEARCH DIAGNOSTIC — NOT LIVE BOT)"
+- Option B: Rebuild progress harness to use exact live bot Turtle ATR-only path
+**Recommendation:** Option A (quick relabel) + Option B (future work). The dual-exit system is genuinely different from live bot — don't paper over it.
+
+### Priority 3 (BLOCKED): Live Testnet — API Key Contingency
+**Status:** Blocked 5+ weeks. No explicit contingency.
+**Action:** Send explicit message to Arc: "API keys from Noah have been blocking us for 5+ weeks. What is the contingency if they don't materialize? Do we need a different path forward?"
+
+---
+
+## 3 Most Promising Unbuilt Ideas
+
+### 1. M1 Discord Integration (PRIORITY: EXECUTE — NOT DISCUSS)
+Status: 5+ weeks overdue. Execute now.
+
+### 2. Maker-Fill Hypothesis Testing (PRIORITY: MEDIUM — BLOCKED)
+Concept: One week of dry-run execution to constrain the [0.6–1.3] Sharpe range.
+Why it matters: Dominant deployment risk. Even rough confirmation of 70% fill rate changes risk model materially.
+Status: Blocked by API keys.
+
+### 3. Dual-Exit Live Bot Experiment (PRIORITY: LOW — NEW 2026-05-10)
+Concept: The progress harness uses Chandelier(7,2.30)+TurtleATR dual exit and gets 621x. The live bot uses Turtle ATR-only and gets 2.76x. These are genuinely different strategies with different risk profiles.
+Hypothesis: Adding Chandelier dual-exit to the live bot (as a secondary exit alongside Turtle ATR) might improve the live bot's equity profile without changing the entry logic.
+Risk: T73 top-winner preservation — Chandelier fires faster and could cut the winners that drive 91% of returns. Needs T73-style audit before testing.
+Status: Concept only. Requires T73 audit first.
+
+
+---
+
+## Current Production Truth (Authoritative)
+
+- **Exact as-coded live bot:** 2.76x / daily account Sharpe 1.02 / MaxDD 22.3% / 286 trades / 1,799 days. Production source of truth. Turtle ATR-only exit.
+- **Progress harness (dual Chandelier+Turtle ATR):** 621x / Sharpe 1.19 — RESEARCH DIAGNOSTIC ONLY, NOT live bot.
+- **Maker-fill uncertainty:** Sharpe [0.6–1.3] depending on live fill assumptions.
+- **Top-10 trade concentration:** 91% of compounded log return.
+- **Walk-forward Sharpe:** 5-6 — research harness only, not comparable to daily account.
+
+- **Walk-forward pass rate:** 45/54 (83%) on 9-universe / 100% on Base5 — from research harness.
+
+---
+
+## Metrics Truth Table (UPDATED)
+
+| Metric | Value | Source | Honest? |
+|--------|-------|--------|---------|
+| Live bot equity | **2.76x** | `live_bot_exact_equity.rs` | ✅ YES — production headline |
+| Live bot daily Sharpe | **1.02** | `live_bot_exact_equity.rs` | ✅ YES — production headline |
+| Progress harness equity (621x) | 621x | progress harness DUAL EXIT | ⚠️ Different system — research only |
+| Progress harness Sharpe | 1.19 | progress harness DUAL EXIT | ⚠️ Different system — research only |
+| Walk-forward Sharpe | 5-6 | research harness only | ⚠️ Not comparable to account Sharpe |
+| Fee-adjusted Sharpe range | 0.6–1.3 | estimated | ⚠️ Unvalidated |
+
+**Rule:** Only cite 2.76x / Sharpe 1.02 as production numbers. 621x is research diagnostic only.
+
+---
+
 
 ## Brutal Self-Assessment (This Session's Findings)
 
