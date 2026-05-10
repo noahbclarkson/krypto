@@ -1,0 +1,5 @@
+scenario,maker_fill_pct,effective_entry_bps,equity_mult,sharpe,max_dd_pct,n_trades,annual_ret_pct
+'S1: Pure taker (0% maker — baseline)',0%},4.00,2.7575,1.0221,22.31,286,22.85
+'S2: 50% maker fill',50%},2.00,2.7864,1.0311,22.08,286,23.11
+'S3: 70% maker fill (microstructure confirmed)',70%},1.20,2.7981,1.0346,21.99,286,23.22
+'S4: 80% maker fill (optimistic)',80%},0.80,2.8039,1.0364,21.94,286,23.27
