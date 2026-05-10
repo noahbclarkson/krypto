@@ -78,6 +78,9 @@ pub const HEDGE_ATR_PERIOD: usize = 38;
 /// EXACT-LIVE REVERTED: live_bot_exact_equity.rs with LB=147 produced 2.10x vs
 /// LB=252 at 2.77x — harness gap confirmed again. Walk-forward robustness
 /// winner ≠ exact-live winner. HEDGE_LOOKBACK = 252 remains the production default.
+/// T84 sweep found LB=147 more robust on research harness (100% vs 89%), but
+/// exact-live verification shows 2.10x vs 2.76x for LB=147 - SAME INFLATION
+/// PATTERN as EP=24. Do not promote. See memory/hyperopt-2026-05-10.md.
 pub const HEDGE_LOOKBACK: usize = 252;
 
 /// Position-size multiplier when the USDT hedge overlay is active.
