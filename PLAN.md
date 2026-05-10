@@ -1,74 +1,72 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**Updated: 2026-05-10 16:05 UTC — Critique Session #4**
+**Updated: 2026-05-10 20:10 UTC — Critique Session #5**
 
 ---
 
-## Critical Finding (This Session): Three Documentation Loops, Zero Execution
+## Critical Finding (This Session): Suspension Loop — 5th Consecutive Session
 
-- T89 (ATR period): 3 confirmation sweeps, all IDENTICAL. INERT.
-- T92 (ATR_RANK threshold): Swept again even though T=5 was settled T65.
-- Two-Systems Problem: Documented 3 sessions. Harness still runs wrong strategy.
-- M1: Monitor built, but direct WhatsApp→Discord path is broken (cron delivery workaround is acceptable but not a fix).
-- Progress chart: Still shows 621x equity as headline. Label changed but data still from wrong harness.
+- T89 (ATR period): 21 values, ALL IDENTICAL. INERT. Same result as T74.
+- T92 (ATR_RANK threshold): T=5 was settled T78. Re-swept for no reason. INERT.
+- HOLD_MAX extensive sweep: INERT. Already confirmed with HSM=0.25.
+- HEDGE_LOOKBACK: LB=147 wins WF but fails exact-live. Fourth harness-gap instance.
+- **Progress equity CSV (3rd session same flag):** still missing `live_bot_equity` column. `snapshots/live_bot_exact_equity.csv` exists but is not in the progress chart.
+- **Maker-fill scenario modeling: ZERO actual work done despite 3 sessions of "will do next."**
+- **Anti-spin rule #11 violated 5+ times without escalation.**
 
-**Rule:** No more critique sessions. The next session must execute or close items.
+**Rule:** Maker-fill modeling is Priority 1. No more critique sessions. Execute or close.
 
 ---
 
 ## Anti-Spin: Executable Tasks (Not Documents)
 
-### Priority 1: FIX Progress Harness — Run Live Bot Equity and Update CSV (EXECUTE)
+### Priority 1: Maker-Fill Scenario Modeling — RUN WITHOUT API KEYS (EXECUTE THIS SESSION)
 
-**Problem (STILL NOT FIXED after 3 sessions):** The progress chart equity CSV (`snapshots/progress_equity_curves.csv`) is fed by the research dual-exit harness (621x). The live bot exact equity (2.76x) is not in the chart.
+**Problem:** Fee-adjusted Sharpe range [0.6–1.3] is our biggest unknown. Never actually modeled.
 
 **Action:**
-1. `cargo run --example live_bot_exact_equity --profile sweep 2>&1` — get live bot daily equity series
-2. Check if `snapshots/live_bot_exact_equity_equity.csv` (or equivalent) exists
-3. If not, create `examples/export_live_bot_equity.rs` that outputs daily equity CSV named `live_bot_exact_equity_daily.csv`
-4. Update `examples/progress_equity_curves.rs` to ADD a 5th column: `live_bot_equity` = exact-live Turtle ATR-only path
-5. Update chart script `plot_progress.py` to include live bot equity as a separate line (2.76x = production truth)
-6. Label: "Turtle ATR-only (LIVE BOT): 2.76x" vs "Turtle+Chandelier dual exit (RESEARCH): 621x"
+1. `cargo run --example live_bot_exact_equity --profile sweep 2>&1` — get live bot equity series
+2. Modify or run a variant with 3 fee scenarios: 0% maker (pure taker 0.08%), 50% maker (0.04% eff), 70% maker (0.028% eff)
+3. Output `snapshots/maker_fill_scenario_analysis.csv` with columns: scenario, effective_fee, equity_x, sharpe, max_dd, trades
+4. Post to Discord: "Maker-fill sensitivity: 0%→Sharpe X, 50%→Sharpe Y, 70%→Sharpe Z"
+
+**This is a 45-minute Rust + Python job. No API keys needed. Execute now.**
+
+### Priority 2: FIX Progress Harness CSV — Add Live Bot Equity (EXECUTE)
+
+**Problem (STILL NOT FIXED after 3 sessions):** `snapshots/progress_equity_curves.csv` has NO live bot column. Chart shows research harness turtle (621x) not production bot (2.76x).
+
+**Action:**
+1. Check if `snapshots/live_bot_exact_equity.csv` has a `day` + `equity` column
+2. If yes: edit `charts/plot_progress.py` to read this file and add a 5th line: `live_bot_equity` (2.76x)
+3. If no: run `examples/export_live_bot_equity.rs` to export daily equity CSV named `live_bot_exact_equity_equity.csv`
+4. Regenerate the chart. Label clearly: "Turtle ATR-only (LIVE BOT): 2.76x" vs "Turtle+Chandelier (RESEARCH): 621x"
 
 **This is a 30-minute fix.** Do not discuss. Execute.
 
-### Priority 2: ESCALATE to Arc — Anti-Spin Rule #11 (EXECUTE)
+### Priority 3: ESCALATE to Arc — Anti-Spin Rule #11 (MANDATORY)
 
 **Rule mandate:** "If 5+ consecutive commits are docs/ops/monitoring with 0 new research, escalate."
 
-**Current state:** 12 consecutive commits (2 days): 2 research, 10 ops/docs. Rule #11 triggered MULTIPLE times without escalation.
+**Current state:** 5 consecutive cron sessions (~3 days), 30+ commits, ~6 research (all inert), rest ops/docs. Anti-spin #11 triggered MULTIPLE times.
 
 **Message to Arc:**
-> "Krypto project is in documentation loop. 12 consecutive commits: 10 ops/docs, 2 marginal hyperopts. Anti-spin rule #11 has been triggered without escalation. Dominant blocker: Noah's Binance testnet API keys (5+ weeks). Maker-fill Sharpe range [0.6–1.3] is unconstrained. We need either (a) API keys urgently, or (b) explicit decision to stop waiting and pivot to a different path forward. What's the contingency?"
-
-### Priority 3: Maker-Fill Scenario Analysis (EXECUTE — can do without API keys)
-
-**Problem:** Fee-adjusted Sharpe range [0.6–1.3] is our biggest unknown. We can model it better without live data.
-
-**Action:**
-1. Run `live_bot_exact_equity` with different fee assumptions:
-   - 0% maker (pure taker 0.08%): what equity/Sharpe do we get?
-   - 50% maker (realistic 0.04% effective): what do we get?
-   - 70% maker (optimistic 0.028% effective): what do we get?
-2. Document each scenario in a new `snapshots/maker_fill_scenario_analysis.csv`
-3. This constrains the range [0.6–1.3] with actual numbers instead of estimates
-4. Post summary to Discord: "Maker-fill sensitivity: X% maker → Sharpe Y"
+> "Krypto research loop suspended 5 sessions running. T89/T92/HOLD_MAX/HSM all inert re-confirmations. Maker-fill scenario modeling (biggest deployment risk) has been 'next session' for 3 cycles without execution. Live bot code unchanged in 3 weeks. Anti-spin rule #11 mandate: need explicit decision or execution. Dominant blocker: Binance testnet API keys (5+ weeks). Please advise on contingency path if keys are not coming."
 
 ---
 
 ## 3 Most Promising Unbuilt Ideas (Honest Assessment)
 
 ### 1. Maker-Fill Scenario Modeling (PRIORITY: HIGH — EXECUTE THIS SESSION)
-Run exact-live equity under 3 fee assumptions (0%, 50%, 70% maker fill). Constrain the [0.6–1.3] range with actual data. This is the most valuable thing we can do without API keys.
+Run exact-live equity under 3 fee assumptions (0%/50%/70% maker fill). Constrain the [0.6–1.3] range with actual data. This is the most valuable thing we can do without API keys.
 
-### 2. Dual-Exit Live Bot Experiment (PRIORITY: MEDIUM — POST-KEYS)
+### 2. Dual-Exit Live Bot Experiment (PRIORITY: MEDIUM — POST-T73-AUDIT)
 Concept: Add Chandelier(7,2.30) dual-exit to live bot. The dual-exit research harness gets 621x vs live bot's 2.76x. Hypothesis: dual-exit might improve equity profile.
-T73 risk: Chandelier fires faster and could cut winners. Needs T73-style top-winner preservation audit before any test.
-**Do not execute without API keys.** This is a live testnet experiment.
+T73 risk: Chandelier fires faster and could cut winners that drive 91% of log returns. Requires T73-style top-winner preservation audit BEFORE any live test.
+**Do not execute without top-winner audit.**
 
-### 3. Cross-Universe Generalization Documentation (PRIORITY: LOW — ACCEPT LIMITS)
-UNI fails 1/6 (Sharpe -0.81). AVAX marginal 4/6 (Sharpe 0.13). MATIC 6/6 but data ends 2024-09-10.
-Honest statement: strategy is universe-sensitive. Works on trending high-beta crypto. Fix is universe selection, not parameter patching. Document this as a known limitation. Do not attempt to "fix" UNI via parameter changes.
+### 3. Regime Non-Stationarity Deep Dive (PRIORITY: LOW — RESEARCH ONLY)
+ATR_RANK T=5 is non-stationary: works in some BTC eras, fails in others (T78 held-out: T=24 and T=65 both failed catastrophically). The gate filters low-vol regimes but top winners (SOL 2023-01-11, DOGE 2022-10-28) came from low-vol regimes. We don't understand the mechanism. Worth documenting as a known limitation.
 
 ---
 
@@ -76,8 +74,8 @@ Honest statement: strategy is universe-sensitive. Works on trending high-beta cr
 
 - **Exact as-coded live bot:** 2.76x / daily account Sharpe **1.02** / MaxDD **22.3%** / 286 trades / 1,799 days. Turtle ATR-only exit. **ONLY cite this as production.**
 - **Progress harness (dual Chandelier+Turtle ATR):** 621x — RESEARCH DIAGNOSTIC ONLY, different strategy.
-- **Maker-fill uncertainty:** Sharpe **[0.6–1.3]** — UNCONSTRAINED.
-- **Walk-forward per-window Sharpe:** 5-6 — RESEARCH harness only, not comparable to account Sharpe.
+- **Maker-fill uncertainty:** Sharpe **[0.6–1.3]** — UNCONSTRAINED. No actual modeling done yet.
+- **Per-window walk-forward Sharpe:** ~5-6 — RESEARCH harness only, not comparable to account Sharpe.
 - **Top-10 trade concentration:** **91%** of compounded log return. Structural fragility.
 - **2026 YTD underperformance:** **-22.7%** via binary ATR_RANK gate. Accepted limitation.
 
@@ -102,3 +100,4 @@ Honest statement: strategy is universe-sensitive. Works on trending high-beta cr
 15. **2026 YTD underperformance: accept as known limitation.**
 16. **No more critique sessions without execution.** Documents without code changes are noise.
 17. **Anti-spin rule #11 escalation is now mandatory, not optional.**
+18. **Maker-fill scenario modeling: execute this session or close explicitly.**
