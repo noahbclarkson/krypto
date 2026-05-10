@@ -1,6 +1,6 @@
 # T65: Exact Live-Bot Source-of-Truth Equity
 
-Generated: 2026-05-10 08:05 UTC
+Generated: 2026-05-10 12:04 UTC
 
 ## Scope
 
