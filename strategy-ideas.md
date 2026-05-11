@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-11 00:05 UTC.* Critique cycle #6. Maker-fill confirmed [1.02-1.04]. Top-10 = 91% of log return is the dominant production risk, not fees. Research loop is structurally exhausted — live execution is the only remaining path.
+*Last updated: 2026-05-11 08:05 UTC. Research loop closed. Execution phase. Three new execution tasks: Turtle-only pre-2021 held-out test, top-10 mechanism documentation, historical replay mode (no API keys).
 
 ---
 
@@ -115,3 +115,19 @@ Exit: Turtle ATR(24,2.0) trailing stop ONLY. Chandelier is stored for compatibil
 11. **Suspension animation is a real failure mode.** If 5+ consecutive commits are docs/ops/monitoring with 0 alpha, escalate.
 12. **Progress harness 621x ≠ live bot 2.76x.** These are different strategies with different exits. Do not conflate them.
 13. **2026 YTD underperformance: silent failure.** Not "accepted limitation" — an active documented structural failure.
+
+---
+
+## New: Historical Replay Mode (NO API KEYS REQUIRED)
+
+**Problem:** 5+ weeks blocked on API keys. Alternative path never tried.
+
+**Concept:** Run `src/live/bot.rs` against historical cached parquet bars in bar-by-bar replay mode. Uses existing data cache. No Binance API required.
+
+**Value:**
+- Validates the live bot code path against real historical data
+- Catches bugs before deployment
+- Paper-trading proxy without live keys
+- Should produce identical output to `live_bot_exact_equity.rs` if logic is correct
+
+**Status:** Unbuilt. Proposed 2026-05-11. Priority 3 in PLAN.
