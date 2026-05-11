@@ -95,6 +95,12 @@ pub const HEDGE_LOOKBACK: usize = 252;
 /// Exact-live after update: 2.80x / daily Sharpe 1.04 / MaxDD 22.3% / 286 trades.
 pub const HEDGE_SIZE_MULT: f64 = 0.25;
 
+/// Re-entry cooldown: bars to wait after exit before re-entry on same symbol.
+/// T96 hyperopt 2026-05-11: FC=93 wins on exact-live 9-universe walk-forward path.
+/// 101-value sweep FC∈[0..100]: FC=0→52% pass, Sharpe 2.11, DD 59%, 1558 trades;
+/// FC=93→83% pass, Sharpe 3.88, DD 23.5%, 423 trades. Wide plateau FC∈[92..97].
+pub const FRESHNESS_COOLDOWN: usize = 93;
+
 /// Configuration for live trading bot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LiveConfig {
