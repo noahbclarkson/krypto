@@ -60,18 +60,13 @@ pub const ATR_RANK_THRESHOLD: f64 = 5.0;
 pub const VOL_LOOKBACK: usize = 92;
 
 /// USDT hedge overlay: reduce position size when BTC hedge ATR is above this percentile of its TR history.
-/// T95 hyperopt 2026-05-11: extensive HAP∈[0.01..0.99 step 0.01] (99 values) × 11 walk-forward windows × Base5 exact-live path.
-/// FINDING: HEDGE_ATR_PCT is a position SIZE dial, not alpha. Two stable plateaus:
-///   Plateau A (HAP 0.01-0.31): hedge fires MORE often → smaller positions → smaller drawdowns.
-///   Plateau B (HAP 0.45-0.99): hedge fires LESS often → full positions → higher returns but higher drawdowns.
-///   All values within a plateau produce IDENTICAL results per window.
-/// WINNER: HAP=0.09 (lowest-value Plateau A member): 8/11 pass, Sharpe 0.654, DD 6.6%.
-/// Baseline HAP=0.45: 7/11 pass, Sharpe 0.718, DD 24.4%.
-/// HAP=0.09 is more robust (+1 more window pass) with much lower drawdown (6.6% vs 24.4%).
-/// Previous T67 conclusion ("identical results on research harness") was wrong — T67 tested the dual Chandelier
-/// research harness, not the exact-live Turtle-only path. T95 used exact-live semantics.
-/// T95 confirmed: HEDGE_ATR_PCT is a risk dial, not alpha. Use lower values for lower-risk sizing.
-pub const HEDGE_ATR_PCT: f64 = 0.09;
+/// T67 hyperopt 2026-05-05: INERT — full 101-value sweep on dual Chandelier research harness.
+/// T95 bug 2026-05-11: REVERTED — T95 used walk-forward pass rate as metric (HAP=0.09 won 8/11)
+/// but failed to use daily account equity. HAP=0.09 produces 1.42x exact-live equity vs 2.76x for
+/// HAP=0.45 — a 49% reduction. T95 was a WALK-FORWARD research harness, not exact-live source.
+/// Production default: HAP=0.45 (produces verified 2.76x / Sharpe 1.03 / MaxDD 22.3%).
+/// T95 finding confirmed: HEDGE_ATR_PCT is a position SIZE dial, not alpha.
+pub const HEDGE_ATR_PCT: f64 = 0.45;
 
 /// BTC ATR period for the USDT hedge overlay.
 /// T75 hyperopt 2026-05-06: full integer sweep P∈[5..=100] step 1 × 9 universes × 252d WF windows.
