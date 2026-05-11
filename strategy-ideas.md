@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-10 08:05 UTC.* Critique cycle #2. CRITICAL FINDING: progress harness (621x) uses dual Chandelier+Turtle exit — DIFFERENT STRATEGY from live bot (2.76x, Turtle ATR-only). These are not the same strategy measured differently. M1 integration still 5+ weeks overdue — final call.
+*Last updated: 2026-05-11 00:05 UTC.* Critique cycle #6. Maker-fill confirmed [1.02-1.04]. Top-10 = 91% of log return is the dominant production risk, not fees. Research loop is structurally exhausted — live execution is the only remaining path.
 
 ---
 
@@ -11,18 +11,17 @@
 
 **Rule:** Only 2.76x / Sharpe 1.02 is the production headline. 621x is research diagnostic ONLY.
 
-### 🚨 M1 Discord Integration: FINAL CALL
-Status: 5+ weeks overdue. This is the last "highest priority" mention.
-This session: execute or close explicitly. No more plan entries about it.
+### 🚨 Chart Conflation: 3rd Deferral — Execute or Close
+**Problem:** `progress_equity_curves.csv` shows research harness (621x) as the "turtle_equity" line. Live bot (2.76x) is NOT in the chart. This has been deferred 3 sessions.
+**Decision:** Execute Priority 1 this session or explicitly close and remove from all future plans. No 4th deferral.
 
-### ⚠️ 2026 YTD Underperformance: Accepted as Known Limitation
-ATR_RANK T=5 gate is binary — skips entries in low-vol regimes but positions stay FULL size.
-No fix attempted: any fix risks T73 top-winner destruction (SOL 2023-01-11 was low-vol at entry).
-Decision: document and accept.
+### ⚠️ 2026 YTD Underperformance: Silent Failure, Not Accepted
+ATR_RANK T=5 gate is binary — skips entries in low-vol regimes but positions stay FULL size. YTD performance -22.7% via the gate. This is NOT "accepted limitation" language — it is an active, documented structural failure. The gate works in some eras and fails in others (T=24 and T=65 both fail held-out). We cannot fix it without destroying the top-10 tail (SOL 2023-01-11 was low-vol at entry). The honest statement: the strategy has a non-stationary entry gate that we cannot stabilize without deeper regime understanding.
 
-### ⚠️ Suspension Animation: Structural, Not Temporary
-Last 8 commits: 2 research + 6 overhead. Research rate: 25% and falling.
-Anti-spin rule #11 TRIGGERED again. Next cron must execute OR close tasks.
+### ⚠️ Top-10 Winner Mechanism: UNEXPLAINED CONVEX STRUCTURE
+**New critical alert (2026-05-11).**
+Top-10 trades = 91% of compounded log return. We can list the conditions (low-vol BTC regime, SOL/DOGE entries, low dollar-volume rank) but CANNOT explain the mechanism. Two largest winners: SOL 2023-01-11 and DOGE 2022-10-28. Both entered in low-vol BTC Q1 environments. The strategy is "a few large directional bets on high-beta crypto in ugly BTC regimes" — not "a robust trend-following system."
+**Implication:** Any new entry filter must prove it preserves the convex tail. We cannot explain the tail, so we cannot confidently protect it. This is the dominant production risk.
 
 ### T80: OOS Universe Validation — GENERALIZATION FAILURE
 - **11/18 pass (61.1%)**, avg Sharpe **0.149**, avg return **+2.3%/window**, 160 trades
@@ -52,18 +51,14 @@ Priority: HIGH. Final call — execute this session or close explicitly.
 
 ## 3 Most Promising Unbuilt Ideas
 
-### 1. M1 Discord Integration (PRIORITY: EXECUTE — NOT DISCUSS)
-Status: 5+ weeks overdue. Execute now. Run monitor → post to #krypto → commit.
+### 1. Top-10 Winner Mechanism Analysis (PRIORITY: HIGH — EXECUTE)
+Not a strategy. A written explanation of WHY the convex tail exists. Cross-reference each top-10 winner's entry conditions against all 286 trades. Understand: (a) position size vs symbol selection as winner driver, (b) exit speed (bars held) vs winner size correlation, (c) what differentiated these 10 entries from the median trade. This is required before any new entry filter can be safely added.
 
-### 2. Maker-Fill Hypothesis Testing (PRIORITY: MEDIUM — BLOCKED)
-Concept: One week of dry-run execution to constrain the [0.6–1.3] Sharpe range.
-Why it matters: Dominant deployment risk. Even rough confirmation of 70% fill rate changes risk model materially.
-Status: Blocked by API keys.
+### 2. Regime Non-Stationarity Quantification (PRIORITY: MEDIUM — DOCUMENT ONLY)
+ATR_RANK T=5 is non-stationary: works in some BTC eras, fails in others. T=24 and T=65 both fail held-out. Document the mechanism: is it BTC vol level? BTC trend direction? Time-of-year? Correlation structure? Quantify which regime features co-vary with T=5's effectiveness. Honest out-of-sample uncertainty disclosure — not a fix attempt.
 
-### 3. Dual-Exit Live Bot Experiment (PRIORITY: LOW — NEW 2026-05-10)
-Concept: Progress harness uses Chandelier(7,2.30)+TurtleATR dual exit (621x). Live bot uses Turtle ATR-only (2.76x). These are different strategies. Adding Chandelier as secondary exit to live bot might improve equity profile.
-Risk (T73): Chandelier fires faster and could cut winners that drive 91% of log returns. Needs T73-style top-winner audit before any test.
-Status: Concept only. Requires top-winner preservation audit first.
+### 3. Dual-Exit Live Bot Experiment (PRIORITY: LOW)
+Adding Chandelier(7,2.30) dual-exit to live bot vs Turtle ATR-only. These are DIFFERENT strategies (621x vs 2.76x). T73 risk: Chandelier fires faster and could cut winners that drive 91% of log returns. Requires top-winner preservation audit before any test. Low priority — the two strategies are already well-characterized as separate.
 
 ---
 
@@ -74,7 +69,7 @@ Status: Concept only. Requires top-winner preservation audit first.
 | Live bot daily compounded (Turtle ATR-only) | **1.02** | Authoritative production number |
 | Progress harness (dual Chandelier+Turtle ATR) | 1.19 | RESEARCH — different exit |
 | Per-window walk-forward | ~5-6 | RESEARCH harness only; 5x inflated vs account |
-| Fee-adjusted range (30–80% maker fill) | **0.6–1.3** | Estimated; point estimate prohibited |
+| Fee-adjusted (maker-fill confirmed, T94) | **1.02–1.04** | Confirmed range; not the dominant risk |
 
 Report fee-adjusted Sharpe as a range, not a point estimate.
 
@@ -101,7 +96,7 @@ Exit: Turtle ATR(24,2.0) trailing stop ONLY. Chandelier is stored for compatibil
 
 **What we don't have:** Cross-universe generalization (UNI 1/6 fail). Live monitoring (M1 idle). Real execution feedback. Dual-exit performance (that is a different strategy — the 621x is not "the same strategy with better exits," it's a different strategy).
 
-**Only blocker:** Noah's Binance testnet API keys (5+ weeks blocked).
+**Only blocker:** Noah's Binance testnet API keys (5+ weeks blocked). All remaining questions are execution questions, not simulation questions.
 
 ---
 
@@ -119,4 +114,4 @@ Exit: Turtle ATR(24,2.0) trailing stop ONLY. Chandelier is stored for compatibil
 10. **Universe selection is survivorship bias.** When citing pass rates, always disclose which assets.
 11. **Suspension animation is a real failure mode.** If 5+ consecutive commits are docs/ops/monitoring with 0 alpha, escalate.
 12. **Progress harness 621x ≠ live bot 2.76x.** These are different strategies with different exits. Do not conflate them.
-13. **2026 YTD underperformance is accepted limitation.** Binary gate cannot be fixed without T73 destruction risk.
+13. **2026 YTD underperformance: silent failure.** Not "accepted limitation" — an active documented structural failure.
