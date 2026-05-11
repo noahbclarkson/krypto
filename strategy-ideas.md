@@ -1,32 +1,30 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-11 08:05 UTC. Research loop closed. Execution phase. Three new execution tasks: Turtle-only pre-2021 held-out test, top-10 mechanism documentation, historical replay mode (no API keys).
+*Last updated: 2026-05-11 12:13 UTC. Research loop CLOSED. Execution phase: historical replay mode (no API keys). Top-10 mechanism analysis DONE (a4b2614b).*
 
 ---
 
 ## Critical Alerts
 
-### 🚨 THE TWO SYSTEMS PROBLEM (NEW 2026-05-10) — CRITICAL
-**Progress harness ≠ live bot.** The progress harness (`progress_equity_curves.rs`) uses Chandelier(7,2.30)+TurtleATR DUAL EXIT → 621x/1.19 Sharpe. The live bot (`src/live/bot.rs`) uses Turtle ATR ONLY → 2.76x/1.02 Sharpe. These are two DIFFERENT strategies with different exit mechanisms. The "621x PRODUCTION CANDIDATE" label is WRONG.
+### 🚨 Research Loop CLOSED — Execution Phase WITHOUT Keys
+All testable ideas exhausted. Historical replay mode is the execution path until API keys arrive. Build it this session. 6+ weeks blocked on Binance testnet API keys.
 
-**Rule:** Only 2.76x / Sharpe 1.02 is the production headline. 621x is research diagnostic ONLY.
+### 🚨 THE TWO SYSTEMS PROBLEM — CLOSED (2026-05-11 08:01 UTC)
+Chart now shows 2.76x live bot vs 621x research harness honestly. Rule: only 2.76x / Sharpe 1.02 is production. 621x is research diagnostic ONLY.
 
-### 🚨 Chart Conflation: 3rd Deferral — Execute or Close
-**Problem:** `progress_equity_curves.csv` shows research harness (621x) as the "turtle_equity" line. Live bot (2.76x) is NOT in the chart. This has been deferred 3 sessions.
-**Decision:** Execute Priority 1 this session or explicitly close and remove from all future plans. No 4th deferral.
+### ⚠️ 2026 YTD Underperformance: Silent Failure (-3.2%)
+ATR_RANK T=5 gate failing silently all year. Not "accepted limitation" — active structural failure. Non-stationary gate mechanism partially understood (T95) but not fixed.
 
-### ⚠️ 2026 YTD Underperformance: Silent Failure, Not Accepted
-ATR_RANK T=5 gate is binary — skips entries in low-vol regimes but positions stay FULL size. YTD performance -22.7% via the gate. This is NOT "accepted limitation" language — it is an active, documented structural failure. The gate works in some eras and fails in others (T=24 and T=65 both fail held-out). We cannot fix it without destroying the top-10 tail (SOL 2023-01-11 was low-vol at entry). The honest statement: the strategy has a non-stationary entry gate that we cannot stabilize without deeper regime understanding.
+### ⚠️ 91% Convex Tail — Mechanism Partially Understood (T95 DONE)
+Top-10 = 91% of log return. T95 analysis (a4b2614b, 2026-05-11 12:10 UTC): 8/10 entered after BTC drawdowns >10%/21d. Low-vol Q1 BTC regimes are accidental winner environments, not designed. T73/T95 guardrail: any new filter must preserve the top-10 tail.
 
-### ⚠️ Top-10 Winner Mechanism: UNEXPLAINED CONVEX STRUCTURE
-**New critical alert (2026-05-11).**
-Top-10 trades = 91% of compounded log return. We can list the conditions (low-vol BTC regime, SOL/DOGE entries, low dollar-volume rank) but CANNOT explain the mechanism. Two largest winners: SOL 2023-01-11 and DOGE 2022-10-28. Both entered in low-vol BTC Q1 environments. The strategy is "a few large directional bets on high-beta crypto in ugly BTC regimes" — not "a robust trend-following system."
-**Implication:** Any new entry filter must prove it preserves the convex tail. We cannot explain the tail, so we cannot confidently protect it. This is the dominant production risk.
+### ⚠️ Chandelier Dual-Exit Live Bot Experiment: GRAVEYARD
+Two different strategies (621x vs 2.76x), not exit optimization. Chandelier fires faster and risks cutting the top-10 winners. Not testing.
 
 ### T80: OOS Universe Validation — GENERALIZATION FAILURE
 - **11/18 pass (61.1%)**, avg Sharpe **0.149**, avg return **+2.3%/window**, 160 trades
 - MATIC strong (6/6), AVAX borderline (4/6), UNI catastrophic (1/6)
-- **Fails promotion guardrail** (≥70% pass + Sharpe ≥0.5): 9pp below pass, 0.35 below Sharpe
+- **Fails promotion guardrail** (≥70% pass + Sharpe ≥0.5)
 
 ---
 
@@ -41,24 +39,28 @@ Top-10 trades = 91% of compounded log return. We can list the conditions (low-vo
 
 ---
 
-## Operational Infrastructure (Not Research)
+## Operational Infrastructure: CLOSED
 
-### M1: Equity Trajectory Monitor — Integrate into Discord
-**Status:** Built (`examples/m1_equity_trajectory_monitor.rs`) but idle — not integrated into Discord alerting.
-Priority: HIGH. Final call — execute this session or close explicitly.
+### M1: Equity Trajectory Monitor
+**Status:** Closed as task — owned by cron automation as permanent monitoring layer.
 
 ---
 
 ## 3 Most Promising Unbuilt Ideas
 
-### 1. Top-10 Winner Mechanism Analysis (PRIORITY: HIGH — EXECUTE)
-Not a strategy. A written explanation of WHY the convex tail exists. Cross-reference each top-10 winner's entry conditions against all 286 trades. Understand: (a) position size vs symbol selection as winner driver, (b) exit speed (bars held) vs winner size correlation, (c) what differentiated these 10 entries from the median trade. This is required before any new entry filter can be safely added.
+### 1. Historical Replay Mode (PRIORITY: HIGH — BUILD THIS SESSION)
+**No API keys required.** Uses existing parquet cache. Validates `src/live/bot.rs` code path. Provides paper-trading proxy. Proposed 08:05 this session — NOT YET BUILT.
 
-### 2. Regime Non-Stationarity Quantification (PRIORITY: MEDIUM — DOCUMENT ONLY)
-ATR_RANK T=5 is non-stationary: works in some BTC eras, fails in others. T=24 and T=65 both fail held-out. Document the mechanism: is it BTC vol level? BTC trend direction? Time-of-year? Correlation structure? Quantify which regime features co-vary with T=5's effectiveness. Honest out-of-sample uncertainty disclosure — not a fix attempt.
+**Concept:** Load Base5 parquet files → run `LiveBot::process_bar` bar-by-bar → report daily equity, trade log, Sharpe, MaxDD. Output should match `live_bot_exact_equity.rs` exactly if logic is correct.
 
-### 3. Dual-Exit Live Bot Experiment (PRIORITY: LOW)
-Adding Chandelier(7,2.30) dual-exit to live bot vs Turtle ATR-only. These are DIFFERENT strategies (621x vs 2.76x). T73 risk: Chandelier fires faster and could cut winners that drive 91% of log returns. Requires top-winner preservation audit before any test. Low priority — the two strategies are already well-characterized as separate.
+### 2. Turtle-Only Pre-2021 Held-Out Stress Test (PRIORITY: HIGH — EXECUTE THIS WEEK)
+T12 held-out (pre-2021) confirmed 100% pass rate with DUAL Chandelier+Turtle exit. Live bot uses Turtle ATR-only. We've never validated TurtleATR-only against bear-only pre-2021 regimes in isolation.
+
+**If TurtleATR-only fails pre-2021:** 2.76x is a bull-market artifact — escalate to Arc immediately.
+**If it passes:** genuine cross-regime validation confirmed.
+
+### 3. Regime Non-Stationarity Quantification (PRIORITY: MEDIUM — DOCUMENT ONLY)
+ATR_RANK T=5 is non-stationary: works in some BTC eras, fails in 2026. T=24 and T=65 fail held-out. Document the mechanism: BTC vol level? BTC trend direction? Time-of-year? Correlation structure? T95 top-10 mechanism analysis is the starting point.
 
 ---
 
@@ -70,8 +72,6 @@ Adding Chandelier(7,2.30) dual-exit to live bot vs Turtle ATR-only. These are DI
 | Progress harness (dual Chandelier+Turtle ATR) | 1.19 | RESEARCH — different exit |
 | Per-window walk-forward | ~5-6 | RESEARCH harness only; 5x inflated vs account |
 | Fee-adjusted (maker-fill confirmed, T94) | **1.02–1.04** | Confirmed range; not the dominant risk |
-
-Report fee-adjusted Sharpe as a range, not a point estimate.
 
 ---
 
@@ -92,11 +92,11 @@ Exit: Turtle ATR(24,2.0) trailing stop ONLY. Chandelier is stored for compatibil
 
 ## Honest Deployment Statement
 
-**What we have:** Turtle ATR trend-following on daily crypto bars. Turtle ATR-only exit (live bot). Real, modest edge (2.76x / Sharpe 1.02). Walk-forward validated on Base5 (100% pass, 6/6 windows). Edge concentrated in high-beta trending crypto pairs.
+**What we have:** Turtle ATR trend-following on daily crypto bars. Turtle ATR-only exit (live bot). Real, modest edge (2.76x / Sharpe 1.02). Walk-forward validated on Base5 (100% pass, 6/6 windows). Edge concentrated in high-beta trending crypto pairs. 91% of return from 10 trades.
 
-**What we don't have:** Cross-universe generalization (UNI 1/6 fail). Live monitoring (M1 idle). Real execution feedback. Dual-exit performance (that is a different strategy — the 621x is not "the same strategy with better exits," it's a different strategy).
+**What we don't have:** Cross-universe generalization (UNI 1/6 fail). Live execution feedback. ATR_RANK gate is non-stationary (fails 2026 silently). Survivorship bias in Base5 selection.
 
-**Only blocker:** Noah's Binance testnet API keys (5+ weeks blocked). All remaining questions are execution questions, not simulation questions.
+**Only blocker:** Noah's Binance testnet API keys (6+ weeks). Historical replay mode is the alternative validation path.
 
 ---
 
@@ -105,29 +105,32 @@ Exit: Turtle ATR(24,2.0) trailing stop ONLY. Chandelier is stored for compatibil
 1. No Turtle-family parameter sweeps unless a new mechanism is proposed.
 2. No "audit" tasks — write the test or close the issue.
 3. Every task must have an execute-or-close decision. No "defer to next session."
-4. The 621x / 176.79x numbers appear in progress charts as research diagnostics, NOT production performance.
+4. **621x / 176.79x numbers are research diagnostics, NOT production performance.**
 5. Daily account Sharpe only on equity charts. Per-window walk-forward Sharpe is not comparable.
-6. Report fee-adjusted Sharpe as a range (maker fill uncertain), not a point estimate.
+6. Report fee-adjusted Sharpe as a range, not a point estimate.
 7. **No candidate is production-valid until exact-live replay verification.**
-8. Top-10 = 91% of log return. Any new filter must preserve the convex tail.
-9. **Chandelier either fires or is removed. Non-binding exits are docs errors, not valid strategy complexity.**
-10. **Universe selection is survivorship bias.** When citing pass rates, always disclose which assets.
-11. **Suspension animation is a real failure mode.** If 5+ consecutive commits are docs/ops/monitoring with 0 alpha, escalate.
-12. **Progress harness 621x ≠ live bot 2.76x.** These are different strategies with different exits. Do not conflate them.
-13. **2026 YTD underperformance: silent failure.** Not "accepted limitation" — an active documented structural failure.
+8. Top-10 = 91% of log return. Any new filter must preserve the convex tail (T73/T95 guardrail).
+9. **Chandelier either fires or is removed. Non-binding exits are docs errors.**
+10. **Universe selection is survivorship bias.** Always disclose which assets.
+11. **Suspension animation is a real failure mode.** Escalate after one failed attempt, not five.
+12. **If blocked on external dependency for 5+ weeks, need an explicit plan.**
+13. **Maker-fill uncertainty is confirmed [1.02-1.04] — not dominant.**
+14. **Progress harness 621x ≠ live bot 2.76x.** Do not conflate.
+15. **2026 YTD underperformance: silent failure, document it.**
+16. **M1 Discord: closed as task — owned by cron automation.**
+17. **Progress harness chart fix: CLOSED (8e650c73, 2026-05-11 08:01 UTC).**
+18. **Top-10 winner mechanism: DONE (a4b2614b, 2026-05-11 12:10 UTC). T95 guardrail active.**
+19. **Research rate below 50% for 3 consecutive sessions: escalate to Arc.**
+20. **If next session has 0 commits with code changes (not docs/tracking), escalate to Arc.**
+21. **Historical replay mode: BUILD THIS SESSION. No more waiting for API keys.**
+22. **Chandelier dual-exit live bot experiment: GRAVEYARD — not testing.**
 
 ---
 
-## New: Historical Replay Mode (NO API KEYS REQUIRED)
+## Anti-Spin: What We're NOT Doing
 
-**Problem:** 5+ weeks blocked on API keys. Alternative path never tried.
-
-**Concept:** Run `src/live/bot.rs` against historical cached parquet bars in bar-by-bar replay mode. Uses existing data cache. No Binance API required.
-
-**Value:**
-- Validates the live bot code path against real historical data
-- Catches bugs before deployment
-- Paper-trading proxy without live keys
-- Should produce identical output to `live_bot_exact_equity.rs` if logic is correct
-
-**Status:** Unbuilt. Proposed 2026-05-11. Priority 3 in PLAN.
+- No new parameter sweeps (research loop closed)
+- No more critique-only documentation loops
+- No Chandelier dual-exit live bot experiment
+- No escalation to Arc without explicit contingency + alternative path already executing
+- No waiting for API keys as excuse for zero execution

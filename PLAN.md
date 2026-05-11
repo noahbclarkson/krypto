@@ -1,16 +1,116 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**Updated: 2026-05-11 00:05 UTC — Critique Session #6**
+**Updated: 2026-05-11 12:13 UTC — Critique Session #7**
 
 ---
 
-## Critical Finding: Chart Conflation + Structural Fragility
+## State: Research Loop CLOSED. Execution Phase WITHOUT Keys.
 
-This session's brutal assessment: the 2.76x live bot equity is built on a convex structure where **top-10 trades = 91% of compounded log return**. We can describe the winners (low-vol regime entry, SOL/DOGE, low dollar-volume rank) but cannot explain the mechanism. This is our biggest production risk — not fees, not parameter tuning, not API keys.
+Research loop is structurally exhausted. All testable ideas tested. Params settled. Live bot: 2.76x / Sharpe 1.02 / MaxDD 22.3% / 286 trades / 1,800 days. Fee-adjusted range [1.02-1.04].
 
-The **progress equity chart STILL conflates two different strategies** (live bot 2.76x vs research harness 621x). The fix has been deferred 3 sessions.
+**Execution blocker:** 6+ weeks without Binance testnet API keys. Noah has not provided them.
 
-**M1 Discord integration is closed** as a "task" — it is now owned by the cron automation as a permanent monitoring layer. Not a task to do, a service that should always be running.
+**Alternative path:** Historical replay mode — run `src/live/bot.rs` against parquet cache, no API keys required. Proposed 08:05 this session. NOT BUILT. This is the primary execution task until keys arrive.
+
+**M1 Discord integration: closed** — owned by cron automation as permanent monitoring layer. Not a task to do.
+
+---
+
+## 3 Most Important Execution Tasks
+
+### Priority 1: Historical Replay Mode — BUILD THIS SESSION (no API keys required)
+
+**Problem:** 6+ weeks blocked on API keys. We proposed historical replay mode at 08:05 this session and haven't built it. This is the alternative execution path.
+
+**What it does:** Load Base5 parquet cache → run `LiveBot::process_bar` bar-by-bar → report daily equity, trade log, Sharpe, MaxDD, equity CSV. Validates production code path against real historical data. Catches bugs. Provides paper-trading proxy.
+
+**Action:**
+1. Write `examples/historical_replay.rs` — load cached parquet bars for Base5 symbols (BTC, ETH, SOL, XRP, DOGE, ADA)
+2. Initialize `LiveBot` with current config
+3. Loop: for each bar in chronological order, call `bot.process_bar(bar)`
+4. Track: daily equity (mark-to-market), trade log, drawdown
+5. Output: `snapshots/historical_replay.csv` (daily equity), `snapshots/historical_replay_trades.csv` (trade ledger), summary metrics
+6. Verify: output should match `live_bot_exact_equity.rs` output exactly if logic is correct
+
+**Time estimate:** 2-4 hours. Execute this session.
+
+---
+
+### Priority 2: Turtle-Only Pre-2021 Held-Out Stress Test — Execute This Week
+
+**Problem:** T12 held-out (pre-2021) confirmed 100% pass rate with DUAL Chandelier+Turtle exit. Live bot uses Turtle ATR-only. We've never validated TurtleATR-only against bear-only pre-2021 regimes in isolation.
+
+**Action:**
+1. Fork `examples/live_bot_exact_equity.rs` → `examples/turtle_only_pre2021_held_out.rs`
+2. Run on pre-2021 data only (2020 and earlier, 6 walk-forward windows, 252 train + 252 test)
+3. Report pass rate, Sharpe, MaxDD, equity curve
+4. If TurtleATR-only fails pre-2021 held-out: 2.76x is a bull-market artifact — escalate to Arc immediately
+5. If it passes: genuine cross-regime validation confirmed
+
+**Time estimate:** 3-5 hours. This is the only test that validates the live bot against genuine bear markets.
+
+---
+
+### Priority 3: API Key Escalation to Arc — With Explicit Contingency
+
+**Problem:** 6+ weeks. Escalation attempt at 06:25 UTC was rate-limited. Blocker remains.
+
+**Message to Arc:**
+> "Krypto research is structurally complete. All testable ideas exhausted. API key blocker is 6+ weeks old with no resolution. Historical replay mode (Priority 1 this session) is being built as proxy validation — no keys needed. Live paper trading requires keys. Request: (1) ETA for testnet keys, OR (2) explicit decision to pause cron sessions until keys arrive. Do not leave us in indefinite limbo."
+
+**Contingency:** Historical replay is being built regardless. It validates the code path. Live execution is blocked but code validation is not.
+
+---
+
+## 3 Most Promising Unbuilt Ideas (Honest Assessment)
+
+### 1. Historical Replay Mode (PRIORITY: HIGH — BUILD THIS SESSION)
+No API keys. Uses existing parquet cache. Validates `src/live/bot.rs` code path. Provides paper-trading proxy. This is the only execution path available right now.
+
+### 2. Turtle-Only Pre-2021 Held-Out Test (PRIORITY: HIGH — EXECUTE THIS WEEK)
+Validates the live bot against genuine bear markets (2018 crash, 2019 chop). If TurtleATR-only fails pre-2021, the 2.76x production number is a bull-market artifact.
+
+### 3. Regime Non-Stationarity Quantification (PRIORITY: MEDIUM — DOCUMENT ONLY)
+ATR_RANK T=5 is non-stationary: works in some BTC eras, fails in 2026. T=24 and T=65 fail held-out. Document the mechanism: is it BTC vol level? BTC trend direction? Time-of-year? Honest uncertainty disclosure — not a fix attempt. T95 top-10 mechanism analysis is the starting point.
+
+---
+
+## Production Truth (Authoritative)
+
+- **Exact as-coded live bot:** 2.76x / daily account Sharpe **1.02** / MaxDD **22.3%** / 286 trades / 1,800 days. Turtle ATR-only exit. **ONLY cite this as production.**
+- **Progress harness (dual Chandelier+Turtle):** 621x — RESEARCH DIAGNOSTIC ONLY, different strategy.
+- **Fee-adjusted Sharpe:** **[1.02–1.04]** — confirmed by T94, not the dominant risk.
+- **Top-10 trade concentration:** **91%** of compounded log return. Structural fragility — not resolved but now documented (T95, a4b2614b).
+- **2026 YTD underperformance:** **-3.2%** via ATR_RANK gate. Silent failure — not accepted, documented.
+- **Walk-forward Sharpe 5-6:** per-window comparison metric only — 5x inflated vs daily account Sharpe 1.02. Not comparable.
+- **Historical replay mode:** NOT YET BUILT — this session's primary deliverable.
+
+---
+
+## Anti-Overfitting Rules (Immutable)
+
+1. No Turtle-family parameter sweeps unless a new mechanism is proposed.
+2. No "audit" tasks — write the test or close the issue.
+3. Every task must have an execute-or-close decision. No "defer to next session."
+4. **621x / 176.79x numbers are research diagnostics, NOT production performance.**
+5. Daily account Sharpe only on equity charts. Per-window walk-forward Sharpe is not comparable.
+6. Report fee-adjusted Sharpe as a range, not a point estimate.
+7. **No candidate is production-valid until exact-live replay verification.**
+8. Top-10 = 91% of log return. Any new filter must preserve the convex tail (T95 guardrail).
+9. **Chandelier either fires or is removed. Non-binding exits are docs errors.**
+10. **Universe selection is survivorship bias.** Always disclose which assets.
+11. **Suspension animation is a real failure mode.** Escalate after one failed attempt, not five.
+12. **If blocked on external dependency for 5+ weeks, need an explicit plan.**
+13. **Maker-fill uncertainty is confirmed [1.02-1.04] — not dominant.**
+14. **Progress harness 621x ≠ live bot 2.76x.** Do not conflate.
+15. **2026 YTD underperformance: silent failure, document it.**
+16. **M1 Discord: closed as task — owned by cron automation as monitoring layer.**
+17. **Progress harness chart fix: CLOSED as of 08:01 UTC 2026-05-11 (8e650c73).**
+18. **Top-10 winner mechanism: DONE (a4b2614b, 2026-05-11 12:10 UTC). T95 guardrail active.**
+19. **Research rate below 50% for 3 consecutive sessions: escalate to Arc.**
+20. **If next session has 0 commits with code changes (not docs/tracking), escalate to Arc.**
+21. **Historical replay mode: BUILD THIS SESSION. No more waiting for API keys.**
+22. **Chandelier dual-exit live bot experiment: GRAVEYARD. Two different strategies, not exit optimization.**
 
 ---
 
