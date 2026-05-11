@@ -1,33 +1,41 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-10 08:05 UTC.* Critique cycle #2. CRITICAL FINDING: progress harness (621x) uses dual Chandelier+Turtle exit — DIFFERENT STRATEGY from live bot (2.76x, Turtle ATR-only). These are not the same strategy measured differently. M1 integration still 5+ weeks overdue — final call.
+*Last updated: 2026-05-11 04:30 UTC.* Critique cycle #6. Maker-fill RESOLVED [1.02-1.04]. T95 summary WRONG (FC=2 not a winner). Researchcoma: 3+ weeks, no new mechanism. API keys 5+ weeks blocked.
 
 ---
 
 ## Critical Alerts
 
-### 🚨 THE TWO SYSTEMS PROBLEM (NEW 2026-05-10) — CRITICAL
-**Progress harness ≠ live bot.** The progress harness (`progress_equity_curves.rs`) uses Chandelier(7,2.30)+TurtleATR DUAL EXIT → 621x/1.19 Sharpe. The live bot (`src/live/bot.rs`) uses Turtle ATR ONLY → 2.76x/1.02 Sharpe. These are two DIFFERENT strategies with different exit mechanisms. The "621x PRODUCTION CANDIDATE" label is WRONG.
+### 🚨 THE TWO SYSTEMS PROBLEM (2026-05-10) — ACTIVE
+**Progress harness ≠ live bot.** Progress harness → Chandelier(7,2.30)+TurtleATR DUAL EXIT → 621x/1.19 Sharpe. Live bot → Turtle ATR ONLY → 2.76x/1.02 Sharpe. These are two DIFFERENT strategies with different exits.
 
 **Rule:** Only 2.76x / Sharpe 1.02 is the production headline. 621x is research diagnostic ONLY.
 
-### 🚨 M1 Discord Integration: FINAL CALL
-Status: 5+ weeks overdue. This is the last "highest priority" mention.
-This session: execute or close explicitly. No more plan entries about it.
+### 🚨 T95 SUMMARY IS WRONG (2026-05-11) — CORRECTED
+**`memory/hyperopt-2026-05-11.md` claimed FC=2 wins at 2.90x. This is false.**
 
-### ⚠️ 2026 YTD Underperformance: Accepted as Known Limitation
-ATR_RANK T=5 gate is binary — skips entries in low-vol regimes but positions stay FULL size.
-No fix attempted: any fix risks T73 top-winner destruction (SOL 2023-01-11 was low-vol at entry).
-Decision: document and accept.
+`snapshots/t95_fc_sweep_summary.csv`:
+| FC | Pass% | Avg Sharpe | Avg Return |
+|----|-------|-----------|-----------|
+| **0** | **51.85%** | **2.112** | **13.14%** |
+| **1** | **51.85%** | **2.112** | **13.14%** |
+| 2 | 50.00% | 1.624 | 5.59% |
 
-### ⚠️ Suspension Animation: Structural, Not Temporary
-Last 8 commits: 2 research + 6 overhead. Research rate: 25% and falling.
-Anti-spin rule #11 TRIGGERED again. Next cron must execute OR close tasks.
+FC=0 and FC=1 are IDENTICAL. FC=2 is strictly worse on every metric.
+**No code change to bot.rs.** FRESHNESS_COOLDOWN=0 is confirmed optimal.
 
-### T80: OOS Universe Validation — GENERALIZATION FAILURE
-- **11/18 pass (61.1%)**, avg Sharpe **0.149**, avg return **+2.3%/window**, 160 trades
-- MATIC strong (6/6), AVAX borderline (4/6), UNI catastrophic (1/6)
-- **Fails promotion guardrail** (≥70% pass + Sharpe ≥0.5): 9pp below pass, 0.35 below Sharpe
+### ⚠️ Maker-Fill Risk: RESOLVED (T94, 2026-05-10)
+Fee-adjusted Sharpe confirmed **[1.02–1.04]**. Maker-fill is NOT the dominant deployment risk.
+Dominant risk is now: (1) 2026 YTD -22.7% from binary ATR_RANK gate, (2) API key availability.
+
+### ⚠️ Researchcoma: Structural
+4+ consecutive sessions of docs/confirmation-sweeps, 0 new mechanisms. Anti-spin rule #11 broken.
+Live bot code unchanged in 3+ weeks. API keys 5+ weeks blocked. M1 idle 5+ weeks.
+
+### ⚠️ Cross-Universe Generalization: FAILING GUARDRAIL
+- OOS validation (UNI/MATIC/AVAX): **11/18 pass (61.1%)** — fails ≥70% pass + ≥0.5 Sharpe guardrail
+- MATIC: 6/6 ✅ | AVAX: 4/6 ⚠️ | UNI: 1/6 ❌
+- "Base5 100% pass" = home turf only, not generalization evidence
 
 ---
 
@@ -39,84 +47,95 @@ Anti-spin rule #11 TRIGGERED again. Next cron must execute OR close tasks.
 | C17 | NEVER BUILT | code was never written; permanently unbuilt |
 | C18 | ACCEPTABLE — CLOSED | equity 2.808x at 40% fill; low sensitivity confirmed |
 | C19 | GRAVEYARD | harness passed (6/6), exact-live failed (2.74x vs 2.89x) |
+| T94 | DONE | fee-adjusted Sharpe [1.02-1.04] confirmed |
+| T95 | CLOSED — NULL RESULT | FC=0/1 optimal. FC=2 worse. No code change. |
 
 ---
 
-## Operational Infrastructure (Not Research)
+## Stale Tasks Closed This Session
 
-### M1: Equity Trajectory Monitor — Integrate into Discord
-**Status:** Built (`examples/m1_equity_trajectory_monitor.rs`) but idle — not integrated into Discord alerting.
-Priority: HIGH. Final call — execute this session or close explicitly.
+| Task | Resolution |
+|------|-----------|
+| Maker-fill scenario modeling | DONE T94. Fee impact negligible. |
+| ATR_RANK re-sweep | INERT. T=5 settled. Do not re-sweep. |
+| HOLD_MAX re-sweep | INERT. 15 is optimal. Do not re-sweep. |
+| HEDGE_LOOKBACK re-sweep | 147 wins WF but fails exact-live. Leave at 252. |
+| FRESHNESS_COOLDOWN sweep | FC=0 optimal. No bot.rs change. Summary corrected. |
+| ATR period sweep | INERT. 24 confirmed. Do not re-sweep. |
+| ATR_MULT sweep | INERT. M=2.00 confirmed. Do not re-sweep. |
 
 ---
 
 ## 3 Most Promising Unbuilt Ideas
 
-### 1. M1 Discord Integration (PRIORITY: EXECUTE — NOT DISCUSS)
-Status: 5+ weeks overdue. Execute now. Run monitor → post to #krypto → commit.
+### 1. Turtle-Only Pre-2021 Bear Regime Stress Test (PRIORITY: HIGH — NEW)
+**Concept:** T12 held-out showed 100% pass BUT used dual Chandelier exit, not TurtleATR-only. We've NEVER stress-tested the live bot's actual exit (TurtleATR-only) against bear-only regimes in isolation.
+**Action:** Run exact live bot path (TurtleATR-only, no Chandelier) on pre-2021 held-out windows. This is the ONE test that validates the ACTUAL live bot against bear markets.
+**Status:** Concept only. Not yet written.
 
-### 2. Maker-Fill Hypothesis Testing (PRIORITY: MEDIUM — BLOCKED)
-Concept: One week of dry-run execution to constrain the [0.6–1.3] Sharpe range.
-Why it matters: Dominant deployment risk. Even rough confirmation of 70% fill rate changes risk model materially.
-Status: Blocked by API keys.
+### 2. M1 Discord Integration — CLOSE OR EXECUTE (PRIORITY: HIGH)
+**Status:** Built 5+ weeks ago. Idle since. This is the only live monitoring we have.
+**Action:** Run → post output to Discord → commit or explicitly close.
+**If too complex to integrate:** document what's needed and close explicitly.
 
-### 3. Dual-Exit Live Bot Experiment (PRIORITY: LOW — NEW 2026-05-10)
-Concept: Progress harness uses Chandelier(7,2.30)+TurtleATR dual exit (621x). Live bot uses Turtle ATR-only (2.76x). These are different strategies. Adding Chandelier as secondary exit to live bot might improve equity profile.
-Risk (T73): Chandelier fires faster and could cut winners that drive 91% of log returns. Needs T73-style top-winner audit before any test.
-Status: Concept only. Requires top-winner preservation audit first.
+### 3. Dual-Exit as Separate Parallel Strategy (PRIORITY: LOW)
+**Concept:** Stop treating 621x as "what live bot could become." It's a different strategy (dual exit vs Turtle-only). Run both in parallel, honestly labeled.
+**Status:** Concept only. Requires new example + separate production tracking.
 
 ---
 
-## Sharpe Taxonomy
+## Sharpe Taxonomy (Authoritative)
 
 | Type | Value | Notes |
 |------|-------|-------|
 | Live bot daily compounded (Turtle ATR-only) | **1.02** | Authoritative production number |
 | Progress harness (dual Chandelier+Turtle ATR) | 1.19 | RESEARCH — different exit |
-| Per-window walk-forward | ~5-6 | RESEARCH harness only; 5x inflated vs account |
-| Fee-adjusted range (30–80% maker fill) | **0.6–1.3** | Estimated; point estimate prohibited |
-
-Report fee-adjusted Sharpe as a range, not a point estimate.
+| Per-window walk-forward Sharpe | ~5-6 | RESEARCH harness only; ~5x inflated vs account |
+| Fee-adjusted (30–80% maker fill) | **1.02–1.04** | T94 confirmed — NOT a deployment risk |
 
 ---
 
-## Production Parameters (Frozen)
+## Production Parameters (Frozen — Do Not Re-Sweep)
 
 ```
 TURTLE_EP=21, TURTLE_ATR_PERIOD=24, TURTLE_ATR_MULT=2.00, ATR_ENTRY_MULT=0.00,
 HOLD_MAX=15, POSITION_CAP=3, FRESHNESS_COOLDOWN=0,
 REGIME_ATR_PERIOD=17, REGIME_LOOKBACK=41, ATR_RANK_THRESHOLD=5.0,
-VOL_LOOKBACK=92 (configured; unused by bot.rs after T72),
+VOL_LOOKBACK=92 (configured; unused by bot.rs after T72 rejection),
 HEDGE_ATR_PERIOD=38, HEDGE_LOOKBACK=252, HEDGE_ATR_PCT=0.45, HEDGE_SIZE_MULT=0.25,
 fee_pct=0.000400
 ```
 
-Exit: Turtle ATR(24,2.0) trailing stop ONLY. Chandelier is stored for compatibility but does not fire (T34 KNOWN GAP).
+Exit: Turtle ATR(24,2.0) trailing stop ONLY. Chandelier non-binding (T34 gap).
 
 ---
 
 ## Honest Deployment Statement
 
-**What we have:** Turtle ATR trend-following on daily crypto bars. Turtle ATR-only exit (live bot). Real, modest edge (2.76x / Sharpe 1.02). Walk-forward validated on Base5 (100% pass, 6/6 windows). Edge concentrated in high-beta trending crypto pairs.
+**What we have:** Turtle ATR trend-following on daily crypto bars. Turtle ATR-only exit. Real, modest edge (2.76x / Sharpe 1.02). Walk-forward validated on Base5 (6/6 windows). Edge concentrated in high-beta trending crypto pairs.
 
-**What we don't have:** Cross-universe generalization (UNI 1/6 fail). Live monitoring (M1 idle). Real execution feedback. Dual-exit performance (that is a different strategy — the 621x is not "the same strategy with better exits," it's a different strategy).
+**What we don't have:** Cross-universe generalization (UNI 1/6 fail). Live monitoring (M1 idle). Real execution feedback. Dual-exit performance (different strategy — 621x is not "live bot with better exits").
 
 **Only blocker:** Noah's Binance testnet API keys (5+ weeks blocked).
 
 ---
 
-## Anti-Overfitting Rules
+## Anti-Overfitting Rules (Immutable)
 
 1. No Turtle-family parameter sweeps unless a new mechanism is proposed.
 2. No "audit" tasks — write the test or close the issue.
 3. Every task must have an execute-or-close decision. No "defer to next session."
-4. The 621x / 176.79x numbers appear in progress charts as research diagnostics, NOT production performance.
+4. **621x / 176.79x numbers are research diagnostics, NOT production performance.**
 5. Daily account Sharpe only on equity charts. Per-window walk-forward Sharpe is not comparable.
-6. Report fee-adjusted Sharpe as a range (maker fill uncertain), not a point estimate.
+6. Report fee-adjusted Sharpe as a range, not a point estimate.
 7. **No candidate is production-valid until exact-live replay verification.**
 8. Top-10 = 91% of log return. Any new filter must preserve the convex tail.
-9. **Chandelier either fires or is removed. Non-binding exits are docs errors, not valid strategy complexity.**
+9. **Chandelier either fires or is removed. Non-binding exits are docs errors.**
 10. **Universe selection is survivorship bias.** When citing pass rates, always disclose which assets.
-11. **Suspension animation is a real failure mode.** If 5+ consecutive commits are docs/ops/monitoring with 0 alpha, escalate.
-12. **Progress harness 621x ≠ live bot 2.76x.** These are different strategies with different exits. Do not conflate them.
-13. **2026 YTD underperformance is accepted limitation.** Binary gate cannot be fixed without T73 destruction risk.
+11. **Suspension animation is a real failure mode.** Escalate after one failed attempt, not five.
+12. **If blocked on external dependency for 5+ weeks, need an explicit plan.**
+13. **Maker-fill uncertainty is resolved.** Fee impact negligible [1.02-1.04].
+14. **Progress harness 621x ≠ live bot 2.76x.** Do not conflate.
+15. **2026 YTD underperformance: accept as known limitation.**
+16. **Document results BEFORE claiming winners.** Read outputs, then write summary.
+17. **T95 FC: FC=0/1 optimal. FC=2 is worse. No bot.rs change.**
