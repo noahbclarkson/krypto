@@ -60,10 +60,18 @@ pub const ATR_RANK_THRESHOLD: f64 = 5.0;
 pub const VOL_LOOKBACK: usize = 92;
 
 /// USDT hedge overlay: reduce position size when BTC hedge ATR is above this percentile of its TR history.
-/// T67 hyperopt 2026-05-05: INERT — full 101-value sweep (PCT∈[0..100] step 1) × 9 universes × 7 WF windows.
-/// ALL values produce IDENTICAL pass (56/63, 88.9%), Sharpe (6.941), and trades (689).
-/// T75 later tuned the ATR averaging period to 38 while keeping this threshold fixed.
-pub const HEDGE_ATR_PCT: f64 = 0.45;
+/// T95 hyperopt 2026-05-11: extensive HAP∈[0.01..0.99 step 0.01] (99 values) × 11 walk-forward windows × Base5 exact-live path.
+/// FINDING: HEDGE_ATR_PCT is a position SIZE dial, not alpha. Two stable plateaus:
+///   Plateau A (HAP 0.01-0.31): hedge fires MORE often → smaller positions → smaller drawdowns.
+///   Plateau B (HAP 0.45-0.99): hedge fires LESS often → full positions → higher returns but higher drawdowns.
+///   All values within a plateau produce IDENTICAL results per window.
+/// WINNER: HAP=0.09 (lowest-value Plateau A member): 8/11 pass, Sharpe 0.654, DD 6.6%.
+/// Baseline HAP=0.45: 7/11 pass, Sharpe 0.718, DD 24.4%.
+/// HAP=0.09 is more robust (+1 more window pass) with much lower drawdown (6.6% vs 24.4%).
+/// Previous T67 conclusion ("identical results on research harness") was wrong — T67 tested the dual Chandelier
+/// research harness, not the exact-live Turtle-only path. T95 used exact-live semantics.
+/// T95 confirmed: HEDGE_ATR_PCT is a risk dial, not alpha. Use lower values for lower-risk sizing.
+pub const HEDGE_ATR_PCT: f64 = 0.09;
 
 /// BTC ATR period for the USDT hedge overlay.
 /// T75 hyperopt 2026-05-06: full integer sweep P∈[5..=100] step 1 × 9 universes × 252d WF windows.

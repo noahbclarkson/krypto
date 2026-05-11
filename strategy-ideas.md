@@ -1,6 +1,6 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-11 12:13 UTC. Research loop CLOSED. Execution phase: historical replay mode (no API keys). Top-10 mechanism analysis DONE (a4b2614b).*
+*Last updated: 2026-05-11 16:05 UTC. Research coma confirmed (12.5% research rate). Research loop CLOSED. Execution phase: historical replay mode (no API keys). Walk-forward Sharpe conflation alert. TurtleATR-only never validated vs 2018 bear.*
 
 ---
 
@@ -14,6 +14,12 @@ Chart now shows 2.76x live bot vs 621x research harness honestly. Rule: only 2.7
 
 ### ⚠️ 2026 YTD Underperformance: Silent Failure (-3.2%)
 ATR_RANK T=5 gate failing silently all year. Not "accepted limitation" — active structural failure. Non-stationary gate mechanism partially understood (T95) but not fixed.
+
+### ⚠️ Walk-Forward Sharpe Conflation Alert (NEW 16:05 UTC)
+Per-window walk-forward Sharpe ~5-6 is a RESEARCH HARNESS metric (dual Chandelier+Turtle). The live bot's daily-account Sharpe is **1.02**. These are NOT the same metric. Do not cite ~5-6 Sharpe as production performance — it describes a different strategy.
+
+### ⚠️ TurtleATR-Only Never Validated Against 2018 Bear (NEW 16:05 UTC)
+T12 held-out (pre-2021) validated DUAL exit (Chandelier+Turtle). Live bot uses Turtle ATR-only ONLY. TurtleATR-only has NEVER been validated against 2018-style bear data in isolation. This is the highest-priority validation gap.
 
 ### ⚠️ 91% Convex Tail — Mechanism Partially Understood (T95 DONE)
 Top-10 = 91% of log return. T95 analysis (a4b2614b, 2026-05-11 12:10 UTC): 8/10 entered after BTC drawdowns >10%/21d. Low-vol Q1 BTC regimes are accidental winner environments, not designed. T73/T95 guardrail: any new filter must preserve the top-10 tail.
