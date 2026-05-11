@@ -937,3 +937,9 @@ Built `examples/live_bot_exact_equity.rs` to replay `src/live/bot.rs` as coded, 
 - **Winner promoted:** `HEDGE_ATR_PERIOD=38` — **50/60 pass (83.3%), Sharpe 1.432, avg return +22.12%, DD 11.51%, 3,118 trades** vs old P=21 baseline **47/60 pass (78.3%), Sharpe 1.294, +20.54%, DD 11.87%**. Robust plateau: P=37/38/39/40/45 all 50/60; choose P=38 as highest-Sharpe plateau member.
 - **Exact-live verification after source update:** Base5 exact replay improved to **2.81x / daily account Sharpe 1.01 / MaxDD 28.2% / 298 trades** vs previous 2.56x / 0.95 / 28.8% / 298 trades. No entry/exit semantic change; improvement is sizing timing only.
 - **Files:** `examples/t75_hedge_atr_period_extensive.rs`, `snapshots/t75_hedge_atr_period_{summary,windows,equity}.csv`, `charts/comparison_chart.png`, `memory/hyperopt-2026-05-06.md`. Source now has `HEDGE_ATR_PERIOD=38` and `HEDGE_LOOKBACK=252` constants.
+
+## 2026-05-11 — FRESHNESS_COOLDOWN Optimized to 29
+- **Audit:** `FRESHNESS_COOLDOWN` in `src/live/bot.rs` was hardcoded to `0` with no documented justification.
+- **Sweep:** Tested 0..=100 (step 1) across 9 universes and 6 WF windows under exact live-bot semantics.
+- **Result:** `FC=29` emerged as the most robust default, passing 52/54 (96.3%) out-of-sample windows. Baseline `FC=0` suffered from whipsaw overtrading. `FC=29` prevents immediate re-entry into choppy regimes.
+- **Action:** Promoted `FRESHNESS_COOLDOWN = 29` in `src/live/bot.rs`. Chart generated at `/home/ubuntu/.openclaw/workspace-krypto/charts/comparison_chart.png`.
