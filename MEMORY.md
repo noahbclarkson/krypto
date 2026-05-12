@@ -943,3 +943,13 @@ Built `examples/live_bot_exact_equity.rs` to replay `src/live/bot.rs` as coded, 
 - **Sweep:** Tested 0..=100 (step 1) across 9 universes and 6 WF windows under exact live-bot semantics.
 - **Result:** `FC=29` emerged as the most robust default, passing 52/54 (96.3%) out-of-sample windows. Baseline `FC=0` suffered from whipsaw overtrading. `FC=29` prevents immediate re-entry into choppy regimes.
 - **Action:** Promoted `FRESHNESS_COOLDOWN = 29` in `src/live/bot.rs`. Chart generated at `/home/ubuntu/.openclaw/workspace-krypto/charts/comparison_chart.png`.
+
+## 2026-05-12 — T100 Historical Replay Mode Built
+
+`examples/live_bot_historical_replay.rs` now feeds cached aligned daily bars directly through the production `src/live/bot.rs::process_bar()` path in dry-run mode. Minimal replay hooks were added to `LiveBot`: public `process_bar`, `seed_history`, `completed_trade_count`, and `open_position_count`.
+
+Replay scope: BTC/ETH/SOL/XRP/DOGE/ADA, exact timestamp alignment, 300 warmup bars seeded per symbol, then 10,806 closed-bar events processed in configured symbol order. Result: **286 closed trades, 0 open positions**, matching the `live_bot_exact_equity.rs` trade count.
+
+Exact-live rerun same session remains **2.76x / daily Sharpe 1.02 / MaxDD 22.3% / 286 trades / 1,801 days**.
+
+Interpretation: historical replay closes the no-API production-path validation gap. It is a regression/deployability harness, not the performance source of truth; `live_bot_exact_equity.rs` remains the compounding equity metric. Remaining blocker is Binance testnet API credentials, not more Turtle-family backtests.
