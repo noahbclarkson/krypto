@@ -7,7 +7,7 @@
 ## Critical Alerts
 
 ### 🚨 FRESHNESS_COOLDOWN=93: New Production Mechanism — UNVALIDATED (NEW 2026-05-11)
-**T96 promoted FC=93 to production `bot.rs` without held-out pre-2021 validation.** This is a new mechanism (93-bar re-entry cooldown ≈ 3 months) added via 101-value sweep on in-sample data. Same pattern produced EP=24, ATR_ENTRY_MULT=0.85, HAP=0.09 as false positives. Rule #7: "No candidate is production-valid until exact-live replay verification." FC=93 was not held-out tested. **Action required this session:** Run pre-2021 held-out test. If FC=93 fails held-out, revert FC to 0 in bot.rs immediately.
+**T96 promoted FC=93 to production bot.rs without held-out pre-2021 validation. T97 REVERTED: FC=93 produced 0/34 held-out passes (0 trades) vs FC=0 at 20/34 passes (+1.54 Sharpe). Reverted to FC=0 in bot.rs + config.rs.** This is a new mechanism (93-bar re-entry cooldown ≈ 3 months) added via 101-value sweep on in-sample data. Same pattern produced EP=24, ATR_ENTRY_MULT=0.85, HAP=0.09 as false positives. Rule #7: "No candidate is production-valid until exact-live replay verification." FC=93 was not held-out tested. **Action required this session:** Run pre-2021 held-out test. If FC=93 fails held-out, revert FC to 0 in bot.rs immediately.
 
 ### ⚠️ Turtle-Only Pre-2021 Held-Out: 3rd Consecutive Plan, NOT Built
 Turtle ATR-only (live bot exit) has NEVER been validated against pre-2021 bear data. T12 held-out tested DUAL Chandelier+Turtle exit (100% pass). These are mechanically different strategies. If Turtle ATR-only fails pre-2021, 2.76x is a bull-market artifact. **This is the single most important validation remaining. Execute or explicitly close.**

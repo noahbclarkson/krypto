@@ -20,7 +20,7 @@
 //!   EP=21, TurtleATR(24, 2.0), HM=15, CAP=3, ATR_RANK(AP=17, LB=41, T=5), VL=92 unused/rejected for live gate
 //!   Live entries also apply USDT hedge: BTC ATR38 > 45th pct of 252d TR history => size *= HEDGE_SIZE_MULT (0.25, T83).
 
-const FRESHNESS_COOLDOWN: usize = 93; // T96: 101-value sweep on exact-live path, FC=93 robustness winner: 83.0% pass, Sharpe 3.88, DD 23.5% vs FC=0 baseline 51.9% pass, Sharpe 2.11, DD 58.7%. Wide plateau FC in [92..97].
+const FRESHNESS_COOLDOWN: usize = 0; // T97: REVERTED — held-out: FC=93 0/34 pass, FC=0 20/34 pass, Sharpe +1.54. In-sample artifact like EP=24.
 
 // ATR entry multiplier — hyperopt 2026-04-21: EM=0.90 wins full 63-window validation.
 // Only enter if close >= max_close + ATR(24) * 0.90 (momentum confirmation filter).
