@@ -230,7 +230,12 @@ impl LiveBot {
     // =========================================================================
     // Bar processing
     // =========================================================================
-    async fn process_bar(&mut self, event: &KlineEvent) -> Result<()> {
+    /// Process one closed kline event through the production live-bot logic.
+    ///
+    /// This is public so offline replay harnesses can feed cached historical bars
+    /// through the same state machine used by the WebSocket loop. It must remain
+    /// the single event-level signal/execution path for both live and replay use.
+    pub async fn process_bar(&mut self, event: &KlineEvent) -> Result<()> {
         let symbol = &event.symbol;
         let bar = event.kline.to_bar()?;
 
@@ -319,6 +324,24 @@ impl LiveBot {
         }
 
         Ok(())
+    }
+
+    /// Seed per-symbol historical bars before replaying later events.
+    ///
+    /// Live startup does this via `fetch_warmup_data()`. Historical replay needs
+    /// the same capability without touching Binance or the WebSocket feed.
+    pub fn seed_history(&mut self, symbol: impl Into<String>, bars: Vec<Bar>) {
+        self.bars.insert(symbol.into(), bars);
+    }
+
+    /// Number of internally recorded completed trades.
+    pub fn completed_trade_count(&self) -> usize {
+        self.completed_trades.len()
+    }
+
+    /// Number of currently open live-bot positions.
+    pub fn open_position_count(&self) -> usize {
+        self.positions.values().filter(|p| !matches!(p, Position::Flat)).count()
     }
 
     // =========================================================================
