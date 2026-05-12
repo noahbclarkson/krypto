@@ -53,7 +53,7 @@ BINANCE_API_KEY=xxx BINANCE_API_SECRET=yyy \
 3. Monitors for Turtle breakout: `close > max(close[EP bars])`
 4. On breakout: places **limit buy order** at bar close (favoring maker fill)
 5. Tracks position with **Turtle ATR trailing stop** (sole exit)
-6. Exit: when `low <= lowest_low - ATR(24) * 2.0` OR `bars_held >= 12`
+6. Exit: when `low <= lowest_low - ATR(24) * 2.0` OR `bars_held >= 15`
 7. Logs all fills to `logs/slippage_YYYY-MM-DD.csv`
 
 ---
@@ -65,9 +65,12 @@ EP               = 21
 ATR_PERIOD       = 24
 ATR_MULT         = 2.0
 ATR_ENTRY_MULT   = 0.00  (no entry filter)
-HOLD_MAX         = 12
+HOLD_MAX         = 15
 POSITION_CAP     = 3
 FRESHNESS_COOLDOWN = 0
+REGIME_ATR_PERIOD = 17
+REGIME_LOOKBACK   = 41
+ATR_RANK_THRESHOLD = 5.0
 ```
 
 **Note:** Chandelier params in `LiveConfig` (CHAND_P=7, CHAND_M=2.30) are stored but **not used by bot.rs** — the live bot uses Turtle-only exit as validated 2026-04-27.
