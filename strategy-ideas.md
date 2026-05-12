@@ -1,63 +1,80 @@
 # Strategy Ideas — Krypto Research Log
 
-*Last updated: 2026-05-12 00:47 UTC. Research coma confirmed (5th consecutive critique-only or documentation session). Anti-spin rule #11/#15 triggered. Turtle-Only Pre-2021 held-out validation is the single most important unbuilt idea — listed as Priority 1 for the 3rd consecutive session.*
+*Last updated: 2026-05-12 12:08 UTC. T99 and T100 built. T99/T100/Historical Replay all DONE. Research loop closed. Execution loop blocked. M1 Discord NOT done after 5+ weeks. API key blocker escalated.*
 
 ---
 
-## Critical Alerts
+## Status: Research Loop Closed — Execution Loop Blocked
 
-### 🚨 Turtle-Only Pre-2021 Held-Out Validation — 3rd Consecutive Session Not Built
-Most important validation remaining. The live bot uses Turtle ATR-only exit (no Chandelier). T12 validated DUAL Chandelier+Turtle exit at 21/21 pre-2021 passes. These are mechanically different strategies. Turtle ATR-only has NEVER been tested against pre-2021 bear data. If Turtle-only fails pre-2021, 2.76x may be a bull-market artifact. **Execute or explicitly close this session.**
+All Turtle-family parameters are settled. All validation paths are exhausted. No further simulation research is justified without new data or live execution.
 
-### 🚨 Research Coma — 5 Consecutive Critique/Docs Sessions
-Anti-spin rule #11/#15: 12/12 recent git commits are documentation, monitoring, or reversions. Zero production-valid new findings in 5 sessions. All remaining questions are execution questions (API keys). If API keys remain unavailable next session, escalate to Arc for explicit decision: pause cron sessions, or pivot to Historical Replay Mode as the only path forward.
-
-### 🚨 Progress Chart Fix — 4th Consecutive Deferral
-`progress_equity_curves.csv` STILL shows 621x dual Chandelier+Turtle as the turtle_equity line. Live bot 2.76x is NOT in the CSV. This is a data integrity issue, not a backlog item. Execute fix or explicitly close it.
-
----
-
-## Honest Assessment: What's Actually Left to Research?
-
-**Legitimate remaining questions (require execution, not simulation):**
-1. Real maker-fill rate on Turtle entries (limit at bar close)
-2. Real slippage on Turtle ATR stop exits (trailing stop placement)
-3. Live bot code path validation against historical data (Historical Replay Mode)
-4. Turtle-Only pre-2021 held-out validation
-
-**Questions that are genuinely closed:**
-- Fee impact: confirmed negligible [1.02-1.04] Sharpe range
-- ATR_ENTRY_MULT: confirmed 0.00 optimal
-- VOL_LOOKBACK gate: confirmed kills equity — do not add to live bot
-- ATR_RANK threshold: confirmed T=5 (any higher fails held-out)
-- HOLD_MAX: confirmed 15
-- HEDGE_SIZE_MULT: confirmed 0.25
-- DUAL exit (Chandelier+Turtle): NOT wired into live bot — different strategy
-- All Turtle-family params: settled
-
-**Questions that cannot be resolved without new data or keys:**
-- 2026 YTD underperformance: no fix path without destroying the convex tail
-- Cross-universe generalization: UNI 1/6 pass — known fragility
-- Top-10 dependency: structural, documented, no current fix path
+**What remains:**
+- Live testnet: the only path to new validated information
+- Top-winner mechanism decomposition: the only path to understanding the 91% convex tail
+- M1 Discord integration: fix it or explicitly close it (5+ weeks broken)
+- API key escalation: Arc decision required next session
 
 ---
 
-## 3 Most Promising Unbuilt Ideas
+## 3 Most Promising Ideas (Updated 2026-05-12)
 
-### 1. Turtle-Only Pre-2021 Held-Out Validation (PRIORITY: CRITICAL)
-Most important validation remaining. The live bot's Turtle ATR-only exit has never been tested against pre-2021 bear data. If it fails pre-2021, the strategy is a bull-era artifact. Execute this session or explicitly close it and update the deployment statement.
+### 1. Top-Winner Mechanism Decomposition (PRIORITY: HIGH — New)
+**What:** The top-10 trades account for 91% of total log return. Understanding WHY these wins occurred is the only path to reducing concentration risk without destroying the edge.
 
-### 2. Historical Replay Mode (PRIORITY: HIGH — No API Keys Required)
-Run `src/live/bot.rs` against cached parquet bars in bar-by-bar replay. The `LiveBot::process_bar()` method is the production code path — if this replay produces identical results to `live_bot_exact_equity.rs`, we have validated the live code path without live keys. First proposed 2026-05-11 08:05 UTC. Zero code written as of 2026-05-12. **If this cannot be built in one session, the reason is a code architecture issue (async/WebSocket dependencies) — document it explicitly and escalate.**
+**Key finding (T73):** The largest winners (SOL 2023-01-11, DOGE 2022-10-28) are NOT obvious bull breakouts. They are low-vol/Q1 BTC regime entries. The convex tail comes from counter-intuitive setups — the exact entries that naive filters would exclude.
 
-### 3. Regime Non-Stationarity Quantification (PRIORITY: MEDIUM — Document Only)
-ATR_RANK T=5 is non-stationary. Works in some BTC eras, fails in others (2026 YTD: -3.2%, Sharpe -1.17). T=24 and T=65 fail held-out. No current fix path without destroying the top-10 convex tail. Document the mechanism honestly: BTC vol percentile at entry determines whether the gate fires. This is known uncertainty, not a solvable problem with current data.
+**What to do:** For each top-10 winner, document:
+- BTC vol regime at entry (high/low/medium percentile of 252-bar history)
+- ATR_RANK value at entry (was the gate active?)
+- Position size and holding period
+- What market regime (bull/bear/chop) BTC was in
+
+**Goal:** Find a structural explanation. Is the tail concentrated in specific vol regimes? Specific position sizes? Specific holding periods? If we understand the mechanism, we can make an informed decision about concentration tolerance rather than just accepting it as "structural."
+
+**This is NOT a filter task.** We are not trying to improve Sharpe. We are trying to understand the edge we already have.
+
+**Status:** UNBUILT. Do not turn this into a parameter sweep.
+
+### 2. Cross-Universe Generalization Test (PRIORITY: MEDIUM — Execution Required)
+**What:** T80 showed UNI 1/6 pass, MATIC 6/6 pass, AVAX 4/6 pass. The edge is universe-selected, not universal. Without live testnet, we cannot know which universe the bot is currently operating in.
+
+**Honest problem:** We train on Base5 (BTC/ETH/SOL/XRP/DOGE/ADA) and hope the edge generalizes. UNI failure suggests it doesn't generalize cleanly to all crypto assets. This is survivorship bias in the training universe.
+
+**What to do:** Document the generalization gap honestly. For production deployment, we need a clear answer to "which assets are in-scope and why." The answer is currently "Base5 only" but this is not prominently stated anywhere.
+
+**Status:** UNBUILT. Requires execution, not simulation.
+
+### 3. M1 Discord Integration Fix-or-Close (PRIORITY: CRITICAL — 5+ Weeks Broken)
+**What:** Memory says "M1 Discord integration: 5+ weeks, not done. Final call next session." (2026-05-10). Charts generated but never confirmed delivered to Noah's Discord. `sessions_history` returns 0 messages.
+
+**The claim has been carried as "done" for 5+ weeks without end-to-end verification.**
+
+**What to do:** Next session: either (a) build the full M1→Discord pipeline and verify it works with a test message, or (b) explicitly close it — remove from memory, PLAN, and strategy-ideas.md. Do not carry a broken 5-week promise.
+
+**Status:** UNBUILT. Broken.
+
+---
+
+## Closed Items (DO NOT REOPEN)
+
+| Item | Resolution | Date |
+|---|---|---|
+| Turtle-Only Pre-2021 Validation | DONE — T99: 5/5 symbols positive, geo-mean 1.52x | 2026-05-12 |
+| Historical Replay Mode | DONE — T100: 286 trades through process_bar(), matches exact-live | 2026-05-12 |
+| Progress Chart Fix | DONE — 8e650c73 adds live bot line to plot_progress.py | 2026-05-11 |
+| Fee Impact | CONFIRMED [1.02-1.04] — not dominant deployment risk | 2026-05-10 |
+| ATR_ENTRY_MULT | CONFIRMED 0.00 optimal — any filter hurts | 2026-04-13 |
+| ATR_RANK threshold | CONFIRMED T=5; T=24 and T=65 fail held-out | 2026-05-04 |
+| HOLD_MAX | CONFIRMED 15 | 2026-05-10 |
+| HEDGE_SIZE_MULT | CONFIRMED 0.25 | 2026-05-07 |
+| VOL_LOOKBACK gate | REJECTED — kills equity, do not add to live bot | 2026-05-06 |
+| All Turtle-family params | FROZEN — no sweeps without new mechanism | 2026-05-12 |
 
 ---
 
 ## Sharpe Taxonomy (Authoritative)
 
-| Type | Value | Comparability |
+| Type | Value | Note |
 |---|---|---|
 | Live bot daily compounded (Turtle ATR-only) | **1.02** | Authoritative production number |
 | Progress harness (dual Chandelier+Turtle ATR) | 1.19 | RESEARCH — different exit |
@@ -67,7 +84,7 @@ ATR_RANK T=5 is non-stationary. Works in some BTC eras, fails in others (2026 YT
 
 ---
 
-## Production Parameters (Frozen — Confirmed 2026-05-12)
+## Production Parameters (Frozen — 2026-05-12)
 
 ```
 TURTLE_EP=21, TURTLE_ATR_PERIOD=24, TURTLE_ATR_MULT=2.00, ATR_ENTRY_MULT=0.00,
@@ -82,43 +99,17 @@ Exit: Turtle ATR(24,2.0) trailing stop ONLY. Chandelier stored for compatibility
 
 ---
 
-## Honest Deployment Statement
-
-**What we have:** Turtle ATR trend-following on daily crypto bars. Turtle ATR-only exit. Real, modest edge (2.76x / Sharpe 1.02). Walk-forward validated on Base5 (100% pass, 6/6 windows). Edge concentrated in high-beta trending crypto pairs.
-
-**What we DON'T have:**
-- Pre-2021 held-out validation of Turtle ATR-only (the production exit) — **NOT BUILT after 3 sessions**
-- Historical replay mode validation of production code path — **NOT BUILT after 16+ hours**
-- Live execution feedback — **blocked on API keys 6+ weeks**
-- Cross-universe generalization proof — UNI 1/6 pass, known fragility
-
-**Only remaining path forward without API keys:** Historical Replay Mode. If that also cannot be built (architecture issue), explicitly document the blocker and escalate to Arc.
-
----
-
-## Anti-Overfitting Rules
+## Anti-Spin Rules (Active)
 
 1. No Turtle-family parameter sweeps unless a new mechanism is proposed.
-2. No "audit" tasks — write the test or close the issue.
-3. Every task must have an execute-or-close decision.
-4. **621x / 176.79x numbers are research diagnostics, NOT production performance.**
-5. Daily account Sharpe only on equity charts. Per-window walk-forward Sharpe is not comparable.
-6. Report fee-adjusted Sharpe as a range, not a point estimate.
-7. **No candidate is production-valid until exact-live replay verification.**
-8. Top-10 = 91% of log return. Any new filter must preserve the convex tail.
-9. **Chandelier either fires or is removed. Non-binding exits are docs errors.**
-10. **Universe selection is survivorship bias.** Always disclose which assets.
-11. **Suspension animation is a real failure mode.** 5+ consecutive docs-only commits = escalate.
-12. **If blocked on external dependency for 5+ weeks, need an explicit plan.**
-13. **Maker-fill uncertainty is confirmed [1.02-1.04] — not dominant.**
-14. **Progress harness 621x ≠ live bot 2.76x.** Do not conflate.
-15. **2026 YTD underperformance: silent failure.** Not "accepted limitation" — an active documented structural failure.
-16. **FRESHNESS_COOLDOWN is a production mechanism. Any change requires held-out pre-2021 validation.**
-17. **Dense in-sample sweeps (EP=24, HAP=0.09, FC=93) = false positives.** Require held-out validation.
-18. **Turtle-only pre-2021 validation: 3rd session not built — execute or explicitly close.**
-19. **Historical Replay Mode: proposed 16+ hours, not built — build or document blocker.**
-20. **Research coma is a real failure mode.** Escalate to Arc after 2 consecutive critique-only sessions.
-21. **If next session has 0 commits with code changes, escalate to Arc.**
-22. **Progress chart fix: 4th deferral — execute or kill explicitly.**
-23. **All Turtle-family params are settled. No more sweeps without a new mechanism.**
-24. **Top-10 dependency is structural.** Document, don't try to fix without understanding the mechanism.
+2. Every task must have an execute-or-close decision.
+3. **621x / 176.79x numbers are research diagnostics, NOT production performance.**
+4. Daily account Sharpe only on equity charts. Per-window walk-forward Sharpe not comparable.
+5. Report fee-adjusted Sharpe as a range, not a point estimate.
+6. **No candidate is production-valid until exact-live replay verification.**
+7. Top-10 = 91% of log return. Any new filter must preserve the convex tail.
+8. **M1 Discord: 5+ weeks not done. Fix or explicitly close. Do not carry as latent.**
+9. **API key blocker: 6+ weeks. Escalate to Arc per anti-spin rule #12.**
+10. **Research loop is closed. No further Turtle-family validation without live data.**
+11. **Top-winner decomposition: understand the edge, not a new filter.**
+12. **Universe selection is survivorship bias.** Base5 is in-scope; UNI is not.
