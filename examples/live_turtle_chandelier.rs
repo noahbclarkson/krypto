@@ -31,10 +31,10 @@ const CHAND_M: f64 = 2.30;   // Chandelier ATR multiplier — hyperopt 2026-04-2
 const ATR_P: usize = 24;     // Turtle ATR period (2026-04-16: fine hyperopt 18-35 step=1, ATR=24 +3.6% Sharpe, -10.8pp DD vs ATR=25)
 const ATR_M: f64 = 2.0;     // Turtle ATR multiplier
 const ATR_ENTRY_MULT: f64 = 0.00; // NO entry-side ATR filter — confirmed 2026-04-25 (revert from 0.85)
-const HOLD_MAX: usize = 12; // hyperopt 2026-04-21: HM=12 wins +71.4% Sharpe vs HM=45 baseline (2.72 vs 1.59 avg Sharpe, 9-universe × 54 windows). Full sweep 19 values [5-180] with EP=21/CHAND(11,2.25). Chandelier fires first ~bar 12-15; HM is irrelevant above ~35. HM=12 wins on Sharpe + pass rate (96.3% vs 92.6%). See memory/hyperopt-2026-04-21-hold-max.md.
+const HOLD_MAX: usize = 15; // T88 hyperopt 2026-05-10: ALL 100 values pass 100% (69/69) on exact-live OOS sweep. HM=15 confirmed optimal: 2.76x / Sharpe 1.02 / MaxDD 22.3% / 286 trades. HM=12 was stale (old Chandelier dual-exit value, pre-T88). See memory/hyperopt-2026-05-10.md.
 const POS_CAP: usize = 3;   // CONFIRMED 2026-04-27: extensive CAP sweep [1..10] on current Turtle-only walk-forward. CAP=3 is the robustness winner (72.2% pass, Sharpe 4.58, 9/9 positive universes). CAP=4-10 increases raw return but degrades pass rate too much.
-const REGIME_ATR_P: usize = 12; // 2026-04-30 joint regime ATR sweep winner.
-const REGIME_LOOKBACK: usize = 42; // 2026-04-30 joint regime ATR sweep winner.
+const REGIME_ATR_P: usize = 17; // hyperopt 2026-05-04: AP=17 wins OOS on Sharpe/Return. Held-out (4-period pre-2021): 4/4 pass, Sharpe 7.715, equity 1.9481x, DD 21.3%. AP=12 (stale): 2/4 pass. AP=17 confirmed production default. See memory/hyperopt-2026-05-04-ap-holdout.md.
+const REGIME_LOOKBACK: usize = 41; // T86 REVERTED: LB=140 failed exact-live verification (2.58x vs 2.76x). LB=41 is correct production default. See memory/hyperopt-2026-05-08.md.
 const ATR_RANK_T: f64 = 5.0; // Live entry filter: require BTC ATR percentile >= 5.
 
 // =============================================================================

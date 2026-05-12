@@ -144,9 +144,9 @@ Re-run with --prod flag to arm.
 EP                       = 21     (Turtle entry lookback)
 TURTLE_ATR_PERIOD       = 24     (Turtle ATR period)
 TURTLE_ATR_MULT         = 2.00   (Turtle ATR multiplier)
-CHAND_PERIOD            = 7      (Chandelier ATR period)
+CHAND_PERIOD            = 7      (Chandelier ATR period — stored but UNUSED by live bot.rs; live exit is Turtle ATR only)
 CHAND_MULT              = 2.30   (Chandelier multiplier)
-HOLD_MAX                = 12     (max bars held)
+HOLD_MAX                = 15     (max bars held — updated 2026-05-10 from 12, T88 exact-live confirmed)
 POSITION_CAP            = 3      (max concurrent positions)
 FRESHNESS_COOLDOWN      = 0      (no freshness filter)
 ATR_ENTRY_MULT          = 0.00   (no ATR entry filter)
@@ -154,8 +154,8 @@ VOL_LOOKBACK            = 8      (dollar-volume lookback)
 
 # Regime / entry filter (live bot only)
 ATR_RANK_THRESHOLD      = 5      (block if BTC ATR in bottom 5% of 252-bar history)
-REGIME_ATR_PERIOD       = 12     (BTC ATR period for rank calculation)
-REGIME_LOOKBACK         = 42     (lookback for ATR percentile rank)
+REGIME_ATR_PERIOD       = 17     (BTC ATR period for rank calculation — updated 2026-05-04 from 12)
+REGIME_LOOKBACK         = 41     (lookback for ATR percentile rank — updated 2026-05-08 from 42)
 
 # Position caps
 MAX_SOL_POSITION        = $50K notional
