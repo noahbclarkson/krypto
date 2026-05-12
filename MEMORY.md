@@ -1,5 +1,15 @@
 # MEMORY.md - Krypto Knowledge Base
 
+## 2026-05-12 18:01 — T104 Top-Winner Mechanism Corrected
+
+**Harness:** `examples/t104_top_winner_decomposition.rs` generates `snapshots/t104_top_winner_decomposition.{csv,md}` from current `snapshots/live_bot_exact_trades.csv` and cached BTC data.
+
+**Key finding:** Current top-10 trades contribute **91.4%** of compounded log return (0.927 / 1.014 log), confirming convex-tail concentration. But the 2026-05-11 prose note had the mechanism partly wrong: BTC 21d return is **positive for 10/10** top-winner entries (avg +15.5%). The negative values previously quoted were the adjacent **BTC SMA50/SMA200 proxy**, not 21d return.
+
+**Correct mechanism:** early rebound/continuation inside still-damaged BTC long-term regimes. 8/10 top winners have negative SMA50/SMA200 proxy, 8/10 are below ATR_RANK 24, 9/10 exit via Turtle ATR, and 10/10 use full 1/3 position size. Additional filters still risk killing the compounding engine; no parameter change warranted.
+
+**Status:** T104 closes top-winner mechanism decomposition. `memory/top10_mechanism_2026-05-11.md` is superseded by generated T104 artifacts.
+
 ## 2026-05-10 08:05 — TWO SYSTEMS PROBLEM: CRITICAL FINDING
 
 ## 2026-05-10 21:15 — T94 Maker-Fill Modeling: Fee Impact Negligible

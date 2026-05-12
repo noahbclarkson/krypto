@@ -1,5 +1,7 @@
 # Top-10 Winner Mechanism Analysis
-**Date:** 2026-05-11 | **Author:** Kira | **Status:** Documentation only — no code change
+**Date:** 2026-05-11 | **Author:** Kira | **Status:** SUPERSEDED by T104 (2026-05-12)
+
+> **Supersession note (2026-05-12):** This prose note misread the adjacent `btc_sma50_over_sma200` field as BTC 21d return and therefore incorrectly described top winners as entries after negative BTC 21d moves. The generated T104 artifact (`snapshots/t104_top_winner_decomposition.md`) is the current source of truth: current top-10 winners have **10/10 positive BTC 21d return** and **8/10 negative BTC SMA50/SMA200 proxy** — early rebound/continuation inside still-damaged long-term regimes.
 
 ## Executive Summary
 

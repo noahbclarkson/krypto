@@ -11,6 +11,7 @@
 - **Suspension animation confirmed:** 5+ consecutive docs-only sessions.
 - **T99 pre-2021 validation = bull market validation.** Pre-2021 dominated by 2017-2018 and 2020-2021 bulls. 100% pass rate is not cross-regime proof.
 - **2026 YTD underperformance is structural non-stationarity**, not "accepted limitation."
+- **T104 top-winner decomposition: COMPLETE.** Current top-10 = 91.4% of log return; mechanism is early rebound/continuation inside still-damaged BTC long-term regimes. Prior 2026-05-11 prose misstated BTC 21d return direction.
 - **All Turtle-family params: FROZEN.**
 - **Exact-live: 2.76x / Sharpe 1.02 / MaxDD 22.3% / 286 trades / 1,801 days.**
 
@@ -39,20 +40,12 @@
 
 ## Top-3 Execution Tasks (Updated 2026-05-12)
 
-### Task 1: Top-Winner Mechanism Decomposition — BUILD
-**What:** `examples/t104_top_winner_decomposition.rs` documents WHY the top-10 trades are so large.
+### Task 1: ✅ Top-Winner Mechanism Decomposition — CLOSED (T104)
+**Completed:** `examples/t104_top_winner_decomposition.rs` generates `snapshots/t104_top_winner_decomposition.{csv,md}` from current `live_bot_exact_trades.csv`.
 
-**For each top-10 trade, document:**
-- Entry date, symbol, position size
-- BTC 21d return at entry (vol regime)
-- BTC ATR percentile at entry (gate active/inactive?)
-- Holding bars before exit
-- Exit type (Turtle ATR stop vs profitable exit)
-- BTC regime label at entry
+**Finding:** Top-10 current trades contribute **91.4%** of compounded log return (0.927 / 1.014 log). The mechanism is **early rebound/continuation inside still-damaged BTC long-term regimes**: 10/10 top winners have positive BTC 21d return at entry, 8/10 have negative BTC SMA50/SMA200 proxy, 8/10 are below ATR_RANK 24, and 9/10 exit via Turtle ATR.
 
-**Deliverable:** `snapshots/t104_top_winner_mechanism.md` — structural explanation of the 91% convex tail.
-
-**Anti-spin:** NOT a filter task. NOT a parameter sweep. Understanding only.
+**Correction:** The prior 2026-05-11 prose note misstated BTC 21d return as negative by reading the adjacent `btc_sma50_over_sma200` field. T104 corrects this. No filter or parameter change warranted.
 
 ### Task 2: API Key Blocker — DO NOT RE-ESCALATE; REPORT CLEARLY
 **Status:** Escalated to Arc once on 2026-05-12 16:05 UTC; Arc acknowledged.
@@ -105,8 +98,8 @@ Known structural risks (documented):
 **Status: SUSPENDED until live testnet.**
 
 Valid work:
-1. Top-winner decomposition (understanding, not filtering)
-2. Order-flow dynamic position sizing (different from entry filter)
+1. Order-flow dynamic position sizing (different from entry filter)
+2. Production universe documentation if it materially reduces deployment ambiguity
 3. No Turtle-family param sweeps
 
 ---
