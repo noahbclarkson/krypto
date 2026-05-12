@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**Updated: 2026-05-12 12:08 UTC — Critique Session #12: Research Coma Confirmed**
+**Updated: 2026-05-12 15:05 UTC — M1 Closed (Misunderstanding), T101 Trashed, Escalation Required**
 
 ---
 
@@ -21,12 +21,12 @@
 
 ## Critical Open Issues (Not Resolved — Must Not Be Normalized)
 
-### 🚨 M1 Discord Integration — 5+ Weeks, NOT Done
-- Memory says "M1 Discord integration: 5+ weeks, not done. Final call next session." (2026-05-10)
-- Charts generated (`m1_status.png`, `m1_session_chart.png`) but never confirmed delivered to Discord
-- `sessions_history` on Discord channel returns 0 messages this session
-- **This is a 5-week-old broken promise. Fix it or explicitly close it.**
-- Action: Next session MUST either verify M1 is posting to Discord or explicitly close the integration.
+### ✅ M1 Discord Integration — CLOSED (2026-05-12, Misunderstanding)
+- `examples/m1_equity_trajectory_monitor.rs` is a **console-based** equity trajectory monitor
+- Code inspection confirms: zero Discord API calls, zero `message` tool usage, zero channel references
+- "M1 Discord integration" was a misunderstanding from the start — M1 generates PNGs and console output, not Discord posts
+- Charts (`m1_status.png`, `m1_session_chart.png`) exist in repo but were never intended to auto-post
+- **CLOSED. Not a real deliverable. Remove from active tracking.**
 
 ### 🚨 API Key Blocker — 6+ Weeks Without Escalation
 - "Main blocker: Binance testnet credentials" has been in PLAN.md since ~2026-04-10
@@ -42,26 +42,21 @@
 
 ---
 
-## Top-3 Execution Tasks (Next Session)
+## Top-3 Execution Tasks (Updated 2026-05-12)
 
-### Task 1: Verify or Fix M1 Discord Integration
-**Why:** 5+ weeks claimed, never verified, `sessions_history` shows 0 messages this session. Either the integration is broken (5-week-old bug) or it was never built (misunderstanding). Either way, this needs resolution before the next cron session.
+### Task 1: ✅ M1 Discord Integration — CLOSED
+**Finding:** M1 (`examples/m1_equity_trajectory_monitor.rs`) is console-only. No Discord integration code exists. "M1 Discord" was a misunderstanding — M1 outputs to stdout and generates PNG files, not Discord messages. Closed 2026-05-12. No further action.
 
-**If fixable in one session:** Build, test, verify Discord delivery with a test chart.
-**If not fixable:** Explicitly close it. Remove from memory/PLAN. Do not carry it as a latent broken promise.
+### Task 2: ✅ Top-Winner Mechanism Decomposition — CLOSED
+**Completed:** `memory/top10_mechanism_2026-05-11.md`. Key finding: 91% convex tail comes from "bear market reversal catcher" mechanism — entries after BTC drawdowns (21d return < -10%), exits in 1-3 bars. No filter can be added without destroying the tail. Documented, no fix required.
 
-### Task 2: Escalate API Key Blocker to Arc
-**Why:** 6+ weeks. Anti-spin rule #12 triggered. No more "say blocked and move on" — need an explicit decision.
+### Task 3: Escalate API Key Blocker to Arc — REQUIRED THIS SESSION
+**Why:** 6+ weeks. Anti-spin rule #12 triggered. Need an explicit decision.
 
 **Options to present to Arc:**
 1. Keys available → Kira starts live testnet session immediately
 2. Keys absent → suspend cron sessions until available; resume when keys exist
 3. Continue with current state → cron sessions produce documentation only; no new information
-
-### Task 3: Top-Winner Mechanism Decomposition
-**Why:** Top-10 = 91% of log return. This is the single biggest structural risk. Understanding the mechanism (low-vol/Q1 BTC regime entries for the biggest winners) is the only path to reducing concentration without killing the tail.
-
-**Not a parameter sweep.** Write a diagnostic report: for each top-10 winner, document the BTC vol regime at entry, the ATR rank, the position size, and the holding period. Look for a structural explanation, not a filter.
 
 ---
 
@@ -135,7 +130,7 @@ Work is only valid if:
 13. **Maker-fill uncertainty is confirmed [1.02-1.04] — not dominant.**
 14. **Progress harness 621x ≠ live bot 2.76x.** Do not conflate.
 15. **2026 YTD underperformance: silent failure.** Not "accepted limitation" — an active documented structural failure.
-16. **M1 Discord: 5+ weeks not done. Fix or explicitly close. Do not carry as latent broken promise.**
+16. ~~M1 Discord: 5+ weeks not done. Fix or explicitly close.~~ — CLOSED 2026-05-12. M1 is console-only, not a Discord tool.
 17. **API key blocker: 6+ weeks. Escalate to Arc per rule #12.**
 18. **Top-winner mechanism decomposition is the only path to reducing 91% tail dependency.**
 19. **Research loop is closed. No further Turtle-family validation without live data.**
