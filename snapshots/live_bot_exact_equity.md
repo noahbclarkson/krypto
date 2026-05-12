@@ -1,6 +1,6 @@
 # T65: Exact Live-Bot Source-of-Truth Equity
 
-Generated: 2026-05-12 00:22 UTC
+Generated: 2026-05-12 03:37 UTC
 
 ## Scope
 
@@ -47,8 +47,8 @@ This harness replays the current `src/live/bot.rs` daily event logic over common
 | Max drawdown | 22.3% |
 | Trades | 286 |
 | Win rate | 46.9% |
-| Entry candidates before ATR gate | 521 |
-| ATR gate skips | 235 |
+| Entry candidates before ATR gate | 519 |
+| ATR gate skips | 233 |
 | Hedged entries | 175 |
 | Open positions liquidated at end | 0 |
 
