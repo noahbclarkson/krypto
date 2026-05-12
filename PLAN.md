@@ -1,6 +1,6 @@
 # PLAN.md — Krypto Research and Execution Plan
 
-**Updated: 2026-05-12 16:05 UTC — Critique Session #13**
+**Updated: 2026-05-12 16:20 UTC — Arc Directive Applied**
 
 ---
 
@@ -18,11 +18,13 @@
 
 ## Critical Open Issues
 
-### 🚨 API Key Blocker — 6+ Weeks Without Escalation (Anti-Spin #12 TRIGGERED)
+### 🚨 API Key Blocker — 6+ Weeks, Escalated Once; Do Not Re-Escalate Every Run
 - "Main blocker: Binance testnet credentials" has been in PLAN.md since ~2026-04-10
-- **Anti-spin rule #12:** "If blocked on external dependency for 5+ weeks, need an explicit plan."
-- **ESCALATION REQUIRED THIS SESSION TO ARC.**
-- Options to present: (a) keys available → start testnet, (b) keys absent → suspend cron sessions, (c) explicit decision to continue docs-only
+- Escalated to Arc on 2026-05-12 16:05 UTC. Arc acknowledged.
+- **Arc directive:** do not keep re-escalating this blocker every run. Arc cannot suspend cron schedules without Noah's explicit approval.
+- Until keys exist, do only concrete no-credential validation work when genuinely available; otherwise exit early with a concise BLOCKED summary.
+- Keep one clear recommendation in the next normal report: provide Binance testnet API key+secret OR authorize pausing Krypto crons until keys arrive.
+- Avoid docs-only churn.
 
 ### 🚨 2026 YTD: Structural Non-Stationarity
 - ATR_RANK T=5 gate: in low-vol regimes (current 2026), gate doesn't fire → unfiltered exposure.
@@ -52,17 +54,18 @@
 
 **Anti-spin:** NOT a filter task. NOT a parameter sweep. Understanding only.
 
-### Task 2: Escalate API Key Blocker to Arc — ESCALATE NOW
-**Message to Arc:**
+### Task 2: API Key Blocker — DO NOT RE-ESCALATE; REPORT CLEARLY
+**Status:** Escalated to Arc once on 2026-05-12 16:05 UTC; Arc acknowledged.
+
+**Arc directive:** Do not keep re-escalating every run. Arc cannot pause Krypto crons without Noah's explicit approval.
+
+**Required next normal report language:**
 ```
-Project: krypto v2-rewrite
-Research loop: closed. All Turtle params settled.
-Execution loop: blocked 6+ weeks on Binance testnet API keys.
-Current state: 5+ consecutive docs-only sessions.
-Request: (a) keys available → start live testnet immediately
-         (b) keys absent → suspend cron sessions until available
-         (c) explicit decision to continue in docs-only mode
+BLOCKED: live/testnet execution still requires Binance testnet API key+secret.
+Recommendation: provide keys OR authorize pausing Krypto crons until keys arrive.
 ```
+
+**Until then:** only do concrete no-credential validation work when available. If no such work exists, exit early with concise BLOCKED summary. No docs-only churn.
 
 ### Task 3: Production Universe Document — WRITE
 **What:** `krypto/docs/production_universe.md` formally documents:
@@ -116,7 +119,7 @@ Valid work:
 
 **What we know is broken:** 2026 YTD (-3.2%, Sharpe -1.17). Top-10 91% tail dependency. UNI 1/6 generalization failure.
 
-**What the next session MUST decide:** Live testnet OR explicit suspension.
+**What the next session MUST do:** Concrete no-credential validation work if genuinely available; otherwise exit early BLOCKED. Do not re-escalate to Arc unless new information appears.
 
 ---
 
@@ -133,12 +136,12 @@ Valid work:
 9. **Chandelier either fires or is removed. Non-binding exits are docs errors.**
 10. **Universe selection is survivorship bias.** Always disclose which assets.
 11. **Suspension animation is a real failure mode.** 5+ consecutive docs-only commits = escalate.
-12. **If blocked on external dependency for 5+ weeks, need an explicit plan.**
+12. **If blocked on external dependency for 5+ weeks, need one explicit plan; after Arc acknowledgment, do not re-escalate repeatedly.**
 13. **Maker-fill uncertainty is confirmed [1.02-1.04] — not dominant.**
 14. **Progress harness 621x ≠ live bot 2.76x.** Do not conflate.
 15. **2026 YTD underperformance: silent failure.** Not "accepted limitation" — an active documented structural failure.
 16. ~~M1 Discord~~ — CLOSED. M1 is console-only, not a Discord tool.
-17. **API key blocker: 6+ weeks. Escalate to Arc per rule #12.**
+17. **API key blocker: escalated once to Arc. Do not re-escalate every run; report BLOCKED to Noah with one clear recommendation.**
 18. **Top-winner mechanism decomposition is the only path to understanding 91% tail.**
 19. **Research loop is closed. No further Turtle-family validation without live data.**
 20. **2026 YTD: no fix path without destroying convex tail. Document mechanism, accept uncertainty.**
