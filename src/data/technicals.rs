@@ -1,3 +1,4 @@
+use fin_primitives::ta_compat::{indicators::RelativeStrengthIndex, Next as _};
 use serde::{Deserialize, Serialize}; // Added for caching
 use ta::{indicators::*, Next};
 use tracing::warn;
@@ -58,7 +59,8 @@ impl Technicals {
 
         for candle in data {
             // Calculate raw indicator values
-            let rsi_val = rsi_ind.next(candle);
+            let rsi_val = rsi_ind.next(candle.close);
+            let rsi_val = if rsi_val.is_nan() { 50.0 } else { rsi_val }; // neutral during warm-up
             let fast_stoch_val = fast_stoch_ind.next(candle);
             let slow_stoch_val = slow_stoch_ind.next(candle);
             let cci_val = cci_ind.next(candle);
@@ -417,6 +419,25 @@ mod tests {
         let technical_names = vec!["RSI".to_string()];
         let result = Technicals::get_technicals(&candles, &technical_names).unwrap();
         assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_rsi_uses_wilder_smoothing() {
+        // Wilder's worked example (New Concepts in Technical Trading Systems, as reproduced by StockCharts).
+        let closes = [
+            44.34, 44.09, 44.15, 43.61, 44.33, 44.83, 45.10, 45.42, 45.84, 46.08, 45.89, 46.03,
+            45.61, 46.28, 46.28, 46.00,
+        ];
+        let candles: Vec<Candlestick> = closes
+            .iter()
+            .enumerate()
+            .map(|(i, &c)| create_test_candle(c, c, c, c, i as i64 * 60))
+            .collect();
+        let result = Technicals::get_technicals(&candles, &["RSI".to_string()]).unwrap();
+        let rsi: Vec<f64> = result.iter().map(|t| t.as_array()[0]).collect();
+        assert_eq!(rsi[13], 50.0); // warm-up
+        assert!((rsi[14] - 70.46).abs() < 0.01, "RSI(14) = {}", rsi[14]);
+        assert!((rsi[15] - 66.25).abs() < 0.01, "RSI(14) = {}", rsi[15]);
     }
 
     #[test]
